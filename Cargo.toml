@@ -1,0 +1,23 @@
+[package]
+name = "bioshell"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Provides the BioShell 4.0 package"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell"]
+
+[workspace]
+members = [
+    "bioshell-numerical",
+]
+
+[dependencies]
+bioshell-numerical = { path = "./bioshell-numerical" }
+
+rand = "0.8.5"
+
+[[bin]]
+name = "polymer"
+path = "src/polymer.rs"
+
