@@ -1,0 +1,16 @@
+
+[package]
+name = "bioshell-ff"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Provides BioShell force field"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell"]
+
+[lib]
+crate-type =["rlib"]
+
+[dependencies]
+bioshell-numerical = { path = "../bioshell-numerical" }
+
