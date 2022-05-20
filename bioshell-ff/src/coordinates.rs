@@ -15,6 +15,19 @@ impl Coordinates {
 
         return Coordinates {v};
     }
+
+    pub fn distance_square(&self, i: usize, j: usize) -> f32 {
+
+        let mut d = self.v[i].x - self.v[j].x;
+        let mut d2 = d * d;
+        d = self.v[i].y - self.v[j].y;
+        d2 += d * d;
+        d = self.v[i].z - self.v[j].z;
+        d2 += d * d;
+        return d2;
+    }
+
+    pub fn size(&self) -> usize { return self.v.len(); }
 }
 
 impl Index<usize> for Coordinates {
