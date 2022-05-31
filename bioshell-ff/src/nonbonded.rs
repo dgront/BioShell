@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::ff::Energy;
 use crate::Coordinates;
 
@@ -79,7 +81,7 @@ impl Energy for SimpleContact {
         return en;
     }
 
-    fn delta_energy_by_pos(&self, old: &Coordinates, pos: usize, new: &Coordinates) -> f64 {
+    fn delta_energy_by_range(&self, old: &Coordinates, pos: &Range<usize>, new: &Coordinates) -> f64 {
 
         return 0.0;
     }

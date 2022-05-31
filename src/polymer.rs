@@ -5,13 +5,15 @@ use std::io::stdout;
 use std::io::{BufWriter,Write};
 use std::path::Path;
 use std::fs::{File};
+use std::ops::Range;
 
 use bioshell_numerical::Vec3;
-use bioshell_ff::{Coordinates, Energy};
+use bioshell_ff::{Coordinates, Energy, TotalEnergy, ZeroEnergy};
 use bioshell_ff::bonded::SimpleHarmonic;
 use bioshell_ff::nonbonded::SimpleContact;
 use bioshell_sim::generators::random_chain;
-
+use bioshell_sim::sampling::movers::single_atom_move;
+use bioshell_sim::sampling::protocols::{IsothermalMC, Sampler};
 
 pub fn main() {
     let args: Vec<String> = env::args().collect();
@@ -23,9 +25,17 @@ pub fn main() {
 
     let harmonic = SimpleHarmonic::new(3.8,1.0);
     let contacts = SimpleContact::new(3.5,4.5,6.0,100.0,-1.0);
-    let en_h = harmonic.energy(&coords);
-    let en_c = contacts.energy(&coords);
-    println!("{} {}", en_h, en_c);
+
+    let mut total = TotalEnergy::default();
+    total.add_component(Box::new(harmonic),1.0).add_component(Box::new(contacts),1.0);
+    println!("{}", total.energy(&coords));
+
+    let mut sampler = IsothermalMC::new(1.0);
+    sampler.energy = Box::new(total);    // --- The total has been moved to a box within the sampler
+    let m: Box<dyn Fn(&mut Coordinates,f32) -> Range<usize>> = Box::new(single_atom_move);
+    sampler.add_mover(m,1.0);
+
+    sampler.run(&mut coords, 10);
 }
 
 pub fn chain_to_pdb(chain: &Coordinates, out_fname: &str) {
