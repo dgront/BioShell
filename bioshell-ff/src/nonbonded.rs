@@ -14,7 +14,7 @@ pub struct SimpleContact {
     contact_energy: f32,
     /// repulsion value
     repulsion_energy: f32,
-
+    /// sequence separation, e.g. 0 for argon fluid, 1 for simple polymer
     sequence_separation: usize,
 
     r_c_sq: f32,
@@ -34,8 +34,8 @@ macro_rules! pairwise_contact_kernel {
         d = $chain[$i].z - $z;
         d2 += d*d;
         if d2 > $self.r_to_sq { continue; }
-        if d2 < $self.r_c_sq { $en += $self.rep as f64}
-        if d2 > $self.r_from_sq { $en += $self.en as f64 }
+        if d2 < $self.r_c_sq { $en += $self.repulsion_energy as f64}
+        if d2 > $self.r_from_sq { $en += $self.contact_energy as f64 }
     }
 }
 macro_rules! pairwise_contact_kernel_loop {
