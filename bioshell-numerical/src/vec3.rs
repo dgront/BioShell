@@ -38,6 +38,9 @@ impl Vec3 {
         }
     }
 
+    /// Assigns new content to this vector
+    pub fn set(&mut self, v: &Vec3) { vec_operation!(self,v,=); }
+
     /// Adds a vector to this vector
     pub fn add(&mut self, v: &Vec3) { vec_operation!(self,v,+=); }
 
