@@ -10,7 +10,7 @@ pub struct Coordinates {
 impl Coordinates {
     pub fn new(n: usize) -> Coordinates {
         let mut v = Vec::with_capacity(n);
-        let mut zero = Vec3::from_float(0.0);
+        let zero = Vec3::from_float(0.0);
         v.resize(n, zero);
 
         return Coordinates {v};

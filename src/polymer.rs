@@ -19,7 +19,7 @@ pub fn main() {
     let n_res: usize = 300;
     let mut coords = Coordinates::new(n_res);
     random_chain(3.8,4.5,&mut coords);
-    chain_to_pdb(&coords,"1.pdb");
+    // chain_to_pdb(&coords,"1.pdb");
 
     let harmonic = SimpleHarmonic::new(3.8,2.0);
     let contacts = SimpleContact::new(4.0,4.5,6.0,1000.0,-1.0, 1);
@@ -34,14 +34,15 @@ pub fn main() {
     let m: Box<dyn Fn(&mut Coordinates,f32) -> Range<usize>> = Box::new(single_atom_move);
     sampler.add_mover(m,3.0);
 
-    for _ in 0..10000 {
+    let start = Instant::now();
+    for i in 0..10000 {
         let f_succ = sampler.run(&mut coords, 1000);
-        chain_to_pdb(&coords, "tra.pdb");
-        println!("{} {}", sampler.energy(&coords), f_succ);
+        chain_to_pdb(&coords, i, "tra.pdb");
+        println!("{} {}  {:.2?}", sampler.energy(&coords), f_succ, start.elapsed());
     }
 }
 
-pub fn chain_to_pdb(chain: &Coordinates, out_fname: &str) {
+pub fn chain_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str) {
 
     let mut out_writer = match out_fname {
         "" => Box::new(stdout()) as Box<dyn Write>,
@@ -51,7 +52,7 @@ pub fn chain_to_pdb(chain: &Coordinates, out_fname: &str) {
         }
     };
 
-    out_writer.write(b"MODEL    0\n").ok();
+    out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
     for i in 0..chain.size() {
         out_writer.write(format!("ATOM   {:4}{}  ALA A{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
                                  i+1, " CA ", i+1, chain[i].x, chain[i].y, chain[i].z).as_bytes()).ok();

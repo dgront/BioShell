@@ -1,7 +1,7 @@
 use std::ops::Range;
 use rand::Rng;
 
-use bioshell_ff::{Coordinates, Energy, TotalEnergy, ZeroEnergy};
+use bioshell_ff::{Coordinates, Energy, ZeroEnergy};
 
 
 pub trait Sampler {
@@ -35,8 +35,8 @@ impl Sampler for IsothermalMC {
         let mut rng = rand::thread_rng();
         let mut future_system = system.clone();
         let mut n_succ: f64 = 0.0;
-        for i_step in 0..n_steps {                            // --- iterate over steps
-            for i_atom in 0..system.size() {                // --- iteration for moves within a single MC step
+        for _i_step in 0..n_steps {                            // --- iterate over steps
+            for _i_atom in 0..system.size() {                // --- iteration for moves within a single MC step
                 // --- call a mover to modify a pose
                 let moved_range = self.movers.make_move(&mut future_system);
                 let delta_en: f64 = self.energy.delta_energy_by_range(system, &moved_range, &future_system);
@@ -68,6 +68,8 @@ impl Sampler for IsothermalMC {
                 }
             }
         }
+        self.movers.adapt_movers();
+
         n_succ / (n_steps * system.size() as i32) as f64
     }
 }
@@ -118,4 +120,10 @@ impl MoversSet {
     }
     pub fn accepted(&mut self) { self.stats[self.recent_mover].add_success(); }
     pub fn cancelled(&mut self) { self.stats[self.recent_mover].add_failure(); }
+
+    pub fn adapt_movers(&mut self) {
+        for i in 0..self.stats.len() {
+            self.stats[i].adapt_range();
+        }
+    }
 }

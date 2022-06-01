@@ -1,5 +1,4 @@
 use std::ops::Range;
-use std::os::macos::raw::stat;
 use rand::Rng;
 
 use bioshell_ff::Coordinates;

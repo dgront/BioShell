@@ -1,6 +1,5 @@
 use std::ops::Range;
 
-use bioshell_numerical::Vec3;
 use crate::Coordinates;
 
 pub trait Energy {
@@ -12,10 +11,11 @@ pub trait Energy {
 pub struct ZeroEnergy{}
 
 impl Energy for ZeroEnergy {
+    #[allow(unused)]
     fn energy(&self, system: &Coordinates) -> f64 { 0.0 }
-
+    #[allow(unused)]
     fn energy_by_pos(&self, system: &Coordinates, pos: usize) -> f64 { 0.0 }
-
+    #[allow(unused)]
     fn delta_energy_by_range(&self, old: &Coordinates, moved: &Range<usize>, new: &Coordinates) -> f64 { 0.0 }
 }
 
