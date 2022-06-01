@@ -24,6 +24,14 @@ macro_rules! scalar_operation {
     };
 }
 
+macro_rules! float3_operation {
+    ($lhs:expr, $OP:tt, $x:expr, $y:expr, $z:expr) => {
+        $lhs.x $OP $x;
+        $lhs.y $OP $y;
+        $lhs.z $OP $z;
+    };
+}
+
 impl Vec3 {
     pub fn new(x: f32, y: f32, z: f32) -> Vec3 {
         Vec3 { x: x, y: y, z: z, res_type:0, atom_type: 0, chain_id: 0}
@@ -52,6 +60,12 @@ impl Vec3 {
 
     /// Subtracts a vector from this vector
     pub fn div(&mut self, f: f32) { scalar_operation!(self,f,/=); }
+
+    /// Adds float x, y, x values to this vector
+    pub fn add3(&mut self, x:f32, y:f32, z:f32) { float3_operation!(self, +=, x, y, z); }
+
+    /// Subtracts float x, y, x values from this vector
+    pub fn sub3(&mut self, x:f32, y:f32, z:f32) { float3_operation!(self, -=, x, y, z); }
 
     pub fn length_squared(&self) -> f32 {
         return self.x * self.x + self.y * self.y + self.z * self.z;
