@@ -23,23 +23,6 @@ pub struct SimpleContact {
 }
 
 macro_rules! pairwise_contact_kernel {
-    ($x:expr,$y:expr,$z:expr,$chain:expr,$i:expr,$r_to_2:expr,$r_from_2:expr,$r_rep_2:expr,$e_c:expr,$e_rep:expr,$en:expr)=>{
-
-        let mut d = $chain[$i].x - $x;
-        let mut d2 = d*d;
-        if d2 > $r_to_2 { continue; }
-        d = $chain[$i].y - $y;
-        d2 += d*d;
-        if d2 > $r_to_2 { continue; }
-        d = $chain[$i].z - $z;
-        d2 += d*d;
-        if d2 > $r_to_2 { continue; }
-        if d2 < $r_rep_2 { $en += $e_rep as f64}
-        if d2 > $r_from_2 { $en += $e_c as f64 }
-    }
-}
-
-macro_rules! pairwise_contact_kernel2 {
     ($x:expr, $y:expr, $z:expr, $chain:expr, $i:expr, $self:expr, $en:expr) => {
 
         let mut d = $chain[$i].x - $x;
@@ -53,6 +36,13 @@ macro_rules! pairwise_contact_kernel2 {
         if d2 > $self.r_to_sq { continue; }
         if d2 < $self.r_c_sq { $en += $self.rep as f64}
         if d2 > $self.r_from_sq { $en += $self.en as f64 }
+    }
+}
+macro_rules! pairwise_contact_kernel_loop {
+    ($start:expr, $end:expr, $x:expr, $y:expr, $z:expr, $chain:expr, $self:expr, $en:expr) => {
+            for i in $start..$end {
+                pairwise_contact_kernel!($x, $y, $z, $chain, i, $self, $en);
+            }
     }
 }
 
@@ -81,7 +71,7 @@ impl SimpleContact {
             let zi: f32 = system[ipos].z;
 
             for jpos in (ipos+1+self.sequence_separation)..moved.end + 1 {
-                pairwise_contact_kernel!(xi, yi, zi, system, jpos, self.r_to_sq, self.r_from_sq, self.r_c_sq, self.en, self.rep, en);
+                pairwise_contact_kernel!(xi, yi, zi, system, jpos, self, en);
             }
         }
         return en;
@@ -107,16 +97,11 @@ impl Energy for SimpleContact {
         let z: f32 = chain[pos].z;
 
         if pos > self.sequence_separation {
-            for i in 0..(pos - self.sequence_separation) {
-                // pairwise_contact_kernel!(x, y, z, chain, i, self.r_to_sq, self.r_from_sq, self.r_c_sq, self.en, self.rep, en);
-                pairwise_contact_kernel2!(x, y, z, chain, i, self, en);
-            }
+            pairwise_contact_kernel_loop!(0, pos - self.sequence_separation, x, y, z, chain, self, en);
         }
         // for the chain of 10 atoms and sep=1, we score when pos is at most 7 (7 vs 9)
         if pos < chain.size() - 1 - self.sequence_separation {
-            for i in (pos + 1 + self.sequence_separation)..chain.size() {
-                pairwise_contact_kernel!(x, y, z, chain, i, self.r_to_sq, self.r_from_sq, self.r_c_sq, self.en, self.rep, en);
-            }
+            pairwise_contact_kernel_loop!(pos + 1 + self.sequence_separation, chain.size(), x, y, z, chain, self, en);
         }
 
         return en;
@@ -138,22 +123,14 @@ impl Energy for SimpleContact {
 
             // --- Energy upstream the moved range; e.g. for sep=1 we calculate energy here if moved 2 or greater
             if moved.start > self.sequence_separation {
-                for ipos in 0..(moved.start - self.sequence_separation) {
-                    pairwise_contact_kernel!(xo, yo, zo, old, ipos, self.r_to_sq, self.r_from_sq, self.r_c_sq, self.en, self.rep, en_old);
-                }
-                for ipos in 0..(moved.start - self.sequence_separation) {
-                    pairwise_contact_kernel!(xn, yn, zn, new, ipos, self.r_to_sq, self.r_from_sq, self.r_c_sq, self.en, self.rep, en_new);
-                }
+                pairwise_contact_kernel_loop!(0, moved.start - self.sequence_separation, xo, yo, zo, old, self, en_old);
+                pairwise_contact_kernel_loop!(0, moved.start - self.sequence_separation, xn, yn, zn, new, self, en_new);
             }
             // --- Energy downstream the moved range, e.g. for N=10 and sep=1 we calculate here if moved at most 7 (7 vs 9)
             if moved.end < old.size() - self.sequence_separation -1 {
                 let start = moved.end + 1 + self.sequence_separation;
-                for ipos in start..old.size() {
-                    pairwise_contact_kernel!(xo, yo, zo, old, ipos, self.r_to_sq, self.r_from_sq, self.r_c_sq, self.en, self.rep, en_old);
-                }
-                for ipos in start..old.size() {
-                    pairwise_contact_kernel!(xn, yn, zn, new, ipos, self.r_to_sq, self.r_from_sq, self.r_c_sq, self.en, self.rep, en_new);
-                }
+                pairwise_contact_kernel_loop!(start, old.size(), xo, yo, zo, old, self, en_old);
+                pairwise_contact_kernel_loop!(start, old.size(), xn, yn, zn, new, self, en_new);
             }
         }
         // --- Energy within the moved range
