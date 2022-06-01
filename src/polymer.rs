@@ -10,13 +10,13 @@ use bioshell_ff::{Coordinates, Energy, TotalEnergy};
 use bioshell_ff::bonded::SimpleHarmonic;
 use bioshell_ff::nonbonded::SimpleContact;
 use bioshell_sim::generators::random_chain;
-use bioshell_sim::sampling::movers::single_atom_move;
+use bioshell_sim::sampling::movers::{single_atom_move, perturb_chain_fragment};
 use bioshell_sim::sampling::protocols::{IsothermalMC, Sampler};
 
 pub fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let n_res: usize = 300;
+    let n_res: usize = 100;
     let mut coords = Coordinates::new(n_res);
     random_chain(3.8,4.5,&mut coords);
     // chain_to_pdb(&coords,"1.pdb");
@@ -33,10 +33,12 @@ pub fn main() {
     sampler.energy = Box::new(total);    // --- The total has been moved to a box within the sampler
     let m: Box<dyn Fn(&mut Coordinates,f32) -> Range<usize>> = Box::new(single_atom_move);
     sampler.add_mover(m,3.0);
+    // let m: Box<dyn Fn(&mut Coordinates,f32) -> Range<usize>> = Box::new(perturb_chain_fragment);
+    // sampler.add_mover(m,5.0);
 
     let start = Instant::now();
-    for i in 0..10000 {
-        let f_succ = sampler.run(&mut coords, 1000);
+    for i in 0..1000 {
+        let f_succ = sampler.run(&mut coords, 100);
         chain_to_pdb(&coords, i, "tra.pdb");
         println!("{} {}  {:.2?}", sampler.energy(&coords), f_succ, start.elapsed());
     }

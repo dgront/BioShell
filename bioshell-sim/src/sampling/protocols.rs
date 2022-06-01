@@ -47,7 +47,7 @@ impl Sampler for IsothermalMC {
                         let en_new = self.energy.energy(&future_system);
                         let total_delta = en_new - en_old;
                         if f64::abs(total_delta-delta_en) > 0.001 {
-                            let str = format!("Inconsistent energy! Total {en_old} -> {en_new} with delta = {total_delta}, local delta: {delta_en}");
+                            let str = format!("Inconsistent energy! Total {en_old} -> {en_new} with delta = {total_delta}, local delta: {delta_en} after move {:?}",moved_range);
                             panic!("{}", str);
                         }
                     }
