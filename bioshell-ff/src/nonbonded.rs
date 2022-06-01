@@ -5,15 +5,15 @@ use crate::Coordinates;
 
 pub struct SimpleContact {
     /// repulsion distance
-    r_c: f32,
+    repulsion_distance: f32,
     /// energy well starts
-    r_from: f32,
+    contact_from_distance: f32,
     /// energy well end
-    r_to: f32,
+    contact_to_distance: f32,
     /// energy value
-    en: f32,
+    contact_energy: f32,
     /// repulsion value
-    rep: f32,
+    repulsion_energy: f32,
 
     sequence_separation: usize,
 
@@ -47,9 +47,14 @@ macro_rules! pairwise_contact_kernel_loop {
 }
 
 impl SimpleContact {
-    pub fn new(r_c: f32, r_from: f32, r_to: f32, rep: f32, en: f32, separation: usize) -> SimpleContact {
-        SimpleContact { r_c, r_from, r_to, rep, en, sequence_separation: separation,
-            r_c_sq: r_c * r_c, r_from_sq: r_from * r_from, r_to_sq: r_to * r_to
+    pub fn new(r_repulsion: f32, r_from: f32, r_to: f32, en_repulsion: f32, en_contact: f32, separation: usize) -> SimpleContact {
+        SimpleContact {
+            repulsion_distance: r_repulsion,
+            contact_from_distance: r_from,
+            contact_to_distance: r_to,
+            repulsion_energy: en_repulsion,
+            contact_energy: en_contact, sequence_separation: separation,
+            r_c_sq: r_repulsion * r_repulsion, r_from_sq: r_from * r_from, r_to_sq: r_to * r_to
         }
     }
 
@@ -57,9 +62,9 @@ impl SimpleContact {
         if ipos > jpos && ipos - jpos <= self.sequence_separation { return 0.0; }
         if ipos < jpos && jpos - ipos <= self.sequence_separation { return 0.0; }
         let d = system.distance_square(ipos, jpos).sqrt();
-        if d > self.r_to { return 0.0; }
-        if d < self.r_c { return self.rep }
-        if d > self.r_from { return self.en; } else { return 0.0 }
+        if d > self.contact_to_distance { return 0.0; }
+        if d < self.repulsion_distance { return self.repulsion_energy }
+        if d > self.contact_from_distance { return self.contact_energy; } else { return 0.0 }
     }
 
     fn each_vs_each_energy(&self, system: &Coordinates, moved: &Range<usize>) ->f64 {
