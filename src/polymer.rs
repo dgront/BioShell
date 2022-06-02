@@ -1,12 +1,8 @@
 use std::env;
 use std::time::Instant;
-use std::io::stdout;
-use std::io::Write;
-use std::path::Path;
-use std::fs::{File};
 use std::ops::Range;
 
-use bioshell_ff::{Coordinates, Energy, TotalEnergy};
+use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb};
 use bioshell_ff::bonded::SimpleHarmonic;
 use bioshell_ff::nonbonded::SimpleContact;
 use bioshell_sim::generators::random_chain;
@@ -39,25 +35,7 @@ pub fn main() {
     let start = Instant::now();
     for i in 0..1000 {
         let f_succ = sampler.run(&mut coords, 100);
-        chain_to_pdb(&coords, i, "tra.pdb");
+        to_pdb(&coords, i, "tra.pdb");
         println!("{} {}  {:.2?}", sampler.energy(&coords), f_succ, start.elapsed());
     }
-}
-
-pub fn chain_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str) {
-
-    let mut out_writer = match out_fname {
-        "" => Box::new(stdout()) as Box<dyn Write>,
-        _ => {
-            let path = Path::new(out_fname);
-            Box::new(File::options().append(true).create(true).open(&path).unwrap()) as Box<dyn Write>
-        }
-    };
-
-    out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
-    for i in 0..chain.size() {
-        out_writer.write(format!("ATOM   {:4}{}  ALA A{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
-                                 i+1, " CA ", i+1, chain[i].x, chain[i].y, chain[i].z).as_bytes()).ok();
-    }
-    out_writer.write(b"ENDMDL\n").ok();
 }
