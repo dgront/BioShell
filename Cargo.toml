@@ -25,3 +25,6 @@ rand = "0.8.5"
 name = "polymer"
 path = "src/polymer.rs"
 
+[[bin]]
+name = "disks"
+path = "src/disks.rs"

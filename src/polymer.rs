@@ -12,7 +12,7 @@ use bioshell_sim::sampling::protocols::{IsothermalMC, Sampler};
 pub fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let n_res: usize = 100;
+    let n_res: usize = 300;
     let mut coords = Coordinates::new(n_res);
     random_chain(3.8,4.5,&mut coords);
     // chain_to_pdb(&coords,"1.pdb");
@@ -36,6 +36,6 @@ pub fn main() {
     for i in 0..1000 {
         let f_succ = sampler.run(&mut coords, 100);
         to_pdb(&coords, i, "tra.pdb");
-        println!("{} {}  {:.2?}", sampler.energy(&coords), f_succ, start.elapsed());
+        println!("{} {} {}  {:.2?}", i, sampler.energy(&coords), f_succ, start.elapsed());
     }
 }
