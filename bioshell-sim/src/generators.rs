@@ -48,6 +48,20 @@ pub fn cubic_grid_atoms(system: &mut Coordinates) {
     }
 }
 
+
+pub fn square_grid_atoms(system: &mut Coordinates) {
+
+    let points_one_side: usize = (f64::powf(system.size() as f64, 0.5)).ceil() as usize;
+    let dw = system.box_len() / points_one_side as f32;
+    let cell_margin = dw / 2.0;
+
+    for i in 0..system.size() {
+        let k = i % points_one_side;
+        let l = i / points_one_side;
+        system.set(i,dw * k as f32 + cell_margin,dw * l as f32 + cell_margin,0.0);
+    }
+}
+
 fn random_unit_versor() -> (f64, f64, f64) {
 
     let mut rng = rand::thread_rng();

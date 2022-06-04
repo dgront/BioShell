@@ -5,7 +5,7 @@ use std::ops::Range;
 use bioshell_numerical::Vec3;
 use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb};
 use bioshell_ff::bonded::SimpleHarmonic;
-use bioshell_ff::nonbonded::SimpleContact;
+use bioshell_ff::pairwise::SimpleContact;
 use bioshell_sim::generators::random_chain;
 use bioshell_sim::sampling::movers::{single_atom_move, perturb_chain_fragment};
 use bioshell_sim::sampling::protocols::{IsothermalMC, Sampler};

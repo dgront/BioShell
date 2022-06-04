@@ -28,3 +28,7 @@ path = "src/polymer.rs"
 [[bin]]
 name = "disks"
 path = "src/disks.rs"
+
+[[bin]]
+name = "argon"
+path = "src/argon.rs"

@@ -1,5 +1,5 @@
 use bioshell_ff::Coordinates;
-use bioshell_ff::nonbonded::SimpleContact;
+use bioshell_ff::pairwise::SimpleContact;
 use bioshell_ff::Energy;
 use bioshell_numerical::Vec3;
 

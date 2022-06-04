@@ -1,25 +1,12 @@
 use std::ops::Range;
 
 use crate::ff::Energy;
-use crate::Coordinates;
+use crate::{Coordinates, ZeroEnergy};
 
-pub struct SimpleContact {
-    /// repulsion distance
-    repulsion_distance: f32,
-    /// energy well starts
-    contact_from_distance: f32,
-    /// energy well end
-    contact_to_distance: f32,
-    /// energy value
-    contact_energy: f32,
-    /// repulsion value
-    repulsion_energy: f32,
-    /// sequence separation, e.g. 0 for argon fluid, 1 for simple polymer
-    sequence_separation: usize,
+/// A pairwise nonbonded interaction cat evaluate its energy just from a squared distance value
+pub trait PairwiseNonbonded {
 
-    r_c_sq: f32,
-    r_from_sq: f32,
-    r_to_sq: f32,
+    fn energy_for_distance_squared(&self, d2: f32) -> f64;
 }
 
 macro_rules! pairwise_contact_kernel {
@@ -27,18 +14,16 @@ macro_rules! pairwise_contact_kernel {
 
         let mut d = $chain.delta_x($i, $x);
         let mut d2 = d*d;
-        if d2 > $self.r_to_sq { continue; }
+        if d2 > $self.cutoff_square { continue; }
         d = $chain.delta_y($i, $y);
         d2 += d*d;
-        if d2 > $self.r_to_sq { continue; }
+        if d2 > $self.cutoff_square { continue; }
         d = $chain.delta_z($i, $z);
         d2 += d*d;
-        $en += $self.energy_for_distance_squared(d2);
-        // if d2 > $self.r_to_sq { continue; }
-        // if d2 < $self.r_c_sq { $en += $self.repulsion_energy as f64}
-        // if d2 > $self.r_from_sq { $en += $self.contact_energy as f64 }
+        $en += $self.energy.energy_for_distance_squared(d2);
     }
 }
+
 macro_rules! pairwise_contact_kernel_loop {
     ($start:expr, $end:expr, $x:expr, $y:expr, $z:expr, $chain:expr, $self:expr, $en:expr) => {
             for i in $start..$end {
@@ -47,32 +32,32 @@ macro_rules! pairwise_contact_kernel_loop {
     }
 }
 
-impl SimpleContact {
-    pub fn new(r_repulsion: f32, r_from: f32, r_to: f32, en_repulsion: f32, en_contact: f32, separation: usize) -> SimpleContact {
-        SimpleContact {
-            repulsion_distance: r_repulsion,
-            contact_from_distance: r_from,
-            contact_to_distance: r_to,
-            repulsion_energy: en_repulsion,
-            contact_energy: en_contact, sequence_separation: separation,
-            r_c_sq: r_repulsion * r_repulsion, r_from_sq: r_from * r_from, r_to_sq: r_to * r_to
-        }
+
+/// Evaluates pairwise nonbonded interactions
+///
+///
+pub struct PairwiseNonbondedEvaluator {
+
+    /// sequence separation, e.g. 0 for argon fluid, 1 for simple polymer
+    pub sequence_separation: usize,
+    pub cutoff: f32,
+    cutoff_square: f32,
+    pub energy: Box<dyn PairwiseNonbonded>,
+}
+
+impl PairwiseNonbondedEvaluator {
+
+    pub fn new(separation: usize, cutoff: f32, pairwise_energy: Box<dyn PairwiseNonbonded>) -> PairwiseNonbondedEvaluator {
+        PairwiseNonbondedEvaluator { sequence_separation: separation, cutoff: cutoff,
+            cutoff_square:cutoff*cutoff, energy: pairwise_energy }
     }
 
-    pub fn pair_energy(&self, system: &Coordinates, ipos: usize, jpos: usize) -> f32 {
+    pub fn pair_energy(&self, system: &Coordinates, ipos: usize, jpos: usize) -> f64 {
         if ipos > jpos && ipos - jpos <= self.sequence_separation { return 0.0; }
         if ipos < jpos && jpos - ipos <= self.sequence_separation { return 0.0; }
         let d = system.closest_distance_square(ipos, jpos).sqrt();
-        if d > self.contact_to_distance { return 0.0; }
-        if d < self.repulsion_distance { return self.repulsion_energy }
-        if d > self.contact_from_distance { return self.contact_energy; } else { return 0.0 }
-    }
 
-    pub fn energy_for_distance_squared(&self, d2: f32) -> f64 {
-
-        if d2 > self.r_to_sq { return 0.0; }
-        if d2 < self.r_c_sq { return self.repulsion_energy as f64}
-        if d2 > self.r_from_sq { return self.contact_energy as f64; } else { return 0.0 }
+        self.energy.energy_for_distance_squared(d)
     }
 
     fn each_vs_each_energy(&self, system: &Coordinates, moved: &Range<usize>) ->f64 {
@@ -91,7 +76,7 @@ impl SimpleContact {
     }
 }
 
-impl Energy for SimpleContact {
+impl Energy for PairwiseNonbondedEvaluator {
 
     fn energy(&self, system: &Coordinates) -> f64 {
         let mut en:f64 = 0.0;
@@ -151,5 +136,81 @@ impl Energy for SimpleContact {
         en_new += self.each_vs_each_energy(new,moved);
 
         return en_new - en_old;
+    }
+}
+
+impl PairwiseNonbonded for ZeroEnergy {
+    fn energy_for_distance_squared(&self, _d2: f32) -> f64 { 0.0 }
+}
+
+pub struct SimpleContact {
+    /// repulsion distance
+    pub repulsion_distance: f32,
+    /// energy well starts
+    pub contact_from_distance: f32,
+    /// energy well end
+    pub contact_to_distance: f32,
+    /// energy value
+    pub contact_energy: f32,
+    /// repulsion value
+    pub repulsion_energy: f32,
+
+    r_c_sq: f32,
+    r_from_sq: f32,
+    r_to_sq: f32,
+}
+
+
+impl SimpleContact {
+    pub fn new(r_repulsion: f32, r_from: f32, r_to: f32, en_repulsion: f32, en_contact: f32) -> SimpleContact {
+        SimpleContact {
+            repulsion_distance: r_repulsion,
+            contact_from_distance: r_from,
+            contact_to_distance: r_to,
+            repulsion_energy: en_repulsion,
+            contact_energy: en_contact,
+            r_c_sq: r_repulsion * r_repulsion,
+            r_from_sq: r_from * r_from,
+            r_to_sq: r_to * r_to
+        }
+    }
+}
+
+impl PairwiseNonbonded for SimpleContact {
+    fn energy_for_distance_squared(&self, d2: f32) -> f64 {
+        if d2 > self.r_to_sq { return 0.0; }
+        if d2 < self.r_c_sq { return self.repulsion_energy as f64; }
+        if d2 > self.r_from_sq { return self.contact_energy as f64; } else { return 0.0; }
+    }
+}
+
+pub struct LennardJonesHomogenic {
+    /// Energy constant
+    pub epsilon: f64,
+    /// VdW radius
+    pub sigma: f64,
+    /// Interaction cutoff
+    pub cutoff: f64,
+    sigma_sq: f64,
+    cutoff_sq: f64,
+    epsilon_four: f64,
+}
+
+impl LennardJonesHomogenic {
+    pub fn new(epsilon: f64, sigma: f64, cutoff: f64 ) -> LennardJonesHomogenic {
+            LennardJonesHomogenic {epsilon, sigma, cutoff,
+                sigma_sq: sigma*sigma, cutoff_sq: cutoff*cutoff, epsilon_four: 4.0 * epsilon }
+    }
+}
+
+impl PairwiseNonbonded for LennardJonesHomogenic {
+
+    fn energy_for_distance_squared(&self, r2: f32) -> f64 {
+        return if (r2 as f64) < self.cutoff_sq {
+            let r2_s: f64 = self.sigma_sq / r2 as f64;
+            let r6: f64 = r2_s * r2_s * r2_s;
+            let r12: f64 = r6 * r6;
+            self.epsilon_four * (r12 - r6)
+        } else { 0.0 }
     }
 }
