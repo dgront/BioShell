@@ -14,6 +14,27 @@ pub struct Coordinates {
     v: Vec<Vec3>,
 }
 
+macro_rules! wrap_coordinate_to_box {
+    ($val:expr, $L:expr, $coord:expr) => {
+        $coord = $val;
+        if $coord > $L { $coord = $coord - $L}
+        else {
+            if $coord < 0.0 { $coord = $L + $coord}
+        }
+    }
+}
+
+macro_rules! closest_image {
+    ($c1:expr, $c2:expr, $L: expr,$L2: expr, $delta:expr) => {
+        $delta = $c1 - $c2;
+        if $delta > 0.0 {
+            if $delta > $L2 {$delta -= $L}
+        } else {
+            if $delta < -$L2 {$delta += $L}
+        }
+    }
+}
+
 impl Coordinates {
     pub fn new(n: usize) -> Coordinates {
         let mut v = Vec::with_capacity(n);
@@ -45,26 +66,59 @@ impl Coordinates {
 
     pub fn closest_distance_square(&self, i: usize, j: usize) -> f32 {
 
-        let mut dx = self.v[i].x - self.v[j].x;
-        if dx > self.box_len_half { dx -= self.box_len; }
-        let mut d2 = dx * dx;
-        dx = self.v[i].y - self.v[j].y;
-        if dx > self.box_len_half { dx -= self.box_len; }
-        d2 += dx * dx;
-        dx = self.v[i].z - self.v[j].z;
-        if dx > self.box_len_half { dx -= self.box_len; }
-        d2 += dx * dx;
+        let mut d:f32;
+        closest_image!(self.v[i].x, self.v[j].x, self.box_len, self.box_len_half, d);
+        let mut d2 = d * d;
+        closest_image!(self.v[i].y, self.v[j].y, self.box_len, self.box_len_half, d);
+        d2 += d * d;
+        closest_image!(self.v[i].z, self.v[j].z, self.box_len, self.box_len_half, d);
 
-        return d2;
+        return d2 + d*d;
+    }
+
+    pub fn delta_x(&self, i: usize, x: f32) -> f32 {
+        let mut d: f32;
+        closest_image!(self.v[i].x,x, self.box_len, self.box_len_half, d);
+        d
+    }
+
+    pub fn delta_y(&self, i: usize, y: f32) -> f32 {
+        let mut d: f32;
+        closest_image!(self.v[i].y, y, self.box_len, self.box_len_half, d);
+        d
+    }
+
+    pub fn delta_z(&self, i: usize, z: f32) -> f32 {
+        let mut d: f32;
+        closest_image!(self.v[i].z, z, self.box_len, self.box_len_half, d);
+        d
     }
 
     pub fn size(&self) -> usize { return self.v.len(); }
 
-    pub fn x(&self, i:usize) -> f32 { self.v[i].x * self.box_len }
+    pub fn x(&self, i:usize) -> f32 { self.v[i].x }
 
-    pub fn y(&self, i:usize) -> f32 { self.v[i].x * self.box_len }
+    pub fn y(&self, i:usize) -> f32 { self.v[i].y }
 
-    pub fn z(&self, i:usize) -> f32 { self.v[i].x * self.box_len }
+    pub fn z(&self, i:usize) -> f32 { self.v[i].z }
+
+    pub fn set_x(&mut self, i:usize, x: f32) {  wrap_coordinate_to_box!(x, self.box_len, self.v[i].x); }
+
+    pub fn set_y(&mut self, i:usize, y: f32) {  wrap_coordinate_to_box!(y, self.box_len, self.v[i].y); }
+
+    pub fn set_z(&mut self, i:usize, z: f32) {  wrap_coordinate_to_box!(z, self.box_len, self.v[i].z); }
+
+    pub fn set(&mut self, i:usize, x: f32, y: f32, z: f32) {
+        wrap_coordinate_to_box!(x, self.box_len, self.v[i].x);
+        wrap_coordinate_to_box!(y, self.box_len, self.v[i].y);
+        wrap_coordinate_to_box!(z, self.box_len, self.v[i].z);
+    }
+
+    pub fn add(&mut self, i:usize, x: f32, y: f32, z: f32) {
+        wrap_coordinate_to_box!(self.v[i].x + x, self.box_len, self.v[i].x);
+        wrap_coordinate_to_box!(self.v[i].y + y, self.box_len, self.v[i].y);
+        wrap_coordinate_to_box!(self.v[i].z + z, self.box_len, self.v[i].z);
+    }
 }
 
 impl Index<usize> for Coordinates {
@@ -93,7 +147,7 @@ pub fn to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str) {
     out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
     for i in 0..chain.size() {
         out_writer.write(format!("ATOM   {:4}{}  ALA A{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
-                                 i+1, " CA ", i+1, chain[i].x, chain[i].y, chain[i].z).as_bytes()).ok();
+                                 i+1, " CA ", i+1, chain.x(i), chain.y(i), chain.z(i)).as_bytes()).ok();
     }
     out_writer.write(b"ENDMDL\n").ok();
 }

@@ -6,9 +6,9 @@ use bioshell_ff::Coordinates;
 pub fn single_atom_move(future: &mut Coordinates, max_step:f32) -> Range<usize> {
     let mut rng = rand::thread_rng();
     let i_moved = rng.gen_range(0..future.size());
-    future[i_moved].x += rng.gen_range(-max_step..max_step);
-    future[i_moved].z += rng.gen_range(-max_step..max_step);
-    future[i_moved].y += rng.gen_range(-max_step..max_step);
+    future.add(i_moved,rng.gen_range(-max_step..max_step),
+               rng.gen_range(-max_step..max_step),rng.gen_range(-max_step..max_step));
+
     i_moved..i_moved
 }
 
@@ -31,13 +31,13 @@ pub fn perturb_chain_fragment(chains: &mut Coordinates, max_step:f32) -> Range<u
 
     for i in 0..N/2 {
         let fi: f32 = (i + 1) as f32;
-        chains[moved_from + i].add3(dx * fi, dy * fi, dz * fi);
-        chains[moved_to - i].add3(dx * fi, dy * fi, dz * fi);
+        chains.add(moved_from + i, dx * fi, dy * fi, dz * fi);
+        chains.add(moved_to - i, dx * fi, dy * fi, dz * fi);
     }
 
     if N % 2 == 1 {
         let mid = (moved_from + moved_to) / 2;
-        chains[mid].add3(dx / F, dy / F, dz / F);
+        chains.add(mid,dx / F, dy / F, dz / F);
     }
 
     moved_from..moved_to

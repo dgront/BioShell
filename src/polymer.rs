@@ -2,6 +2,7 @@ use std::env;
 use std::time::Instant;
 use std::ops::Range;
 
+use bioshell_numerical::Vec3;
 use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb};
 use bioshell_ff::bonded::SimpleHarmonic;
 use bioshell_ff::nonbonded::SimpleContact;
@@ -14,7 +15,10 @@ pub fn main() {
 
     let n_res: usize = 300;
     let mut coords = Coordinates::new(n_res);
-    random_chain(3.8,4.5,&mut coords);
+    coords.set_box_len(1000000.0);
+
+    let start: Vec3 = Vec3::new(100.0,100.0,100.0);
+    random_chain(3.8,4.5, &start,&mut coords);
     // chain_to_pdb(&coords,"1.pdb");
 
     let harmonic = SimpleHarmonic::new(3.8,2.0);

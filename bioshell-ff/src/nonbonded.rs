@@ -25,17 +25,18 @@ pub struct SimpleContact {
 macro_rules! pairwise_contact_kernel {
     ($x:expr, $y:expr, $z:expr, $chain:expr, $i:expr, $self:expr, $en:expr) => {
 
-        let mut d = $chain[$i].x - $x;
+        let mut d = $chain.delta_x($i, $x);
         let mut d2 = d*d;
         if d2 > $self.r_to_sq { continue; }
-        d = $chain[$i].y - $y;
+        d = $chain.delta_y($i, $y);
         d2 += d*d;
         if d2 > $self.r_to_sq { continue; }
-        d = $chain[$i].z - $z;
+        d = $chain.delta_z($i, $z);
         d2 += d*d;
-        if d2 > $self.r_to_sq { continue; }
-        if d2 < $self.r_c_sq { $en += $self.repulsion_energy as f64}
-        if d2 > $self.r_from_sq { $en += $self.contact_energy as f64 }
+        $en += $self.energy_for_distance_squared(d2);
+        // if d2 > $self.r_to_sq { continue; }
+        // if d2 < $self.r_c_sq { $en += $self.repulsion_energy as f64}
+        // if d2 > $self.r_from_sq { $en += $self.contact_energy as f64 }
     }
 }
 macro_rules! pairwise_contact_kernel_loop {
@@ -61,10 +62,17 @@ impl SimpleContact {
     pub fn pair_energy(&self, system: &Coordinates, ipos: usize, jpos: usize) -> f32 {
         if ipos > jpos && ipos - jpos <= self.sequence_separation { return 0.0; }
         if ipos < jpos && jpos - ipos <= self.sequence_separation { return 0.0; }
-        let d = system.distance_square(ipos, jpos).sqrt();
+        let d = system.closest_distance_square(ipos, jpos).sqrt();
         if d > self.contact_to_distance { return 0.0; }
         if d < self.repulsion_distance { return self.repulsion_energy }
         if d > self.contact_from_distance { return self.contact_energy; } else { return 0.0 }
+    }
+
+    pub fn energy_for_distance_squared(&self, d2: f32) -> f64 {
+
+        if d2 > self.r_to_sq { return 0.0; }
+        if d2 < self.r_c_sq { return self.repulsion_energy as f64}
+        if d2 > self.r_from_sq { return self.contact_energy as f64; } else { return 0.0 }
     }
 
     fn each_vs_each_energy(&self, system: &Coordinates, moved: &Range<usize>) ->f64 {

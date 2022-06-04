@@ -17,7 +17,7 @@ impl SimpleHarmonic {
 
 macro_rules! spring_kernel {
     ($system:expr, $i:expr, $j:expr, $d0:expr, $en:expr, $OP:tt) => {
-        let v:f64 = ($system.distance_square($i, $j).sqrt() - $d0) as f64;
+        let v:f64 = ($system.closest_distance_square($i, $j).sqrt() - $d0) as f64;
         $en $OP v*v;
     }
 }
