@@ -76,6 +76,18 @@ impl Coordinates {
         return d2 + d*d;
     }
 
+    pub fn closest_distance_square_to_vec(&self, i: usize, v: &Vec3) -> f32 {
+
+        let mut d:f32;
+        closest_image!(self.v[i].x, v.x, self.box_len, self.box_len_half, d);
+        let mut d2 = d * d;
+        closest_image!(self.v[i].y, v.y, self.box_len, self.box_len_half, d);
+        d2 += d * d;
+        closest_image!(self.v[i].z, v.z, self.box_len, self.box_len_half, d);
+
+        return d2 + d*d;
+    }
+
     pub fn delta_x(&self, i: usize, x: f32) -> f32 {
         let mut d: f32;
         closest_image!(self.v[i].x,x, self.box_len, self.box_len_half, d);
