@@ -5,7 +5,7 @@ use std::ops::Range;
 use bioshell_numerical::Vec3;
 use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb};
 use bioshell_ff::bonded::SimpleHarmonic;
-use bioshell_ff::pairwise::SimpleContact;
+use bioshell_ff::nonbonded::{SimpleContact, PairwiseNonbondedEvaluator};
 use bioshell_sim::generators::random_chain;
 use bioshell_sim::sampling::movers::{single_atom_move, perturb_chain_fragment};
 use bioshell_sim::sampling::protocols::{IsothermalMC, Sampler};
@@ -21,8 +21,12 @@ pub fn main() {
     random_chain(3.8,4.5, &start,&mut coords);
     // chain_to_pdb(&coords,"1.pdb");
 
+    // ---------- Contact energy
+    let contacts = PairwiseNonbondedEvaluator::new(1, 6.0 as f32,
+            Box::new(SimpleContact::new(4.0,4.5,6.0,1000.0,-1.0)));
+
     let harmonic = SimpleHarmonic::new(3.8,2.0);
-    let contacts = SimpleContact::new(4.0,4.5,6.0,1000.0,-1.0, 1);
+
 
     let mut total = TotalEnergy::default();
     total.add_component(Box::new(harmonic), 1.0);
