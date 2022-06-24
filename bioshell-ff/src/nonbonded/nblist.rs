@@ -1,13 +1,19 @@
 use bioshell_numerical::{Vec3};
-use crate::{Coordinates};
+use crate::{Coordinates, CoordinatesView};
 
-
-
+/// Rules that define which atoms and which atom pairs will be excluded from hashing
 pub trait NbListRules {
     fn if_atom_excluded(&self, coordinates: &Coordinates, i_atom:usize) -> bool;
     fn if_pair_excluded(&self, coordinates: &Coordinates, i_atom:usize, j_atom:usize) -> bool;
+    /// Each NbListRules must provide a way to clone its boxed instance
+    fn box_clone(&self) -> Box<dyn NbListRules>;
 }
 
+impl Clone for Box<dyn NbListRules>  {
+    fn clone(&self) -> Box<dyn NbListRules> { self.box_clone() }
+}
+
+#[derive(Clone)]
 pub struct ArgonRules;
 
 impl NbListRules for ArgonRules {
@@ -17,8 +23,11 @@ impl NbListRules for ArgonRules {
     fn if_pair_excluded(&self, coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool {
         i_atom == j_atom
     }
-}
 
+    fn box_clone(&self) -> Box<dyn NbListRules> {
+        Box::new((*self).clone())
+    }
+}
 
 pub struct NbList {
     cutoff: f32,                        // distance cutoff for this list
@@ -71,6 +80,12 @@ impl NbList {
         self.total_cutoff_sq = total * total;
         let max_moved = width / 2.0;
         self.max_moved_sq = max_moved * max_moved;
+    }
+
+    /// Sets new rules that define which atoms and atom pairs can be neighbors.
+    /// Note: remember to update this neighbor list after this call!
+    pub fn set_rules(&mut self, nb_rules: Box<dyn NbListRules>) {
+        self.nb_rules = nb_rules;
     }
 
     /// Updates the list of neighbors after a given atom was moved.
@@ -126,6 +141,11 @@ impl NbList {
         }
     }
 
+    /// Creates list of neighbors for each atom; the previous contents is wiped out
+    pub fn update_all_for_view(&mut self, system_view: CoordinatesView<'_>) {
+        self.update_all(system_view.points);
+    }
+
     /// Provide a read-only access to neighbors of a given atom
     pub fn neighbors(&self, pos:usize) -> &Vec<usize> { &self.nb_lists[pos] }
 
@@ -137,5 +157,20 @@ impl NbList {
                 self.recent_pos.push(Vec3::new(0.0,0.0,0.0));
             }
         }
+    }
+}
+
+
+impl Clone for NbList {
+    fn clone(&self) -> NbList {
+        // ---------- Create a deep copy of NBL rules object
+        let rules_copy: Box<dyn NbListRules> = self.nb_rules.clone();
+        // ---------- Create a new non-bonded list
+        let mut nbl: NbList = NbList::new(self.cutoff, self.buffer_width, rules_copy);
+        // ---------- Copy the content of self list to the new copy
+        for i in 0..self.nb_lists.len() {
+            nbl.nb_lists.push(self.nb_lists[i].clone());
+        }
+        return nbl;
     }
 }

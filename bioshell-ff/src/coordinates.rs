@@ -7,6 +7,10 @@ use std::fs::{File};
 
 use bioshell_numerical::{Vec3};
 
+/// Stateless immutable view of coordinates
+pub struct CoordinatesView<'a> {  pub points: &'a  Coordinates, }
+
+
 #[derive(Clone)]
 pub struct Coordinates {
     box_len: f32,
