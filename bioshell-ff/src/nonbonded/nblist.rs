@@ -18,9 +18,9 @@ pub struct ArgonRules;
 
 impl NbListRules for ArgonRules {
 
-    fn if_atom_excluded(&self, coordinates: &Coordinates, i_atom: usize) -> bool { false }
+    fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool { false }
 
-    fn if_pair_excluded(&self, coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool {
+    fn if_pair_excluded(&self, _coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool {
         i_atom == j_atom
     }
 
@@ -171,6 +171,9 @@ impl Clone for NbList {
         for i in 0..self.nb_lists.len() {
             nbl.nb_lists.push(self.nb_lists[i].clone());
         }
+        // ---------- Copy the recent coordinates
+        nbl.recent_pos = self.recent_pos.clone();
+
         return nbl;
     }
 }

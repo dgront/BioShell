@@ -1,22 +1,22 @@
 use std::ops::Range;
 
-use crate::Coordinates;
+use crate::System;
 
 pub trait Energy {
-    fn energy(&self, system: &Coordinates) -> f64;
-    fn energy_by_pos(&self, system: &Coordinates, pos: usize) -> f64;
-    fn delta_energy_by_range(&self, old: &Coordinates, pos: &Range<usize>, new: &Coordinates) -> f64;
+    fn energy(&self, system: &System) -> f64;
+    fn energy_by_pos(&self, system: &System, pos: usize) -> f64;
+    fn delta_energy_by_range(&self, old: &System, pos: &Range<usize>, new: &System) -> f64;
 }
 
 pub struct ZeroEnergy{}
 
 impl Energy for ZeroEnergy {
     #[allow(unused)]
-    fn energy(&self, system: &Coordinates) -> f64 { 0.0 }
+    fn energy(&self, system: &System) -> f64 { 0.0 }
     #[allow(unused)]
-    fn energy_by_pos(&self, system: &Coordinates, pos: usize) -> f64 { 0.0 }
+    fn energy_by_pos(&self, system: &System, pos: usize) -> f64 { 0.0 }
     #[allow(unused)]
-    fn delta_energy_by_range(&self, old: &Coordinates, moved: &Range<usize>, new: &Coordinates) -> f64 { 0.0 }
+    fn delta_energy_by_range(&self, old: &System, moved: &Range<usize>, new: &System) -> f64 { 0.0 }
 }
 
 /// Stores energy components and their weights
@@ -39,7 +39,7 @@ impl TotalEnergy {
 
 impl Energy for TotalEnergy {
 
-    fn energy(&self, system: &Coordinates) -> f64 {
+    fn energy(&self, system: &System) -> f64 {
         let mut total : f64 = 0.0;
         let en_w = self.components.iter().zip(self.weights.iter());
         for (en, w) in en_w {
@@ -48,7 +48,7 @@ impl Energy for TotalEnergy {
         return total;
     }
 
-    fn energy_by_pos(&self, system: &Coordinates, pos: usize) -> f64 {
+    fn energy_by_pos(&self, system: &System, pos: usize) -> f64 {
         let mut total : f64 = 0.0;
         let en_w = self.components.iter().zip(self.weights.iter());
         for (en, w) in en_w {
@@ -57,7 +57,7 @@ impl Energy for TotalEnergy {
         return total;
     }
 
-    fn delta_energy_by_range(&self, old: &Coordinates, pos: &Range<usize>, new: &Coordinates) -> f64 {
+    fn delta_energy_by_range(&self, old: &System, pos: &Range<usize>, new: &System) -> f64 {
         let mut total : f64 = 0.0;
         let en_w = self.components.iter().zip(self.weights.iter());
         for (en, w) in en_w {

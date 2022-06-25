@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use crate::ff::Energy;
-use crate::{Coordinates, ZeroEnergy};
+use crate::{System, ZeroEnergy};
 
 /// A pairwise nonbonded interaction cat evaluate its energy just from a squared distance value
 pub trait PairwiseNonbonded {
@@ -52,24 +52,25 @@ impl PairwiseNonbondedEvaluator {
             cutoff_square:cutoff*cutoff, energy: pairwise_energy }
     }
 
-    pub fn pair_energy(&self, system: &Coordinates, ipos: usize, jpos: usize) -> f64 {
+    pub fn pair_energy(&self, system: &System, ipos: usize, jpos: usize) -> f64 {
         if ipos > jpos && ipos - jpos <= self.sequence_separation { return 0.0; }
         if ipos < jpos && jpos - ipos <= self.sequence_separation { return 0.0; }
-        let d = system.closest_distance_square(ipos, jpos).sqrt();
+        let d = system.coordinates().closest_distance_square(ipos, jpos).sqrt();
 
         self.energy.energy_for_distance_squared(d)
     }
 
-    fn each_vs_each_energy(&self, system: &Coordinates, moved: &Range<usize>) ->f64 {
+    fn each_vs_each_energy(&self, system: &System, moved: &Range<usize>) ->f64 {
 
         let mut en: f64 = 0.0;
+        let coords = system.coordinates();
         for ipos in moved.start..moved.end {
-            let xi: f32 = system[ipos].x;
-            let yi: f32 = system[ipos].y;
-            let zi: f32 = system[ipos].z;
+            let xi: f32 = coords[ipos].x;
+            let yi: f32 = coords[ipos].y;
+            let zi: f32 = coords[ipos].z;
 
             for jpos in (ipos+1+self.sequence_separation)..moved.end + 1 {
-                pairwise_contact_kernel!(xi, yi, zi, system, jpos, self, en);
+                pairwise_contact_kernel!(xi, yi, zi, coords, jpos, self, en);
             }
         }
         return en;
@@ -78,7 +79,7 @@ impl PairwiseNonbondedEvaluator {
 
 impl Energy for PairwiseNonbondedEvaluator {
 
-    fn energy(&self, system: &Coordinates) -> f64 {
+    fn energy(&self, system: &System) -> f64 {
         let mut en:f64 = 0.0;
         for i in 0..system.size() {
             en += self.energy_by_pos(system, i);
@@ -87,9 +88,10 @@ impl Energy for PairwiseNonbondedEvaluator {
         return en / 2.0;
     }
 
-    fn energy_by_pos(&self, chain: &Coordinates, pos:usize) -> f64 {
+    fn energy_by_pos(&self, system: &System, pos:usize) -> f64 {
         let mut en: f64 = 0.0;
 
+        let chain = system.coordinates();
         let x: f32 = chain[pos].x;
         let y: f32 = chain[pos].y;
         let z: f32 = chain[pos].z;
@@ -105,35 +107,36 @@ impl Energy for PairwiseNonbondedEvaluator {
         return en;
     }
 
-    fn delta_energy_by_range(&self, old: &Coordinates, moved: &Range<usize>, new: &Coordinates) -> f64 {
+    fn delta_energy_by_range(&self, old: &System, moved: &Range<usize>, new: &System) -> f64 {
 
         let mut en_old: f64 = 0.0;
         let mut en_new: f64 = 0.0;
-
+        let old_coords = old.coordinates();
+        let new_coords = new.coordinates();
         for jpos in moved.start..moved.end + 1 {
             // --- x, y, z of a moved atom are different between new and old systems
-            let xo: f32 = old[jpos].x;
-            let yo: f32 = old[jpos].y;
-            let zo: f32 = old[jpos].z;
-            let xn: f32 = new[jpos].x;
-            let yn: f32 = new[jpos].y;
-            let zn: f32 = new[jpos].z;
+            let xo: f32 = old_coords[jpos].x;
+            let yo: f32 = old_coords[jpos].y;
+            let zo: f32 = old_coords[jpos].z;
+            let xn: f32 = new_coords[jpos].x;
+            let yn: f32 = new_coords[jpos].y;
+            let zn: f32 = new_coords[jpos].z;
 
             // --- Energy upstream the moved range; e.g. for sep=1 we calculate energy here if moved 2 or greater
             if moved.start > self.sequence_separation {
-                pairwise_contact_kernel_loop!(0, moved.start - self.sequence_separation, xo, yo, zo, old, self, en_old);
-                pairwise_contact_kernel_loop!(0, moved.start - self.sequence_separation, xn, yn, zn, new, self, en_new);
+                pairwise_contact_kernel_loop!(0, moved.start - self.sequence_separation, xo, yo, zo, old_coords, self, en_old);
+                pairwise_contact_kernel_loop!(0, moved.start - self.sequence_separation, xn, yn, zn, new_coords, self, en_new);
             }
             // --- Energy downstream the moved range, e.g. for N=10 and sep=1 we calculate here if moved at most 7 (7 vs 9)
             if moved.end < old.size() - self.sequence_separation -1 {
                 let start = moved.end + 1 + self.sequence_separation;
-                pairwise_contact_kernel_loop!(start, old.size(), xo, yo, zo, old, self, en_old);
-                pairwise_contact_kernel_loop!(start, old.size(), xn, yn, zn, new, self, en_new);
+                pairwise_contact_kernel_loop!(start, old.size(), xo, yo, zo, old_coords, self, en_old);
+                pairwise_contact_kernel_loop!(start, old.size(), xn, yn, zn, new_coords, self, en_new);
             }
         }
         // --- Energy within the moved range
-        en_old += self.each_vs_each_energy(old,moved);
-        en_new += self.each_vs_each_energy(new,moved);
+        en_old += self.each_vs_each_energy(old, moved);
+        en_new += self.each_vs_each_energy(new, moved);
 
         return en_new - en_old;
     }

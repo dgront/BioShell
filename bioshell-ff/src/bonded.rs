@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use crate::ff::Energy;
-use crate::Coordinates;
+use crate::{System};
 
 pub struct SimpleHarmonic {
     /// equilibrium distance
@@ -24,38 +24,38 @@ macro_rules! spring_kernel {
 
 impl Energy for SimpleHarmonic {
 
-    fn energy(&self, system: &Coordinates) -> f64 {
+    fn energy(&self, system: &System) -> f64 {
         let mut en:f64 = 0.0;
         for i in 1..system.size() {
-            if system[i].chain_id == system[i-1].chain_id {
-                spring_kernel!(system,i, i-1, self.d0, en, +=);
+            if system.coordinates()[i].chain_id == system.coordinates()[i-1].chain_id {
+                spring_kernel!(system.coordinates(),i, i-1, self.d0, en, +=);
             }
         }
 
         return en * self.k as f64;
     }
 
-    fn energy_by_pos(&self, system: &Coordinates, pos: usize) -> f64 {
+    fn energy_by_pos(&self, system: &System, pos: usize) -> f64 {
         let mut en: f64 = 0.0;
-        if pos > 0 && system[pos].chain_id == system[pos - 1].chain_id {
-            spring_kernel!(system,pos, pos-1,self.d0, en, +=);
+        if pos > 0 && system.coordinates()[pos].chain_id == system.coordinates()[pos - 1].chain_id {
+            spring_kernel!(system.coordinates(),pos, pos-1,self.d0, en, +=);
         }
-        if pos < system.size() - 1 && system[pos].chain_id == system[pos + 1].chain_id {
-            spring_kernel!(system,pos, pos-1,self.d0, en, +=);
+        if pos < system.size() - 1 && system.coordinates()[pos].chain_id == system.coordinates()[pos + 1].chain_id {
+            spring_kernel!(system.coordinates(),pos, pos-1,self.d0, en, +=);
         }
 
         return en * self.k as f64;
     }
 
-    fn delta_energy_by_range(&self, old: &Coordinates, pos: &Range<usize>, new: &Coordinates) -> f64 {
+    fn delta_energy_by_range(&self, old: &System, pos: &Range<usize>, new: &System) -> f64 {
 
         let mut en: f64 = 0.0;
         let start: usize = if pos.start > 0 { pos.start - 1 } else { pos.start };
         let end: usize = if pos.end >= old.size() - 1 { old.size() - 1 } else { pos.end + 1 };
         for ipos in start..end {
-            if old[ipos].chain_id == old[ipos + 1].chain_id {
-                spring_kernel!(new, ipos, ipos+1, self.d0, en, +=);
-                spring_kernel!(old, ipos, ipos+1, self.d0, en, -=);
+            if old.coordinates()[ipos].chain_id == old.coordinates()[ipos + 1].chain_id {
+                spring_kernel!(new.coordinates(), ipos, ipos+1, self.d0, en, +=);
+                spring_kernel!(old.coordinates(), ipos, ipos+1, self.d0, en, -=);
             }
         }
 

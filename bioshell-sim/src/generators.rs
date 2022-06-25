@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use bioshell_ff::Coordinates;
+use bioshell_ff::{Coordinates, System};
 use bioshell_numerical::Vec3;
 
 pub fn random_chain(bond_length:f64, repulsion_distance: f64, start: &Vec3, system: &mut Coordinates) {
@@ -25,7 +25,7 @@ pub fn random_chain(bond_length:f64, repulsion_distance: f64, start: &Vec3, syst
             system.set_z(i, system.z(i-1) + (z * bond_length) as f32);
             go_on = false;
             for j in 0..(i-1) {
-                if system.closest_distance_square(j,i) <= cutoff2 {
+                if system.closest_distance_square(j, i) <= cutoff2 {
                     go_on = true;
                     break;
                 }
@@ -69,5 +69,15 @@ fn random_unit_versor() -> (f64, f64, f64) {
     let y : f64 = rng.gen_range(-1.0..1.0);
     let z : f64 = rng.gen_range(-1.0..1.0);
     let l =  { (x * x + y * y + z * z).sqrt() };
-    return (x/l, y/l, z/l);
+    return ((x/l) as f64, (y/l) as f64, (z/l) as f64);
+}
+
+fn random_unit_versor32() -> (f32, f32, f32) {
+
+    let mut rng = rand::thread_rng();
+    let x : f64 = rng.gen_range(-1.0..1.0);
+    let y : f64 = rng.gen_range(-1.0..1.0);
+    let z : f64 = rng.gen_range(-1.0..1.0);
+    let l =  { (x * x + y * y + z * z).sqrt() };
+    return ((x/l) as f32, (y/l) as f32, (z/l) as f32);
 }

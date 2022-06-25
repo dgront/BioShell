@@ -18,7 +18,7 @@ fn create_simple_system() {
     cubic_grid_atoms(&mut xyz);
 
     // ---------- Create system's list of neighbors
-    let nbl:NbList = NbList::new(2.0*R,B,Box::new(ArgonRules{}));
+    let nbl: NbList = NbList::new(2.0*R,B,Box::new(ArgonRules{}));
 
     // ---------- Create and modify the system
     let mut system: System = System::new(xyz,nbl);

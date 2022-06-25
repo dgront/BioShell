@@ -135,6 +135,15 @@ impl Coordinates {
         wrap_coordinate_to_box!(self.v[i].y + y, self.box_len, self.v[i].y);
         wrap_coordinate_to_box!(self.v[i].z + z, self.box_len, self.v[i].z);
     }
+
+    /// Copy coordinates of i-th atom from a given rhs coordinates
+    /// This method (unlike set()) does not apply PBC. To the contrary, it assumes the two systems:
+    ///  this and RHS have exactly the same simulation box geometry
+    pub fn copy(&mut self, i:usize, rhs: &Coordinates) {
+        self.v[i].x = rhs.v[i].x;
+        self.v[i].y = rhs.v[i].y;
+        self.v[i].z = rhs.v[i].z;
+    }
 }
 
 impl Index<usize> for Coordinates {

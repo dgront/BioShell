@@ -1,9 +1,9 @@
 use std::ops::Range;
 use rand::Rng;
 
-use bioshell_ff::Coordinates;
+use bioshell_ff::{System};
 
-pub fn single_atom_move(future: &mut Coordinates, max_step:f32) -> Range<usize> {
+pub fn single_atom_move(future: &mut System, max_step:f32) -> Range<usize> {
     let mut rng = rand::thread_rng();
     let i_moved = rng.gen_range(0..future.size());
     future.add(i_moved,rng.gen_range(-max_step..max_step),
@@ -12,7 +12,7 @@ pub fn single_atom_move(future: &mut Coordinates, max_step:f32) -> Range<usize> 
     i_moved..i_moved
 }
 
-pub fn perturb_chain_fragment(chains: &mut Coordinates, max_step:f32) -> Range<usize> {
+pub fn perturb_chain_fragment(chains: &mut System, max_step:f32) -> Range<usize> {
 
     const N: usize = 3;
     const F: f32 = 2.0 / (1.0 + N as f32);
@@ -20,7 +20,7 @@ pub fn perturb_chain_fragment(chains: &mut Coordinates, max_step:f32) -> Range<u
     let mut rng = rand::thread_rng();
     let mut moved_from = rng.gen_range(0..chains.size()-N);
     let mut moved_to = moved_from + N - 1;
-    while chains[moved_from].chain_id != chains[moved_to].chain_id {
+    while chains.coordinates()[moved_from].chain_id != chains.coordinates()[moved_to].chain_id {
         moved_from = rng.gen_range(0..chains.size() - N);
         moved_to = moved_from + N;
     }

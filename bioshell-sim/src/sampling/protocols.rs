@@ -1,12 +1,12 @@
 use std::ops::Range;
 use rand::Rng;
 
-use bioshell_ff::{Coordinates, Energy, ZeroEnergy};
+use bioshell_ff::{Energy, System, ZeroEnergy};
 
 
 pub trait Sampler {
-    fn energy(&self, system: &Coordinates) -> f64;
-    fn run(&mut self, system: &mut Coordinates, n_steps:i32) -> f64;
+    fn energy(&self, system: &System) -> f64;
+    fn run(&mut self, system: &mut System, n_steps:i32) -> f64;
 }
 
 pub struct IsothermalMC {
@@ -20,7 +20,7 @@ impl IsothermalMC {
         IsothermalMC{temperature, movers: Default::default(), energy: Box::new(ZeroEnergy{}) }
     }
 
-    pub fn add_mover(&mut self, perturb_fn: Box<dyn Fn(&mut Coordinates,f32) -> Range<usize>>, move_range: f32) {
+    pub fn add_mover(&mut self, perturb_fn: Box<dyn Fn(&mut System,f32) -> Range<usize>>, move_range: f32) {
         self.movers.add_mover(perturb_fn,move_range);
     }
 
@@ -28,9 +28,9 @@ impl IsothermalMC {
 
 impl Sampler for IsothermalMC {
 
-    fn energy(&self, system: &Coordinates) -> f64 { self.energy.energy(system) }
+    fn energy(&self, system: &System) -> f64 { self.energy.energy(system) }
 
-    fn run(&mut self, system: &mut Coordinates, n_steps: i32) -> f64 {
+    fn run(&mut self, system: &mut System, n_steps: i32) -> f64 {
 
         let mut rng = rand::thread_rng();
         let mut future_system = system.clone();
@@ -55,16 +55,16 @@ impl Sampler for IsothermalMC {
                 if delta_en <= 0.0 || rng.gen_range(0.0..1.0) <= (-delta_en/self.temperature).exp() {
                     // --- update mover counts, copy future_pose on current_pose to make the move
                     for ipos in moved_range.start..moved_range.end + 1 {
-                        system[ipos].set(&future_system[ipos]);
-                        self.movers.accepted();
-                        n_succ += 1.0;
+                        system.copy(ipos, &future_system);
                     }
+                    self.movers.accepted();
+                    n_succ += 1.0;
                 } else {
                     // --- update mover failures, copy current_pose on future_pose to clear the move
                     for ipos in moved_range.start..moved_range.end + 1 {
-                        future_system[ipos].set(&system[ipos]);
-                        self.movers.cancelled();
+                        future_system.copy(ipos, &system);
                     }
+                    self.movers.cancelled();
                 }
             }
         }
@@ -103,17 +103,17 @@ impl AdaptiveMoverStats {
 #[derive(Default)]
 pub struct MoversSet {
     pub stats: Vec<AdaptiveMoverStats>,
-    pub proposals: Vec<Box<dyn Fn(&mut Coordinates,f32) -> Range<usize>>>,
+    pub proposals: Vec<Box<dyn Fn(&mut System,f32) -> Range<usize>>>,
     recent_mover: usize
 }
 
 impl MoversSet {
-    pub fn add_mover(&mut self, perturb_fn: Box<dyn Fn(&mut Coordinates,f32) -> Range<usize>>, move_range: f32) {
+    pub fn add_mover(&mut self, perturb_fn: Box<dyn Fn(&mut System,f32) -> Range<usize>>, move_range: f32) {
         self.proposals.push(perturb_fn);
         self.stats.push(AdaptiveMoverStats::new(move_range));
     }
 
-    pub fn make_move(&mut self, future: &mut Coordinates) -> Range<usize> {
+    pub fn make_move(&mut self, future: &mut System) -> Range<usize> {
         let mut rng = rand::thread_rng();
         self.recent_mover = rng.gen_range(0..(self.stats.len()));
         self.proposals[self.recent_mover](future, self.stats[self.recent_mover].move_range)

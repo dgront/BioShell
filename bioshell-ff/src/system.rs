@@ -1,4 +1,4 @@
-use crate::nonbonded::{NbList, NbListRules, ArgonRules};
+use crate::nonbonded::{NbList, NbListRules};
 use crate::{Coordinates, CoordinatesView};
 
 
@@ -22,6 +22,9 @@ impl System {
     /// Provide immutable access to the list of neighbors
     pub fn neighbor_list(&self) -> & NbList { & self.neighbor_list }
 
+    /// Returns the number of atoms of this system
+    pub fn size(&self) -> usize { self.coordinates.size() }
+
     pub fn set(&mut self, i:usize, x: f32, y: f32, z: f32) {
         self.coordinates.set(i, x, y, z);
         self.neighbor_list.update(&self.coordinates, i);
@@ -30,6 +33,11 @@ impl System {
     pub fn add(&mut self, i:usize, x: f32, y: f32, z: f32) {
         self.coordinates.add(i, x, y, z);
         self.neighbor_list.update(&self.coordinates, i);
+    }
+
+
+    pub fn copy(&mut self, i:usize, rhs: &System) {
+        self.coordinates.copy(i,&rhs.coordinates());
     }
 
     /// Provides the interaction cutoff radius used by the neighbor list
