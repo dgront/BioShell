@@ -3,8 +3,8 @@ use std::ops::Range;
 
 use clap::Parser;
 
-use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb};
-use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic};
+use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb, System};
+use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic, NbList, ArgonRules};
 use bioshell_sim::generators::cubic_grid_atoms;
 use bioshell_sim::sampling::movers::{single_atom_move};
 use bioshell_sim::sampling::protocols::{IsothermalMC, Sampler};
@@ -49,29 +49,37 @@ pub fn main() {
 
     let n_atoms: usize = args.natoms;
     let density: f32 = args.density;
+
+    // ---------- Create system's coordinates
     let mut coords = Coordinates::new(n_atoms);
     coords.set_box_len(box_width(SIGMA as f32,n_atoms, density));
     cubic_grid_atoms(&mut coords);
-    to_pdb(&coords,1,"1.pdb");
+    to_pdb(&coords,1,"ar.pdb");
+
+    // ---------- Create system's list of neighbors
+    let nbl:NbList = NbList::new(CUTOFF as f32,4.0,Box::new(ArgonRules{}));
+
+    // ---------- Create the system
+    let mut system: System = System::new(coords, nbl);
 
     // ---------- Create energy function
-    let lj = PairwiseNonbondedEvaluator::new(1, CUTOFF as f32,
-                                             Box::new(LennardJonesHomogenic::new(EPSILON_BY_K, SIGMA, CUTOFF)) );
+    let lj = PairwiseNonbondedEvaluator::new(CUTOFF as f32,
+            Box::new(LennardJonesHomogenic::new(EPSILON_BY_K, SIGMA, CUTOFF)) );
     let mut total = TotalEnergy::default();
     total.add_component(Box::new(lj), 1.0);
-    println!("{}", total.energy(&coords));
+    println!("{}", total.energy(&system));
 
     // ---------- Create a sampler and add a mover into it
     let mut sampler = IsothermalMC::new(args.temperature as f64);
     sampler.energy = Box::new(total);               // --- The total has been moved to a box within the sampler
-    let m: Box<dyn Fn(&mut Coordinates,f32) -> Range<usize>> = Box::new(single_atom_move);
+    let m: Box<dyn Fn(&mut System,f32) -> Range<usize>> = Box::new(single_atom_move);
     sampler.add_mover(m,3.0);
 
     // ---------- Run the simulation!
     let start = Instant::now();
     for i in 0..args.outer {
-        let f_succ = sampler.run(&mut coords, args.inner as i32);
-        to_pdb(&coords, i as i16, "ar.pdb");
-        println!("{} {} {}  {:.2?}", i, sampler.energy(&coords) / coords.size() as f64, f_succ, start.elapsed());
+        let f_succ = sampler.run(&mut system, args.inner as i32);
+        to_pdb(&system.coordinates(), i as i16, "ar.pdb");
+        println!("{} {} {}  {:.2?}", i, sampler.energy(&system) / system.size() as f64, f_succ, start.elapsed());
     }
 }

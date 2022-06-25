@@ -38,6 +38,8 @@ impl System {
 
     pub fn copy(&mut self, i:usize, rhs: &System) {
         self.coordinates.copy(i,&rhs.coordinates());
+        let stls_v = CoordinatesView { points: &self.coordinates, };
+        self.neighbor_list.update_for_view(stls_v, i);
     }
 
     /// Provides the interaction cutoff radius used by the neighbor list

@@ -94,7 +94,7 @@ impl NbList {
         // --- Is the atom relevant for this list?
         if self.nb_rules.if_atom_excluded(system, which_atom) { return;}
         // --- extend the list if needed
-        self.extend(&system);
+        // self.extend(&system);
         // --- check if it moved far enough; if not - skip it
         if system.closest_distance_square_to_vec(which_atom,&self.recent_pos[which_atom]) < self.max_moved_sq {return;}
         // --- copy coordinates of the atom we are updating
@@ -139,6 +139,11 @@ impl NbList {
                 insert_nb_pair!(j, i, system, self);
             }
         }
+    }
+
+    /// Updates the list of neighbors after a given atom was moved.
+    pub fn update_for_view(&mut self, system_view: CoordinatesView<'_>, pos: usize) {
+        self.update(system_view.points, pos);
     }
 
     /// Creates list of neighbors for each atom; the previous contents is wiped out

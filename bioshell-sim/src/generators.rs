@@ -17,7 +17,7 @@ pub fn random_chain(bond_length:f64, repulsion_distance: f64, start: &Vec3, syst
     system.set_z(1, system.z(0) + (z * bond_length) as f32);
 
     for i in 2..system.size() {
-        let mut go_on:bool = true;
+        let mut go_on: bool = true;
         while go_on {
             let (x, y, z) = random_unit_versor();
             system.set_x(i, system.x(i-1) + (x * bond_length) as f32);
