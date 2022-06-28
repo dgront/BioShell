@@ -86,6 +86,8 @@ impl Energy for PairwiseNonbondedEvaluator {
 
         return en_new - en_old;
     }
+
+    fn name(&self) -> String { String::from("PairwiseNonbonded") }
 }
 
 impl PairwiseNonbonded for ZeroEnergy {

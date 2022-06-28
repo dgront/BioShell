@@ -61,4 +61,6 @@ impl Energy for SimpleHarmonic {
 
         return en * self.k as f64;
     }
+
+    fn name(&self) -> String { String::from("SimpleHarmonic") }
 }

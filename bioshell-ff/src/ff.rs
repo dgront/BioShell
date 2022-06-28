@@ -6,6 +6,9 @@ pub trait Energy {
     fn energy(&self, system: &System) -> f64;
     fn energy_by_pos(&self, system: &System, pos: usize) -> f64;
     fn delta_energy_by_range(&self, old: &System, pos: &Range<usize>, new: &System) -> f64;
+    /// Returns the name of this energy function
+    /// The returned name may be used to identify this energy, e.g. to name a column in a score table
+    fn name(&self) -> String;
 }
 
 pub struct ZeroEnergy{}
@@ -17,6 +20,8 @@ impl Energy for ZeroEnergy {
     fn energy_by_pos(&self, system: &System, pos: usize) -> f64 { 0.0 }
     #[allow(unused)]
     fn delta_energy_by_range(&self, old: &System, moved: &Range<usize>, new: &System) -> f64 { 0.0 }
+    #[allow(unused)]
+    fn name(&self) -> String { String::from("ZeroEnergy") }
 }
 
 /// Stores energy components and their weights
@@ -65,4 +70,6 @@ impl Energy for TotalEnergy {
         }
         return total;
     }
+
+    fn name(&self) -> String { String::from("TotalEnergy") }
 }

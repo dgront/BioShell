@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use bioshell_ff::{Coordinates, System};
+use bioshell_ff::{Coordinates};
 use bioshell_numerical::Vec3;
 
 pub fn random_chain(bond_length:f64, repulsion_distance: f64, start: &Vec3, system: &mut Coordinates) {
