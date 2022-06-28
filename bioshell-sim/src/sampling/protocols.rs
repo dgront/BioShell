@@ -2,6 +2,7 @@ use std::ops::Range;
 use rand::Rng;
 
 use bioshell_ff::{Energy, System, ZeroEnergy};
+use crate::sampling::movers::change_volume;
 
 
 pub trait Sampler {
@@ -9,21 +10,30 @@ pub trait Sampler {
     fn run(&mut self, system: &mut System, n_steps:i32) -> f64;
 }
 
+pub enum Ensemle {
+    NVT,
+    NPT,
+}
+
 pub struct IsothermalMC {
     pub temperature: f64,
+    pub pressure: f64,
+    pub ensemble: Ensemle,
     pub energy: Box<dyn Energy>,
     movers: MoversSet,
 }
 
 impl IsothermalMC {
-    pub fn new(temperature:f64) -> IsothermalMC {
-        IsothermalMC{temperature, movers: Default::default(), energy: Box::new(ZeroEnergy{}) }
+    /// Creates a new isothermal MC sampler
+    /// The pressure value will be used only in the case for Ensemle::NPT simulation
+    pub fn new(temperature:f64, ensemble:Ensemle, pressure: f64) -> IsothermalMC {
+        IsothermalMC{temperature,ensemble, pressure,
+            movers: Default::default(), energy: Box::new(ZeroEnergy{}) }
     }
 
     pub fn add_mover(&mut self, perturb_fn: Box<dyn Fn(&mut System,f32) -> Range<usize>>, move_range: f32) {
         self.movers.add_mover(perturb_fn,move_range);
     }
-
 }
 
 impl Sampler for IsothermalMC {
@@ -40,13 +50,15 @@ impl Sampler for IsothermalMC {
                 // --- call a mover to modify a pose
                 let moved_range = self.movers.make_move(&mut future_system);
                 let delta_en: f64 = self.energy.delta_energy_by_range(system, &moved_range, &future_system);
-
+                // --- hard rule to skip Metropolis criterion when energy grows to fast - it would be rejected anyways
                 #[cfg(debug_assertions)]
-                    {
+                    if delta_en < 1000.0 {
+                        // println!("en old:");
                         let en_old = self.energy.energy(&system);
+                        // println!("en new:");
                         let en_new = self.energy.energy(&future_system);
                         let total_delta = en_new - en_old;
-                        if f64::abs(total_delta-delta_en) > 0.001 {
+                        if f64::abs(total_delta-delta_en) > 0.01 {
                             let str = format!("Inconsistent energy! Total {en_old} -> {en_new} with delta = {total_delta}, local delta: {delta_en} after move {:?}",moved_range);
                             panic!("{}", str);
                         }
@@ -66,8 +78,27 @@ impl Sampler for IsothermalMC {
                     }
                     self.movers.cancelled();
                 }
+            } // --- a single MC step done
+            match self.ensemble {
+                Ensemle::NPT => {
+                    const P_CONST : f64 = 1000.0 * 10e-30 / 1.380649e-23;    // converts [Pa/m^3] to [kPa/A^3], divided by Boltzmann constant
+                    let moved_range = change_volume(&mut future_system, 0.1);
+                    let delta_e = self.energy.energy(&future_system) - self.energy.energy(&system);
+                    let pdv = self.pressure*(future_system.volume() - system.volume()) as f64 * P_CONST;
+                    let ln_n = self.temperature * system.size() as f64 * ((future_system.volume() / system.volume())as f64).ln();
+                    let delta = delta_e + pdv - ln_n;
+                    if delta <= 0.0 || rng.gen_range(0.0..1.0) <= (-delta / self.temperature).exp() {
+                        println!("changing volume from {} to {}", system.volume(), future_system.volume());
+                        println!("deltas {} {} {}", delta_e, pdv, ln_n);
+                        system.set_box_len(future_system.box_len());
+                    } else {
+                        future_system.set_box_len(system.box_len());
+                    }
+                }
+                Ensemle::NVT => {}
             }
-        }
+        } // --- all inner MC cycles done
+
         self.movers.adapt_movers();
 
         n_succ / (n_steps * system.size() as i32) as f64

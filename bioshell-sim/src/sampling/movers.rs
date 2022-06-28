@@ -3,6 +3,21 @@ use rand::Rng;
 
 use bioshell_ff::{System};
 
+
+/// performs a volume change
+#[allow(non_snake_case)]
+pub fn change_volume(system: &mut System, max_step:f32) -> Range<usize> {
+    let mut rng = rand::thread_rng();
+
+    let v0 = system.volume();
+    let lnV0 = v0.ln();
+    let lnV = lnV0 + rng.gen_range(-max_step..max_step);
+    let new_len = lnV.exp().powf(0.333333333);
+    system.set_box_len(new_len);
+
+    0..system.size()
+}
+
 pub fn single_atom_move(future: &mut System, max_step:f32) -> Range<usize> {
     let mut rng = rand::thread_rng();
     let i_moved = rng.gen_range(0..future.size());

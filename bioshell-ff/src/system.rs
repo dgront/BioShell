@@ -19,6 +19,29 @@ impl System {
     /// Provide immutable access to coordinates of this system
     pub fn coordinates(&self) -> &Coordinates { &self.coordinates }
 
+    /// Current volume of the simulation box
+    pub fn volume(&self) -> f32 { self.coordinates.box_len().powf(3.0) }
+
+    /// Returns the simulation box length
+    #[inline(always)]
+    pub fn box_len(&self) -> f32 { self.coordinates.box_len() }
+
+    /// Changes the simulation box length which results in the change of all positions and the volume
+    pub fn set_box_len(&mut self, new_box_len: f32) {
+
+        // ---------- expansion / contraction factor
+        let f = new_box_len/self.coordinates().box_len();
+        // ---------- set the new box length
+        self.coordinates.set_box_len(new_box_len);
+        // ---------- alter atomic positions
+        for i in 0..self.size() {
+            let x = self.coordinates.x(i) * f;
+            let y = self.coordinates.y(i) * f;
+            let z = self.coordinates.z(i) * f;
+            self.coordinates.set(i, x, y, z);
+        }
+    }
+
     /// Provide immutable access to the list of neighbors
     pub fn neighbor_list(&self) -> & NbList { & self.neighbor_list }
 

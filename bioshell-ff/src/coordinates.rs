@@ -11,7 +11,7 @@ use bioshell_numerical::{Vec3};
 pub struct CoordinatesView<'a> {  pub points: &'a  Coordinates, }
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Coordinates {
     box_len: f32,
     box_len_half: f32,

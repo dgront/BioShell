@@ -1,26 +1,32 @@
 use std::time::Instant;
 use std::ops::Range;
 
-use clap::Parser;
+use clap::{Parser};
 
 use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb, System};
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic, NbList, ArgonRules};
 use bioshell_sim::generators::cubic_grid_atoms;
 use bioshell_sim::sampling::movers::{single_atom_move};
-use bioshell_sim::sampling::protocols::{IsothermalMC, Sampler};
+use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
+
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
+/// NVT or NPT simulation of argon fluid
+/// say argon -h to see options
 struct Args {
     /// staring conformation in the PDB format
     #[clap(short, long, default_value = "", short='f')]
     infile: String,
-    /// density of the system
+    /// density of the system - starts NVT simulation
     #[clap(short, long, default_value_t = 0.4)]
     density: f32,
-    /// density of the system
+    /// temperature of the simulation
     #[clap(short, long, default_value_t = 45.0)]
     temperature: f32,
+    /// pressure of an NPT simulation in [kPa]
+    #[clap(short, long)] //, default_value_t = 100.0
+    pressure: Option<f32>,
     /// Number of atoms in a simulation
     #[clap(short, long, default_value_t = 216)]
     natoms: usize,
@@ -70,7 +76,13 @@ pub fn main() {
     println!("{}", total.energy(&system));
 
     // ---------- Create a sampler and add a mover into it
-    let mut sampler = IsothermalMC::new(args.temperature as f64);
+    let mut ensemble = Ensemle::NVT;
+    let mut pressure = 1.0;
+    if let Some(p) = args.pressure {
+        pressure = p;
+        ensemble = Ensemle::NPT;
+    }
+    let mut sampler = IsothermalMC::new(args.temperature as f64, ensemble, pressure as f64);
     sampler.energy = Box::new(total);               // --- The total has been moved to a box within the sampler
     let m: Box<dyn Fn(&mut System,f32) -> Range<usize>> = Box::new(single_atom_move);
     sampler.add_mover(m,3.0);
