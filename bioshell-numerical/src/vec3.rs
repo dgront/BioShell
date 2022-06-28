@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Clone)]
 pub struct Vec3 {
     pub x: f32,
@@ -6,6 +8,12 @@ pub struct Vec3 {
     pub res_type: i8,
     pub atom_type: i8,
     pub chain_id: i16
+}
+
+impl fmt::Debug for Vec3 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{:.3} {:.3} {:.3}]", self.x, self.y, self.z)
+    }
 }
 
 macro_rules! vec_operation {
