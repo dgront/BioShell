@@ -1,0 +1,13 @@
+
+[package]
+name = "bioshell-core"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Provides core functionality for BioShell package: data types, I/O, etc."
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell"]
+
+[lib]
+crate-type =["rlib"]
+

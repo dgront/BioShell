@@ -9,12 +9,14 @@ keywords = ["bioshell"]
 
 [workspace]
 members = [
+    "bioshell-core",
     "bioshell-numerical",
     "bioshell-ff",
     "bioshell-sim",
 ]
 
 [dependencies]
+bioshell-core = { path = "./bioshell-core" }
 bioshell-numerical = { path = "./bioshell-numerical" }
 bioshell-ff = { path = "./bioshell-ff" }
 bioshell-sim = { path = "./bioshell-sim" }
