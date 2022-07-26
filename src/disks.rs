@@ -5,7 +5,7 @@ use rand::Rng;
 use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb, System};
 use bioshell_ff::nonbonded::{NbList, PairwiseNonbondedEvaluator, SimpleContact, ArgonRules};
 use bioshell_sim::generators::square_grid_atoms;
-use bioshell_sim::sampling::protocols::{IsothermalMC, Sampler};
+use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
 
 fn box_width(disc_radius: f32, n_discs: usize, density: f32) -> f32 {
 
@@ -53,7 +53,7 @@ pub fn main() {
     println!("{} {} {}  {:.2?}", 0, total.energy(&system)/n_atoms as f64, 0.0, 0.0);
 
     // ---------- Create a sampler and add a mover into it
-    let mut sampler = IsothermalMC::new(0.6);
+    let mut sampler = IsothermalMC::new(0.6, Ensemle::NVT, 1.0);
     sampler.energy = Box::new(total);               // --- The total has been moved to a box within the sampler
     let m: Box<dyn Fn(&mut System,f32) -> Range<usize>> = Box::new(single_dics_move);
     sampler.add_mover(m,3.0);

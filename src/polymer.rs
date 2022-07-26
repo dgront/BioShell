@@ -8,7 +8,7 @@ use bioshell_ff::bonded::SimpleHarmonic;
 use bioshell_ff::nonbonded::{SimpleContact, PairwiseNonbondedEvaluator, NbList, NbListRules};
 use bioshell_sim::generators::random_chain;
 use bioshell_sim::sampling::movers::{single_atom_move, perturb_chain_fragment};
-use bioshell_sim::sampling::protocols::{IsothermalMC, Sampler};
+use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
 
 #[derive(Clone)]
 pub struct PolymerRules;
@@ -63,7 +63,7 @@ pub fn main() {
     total.add_component(Box::new(contacts), 1.0);
     println!("{}", total.energy(&system));
 
-    let mut sampler = IsothermalMC::new(T);
+    let mut sampler = IsothermalMC::new(T, Ensemle::NVT, 1.0);
     sampler.energy = Box::new(total);    // --- The total has been moved to a box within the sampler
     let m: Box<dyn Fn(&mut System,f32) -> Range<usize>> = Box::new(single_atom_move);
     sampler.add_mover(m,3.0);

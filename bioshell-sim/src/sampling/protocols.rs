@@ -25,7 +25,7 @@ pub struct IsothermalMC {
 
 impl IsothermalMC {
     /// Creates a new isothermal MC sampler
-    /// The pressure value will be used only in the case for Ensemle::NPT simulation
+    /// The pressure value will be used only in the case for Ensemble::NPT simulation
     pub fn new(temperature:f64, ensemble:Ensemle, pressure: f64) -> IsothermalMC {
         IsothermalMC{temperature,ensemble, pressure,
             movers: Default::default(), energy: Box::new(ZeroEnergy{}) }
@@ -79,7 +79,9 @@ impl Sampler for IsothermalMC {
                     self.movers.cancelled();
                 }
             } // --- a single MC step done
+            // ---------- Here we apply special moves for ensembles other than NVT
             match self.ensemble {
+                // ---------- Volume change should be applie in the case of NPT ensemble
                 Ensemle::NPT => {
                     const P_CONST : f64 = 1000.0 * 10e-30 / 1.380649e-23;    // converts [Pa/m^3] to [kPa/A^3], divided by Boltzmann constant
                     let moved_range = change_volume(&mut future_system, 0.1);
@@ -95,6 +97,7 @@ impl Sampler for IsothermalMC {
                         future_system.set_box_len(system.box_len());
                     }
                 }
+                // ---------- NVT ensemble requires nothing extra
                 Ensemle::NVT => {}
             }
         } // --- all inner MC cycles done
