@@ -52,6 +52,11 @@ impl Sequence {
 
     /// Return the sequence itself
     pub fn seq(&self) -> &str { self.seq.as_ref() }
+
+    /// Returns amino acid at a given position in this `Sequence`
+    pub fn char(&self, pos:usize) -> char {
+        self.seq.chars().nth(pos).unwrap()
+    }
 }
 
 impl fmt::Display for Sequence {
@@ -121,7 +126,6 @@ pub fn from_fasta_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufR
 }
 
 pub fn from_fasta_file(filename: &str) -> Vec<Sequence> {
-    let mut out: Vec<Sequence> = Vec::new();
 
     // Open the file in read-only mode (ignoring errors).
     let file = File::open(filename).unwrap();

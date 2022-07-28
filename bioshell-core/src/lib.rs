@@ -1,4 +1,4 @@
 
 pub mod sequence;
-pub use sequence::{Sequence};
+pub use sequence::{Sequence, from_fasta_reader, from_fasta_file};
 
