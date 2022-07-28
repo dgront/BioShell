@@ -13,4 +13,4 @@ crate-type =["rlib"]
 
 [dependencies]
 bioshell-numerical = { path = "../bioshell-numerical" }
-
+bioshell-core = { path = "../bioshell-core" }

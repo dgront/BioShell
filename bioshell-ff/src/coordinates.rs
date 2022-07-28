@@ -1,11 +1,9 @@
 use std::ops::{Index, IndexMut};
 
-use std::io::stdout;
 use std::io::Write;
-use std::path::Path;
-use std::fs::{File};
 
 use bioshell_numerical::{Vec3};
+use bioshell_core::utils::out_writer;
 
 /// Stateless immutable view of coordinates
 pub struct CoordinatesView<'a> {  pub points: &'a  Coordinates, }
@@ -161,13 +159,7 @@ impl IndexMut<usize> for Coordinates {
 
 pub fn to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str) {
 
-    let mut out_writer = match out_fname {
-        "" => Box::new(stdout()) as Box<dyn Write>,
-        _ => {
-            let path = Path::new(out_fname);
-            Box::new(File::options().append(true).create(true).open(&path).unwrap()) as Box<dyn Write>
-        }
-    };
+    let mut out_writer = out_writer(&out_fname);
 
     out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
     for i in 0..chain.size() {
