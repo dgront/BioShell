@@ -132,3 +132,26 @@ pub fn from_fasta_file(filename: &str) -> Vec<Sequence> {
     let mut reader = BufReader::new(file);
     return from_fasta_reader(&mut reader);
 }
+
+/// Defines how A3M data will be processed
+pub enum A3mConversionMode {
+    /// insertions marked with lowercase characters will be removed
+    RemoveSmallCaps,
+    /// insertions marked with lowercase characters will be expanded with gaps in all other sequences in the given set
+    ExpandWithGaps,
+}
+
+/// Process sequences read from A3M file by either expanding or removing insertions
+///
+pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
+    match mode {
+        A3mConversionMode::RemoveSmallCaps => {
+            for i in 0..sequences.len() {
+                let seq = &sequences[i];
+                let seq_str: String = seq.seq.chars().filter(|c| c.is_uppercase()).collect();
+                sequences[i] = Sequence::new(&seq.id, &seq_str);
+            }
+        }
+        A3mConversionMode::ExpandWithGaps => { todo!() }
+    }
+}

@@ -1,6 +1,5 @@
-use bioshell_core::Sequence;
 use std::fmt::Write;
-use bioshell_core::sequence::from_fasta_reader;
+use bioshell_core::sequence::{Sequence, from_fasta_reader, a3m_to_fasta, A3mConversionMode};
 use std::io::BufReader;
 
 #[test]
@@ -38,4 +37,15 @@ RVIAHTKVIGGGESDSVTFDVSKLTPGEAYAYFCSFPGHWAMMKGTLKLSN";
     let mut reader = BufReader::new(fasta.as_bytes());
     let records = from_fasta_reader(&mut reader);
     assert_eq!(2, records.len())
+}
+
+#[test]
+fn convert_a3m() {
+    let mut seqs = vec![Sequence::from_attrs("s1", "ABC"),
+                    Sequence::from_attrs("s2", "AaBC"),
+                    Sequence::from_attrs("s3", "ABbC")];
+    a3m_to_fasta(&mut seqs, &A3mConversionMode::RemoveSmallCaps);
+    for s in seqs {
+        assert_eq!("ABC", s.seq());
+    }
 }
