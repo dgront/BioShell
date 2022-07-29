@@ -5,7 +5,7 @@ use std::io::{BufRead, BufReader, Read};
 #[derive(Default, Clone, Debug)]
 pub struct Sequence {
     id: String,
-    seq: String,
+    seq: Vec<char>,
 }
 
 
@@ -26,7 +26,7 @@ impl Sequence {
     pub fn new(id: &String, seq: &String) -> Self {
         Sequence {
             id: id.to_owned(),
-            seq: seq.to_owned()
+            seq: seq.chars().collect()
         }
     }
     /// Create a new instance of a Sequence from `&str` content.
@@ -44,19 +44,23 @@ impl Sequence {
     pub fn from_attrs(id: &str, seq: &str) -> Self {
         Sequence {
             id: String::from(id),
-            seq: String::from(seq)
+            seq: seq.chars().collect()
         }
     }
-    /// Return the id of this Sequence.
+    /// Return the reference of the id of this Sequence.
     pub fn id(&self) -> &str { self.id.as_ref() }
 
-    /// Return the sequence itself
-    pub fn seq(&self) -> &str { self.seq.as_ref() }
+    /// Return the reference of the sequence itself
+    pub fn seq(&self) -> &Vec<char> { &self.seq }
 
-    /// Returns amino acid at a given position in this `Sequence`
-    pub fn char(&self, pos:usize) -> char {
-        self.seq.chars().nth(pos).unwrap()
-    }
+    /// Return the length of this sequence
+    pub fn len(&self) -> usize { self.seq.len() }
+
+    /// Returns amino acid character at a given position in this `Sequence`
+    pub fn char(&self, pos:usize) -> char { self.seq[pos] }
+
+    /// Creates a string representing this sequence
+    pub fn to_string(&self) -> String { self.seq.iter().collect::<String>() }
 }
 
 impl fmt::Display for Sequence {
@@ -82,7 +86,7 @@ impl fmt::Display for Sequence {
     /// assert_eq!(actual, expected)
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "> {}\n{}\n", self.id(), self.seq())
+        write!(f, "> {}\n{}\n", self.id(), self.to_string())
     }
 }
 
@@ -128,7 +132,14 @@ pub fn from_fasta_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufR
 pub fn from_fasta_file(filename: &str) -> Vec<Sequence> {
 
     // Open the file in read-only mode (ignoring errors).
-    let file = File::open(filename).unwrap();
+
+    let file = match File::open(filename) {
+        Ok(file) => file,
+        Err(err) => {
+            eprintln!("\nCan't open an input FASTA file: {}\n", filename);
+            std::process::exit(1);
+        }
+    };
     let mut reader = BufReader::new(file);
     return from_fasta_reader(&mut reader);
 }
@@ -148,7 +159,8 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
         A3mConversionMode::RemoveSmallCaps => {
             for i in 0..sequences.len() {
                 let seq = &sequences[i];
-                let seq_str: String = seq.seq.chars().filter(|c| c.is_uppercase()).collect();
+                let seq_str: String = seq.seq.iter().
+                    filter(|c| c.is_uppercase() || (*c).eq(&'-') || (*c).eq(&'_')).collect();
                 sequences[i] = Sequence::new(&seq.id, &seq_str);
             }
         }
