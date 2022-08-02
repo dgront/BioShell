@@ -4,6 +4,33 @@ use std::io::Write;
 use std::path::Path;
 use std::fs::{File};
 
+
+/// Check whether a `Writer` object created based on a given string would actually write to screen.
+///
+/// Returns true if the name is  `"stdout"` `"stderr"` or empty.
+///
+/// # Arguments
+///
+/// * `out_fname` - file name, `"stdout"` or `"stderr"`
+///
+/// # Examples
+///
+/// ```
+/// use utils::out_writer;
+/// assert_true!(writes_to_screen(""));
+/// assert_true!(writes_to_screen("stderr"));
+/// assert_true!(writes_to_screen("stdout"));
+/// assert_true!(!writes_to_screen("file.txt"));
+/// ```
+pub fn writes_to_screen(out_fname: &str) -> bool {
+    match out_fname {
+        "" =>true,
+        "stdout" => true,
+        "stderr" => true,
+        _ => false
+    }
+}
+
 /// Creates a `Writer` object.
 ///
 /// Attempts to open a file under a given name. However, if the name is  `"stdout"` or `"stderr"`,

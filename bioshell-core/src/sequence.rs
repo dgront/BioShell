@@ -135,7 +135,7 @@ pub fn from_fasta_file(filename: &str) -> Vec<Sequence> {
 
     let file = match File::open(filename) {
         Ok(file) => file,
-        Err(err) => {
+        Err(_) => {
             eprintln!("\nCan't open an input FASTA file: {}\n", filename);
             std::process::exit(1);
         }
