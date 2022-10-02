@@ -15,8 +15,14 @@ impl OnlineMultivariateStatistics {
             cov: vec![vec![0.0; dim]; dim]}
     }
 
+    /// Returns the dimension od the observed vectors
+    pub fn dim(&self) -> usize { self.dim }
+
     /// Accumulate a single N-dimensional point
     pub fn accumulate(&mut self, d:&Vec<f64>) {
+
+        assert_eq!(d.len(), self.dim);                  // --- incoming vector must be of the same size at the statistics
+
         self.count += 1;
         for i in 0..self.dim {
             let delta_x: f64 = d[i] - self.M1[i];

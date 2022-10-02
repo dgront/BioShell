@@ -1,4 +1,7 @@
+use std::fmt;
+use std::fmt::Display;
 use nalgebra::{DMatrix, DVector};
+use rand::seq::index::sample;
 use rand_distr::{Normal};
 use rand_distr::Distribution as OtherDistribution;
 
@@ -14,6 +17,7 @@ pub trait Distribution {
 
 
 // ========== Normal probability distribution structure and implementation ==========
+/// Normal probability distribution
 pub struct NormalDistribution {
     mean: f64,
     sigma: f64,
@@ -22,11 +26,26 @@ pub struct NormalDistribution {
 }
 
 impl NormalDistribution {
+    /// Creates a new normal probability distribution N(mu, sigma)
     pub fn new(mu: f64, sigma: f64) -> NormalDistribution {
         NormalDistribution { mean: mu, sigma,
             const_1: (1.0 / (sigma * (std::f64::consts::PI * 2.0).sqrt())),
             normal_generator: rand_distr::Normal::new(mu, sigma).unwrap()
         }
+    }
+
+    /// Returns the mean (expected) value of this distribution
+    pub fn mean(&self) -> f64 { self.mean }
+
+    /// Returns the standard deviation of this distribution
+    pub fn sdev(&self) -> f64 { self.sigma }
+
+    /// Sets parameters of this normal probability distribution to mu and sigma
+    pub fn set_parameters(&mut self, mu: f64, sigma: f64) {
+        self.mean = mu;
+        self.sigma = sigma;
+        self.const_1 = 1.0 / (sigma * (std::f64::consts::PI * 2.0).sqrt());
+        self.normal_generator = rand_distr::Normal::new(mu, sigma).unwrap();
     }
 }
 
@@ -51,11 +70,13 @@ pub struct MultiNormalDistribution {
     u: DMatrix<f64>,
     cku: DMatrix<f64>,                                  // Cholesky decomposition to random sampling from the distribution
     tmp: DVector<f64>,                                  // for rnd sampling
-    normal_generator: rand_distr::Normal<f64>            // for rnd sampling
+    normal_generator: rand_distr::Normal<f64>           // for rnd sampling
 }
 
 impl MultiNormalDistribution {
 
+    /// Creates a new multivariate normal distribution
+    /// Parameters are set to a vector of zeros and a unity matrix (expected and covariance, respectively)
     pub fn new(dim: usize) -> MultiNormalDistribution {
 
         let mu = DVector::<f64>::zeros(dim);
@@ -70,6 +91,13 @@ impl MultiNormalDistribution {
         return out;
     }
 
+    /// Returns the immutable reference to the mean (expected) vector of this distribution
+    pub fn mean(&self) -> &DVector<f64> { &self.mean }
+
+    /// Returns the immutable reference to the standard deviation matrix of this distribution
+    pub fn sdev(&self) -> &DMatrix<f64> { &self.sigma }
+
+    /// Sets parameters of this multinomial normal distribution
     pub fn set_parameters(&mut self, mu:&DVector::<f64>, sigma: &DMatrix::<f64>) {
         self.mean = mu.clone();
         self.sigma = sigma.clone();
@@ -91,6 +119,8 @@ impl MultiNormalDistribution {
         return val;
     }
 
+
+    /// Sets up internal data ready for PDF evaluation
     /// see https://gregorygundersen.com/blog/2019/10/30/scipy-multivariate/
     fn setup(&mut self) {
         let sig_copy = self.sigma.clone();
@@ -111,6 +141,21 @@ impl MultiNormalDistribution {
         }
 
         self.cku = self.sigma.clone().cholesky().unwrap().l();
+    }
+
+    /// Sets mean and sigma parameters from observations gathered
+    ///in a given  OnlineMultivariateStatistics object
+    fn set_from_statistics(&mut self, stats: &OnlineMultivariateStatistics) {
+
+        assert_eq!(stats.dim(), self.dim);
+
+        for i in 0..self.dim {
+            self.mean[i] = stats.avg(i);
+            for j in 0..self.dim {
+                self.sigma[(i, j)] = stats.covar(i, j);
+            }
+        }
+        self.setup();
     }
 }
 
@@ -134,8 +179,29 @@ impl Distribution for MultiNormalDistribution {
 // ========== Estimable trait and its implementation for distributions ==========
 pub trait Estimable {
     fn estimate(&mut self, sample: &Vec<Vec<f64>>);
+    fn estimate_from_selected(&mut self, sample: &Vec<Vec<f64>>, selection: &Vec<bool>);
 }
 
+impl Estimable for NormalDistribution {
+
+    fn estimate(&mut self, sample: &Vec<Vec<f64>>) {
+        assert_eq!(sample[0].len(), 1);
+
+        let mut stats = OnlineMultivariateStatistics::new(1);
+        sample.iter().for_each(|x| stats.accumulate(x));
+        self.set_parameters(stats.avg(0), stats.var(0).sqrt());
+    }
+
+    fn estimate_from_selected(&mut self, sample: &Vec<Vec<f64>>, selection: &Vec<bool>) {
+        assert_eq!(sample[0].len(), 1);
+
+        let mut stats = OnlineMultivariateStatistics::new(1);
+        for i in 0..sample.len() {
+            if selection[i] { stats.accumulate(&sample[i]);  }
+        }
+        self.set_parameters(stats.avg(0), stats.var(0).sqrt());
+    }
+}
 
 impl Estimable for MultiNormalDistribution {
 
@@ -145,14 +211,90 @@ impl Estimable for MultiNormalDistribution {
         let mut stats = OnlineMultivariateStatistics::new(self.dim);
         sample.iter().for_each(|x| stats.accumulate(x));
 
-        for i in 0..self.dim{
-            self.mean[i] = stats.avg(i);
-            for j in 0..self.dim {
-                self.sigma[(i,j)] = stats.covar(i,j);
-            }
+        self.set_from_statistics(&stats);
+    }
+
+    fn estimate_from_selected(&mut self, sample: &Vec<Vec<f64>>, selection: &Vec<bool>) {
+        assert_eq!(sample[0].len(), self.dim);
+
+        let mut stats = OnlineMultivariateStatistics::new(self.dim);
+        for i in 0..sample.len() {
+            if selection[i] { stats.accumulate(&sample[i]);  }
         }
-        self.setup();
+
+        self.set_from_statistics(&stats);
+    }
+}
+
+// ========== Printing distributions nicely ==========
+
+impl fmt::Display for NormalDistribution {
+    /// Nicely prints a NormalDistribution object
+    /// # Examples
+    ///
+    /// Create a `NormalDistribution` and turn it into a string
+    ///
+    /// ```rust
+    /// use bioshell_core::Sequence;
+    /// use std::fmt::Write;
+    ///
+    /// let nd = NormalDistribution::new(2.0, 0.5);
+    /// let mut actual = String::new();
+    /// // populate `actual` with a string representation of the distribution
+    /// write!(actual, "{}", seq).unwrap();
+    ///
+    /// let expected = "N(mu=    5, sdev=  0.5)";
+    /// assert_eq!(actual, expected)
+    /// ```
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "N(mu={:5.4}, sdev={:7.4})", self.mean(), self.sdev())
     }
 }
 
 // ========== Expectation - Maximization ==========
+pub fn expectation_maximization<D: Estimable+Distribution+Display>(distributions:&mut Vec<D>,
+        data: &Vec<Vec<f64>>, assignment: &mut Vec<Vec<bool>>, epsilon: f64) -> f64 {
+
+    // --- check whether the input vectors have the right size
+    assert_eq!(data.len(), assignment[0].len());
+    assert_eq!(distributions.len(), assignment.len());
+
+    let n_data: usize = data.len();
+    let n_dist: usize = distributions.len();
+    let mut progress: f64 = 1.0;
+    let mut last_log_liklhd = 0.0;
+
+    while progress > epsilon {
+        // ---  The "expectation" step: assignment of points to the best distributions
+        for i in 0..n_dist {
+            distributions[i].estimate_from_selected(&data, &assignment[i]);
+            assignment[i].fill(false);
+        }
+        // ---  The "maximization" step: assignment of points to the best distributions
+        let mut log_liklhd: f64 = 0.0;
+        for i in 0..n_data {
+            let (best_idx, best_val) = which_distribution(&distributions, &data[i]);
+            assignment[best_idx][i] = true;
+            log_liklhd += best_val.ln();
+        }
+        progress = ((log_liklhd - last_log_liklhd)/log_liklhd).abs();
+        last_log_liklhd = log_liklhd;
+        // println!("{} {}",last_log_liklhd, progress);
+    }
+
+    return last_log_liklhd;
+}
+
+fn which_distribution<D: Estimable+Distribution>(distributions: &Vec<D>, p: &Vec<f64>)  -> (usize, f64) {
+
+    let mut best_idx: usize = 0;
+    let mut best_val: f64 = distributions[0].pdf(p);
+    for i in 1..distributions.len() {
+        let v = distributions[i].pdf(p);
+        if v > best_val {
+            best_idx = i;
+            best_val = v
+        }
+    }
+    return (best_idx, best_val);
+}
