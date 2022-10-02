@@ -52,6 +52,9 @@ impl Histogram {
 
     /// Total number of counts in this histogram
     pub fn sum(&self) -> f64 { self.data.values().sum() }
+
+    /// Returns the bin width
+    pub fn bin_width(&self) -> f64 { self.bin_width }
 }
 
 

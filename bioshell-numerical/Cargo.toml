@@ -11,3 +11,7 @@ keywords = ["bioshell"]
 [lib]
 crate-type =["rlib"]
 
+[dependencies]
+rand="0.8.5"
+rand_distr="0.4.3"
+nalgebra = "0.31.1"
