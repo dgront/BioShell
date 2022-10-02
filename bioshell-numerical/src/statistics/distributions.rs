@@ -8,6 +8,8 @@ use crate::statistics::OnlineMultivariateStatistics;
 
 pub trait Distribution {
     fn pdf(&self, x: &Vec<f64>) -> f64;
+
+    fn rand(&mut self, out: &mut Vec<f64>);
 }
 
 
@@ -15,12 +17,16 @@ pub trait Distribution {
 pub struct NormalDistribution {
     mean: f64,
     sigma: f64,
-    const_1: f64
+    const_1: f64,
+    normal_generator: rand_distr::Normal<f64>            // for rnd sampling
 }
 
 impl NormalDistribution {
     pub fn new(mu: f64, sigma: f64) -> NormalDistribution {
-        NormalDistribution { mean: mu, sigma, const_1: (1.0 / (sigma * (std::f64::consts::PI * 2.0).sqrt())) }
+        NormalDistribution { mean: mu, sigma,
+            const_1: (1.0 / (sigma * (std::f64::consts::PI * 2.0).sqrt())),
+            normal_generator: rand_distr::Normal::new(mu, sigma).unwrap()
+        }
     }
 }
 
@@ -28,6 +34,10 @@ impl Distribution for NormalDistribution {
     fn pdf(&self, x: &Vec<f64>) -> f64 {
         let ix = x[0] - self.mean;
         return self.const_1 * (-(ix * ix) / (2.0 * self.sigma * self.sigma)).exp();
+    }
+
+    fn rand(&mut self, out: &mut Vec<f64>) {
+        out[0] = self.normal_generator.sample(&mut rand::thread_rng());
     }
 }
 
@@ -41,10 +51,11 @@ pub struct MultiNormalDistribution {
     u: DMatrix<f64>,
     cku: DMatrix<f64>,                                  // Cholesky decomposition to random sampling from the distribution
     tmp: DVector<f64>,                                  // for rnd sampling
-    normal_generator:rand_distr::Normal<f64>            // for rnd sampling
+    normal_generator: rand_distr::Normal<f64>            // for rnd sampling
 }
 
 impl MultiNormalDistribution {
+
     pub fn new(dim: usize) -> MultiNormalDistribution {
 
         let mu = DVector::<f64>::zeros(dim);
@@ -57,16 +68,6 @@ impl MultiNormalDistribution {
         out.setup();
 
         return out;
-    }
-
-    pub fn rand(&mut self, out: &mut Vec<f64>) {
-        for i in 0..self.dim {
-            self.tmp[i] = self.normal_generator.sample(&mut rand::thread_rng());
-        }
-        let o = &self.cku * &self.tmp + &self.mean;
-        for i in 0..self.dim {
-            out[i] = o[i];
-        }
     }
 
     pub fn set_parameters(&mut self, mu:&DVector::<f64>, sigma: &DMatrix::<f64>) {
@@ -117,6 +118,16 @@ impl Distribution for MultiNormalDistribution {
 
     fn pdf(&self, x: &Vec<f64>) -> f64 {
         self.logpdf(x).exp()
+    }
+
+    fn rand(&mut self, out: &mut Vec<f64>) {
+        for i in 0..self.dim {
+            self.tmp[i] = self.normal_generator.sample(&mut rand::thread_rng());
+        }
+        let o = &self.cku * &self.tmp + &self.mean;
+        for i in 0..self.dim {
+            out[i] = o[i];
+        }
     }
 }
 
