@@ -55,6 +55,17 @@ fn sample_MultiNormalDistribution() {
     assert!((stats.var(1).sqrt() - 1.0).abs() < 0.01);
 }
 
+/// Print a MultiNormalDistribution object using fmt::Display
+#[allow(non_snake_case)]
+// #[test]
+fn format_MultiNormalDistribution() {
+    let mut n: MultiNormalDistribution = MultiNormalDistribution::new(2);
+    n.set_parameters(&DVector::from_vec(vec![1.0, 2.0]),
+                     &DMatrix::from_vec(2,2, vec![1.0, 0.5, 0.5, 1.0]));
+
+    println!("{}",n);
+}
+
 #[allow(non_snake_case)]
 #[test]
 fn test_NormalDistribution() {

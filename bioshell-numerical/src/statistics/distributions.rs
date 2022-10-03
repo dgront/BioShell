@@ -18,6 +18,7 @@ pub trait Distribution {
 
 // ========== Normal probability distribution structure and implementation ==========
 /// Normal probability distribution
+#[derive(Clone)]
 pub struct NormalDistribution {
     mean: f64,
     sigma: f64,
@@ -62,6 +63,7 @@ impl Distribution for NormalDistribution {
 
 // ========== Multivariate Normal probability distribution structure and implementation ==========
 
+#[derive(Clone)]
 pub struct MultiNormalDistribution {
     dim: usize,
     logdet: f64,
@@ -241,13 +243,23 @@ impl fmt::Display for NormalDistribution {
     /// let nd = NormalDistribution::new(2.0, 0.5);
     /// let mut actual = String::new();
     /// // populate `actual` with a string representation of the distribution
-    /// write!(actual, "{}", seq).unwrap();
+    /// write!(actual, "{}", nd).unwrap();
     ///
     /// let expected = "N(mu=    5, sdev=  0.5)";
     /// assert_eq!(actual, expected)
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "N(mu={:5.4}, sdev={:7.4})", self.mean(), self.sdev())
+        write!(f, "N(mu={:7.4}, sdev={:7.4})", self.mean(), self.sdev())
+    }
+}
+
+impl fmt::Display for MultiNormalDistribution {
+    /// Nicely prints a MultiNormalDistribution object
+    /// # Examples
+    ///
+    /// Create a `MultiNormalDistribution` and turn it into a string
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "N(mu={:7.4}, sdev={:7.4})", self.mean(), self.sdev())
     }
 }
 
