@@ -1,8 +1,11 @@
-use bioshell_numerical::statistics::{Distribution, Estimable, Histogram, MultiNormalDistribution,
-            NormalDistribution, OnlineMultivariateStatistics, expectation_maximization};
 use rand_distr::{Normal, Distribution as RndDistribution};
 use nalgebra::{DMatrix, DVector};
 use rand::Rng;
+use std::string::String;
+use std::fmt::Write;
+
+use bioshell_numerical::statistics::{Distribution, Estimable, Histogram, MultiNormalDistribution,
+                         NormalDistribution, OnlineMultivariateStatistics, expectation_maximization};
 
 /// Create a histogram and fill it with deterministic observations
 #[test]
@@ -57,13 +60,16 @@ fn sample_MultiNormalDistribution() {
 
 /// Print a MultiNormalDistribution object using fmt::Display
 #[allow(non_snake_case)]
-// #[test]
+#[test]
 fn format_MultiNormalDistribution() {
     let mut n: MultiNormalDistribution = MultiNormalDistribution::new(2);
     n.set_parameters(&DVector::from_vec(vec![1.0, 2.0]),
                      &DMatrix::from_vec(2,2, vec![1.0, 0.5, 0.5, 1.0]));
 
-    println!("{}",n);
+    let expected = "mu =  [ 1.0000,  2.0000], sigma = [ [ 1.0000,  0.5000], [ 0.5000,  1.0000]]";
+    let mut actual = String::new();
+    write!(actual, "{}", n).unwrap();
+    assert_eq!(actual, expected);
 }
 
 #[allow(non_snake_case)]

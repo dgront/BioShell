@@ -1,8 +1,6 @@
 use std::fmt;
 use std::fmt::Display;
 use nalgebra::{DMatrix, DVector};
-use rand::seq::index::sample;
-use rand_distr::{Normal};
 use rand_distr::Distribution as OtherDistribution;
 
 use crate::statistics::OnlineMultivariateStatistics;
@@ -13,6 +11,8 @@ pub trait Distribution {
     fn pdf(&self, x: &Vec<f64>) -> f64;
 
     fn rand(&mut self, out: &mut Vec<f64>);
+
+    fn dim(&self) -> usize;
 }
 
 
@@ -59,6 +59,8 @@ impl Distribution for NormalDistribution {
     fn rand(&mut self, out: &mut Vec<f64>) {
         out[0] = self.normal_generator.sample(&mut rand::thread_rng());
     }
+
+    fn dim(&self) -> usize { return 1;  }
 }
 
 // ========== Multivariate Normal probability distribution structure and implementation ==========
@@ -97,7 +99,7 @@ impl MultiNormalDistribution {
     pub fn mean(&self) -> &DVector<f64> { &self.mean }
 
     /// Returns the immutable reference to the standard deviation matrix of this distribution
-    pub fn sdev(&self) -> &DMatrix<f64> { &self.sigma }
+    pub fn sigma(&self) -> &DMatrix<f64> { &self.sigma }
 
     /// Sets parameters of this multinomial normal distribution
     pub fn set_parameters(&mut self, mu:&DVector::<f64>, sigma: &DMatrix::<f64>) {
@@ -156,6 +158,7 @@ impl MultiNormalDistribution {
             for j in 0..self.dim {
                 self.sigma[(i, j)] = stats.covar(i, j);
             }
+            self.sigma[(i, i)] = stats.var(i);
         }
         self.setup();
     }
@@ -176,6 +179,8 @@ impl Distribution for MultiNormalDistribution {
             out[i] = o[i];
         }
     }
+
+    fn dim(&self) -> usize { return self.dim;  }
 }
 
 // ========== Estimable trait and its implementation for distributions ==========
@@ -253,13 +258,41 @@ impl fmt::Display for NormalDistribution {
     }
 }
 
+// fn print_vector<D: Index<usize>>(v: &D) -> String {
+//
+//     let mut out: String = format!("mu = [{:7.4}", v[0]);
+//
+//     for i in 1..v.len() { out = format!("{}, {:7.4}", out, v[i]);}
+//     out.push_str("]");
+//     return out;
+// }
+
+macro_rules!  print_vector {
+    ($vec:expr, $out_str:expr) => {
+        $out_str = format!("{} [{:7.4}", $out_str, $vec[0]);
+        for i in 1..$vec.len() { $out_str = format!("{}, {:7.4}", $out_str, $vec[i]);}
+        $out_str.push_str("]");
+    }
+}
+
 impl fmt::Display for MultiNormalDistribution {
     /// Nicely prints a MultiNormalDistribution object
     /// # Examples
     ///
     /// Create a `MultiNormalDistribution` and turn it into a string
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "N(mu={:7.4}, sdev={:7.4})", self.mean(), self.sdev())
+        let mut out: String = String::from("mu = ");
+        print_vector!(&self.mean(), out);
+        // print_vector!(&self.sigma()[i], out);
+        out.push_str(", sigma = [");
+        print_vector!(&self.sigma().row(0), out);
+        for i in 1..self.dim() {
+            out.push_str(",");
+            print_vector!(&self.sigma().row(i), out);
+        }
+        out.push_str("]");
+
+        write!(f, "{}", out)
     }
 }
 
