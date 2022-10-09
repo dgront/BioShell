@@ -3,7 +3,8 @@ use std::ops::Range;
 use crate::ff::Energy;
 use crate::{System, ZeroEnergy};
 
-/// A pairwise nonbonded interaction cat evaluate its energy just from a squared distance value
+/// A pairwise nonbonded interaction can evaluate its energy just from a squared distance value
+/// between two atoms
 pub trait PairwiseNonbonded {
 
     fn energy_for_distance_squared(&self, d2: f32) -> f64;
@@ -34,9 +35,11 @@ macro_rules! pairwise_contact_neighbors_loop {
 }
 
 
-/// Evaluates pairwise nonbonded interactions
+/// Evaluates pairwise nonbonded interactions between all atoms.
 ///
-///
+/// The evaluator uses the provided [PairwiseNonbonded] instance to evaluate energy between all atoms
+/// in a given system.
+#[allow(unused)]
 pub struct PairwiseNonbondedEvaluator {
 
     pub cutoff: f32,

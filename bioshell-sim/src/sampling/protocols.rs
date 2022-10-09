@@ -81,10 +81,10 @@ impl Sampler for IsothermalMC {
             } // --- a single MC step done
             // ---------- Here we apply special moves for ensembles other than NVT
             match self.ensemble {
-                // ---------- Volume change should be applie in the case of NPT ensemble
+                // ---------- Volume change should be applied in the case of NPT ensemble
                 Ensemle::NPT => {
                     const P_CONST : f64 = 1000.0 * 10e-30 / 1.380649e-23;    // converts [Pa/m^3] to [kPa/A^3], divided by Boltzmann constant
-                    let moved_range = change_volume(&mut future_system, 0.1);
+                    change_volume(&mut future_system, 0.1);
                     let delta_e = self.energy.energy(&future_system) - self.energy.energy(&system);
                     let pdv = self.pressure*(future_system.volume() - system.volume()) as f64 * P_CONST;
                     let ln_n = self.temperature * system.size() as f64 * ((future_system.volume() / system.volume())as f64).ln();

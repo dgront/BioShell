@@ -7,11 +7,15 @@ use crate::statistics::OnlineMultivariateStatistics;
 
 // ========== Distribution trait ==========
 
+/// Defines what any probability distribution must offer
 pub trait Distribution {
+    /// Evaluates the probability distribution function at a given point
     fn pdf(&self, x: &Vec<f64>) -> f64;
 
+    /// Withdraws a random observation from this probability distribution
     fn rand(&mut self, out: &mut Vec<f64>);
 
+    /// Says how many dimensions this distribution has
     fn dim(&self) -> usize;
 }
 
@@ -257,15 +261,6 @@ impl fmt::Display for NormalDistribution {
         write!(f, "N(mu={:7.4}, sdev={:7.4})", self.mean(), self.sdev())
     }
 }
-
-// fn print_vector<D: Index<usize>>(v: &D) -> String {
-//
-//     let mut out: String = format!("mu = [{:7.4}", v[0]);
-//
-//     for i in 1..v.len() { out = format!("{}, {:7.4}", out, v[i]);}
-//     out.push_str("]");
-//     return out;
-// }
 
 macro_rules!  print_vector {
     ($vec:expr, $out_str:expr) => {

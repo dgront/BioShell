@@ -58,7 +58,6 @@ impl System {
         self.neighbor_list.update(&self.coordinates, i);
     }
 
-
     pub fn copy(&mut self, i:usize, rhs: &System) {
         self.coordinates.copy(i,&rhs.coordinates());
         let stls_v = CoordinatesView { points: &self.coordinates, };
