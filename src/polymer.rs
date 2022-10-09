@@ -1,4 +1,3 @@
-use std::env;
 use std::time::Instant;
 use std::ops::Range;
 
@@ -7,7 +6,7 @@ use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb, System};
 use bioshell_ff::bonded::SimpleHarmonic;
 use bioshell_ff::nonbonded::{SimpleContact, PairwiseNonbondedEvaluator, NbList, NbListRules};
 use bioshell_sim::generators::random_chain;
-use bioshell_sim::sampling::movers::{single_atom_move, perturb_chain_fragment};
+use bioshell_sim::sampling::movers::{single_atom_move};
 use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
 
 #[derive(Clone)]
@@ -37,8 +36,6 @@ pub fn main() {
     const N_LARGE_CYCLES: i16 = 10000;
     const T: f64 = 1.8;
     const L: f32 = 900.0;
-
-    let args: Vec<String> = env::args().collect();
 
     // ---------- Create system's coordinates
     let mut coords = Coordinates::new(N_BEADS);

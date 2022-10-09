@@ -71,13 +71,3 @@ fn random_unit_versor() -> (f64, f64, f64) {
     let l =  { (x * x + y * y + z * z).sqrt() };
     return ((x/l) as f64, (y/l) as f64, (z/l) as f64);
 }
-
-fn random_unit_versor32() -> (f32, f32, f32) {
-
-    let mut rng = rand::thread_rng();
-    let x : f64 = rng.gen_range(-1.0..1.0);
-    let y : f64 = rng.gen_range(-1.0..1.0);
-    let z : f64 = rng.gen_range(-1.0..1.0);
-    let l =  { (x * x + y * y + z * z).sqrt() };
-    return ((x/l) as f32, (y/l) as f32, (z/l) as f32);
-}

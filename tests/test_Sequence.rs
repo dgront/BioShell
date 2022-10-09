@@ -10,20 +10,21 @@ fn create_sequence() {
         let sequence: String = String::from("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
         let seq = Sequence::new(&read_id, &sequence);
 
-        assert_eq!("> 2gb1\nMTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE\n", seq.to_string())
+        assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string())
     }
     {
         let read_id = "2gb1";
         let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
         let seq = Sequence::from_attrs(read_id, sequence);
 
-        let expected = "> 2gb1\nMTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE\n";
+        let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
         assert_eq!(expected, seq.to_string());
 
         // ---------- Test the Display trait
+        let expected_out = "> 2gb1\nMTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE\n";
         let mut actual = String::new();
         write!(actual, "{}", seq).unwrap();
-        assert_eq!(actual, expected)
+        assert_eq!(actual, expected_out)
     }
 }
 
@@ -45,7 +46,10 @@ fn convert_a3m() {
                     Sequence::from_attrs("s2", "AaBC"),
                     Sequence::from_attrs("s3", "ABbC")];
     a3m_to_fasta(&mut seqs, &A3mConversionMode::RemoveSmallCaps);
+    let expected = "ABC";
     for s in seqs {
-        assert_eq!("ABC", s.seq());
+        for i in 0..s.len() {
+            assert_eq!(s.seq()[i], expected.chars().nth(i).unwrap());
+        }
     }
 }

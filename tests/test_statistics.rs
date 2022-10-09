@@ -137,7 +137,7 @@ fn test_OnlineMultivariateStatistics() {
     let n_samples = 100000;
     let n_dim: usize = 4;
 
-    let mut normal = Normal::new(2.0, 3.0).unwrap();         // --- mean 2, standard deviation 3
+    let normal = Normal::new(2.0, 3.0).unwrap();         // --- mean 2, standard deviation 3
     let mut stats = OnlineMultivariateStatistics::new(n_dim);
     let mut row = vec!(0.0; n_dim);
     for _ in 0..n_samples {

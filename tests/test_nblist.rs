@@ -21,7 +21,7 @@ macro_rules! assert_vec3_eq {
     }
 }
 
-
+#[allow(non_snake_case)]
 fn create_1D_system(N:usize) -> Coordinates {
     let mut xyz = Coordinates::new(N);
     xyz.set_box_len(N as f32);
@@ -35,7 +35,7 @@ fn create_1D_system(N:usize) -> Coordinates {
 fn simple_nblist_full_update() {
     // ---------- Create a simple system of N = 5 atoms
     const N : usize = 5;
-    let mut xyz = create_1D_system(N);
+    let xyz = create_1D_system(N);
 
     // ---------- Create a list of neighbors for that system
     let mut nbl = NbList::new(0.8,0.5, Box::new(ArgonRules{}));
@@ -75,7 +75,6 @@ fn simple_nblist_incremental_update() {
 macro_rules! check_nbl {
     ($coords:expr, $nbl:expr, $N:expr, $d_max:expr) => {
         for i in 0..$N {
-            println!("{} : {:?}",i, $nbl.neighbors(i));
             for j in 0..i {
                 if $coords.closest_distance_square(i,j).sqrt() <= $d_max {
                     assert!($nbl.neighbors(i).contains(&j));
@@ -117,6 +116,4 @@ fn nblist_3d_test() {
 
         check_nbl!(coords, nbl, N, nbl.cutoff());
     }
-
-
 }
