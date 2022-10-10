@@ -11,8 +11,8 @@ pub struct CoordinatesView<'a> {  pub points: &'a  Coordinates, }
 
 #[derive(Clone, Debug)]
 pub struct Coordinates {
-    box_len: f32,
-    box_len_half: f32,
+    box_len: f64,
+    box_len_half: f64,
     v: Vec<Vec3>,
 }
 
@@ -42,20 +42,20 @@ impl Coordinates {
         let mut v = Vec::with_capacity(n);
         let zero = Vec3::from_float(0.0);
         v.resize(n, zero);
-        let l: f32 = 100000.0;
+        let l: f64 = 100000.0;
         return Coordinates {box_len: l, box_len_half: l/2.0, v};
     }
 
     #[inline(always)]
-    pub fn box_len(&self) -> f32 { self.box_len }
+    pub fn box_len(&self) -> f64 { self.box_len }
 
     #[inline(always)]
-    pub fn set_box_len(&mut self, new_box_len: f32) {
+    pub fn set_box_len(&mut self, new_box_len: f64) {
         self.box_len = new_box_len;
         self.box_len_half = new_box_len / 2.0;
     }
 
-    pub fn distance_square(&self, i: usize, j: usize) -> f32 {
+    pub fn distance_square(&self, i: usize, j: usize) -> f64 {
 
         let mut d = self.v[i].x - self.v[j].x;
         let mut d2 = d * d;
@@ -66,9 +66,9 @@ impl Coordinates {
         return d2;
     }
 
-    pub fn closest_distance_square(&self, i: usize, j: usize) -> f32 {
+    pub fn closest_distance_square(&self, i: usize, j: usize) -> f64 {
 
-        let mut d:f32;
+        let mut d:f64;
         closest_image!(self.v[i].x, self.v[j].x, self.box_len, self.box_len_half, d);
         let mut d2 = d * d;
         closest_image!(self.v[i].y, self.v[j].y, self.box_len, self.box_len_half, d);
@@ -78,9 +78,9 @@ impl Coordinates {
         return d2 + d*d;
     }
 
-    pub fn closest_distance_square_to_vec(&self, i: usize, v: &Vec3) -> f32 {
+    pub fn closest_distance_square_to_vec(&self, i: usize, v: &Vec3) -> f64 {
 
-        let mut d:f32;
+        let mut d:f64;
         closest_image!(self.v[i].x, v.x, self.box_len, self.box_len_half, d);
         let mut d2 = d * d;
         closest_image!(self.v[i].y, v.y, self.box_len, self.box_len_half, d);
@@ -90,45 +90,45 @@ impl Coordinates {
         return d2 + d*d;
     }
 
-    pub fn delta_x(&self, i: usize, x: f32) -> f32 {
-        let mut d: f32;
+    pub fn delta_x(&self, i: usize, x: f64) -> f64 {
+        let mut d: f64;
         closest_image!(self.v[i].x,x, self.box_len, self.box_len_half, d);
         d
     }
 
-    pub fn delta_y(&self, i: usize, y: f32) -> f32 {
-        let mut d: f32;
+    pub fn delta_y(&self, i: usize, y: f64) -> f64 {
+        let mut d: f64;
         closest_image!(self.v[i].y, y, self.box_len, self.box_len_half, d);
         d
     }
 
-    pub fn delta_z(&self, i: usize, z: f32) -> f32 {
-        let mut d: f32;
+    pub fn delta_z(&self, i: usize, z: f64) -> f64 {
+        let mut d: f64;
         closest_image!(self.v[i].z, z, self.box_len, self.box_len_half, d);
         d
     }
 
     pub fn size(&self) -> usize { return self.v.len(); }
 
-    pub fn x(&self, i:usize) -> f32 { self.v[i].x }
+    pub fn x(&self, i:usize) -> f64 { self.v[i].x }
 
-    pub fn y(&self, i:usize) -> f32 { self.v[i].y }
+    pub fn y(&self, i:usize) -> f64 { self.v[i].y }
 
-    pub fn z(&self, i:usize) -> f32 { self.v[i].z }
+    pub fn z(&self, i:usize) -> f64 { self.v[i].z }
 
-    pub fn set_x(&mut self, i:usize, x: f32) {  wrap_coordinate_to_box!(x, self.box_len, self.v[i].x); }
+    pub fn set_x(&mut self, i:usize, x: f64) {  wrap_coordinate_to_box!(x, self.box_len, self.v[i].x); }
 
-    pub fn set_y(&mut self, i:usize, y: f32) {  wrap_coordinate_to_box!(y, self.box_len, self.v[i].y); }
+    pub fn set_y(&mut self, i:usize, y: f64) {  wrap_coordinate_to_box!(y, self.box_len, self.v[i].y); }
 
-    pub fn set_z(&mut self, i:usize, z: f32) {  wrap_coordinate_to_box!(z, self.box_len, self.v[i].z); }
+    pub fn set_z(&mut self, i:usize, z: f64) {  wrap_coordinate_to_box!(z, self.box_len, self.v[i].z); }
 
-    pub fn set(&mut self, i:usize, x: f32, y: f32, z: f32) {
+    pub fn set(&mut self, i:usize, x: f64, y: f64, z: f64) {
         wrap_coordinate_to_box!(x, self.box_len, self.v[i].x);
         wrap_coordinate_to_box!(y, self.box_len, self.v[i].y);
         wrap_coordinate_to_box!(z, self.box_len, self.v[i].z);
     }
 
-    pub fn add(&mut self, i:usize, x: f32, y: f32, z: f32) {
+    pub fn add(&mut self, i:usize, x: f64, y: f64, z: f64) {
         wrap_coordinate_to_box!(self.v[i].x + x, self.box_len, self.v[i].x);
         wrap_coordinate_to_box!(self.v[i].y + y, self.box_len, self.v[i].y);
         wrap_coordinate_to_box!(self.v[i].z + z, self.box_len, self.v[i].z);

@@ -6,7 +6,7 @@ use bioshell_ff::{System};
 
 /// performs a volume change
 #[allow(non_snake_case)]
-pub fn change_volume(system: &mut System, max_step:f32) -> Range<usize> {
+pub fn change_volume(system: &mut System, max_step:f64) -> Range<usize> {
     let mut rng = rand::thread_rng();
 
     let v0 = system.volume();
@@ -18,7 +18,7 @@ pub fn change_volume(system: &mut System, max_step:f32) -> Range<usize> {
     0..system.size()
 }
 
-pub fn single_atom_move(future: &mut System, max_step:f32) -> Range<usize> {
+pub fn single_atom_move(future: &mut System, max_step:f64) -> Range<usize> {
     let mut rng = rand::thread_rng();
     let i_moved = rng.gen_range(0..future.size());
     future.add(i_moved,rng.gen_range(-max_step..max_step),
@@ -27,10 +27,10 @@ pub fn single_atom_move(future: &mut System, max_step:f32) -> Range<usize> {
     i_moved..i_moved
 }
 
-pub fn perturb_chain_fragment(chains: &mut System, max_step:f32) -> Range<usize> {
+pub fn perturb_chain_fragment(chains: &mut System, max_step:f64) -> Range<usize> {
 
     const N: usize = 3;
-    const F: f32 = 2.0 / (1.0 + N as f32);
+    const F: f64 = 2.0 / (1.0 + N as f64);
 
     let mut rng = rand::thread_rng();
     let mut moved_from = rng.gen_range(0..chains.size()-N);
@@ -40,12 +40,12 @@ pub fn perturb_chain_fragment(chains: &mut System, max_step:f32) -> Range<usize>
         moved_to = moved_from + N;
     }
 
-    let dx: f32 = rng.gen_range(-max_step..max_step) * F;
-    let dy: f32 = rng.gen_range(-max_step..max_step) * F;
-    let dz: f32 = rng.gen_range(-max_step..max_step) * F;
+    let dx: f64 = rng.gen_range(-max_step..max_step) * F;
+    let dy: f64 = rng.gen_range(-max_step..max_step) * F;
+    let dz: f64 = rng.gen_range(-max_step..max_step) * F;
 
     for i in 0..N/2 {
-        let fi: f32 = (i + 1) as f32;
+        let fi: f64 = (i + 1) as f64;
         chains.add(moved_from + i, dx * fi, dy * fi, dz * fi);
         chains.add(moved_to - i, dx * fi, dy * fi, dz * fi);
     }

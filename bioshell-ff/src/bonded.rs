@@ -5,12 +5,12 @@ use crate::{System};
 
 pub struct SimpleHarmonic {
     /// equilibrium distance
-    d0: f32,
+    d0: f64,
     /// force constant
-    k: f32
+    k: f64
 }
 impl SimpleHarmonic {
-    pub fn new(d0: f32, k: f32) -> SimpleHarmonic {
+    pub fn new(d0: f64, k: f64) -> SimpleHarmonic {
         SimpleHarmonic { d0, k}
     }
 }

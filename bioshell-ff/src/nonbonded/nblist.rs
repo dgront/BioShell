@@ -30,10 +30,10 @@ impl NbListRules for ArgonRules {
 }
 
 pub struct NbList {
-    cutoff: f32,                        // distance cutoff for this list
-    buffer_width: f32,                  // safety buffer thickness
-    total_cutoff_sq: f32,               // total cutoff = cutoff + safety buffer
-    max_moved_sq: f32,                  // how far atom can travel to trigger update
+    cutoff: f64,                        // distance cutoff for this list
+    buffer_width: f64,                  // safety buffer thickness
+    total_cutoff_sq: f64,               // total cutoff = cutoff + safety buffer
+    max_moved_sq: f64,                  // how far atom can travel to trigger update
     nb_rules: Box<dyn NbListRules>,     // encodes rules for this NBL
     recent_pos: Vec<Vec3>,              // positions from last NBL update
     nb_lists: Vec<Vec<usize>>,          // the NBL itself
@@ -52,7 +52,7 @@ macro_rules! insert_nb_pair {
 
 impl NbList {
 
-    pub fn new(cutoff:f32, buffer_thickness: f32, nb_rules: Box<dyn NbListRules>) -> NbList {
+    pub fn new(cutoff:f64, buffer_thickness: f64, nb_rules: Box<dyn NbListRules>) -> NbList {
         let neighbors:Vec<Vec<usize>> = Vec::new();
         let total = buffer_thickness + cutoff;
         let max_moved = buffer_thickness / 2.0;
@@ -61,20 +61,20 @@ impl NbList {
     }
 
     /// Provides the interaction cutoff radius
-    pub fn cutoff(&self) -> f32 { self.cutoff }
+    pub fn cutoff(&self) -> f64 { self.cutoff }
 
     /// Modifies the interaction cutoff radius
-    pub fn set_cutoff(&mut self, d0: f32) {
+    pub fn set_cutoff(&mut self, d0: f64) {
         self.cutoff = d0;
         let total = self.buffer_width + self.cutoff;
         self.total_cutoff_sq = total*total;
     }
 
     /// Provides the width of the buffer zone
-    pub fn buffer_width(&self) -> f32 { self.buffer_width }
+    pub fn buffer_width(&self) -> f64 { self.buffer_width }
 
     /// Modifies the width of the buffer zone
-    pub fn set_buffer_width(&mut self, width: f32) {
+    pub fn set_buffer_width(&mut self, width: f64) {
         self.buffer_width = width;
         let total = self.buffer_width + self.cutoff;
         self.total_cutoff_sq = total * total;

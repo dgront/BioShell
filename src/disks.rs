@@ -7,14 +7,14 @@ use bioshell_ff::nonbonded::{NbList, PairwiseNonbondedEvaluator, SimpleContact, 
 use bioshell_sim::generators::square_grid_atoms;
 use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
 
-fn box_width(disc_radius: f32, n_discs: usize, density: f32) -> f32 {
+fn box_width(disc_radius: f64, n_discs: usize, density: f64) -> f64 {
 
-    let v: f32 = std::f32::consts::PI * disc_radius.powi(2);
-    (n_discs as f32 * v/density).powf(0.5)
+    let v: f64 = std::f64::consts::PI * disc_radius.powi(2);
+    (n_discs as f64 * v/density).powf(0.5)
 }
 
 /// Moves a random disc
-fn single_dics_move(future: &mut System, max_step:f32) -> Range<usize> {
+fn single_dics_move(future: &mut System, max_step:f64) -> Range<usize> {
     let mut rng = rand::thread_rng();
     let i_moved = rng.gen_range(0..future.size());
     future.add(i_moved,rng.gen_range(-max_step..max_step),
@@ -24,14 +24,14 @@ fn single_dics_move(future: &mut System, max_step:f32) -> Range<usize> {
 }
 
 pub fn main() {
-    const R: f32 = 3.0;
-    const W: f32 = 1.0;
+    const R: f64 = 3.0;
+    const W: f64 = 1.0;
 
     const N_SMALL_CYCLES: i32 = 100;
     const N_LARGE_CYCLES: i16 = 1000;
 
     let n_atoms: usize = 50 * 50;
-    let density: f32 = 0.4;
+    let density: f64 = 0.4;
 
     // ---------- Create system's coordinates
     let mut coords = Coordinates::new(n_atoms);
@@ -40,7 +40,7 @@ pub fn main() {
     to_pdb(&coords,1,"disks.pdb");
 
     // ---------- Create system's list of neighbors
-    let nbl:NbList = NbList::new(R+W as f32,6.0,Box::new(ArgonRules{}));
+    let nbl:NbList = NbList::new(R+W as f64,6.0,Box::new(ArgonRules{}));
 
     // ---------- Create the system
     let mut system: System = System::new(coords, nbl);
@@ -55,7 +55,7 @@ pub fn main() {
     // ---------- Create a sampler and add a mover into it
     let mut sampler = IsothermalMC::new(0.6, Ensemle::NVT, 1.0);
     sampler.energy = Box::new(total);               // --- The total has been moved to a box within the sampler
-    let m: Box<dyn Fn(&mut System,f32) -> Range<usize>> = Box::new(single_dics_move);
+    let m: Box<dyn Fn(&mut System,f64) -> Range<usize>> = Box::new(single_dics_move);
     sampler.add_mover(m,3.0);
 
     // ---------- Run the simulation!

@@ -20,13 +20,13 @@ struct Args {
     infile: String,
     /// density of the system - starts NVT simulation
     #[clap(short, long, default_value_t = 0.4)]
-    density: f32,
+    density: f64,
     /// temperature of the simulation
     #[clap(short, long, default_value_t = 45.0)]
-    temperature: f32,
+    temperature: f64,
     /// pressure of an NPT simulation in [kPa]
     #[clap(short, long)] //, default_value_t = 100.0
-    pressure: Option<f32>,
+    pressure: Option<f64>,
     /// Number of atoms in a simulation
     #[clap(short, long, default_value_t = 216)]
     natoms: usize,
@@ -38,10 +38,10 @@ struct Args {
     outer: usize,
 }
 
-fn box_width(sphere_radius: f32, n_spheres: usize, density: f32) -> f32 {
+fn box_width(sphere_radius: f64, n_spheres: usize, density: f64) -> f64 {
 
-    let v: f32 = 4.0/3.0 * std::f32::consts::PI * sphere_radius.powi(3);
-    (n_spheres as f32 * v/density).powf(1.0/3.0)
+    let v: f64 = 4.0/3.0 * std::f64::consts::PI * sphere_radius.powi(3);
+    (n_spheres as f64 * v/density).powf(1.0/3.0)
 }
 
 pub fn main() {
@@ -54,22 +54,22 @@ pub fn main() {
     let args = Args::parse();
 
     let n_atoms: usize = args.natoms;
-    let density: f32 = args.density;
+    let density: f64 = args.density;
 
     // ---------- Create system's coordinates
     let mut coords = Coordinates::new(n_atoms);
-    coords.set_box_len(box_width(SIGMA as f32,n_atoms, density));
+    coords.set_box_len(box_width(SIGMA as f64,n_atoms, density));
     cubic_grid_atoms(&mut coords);
     to_pdb(&coords,1,"ar.pdb");
 
     // ---------- Create system's list of neighbors
-    let nbl:NbList = NbList::new(CUTOFF as f32,4.0,Box::new(ArgonRules{}));
+    let nbl:NbList = NbList::new(CUTOFF as f64,4.0,Box::new(ArgonRules{}));
 
     // ---------- Create the system
     let mut system: System = System::new(coords, nbl);
 
     // ---------- Create energy function
-    let lj = PairwiseNonbondedEvaluator::new(CUTOFF as f32,
+    let lj = PairwiseNonbondedEvaluator::new(CUTOFF as f64,
             Box::new(LennardJonesHomogenic::new(EPSILON_BY_K, SIGMA, CUTOFF)) );
     let mut total = TotalEnergy::default();
     total.add_component(Box::new(lj), 1.0);
@@ -84,7 +84,7 @@ pub fn main() {
     }
     let mut sampler = IsothermalMC::new(args.temperature as f64, ensemble, pressure as f64);
     sampler.energy = Box::new(total);               // --- The total has been moved to a box within the sampler
-    let m: Box<dyn Fn(&mut System,f32) -> Range<usize>> = Box::new(single_atom_move);
+    let m: Box<dyn Fn(&mut System,f64) -> Range<usize>> = Box::new(single_atom_move);
     sampler.add_mover(m,3.0);
 
     // ---------- Run the simulation!

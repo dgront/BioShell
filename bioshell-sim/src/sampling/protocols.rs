@@ -31,7 +31,7 @@ impl IsothermalMC {
             movers: Default::default(), energy: Box::new(ZeroEnergy{}) }
     }
 
-    pub fn add_mover(&mut self, perturb_fn: Box<dyn Fn(&mut System,f32) -> Range<usize>>, move_range: f32) {
+    pub fn add_mover(&mut self, perturb_fn: Box<dyn Fn(&mut System,f64) -> Range<usize>>, move_range: f64) {
         self.movers.add_mover(perturb_fn,move_range);
     }
 }
@@ -113,12 +113,12 @@ impl Sampler for IsothermalMC {
 pub struct AdaptiveMoverStats {
     n_succ:i32,
     n_failed:i32,
-    move_range:f32,
-    max_move_range:f32
+    move_range:f64,
+    max_move_range:f64
 }
 
 impl AdaptiveMoverStats {
-    pub fn new(max_move_range:f32) -> AdaptiveMoverStats {
+    pub fn new(max_move_range:f64) -> AdaptiveMoverStats {
         AdaptiveMoverStats { n_succ: 0, n_failed: 0,
             move_range: max_move_range/2.0, max_move_range }
     }
@@ -137,12 +137,12 @@ impl AdaptiveMoverStats {
 #[derive(Default)]
 pub struct MoversSet {
     pub stats: Vec<AdaptiveMoverStats>,
-    pub proposals: Vec<Box<dyn Fn(&mut System,f32) -> Range<usize>>>,
+    pub proposals: Vec<Box<dyn Fn(&mut System,f64) -> Range<usize>>>,
     recent_mover: usize
 }
 
 impl MoversSet {
-    pub fn add_mover(&mut self, perturb_fn: Box<dyn Fn(&mut System,f32) -> Range<usize>>, move_range: f32) {
+    pub fn add_mover(&mut self, perturb_fn: Box<dyn Fn(&mut System,f64) -> Range<usize>>, move_range: f64) {
         self.proposals.push(perturb_fn);
         self.stats.push(AdaptiveMoverStats::new(move_range));
     }

@@ -2,9 +2,9 @@ use std::fmt;
 
 #[derive(Clone)]
 pub struct Vec3 {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
     pub res_type: i8,
     pub atom_type: i8,
     pub chain_id: i16
@@ -41,11 +41,11 @@ macro_rules! float3_operation {
 }
 
 impl Vec3 {
-    pub fn new(x: f32, y: f32, z: f32) -> Vec3 {
+    pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
         Vec3 { x: x, y: y, z: z, res_type:0, atom_type: 0, chain_id: 0}
     }
 
-    pub fn from_float(value: f32) -> Vec3 {
+    pub fn from_float(value: f64) -> Vec3 {
         Vec3 {
             x: value,
             y: value,
@@ -64,18 +64,18 @@ impl Vec3 {
     pub fn sub(&mut self, v: &Vec3) { vec_operation!(self,v,-=); }
 
     /// Subtracts a vector from this vector
-    pub fn mul(&mut self, f: f32) { scalar_operation!(self,f,*=); }
+    pub fn mul(&mut self, f: f64) { scalar_operation!(self,f,*=); }
 
     /// Subtracts a vector from this vector
-    pub fn div(&mut self, f: f32) { scalar_operation!(self,f,/=); }
+    pub fn div(&mut self, f: f64) { scalar_operation!(self,f,/=); }
 
     /// Adds float x, y, x values to this vector
-    pub fn add3(&mut self, x:f32, y:f32, z:f32) { float3_operation!(self, +=, x, y, z); }
+    pub fn add3(&mut self, x:f64, y:f64, z:f64) { float3_operation!(self, +=, x, y, z); }
 
     /// Subtracts float x, y, x values from this vector
-    pub fn sub3(&mut self, x:f32, y:f32, z:f32) { float3_operation!(self, -=, x, y, z); }
+    pub fn sub3(&mut self, x:f64, y:f64, z:f64) { float3_operation!(self, -=, x, y, z); }
 
-    pub fn length_squared(&self) -> f32 {
+    pub fn length_squared(&self) -> f64 {
         return self.x * self.x + self.y * self.y + self.z * self.z;
     }
 
@@ -92,12 +92,12 @@ impl Vec3 {
     }
 
     /// Returns a length of this vector
-    pub fn length(&self) -> f32 {
+    pub fn length(&self) -> f64 {
         return self.length_squared().sqrt();
     }
 
     /// Calculate a dot product of two vectors
-    pub fn dot(a: &Vec3, b: &Vec3) -> f32 {
+    pub fn dot(a: &Vec3, b: &Vec3) -> f64 {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
 
