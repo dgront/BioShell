@@ -4,26 +4,11 @@ use std::ops::Range;
 use bioshell_numerical::Vec3;
 use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb, System};
 use bioshell_ff::bonded::SimpleHarmonic;
-use bioshell_ff::nonbonded::{SimpleContact, PairwiseNonbondedEvaluator, NbList, NbListRules};
+use bioshell_ff::nonbonded::{SimpleContact, PairwiseNonbondedEvaluator, NbList, PolymerRules};
 use bioshell_sim::generators::random_chain;
 use bioshell_sim::sampling::movers::{single_atom_move};
 use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
 
-#[derive(Clone)]
-pub struct PolymerRules;
-
-impl NbListRules for PolymerRules {
-
-    fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool { false }
-
-    fn if_pair_excluded(&self, _coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool {
-        if i_atom >  j_atom { i_atom - j_atom > 2} else { j_atom - i_atom > 2 }
-    }
-
-    fn box_clone(&self) -> Box<dyn NbListRules> {
-        Box::new((*self).clone())
-    }
-}
 
 pub fn main() {
     const E_REP: f64 = 4.25;

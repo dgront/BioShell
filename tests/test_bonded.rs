@@ -10,7 +10,7 @@ fn simple_harmonic_test() {
     // ---------- Create a simple system of 3 atoms
     let mut xyz = Coordinates::new(3);
     for i in 0..3 {
-        xyz[i].x = i as f32 * 10.0;
+        xyz[i].x = i as f64 * 10.0;
     }
     // ---------- Create system's list of neighbors
     let mut nbl: NbList = NbList::new(2.0,1.0,Box::new(ArgonRules{}));
@@ -35,7 +35,6 @@ fn simple_harmonic_test() {
     // ---------- Create system's list of neighbors
     nbl = NbList::new(2.0, 1.0, Box::new(ArgonRules{}));
     system = System::new(xyz,nbl);
-    println!("{} ",springs.energy(&system));
 
     assert!(f64::abs(springs.energy(&system) - 25.0) < 0.01);
 }

@@ -4,10 +4,10 @@ use bioshell_sim::generators::cubic_grid_atoms;
 
 #[test]
 fn create_simple_system() {
-    const L: f32 = 6.0;        // --- width of the box
+    const L: f64 = 6.0;        // --- width of the box
     const N: usize = 27;       // --- the number of atoms in it
-    const R: f32 = 2.0;         // --- radius of each atom (interaction cutoff)
-    const B: f32 = 1.0;         // --- buffer zone width for NBL
+    const R: f64 = 2.0;         // --- radius of each atom (interaction cutoff)
+    const B: f64 = 1.0;         // --- buffer zone width for NBL
 
     // ---------- Create system's coordinates and initialize them
     let mut xyz = Coordinates::new(N);

@@ -1,7 +1,7 @@
 use rand::Rng;
 
 use bioshell_ff::Coordinates;
-use bioshell_ff::nonbonded::{NbList, ArgonRules};
+use bioshell_ff::nonbonded::{NbList, ArgonRules, PolymerRules};
 use bioshell_numerical::Vec3;
 use bioshell_sim::generators::cubic_grid_atoms;
 
@@ -15,18 +15,18 @@ macro_rules! check_nb_count {
 
 macro_rules! assert_vec3_eq {
     ($vi:expr, $vj:expr, $epsilon:expr) => {
-        assert!(f32::abs($vi.x - $vj.x) < $epsilon);
-        assert!(f32::abs($vi.y - $vj.y) < $epsilon);
-        assert!(f32::abs($vi.z - $vj.z) < $epsilon);
+        assert!(f64::abs($vi.x - $vj.x) < $epsilon);
+        assert!(f64::abs($vi.y - $vj.y) < $epsilon);
+        assert!(f64::abs($vi.z - $vj.z) < $epsilon);
     }
 }
 
 #[allow(non_snake_case)]
 fn create_1D_system(N:usize) -> Coordinates {
     let mut xyz = Coordinates::new(N);
-    xyz.set_box_len(N as f32);
+    xyz.set_box_len(N as f64);
     for i in 0..N {
-        xyz[i].x = i as f32 + 0.5;
+        xyz[i].x = i as f64 + 0.5;
     }
     xyz
 }
@@ -85,10 +85,28 @@ macro_rules! check_nbl {
     }
 }
 
+
+#[test]
+fn test_polymer_rules() {
+
+    // ---------- Create a simple system of 3 atoms
+    let mut xyz = Coordinates::new(3);
+    for i in 0..3 {
+        xyz[i].x = 4.0 * i as f64;
+    }
+    // ---------- Create system's list of neighbors
+    let mut nbl: NbList = NbList::new(4.5,1.0,Box::new(PolymerRules{}));
+    nbl.update_all(&xyz);
+
+    for i in 0..3 {
+        assert_eq!(nbl.neighbors(i).len(), 0);
+    }
+}
+
 #[test]
 fn nblist_3d_test() {
 
-    let max_step: f32 = 0.2;
+    let max_step: f64 = 0.2;
 
     // ---------- Create a simple system of N = 5 atoms
     const N: usize = 27;

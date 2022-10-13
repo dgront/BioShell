@@ -29,6 +29,26 @@ impl NbListRules for ArgonRules {
     }
 }
 
+#[derive(Clone)]
+pub struct PolymerRules;
+
+impl NbListRules for PolymerRules {
+
+    fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool { false }
+
+    fn if_pair_excluded(&self, _coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool {
+        if i_atom >  j_atom {
+            return i_atom - j_atom < 2;
+        } else {
+            return j_atom - i_atom < 2;
+        }
+    }
+
+    fn box_clone(&self) -> Box<dyn NbListRules> {
+        Box::new((*self).clone())
+    }
+}
+
 pub struct NbList {
     cutoff: f64,                        // distance cutoff for this list
     buffer_width: f64,                  // safety buffer thickness

@@ -8,17 +8,17 @@ fn coordinates_methods() {
 
     assert_eq!(xyz.size(), 10);
     xyz[9].x = 9.1;
-    assert!(f32::abs(xyz[9].x - 9.1) < 1e-5);
+    assert!(f64::abs(xyz[9].x - 9.1) < 1e-5);
 }
 
 #[test]
 fn coordinates_pbc() {
     let mut rng = rand::thread_rng();
-    const L: f32 = 15.0;
+    const L: f64 = 15.0;
 
     let mut xyz = Coordinates::new(1);
     xyz.set_box_len(L);
-    let l: f32 = xyz.box_len();
+    let l: f64 = xyz.box_len();
     xyz.set(0, rng.gen_range(0.0..l), rng.gen_range(0.0..l), rng.gen_range(0.0..l));
 
     assert!(xyz.x(0) != xyz.y(0));
@@ -38,13 +38,13 @@ fn coordinates_pbc() {
 #[test]
 fn closest_distance() {
     let mut rng = rand::thread_rng();
-    const L: f32 = 20.0;
+    const L: f64 = 20.0;
     const N: usize = 100;
-    const MAX_D: f32 = (L / 2.0) * (L / 2.0) * 3.0;
+    const MAX_D: f64 = (L / 2.0) * (L / 2.0) * 3.0;
 
     let mut xyz = Coordinates::new(N);
     xyz.set_box_len(L);
-    let l: f32 = xyz.box_len();
+    let l: f64 = xyz.box_len();
 
     for i in 0..N {
         xyz.set(i, rng.gen_range(0.0..l), rng.gen_range(0.0..l), rng.gen_range(0.0..l));
