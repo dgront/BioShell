@@ -15,13 +15,13 @@ impl Sequence {
     /// Create a new instance of a Sequence.
     /// # Example
     /// ```rust
-    /// use bioshell_core::Sequence;
+    /// use bioshell_core::sequence::Sequence;
     ///
     /// let read_id: String = String::from("2gb1");
     /// let sequence: String = String::from("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
     /// let seq = Sequence::new(&read_id, &sequence);
     ///
-    /// assert_eq!("> 2gb1\nMTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE\n", seq.to_string())
+    /// assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string())
     /// ```
     pub fn new(id: &String, seq: &String) -> Self {
         Sequence {
@@ -32,13 +32,13 @@ impl Sequence {
     /// Create a new instance of a Sequence from `&str` content.
     /// # Example
     /// ```rust
-    /// use bioshell_core::Sequence;
+    /// use bioshell_core::sequence::Sequence;
     ///
     /// let read_id = "2gb1";
     /// let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
     /// let seq = Sequence::from_attrs(read_id, sequence);
     ///
-    /// let expected = "> 2gb1\nMTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE\n";
+    /// let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
     /// assert_eq!(expected, seq.to_string());
     /// ```
     pub fn from_attrs(id: &str, seq: &str) -> Self {
@@ -70,7 +70,7 @@ impl fmt::Display for Sequence {
     /// Create a `Sequence` and turn it into a string
     ///
     /// ```rust
-    /// use bioshell_core::Sequence;
+    /// use bioshell_core::sequence::Sequence;
     /// use std::fmt::Write;
     /// // create a Sequence object
     /// let read_id = "2gb1";

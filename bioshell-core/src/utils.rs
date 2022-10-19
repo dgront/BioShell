@@ -16,11 +16,11 @@ use std::fs::{File};
 /// # Examples
 ///
 /// ```
-/// use utils::out_writer;
-/// assert_true!(writes_to_screen(""));
-/// assert_true!(writes_to_screen("stderr"));
-/// assert_true!(writes_to_screen("stdout"));
-/// assert_true!(!writes_to_screen("file.txt"));
+/// use bioshell_core::utils::writes_to_screen;
+/// assert!(writes_to_screen(""));
+/// assert!(writes_to_screen("stderr"));
+/// assert!(writes_to_screen("stdout"));
+/// assert!(!writes_to_screen("file.txt"));
 /// ```
 pub fn writes_to_screen(out_fname: &str) -> bool {
     match out_fname {
@@ -44,7 +44,7 @@ pub fn writes_to_screen(out_fname: &str) -> bool {
 /// # Examples
 ///
 /// ```
-/// use utils::out_writer;
+/// use bioshell_core::utils::out_writer;
 /// let mut to_stream = out_writer("");
 /// to_stream = out_writer("stdout");
 /// let mut to_file = out_writer("file.out");
