@@ -1,4 +1,5 @@
 pkg/
 target/
+venv-maturin/
 .idea/
 Cargo.lock

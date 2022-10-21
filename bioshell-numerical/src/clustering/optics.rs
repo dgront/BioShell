@@ -2,9 +2,12 @@ use std::cmp::*;
 use std::fmt;
 use std::ops::{Range};
 
+use pyo3::prelude::*;
+
 use crate::clustering::Distance;
 
 /// Provides the OPTICS (ordering points to identify the clustering structure) clustering algorithm.
+#[pyclass]
 pub struct Optics<M> {
     /// The radius of a neighborhood.
     pub eps: f64,
@@ -27,8 +30,9 @@ pub struct Optics<M> {
     clusters: Vec<Range<usize>>
 }
 
-
+#[pymethods]
 impl<M: Distance> Optics<M> {
+    #[new]
     pub fn new(eps: f64, min_samples: usize, distance: M) -> Self {
         Self { eps, min_samples, distance, n:0, undefined: eps*10.0,
             reacheability: vec![], clustering_order: vec![],
