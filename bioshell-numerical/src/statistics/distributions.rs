@@ -1,6 +1,7 @@
 use std::fmt;
 use std::fmt::Display;
 use nalgebra::{DMatrix, DVector};
+use rand::Rng;
 use rand_distr::Distribution as OtherDistribution;
 
 use crate::statistics::OnlineMultivariateStatistics;
@@ -13,7 +14,7 @@ pub trait Distribution {
     fn pdf(&self, x: &Vec<f64>) -> f64;
 
     /// Withdraws a random observation from this probability distribution
-    fn rand(&mut self, out: &mut Vec<f64>);
+    fn sample<R: Rng + ?Sized>(&mut self, rng: &mut R, out: &mut Vec<f64>);
 
     /// Says how many dimensions this distribution has
     fn dim(&self) -> usize;
@@ -60,8 +61,8 @@ impl Distribution for NormalDistribution {
         return self.const_1 * (-(ix * ix) / (2.0 * self.sigma * self.sigma)).exp();
     }
 
-    fn rand(&mut self, out: &mut Vec<f64>) {
-        out[0] = self.normal_generator.sample(&mut rand::thread_rng());
+    fn sample<R: Rng + ?Sized>(&mut self, rand: &mut R, out: &mut Vec<f64>) {
+        out[0] = self.normal_generator.sample(rand);
     }
 
     fn dim(&self) -> usize { return 1;  }
@@ -174,9 +175,9 @@ impl Distribution for MultiNormalDistribution {
         self.logpdf(x).exp()
     }
 
-    fn rand(&mut self, out: &mut Vec<f64>) {
+    fn sample<R: Rng + ?Sized>(&mut self, rng: &mut R, out: &mut Vec<f64>) {
         for i in 0..self.dim {
-            self.tmp[i] = self.normal_generator.sample(&mut rand::thread_rng());
+            self.tmp[i] = self.normal_generator.sample(rng);
         }
         let o = &self.cku * &self.tmp + &self.mean;
         for i in 0..self.dim {
