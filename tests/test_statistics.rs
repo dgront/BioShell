@@ -1,11 +1,15 @@
 use rand_distr::{Normal, Distribution as RndDistribution};
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
 use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 use std::string::String;
 use std::fmt::Write;
 
 use bioshell_numerical::statistics::{Distribution, Estimable, Histogram, MultiNormalDistribution,
-                         NormalDistribution, OnlineMultivariateStatistics, expectation_maximization};
+        NormalDistribution, OnlineMultivariateStatistics, expectation_maximization};
+
+use bioshell_numerical::clustering::{Euclidean, Optics};
 
 /// Create a histogram and fill it with deterministic observations
 #[test]
@@ -45,8 +49,9 @@ fn sample_MultiNormalDistribution() {
     let mut stats = OnlineMultivariateStatistics::new(n_dim);
     let mut row = vec!(0.0; n_dim);
 
+    let mut rng = SmallRng::seed_from_u64(0);
     for _ in 0..n_samples {
-        n.rand(&mut row);
+        n.sample(&mut rng, &mut row);
         stats.accumulate(&row);
     }
     println!("{} {}",stats.covar(0,0) ,stats.covar(0,1) );
@@ -92,7 +97,8 @@ fn test_NormalDistribution() {
     // --- estimate the distribution from a sample
     let n_samples = 1000000;
     let mut sample: Vec<Vec<f64>> = vec!(vec!(0.0; 1); n_samples);
-    for v in sample.iter_mut() { n.rand(v); }
+    let mut rng = SmallRng::seed_from_u64(0);
+    for v in sample.iter_mut() { n.sample(&mut rng,v); }
     n.estimate(&sample);
     assert!((n.mean()).abs() < 0.1);
     assert!((n.sdev() - 3.0).abs() < 0.1);
@@ -112,8 +118,9 @@ fn test_expectation_maximization() {
                            NormalDistribution::new(2.0, 0.5),
                            NormalDistribution::new(5.0, 0.5)];
     // ---------- Prepare training data
+    let mut rng = SmallRng::seed_from_u64(0);
     for i in 0..n_dist {
-        for j in 0..n_data_1 { normals[i].rand(&mut sample[i * n_data_1 + j]); }
+        for j in 0..n_data_1 { normals[i].sample(&mut rng, &mut sample[i * n_data_1 + j]); }
         normals[i].set_parameters(2.5, 3.0);    // --- change the distribution to make it harder
     }
     // ---------- Randomly assign data points to distributions
@@ -150,4 +157,67 @@ fn test_OnlineMultivariateStatistics() {
         assert!((stats.avg(i)-2.0).abs() < 0.1);
         assert!((stats.var(i).sqrt()-3.0).abs() < 0.1);
     }
+}
+
+#[allow(non_snake_case)]
+#[test]
+fn Optics_clustering_Gaussian_data() {
+
+    let mut n1: MultiNormalDistribution = MultiNormalDistribution::new(2);
+    let mu1 = DVector::<f64>::from_vec(vec![0.0, 0.0]);
+    let sig1 = DMatrix::<f64>::from_iterator(2, 2, vec![0.2, 0.1, 0.1, 0.2].into_iter());
+    n1.set_parameters(&mu1, &sig1);
+
+    let mut n2: MultiNormalDistribution = MultiNormalDistribution::new(2);
+    let mu2 = DVector::<f64>::from_vec(vec![3.0, 3.0]);
+    let sig2 = DMatrix::<f64>::from_iterator(2, 2, vec![0.2, 0.03, 0.03, 0.2].into_iter());
+    n2.set_parameters(&mu2, &sig2);
+
+    // --- container for the data to be clustered
+    let mut data: Vec<Vec<f64>> = Vec::new();
+
+    let mut rng = SmallRng::seed_from_u64(0);
+    for _ in 0..100 {
+        let mut row = vec![0.0, 0.0];
+        n1.sample(&mut rng, &mut row);
+        data.push(row);
+        row = vec![0.0, 0.0];
+        n2.sample(&mut rng, &mut row);
+        data.push(row);
+    }
+
+    let mut opt_clust = Optics::new(0.5, 5, Euclidean{});
+    opt_clust.run_clustering(&data);
+
+    let &d =  &opt_clust.reacheability_distance();
+    let &o =  &opt_clust.clustering_order();
+    let mut cluster_index = 0;
+    let cluster_size: Vec<usize> = opt_clust.clusters().iter().map(|r| r.len()).collect();
+    for ci in opt_clust.clusters() {
+        for i in ci.clone() {
+            let ei:usize = o[i];
+            println!("c: {} {} {} {}  {}", data[ei][0], data[ei][1], cluster_index, d[i], ei);
+        }
+        cluster_index += 1;
+    }
+    println!("{:?}",cluster_size);
+}
+
+#[allow(non_snake_case)]
+#[test]
+fn test_Optics() {
+    let data: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![1.0, 0.0], vec![0.0, 1.0], vec![1.0, 1.0],
+                                   vec![2.0, 0.0], vec![3.0, 0.0], vec![4.0, 0.0], vec![6.0, 0.0],
+                                   vec![8.0, 0.0], vec![10.0, 0.0], vec![10.0, 1.0], vec![10.0, -1.0],
+                                   vec![18.0, 0.0]];
+
+
+    let mut opt_clust = Optics::new(2.5, 4, Euclidean{});
+    opt_clust.run_clustering(&data);
+    let cluster_size: Vec<usize> = opt_clust.clusters().iter().map(|r| r.len()).collect();
+    assert_eq!(data.len(), cluster_size.iter().sum());
+    let expected_size: Vec<usize> = vec![8, 4, 1];
+    let expected_order: Vec<usize> = vec![0, 1, 3, 4, 2, 5, 6, 7, 8, 9, 11, 10, 12];
+    assert_eq!(expected_size, *cluster_size);
+    assert_eq!(expected_order, *opt_clust.clustering_order());
 }
