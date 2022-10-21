@@ -20,7 +20,6 @@ fn simple_contact_test() {
     let mut system: System = System::new(xyz,nbl);
 
     // ---------- For this system all the 3 atoms are within repulsion range, no exclusion rules
-    let en = contacts.energy(&system);
     assert!(f64::abs(contacts.energy(&system) + 1.0) < 0.0001);
 
     // ---------- Check energy change while moving the last atom away
