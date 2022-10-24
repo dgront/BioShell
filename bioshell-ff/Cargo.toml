@@ -12,5 +12,5 @@ keywords = ["bioshell"]
 crate-type =["rlib"]
 
 [dependencies]
-bioshell_numerical = { path = "../bioshell-numerical" }
+bioshell-numerical = { path = "../bioshell-numerical" }
 bioshell-core = { path = "../bioshell-core" }

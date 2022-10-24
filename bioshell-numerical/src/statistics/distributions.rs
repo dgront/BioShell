@@ -4,7 +4,7 @@ use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 use rand_distr::Distribution as OtherDistribution;
 
-use pyo3::prelude::*;
+// use pyo3::prelude::*;
 
 use crate::statistics::OnlineMultivariateStatistics;
 
@@ -26,7 +26,7 @@ pub trait Distribution {
 // ========== Normal probability distribution structure and implementation ==========
 /// Normal probability distribution
 #[derive(Clone)]
-#[pyclass]
+// #[pyclass]
 pub struct NormalDistribution {
     mean: f64,
     sigma: f64,
@@ -34,10 +34,10 @@ pub struct NormalDistribution {
     normal_generator: rand_distr::Normal<f64>            // for rnd sampling
 }
 
-#[pymethods]
+// #[pymethods]
 impl NormalDistribution {
     /// Creates a new normal probability distribution N(mu, sigma)
-    #[new]
+    // #[new]
     pub fn new(mu: f64, sigma: f64) -> NormalDistribution {
         NormalDistribution { mean: mu, sigma,
             const_1: (1.0 / (sigma * (std::f64::consts::PI * 2.0).sqrt())),
@@ -345,10 +345,10 @@ fn which_distribution<D: Estimable+Distribution>(distributions: &Vec<D>, p: &Vec
     return (best_idx, best_val);
 }
 
-///
-///
-#[pymodule]
-fn bioshell_numerical(_: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<NormalDistribution>()?;
-    Ok(())
-}
+
+
+// #[pymodule]
+// fn bioshell_numerical(_: Python, m: &PyModule) -> PyResult<()> {
+//     m.add_class::<NormalDistribution>()?;
+//     Ok(())
+// }

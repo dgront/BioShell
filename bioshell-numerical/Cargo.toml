@@ -1,6 +1,6 @@
 
 [package]
-name = "bioshell_numerical"
+name = "bioshell-numerical"
 version = "4.0.0-dev"
 edition = "2021"
 description = "Provides core functionality for BioShell package"

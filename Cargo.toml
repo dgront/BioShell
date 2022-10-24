@@ -17,7 +17,7 @@ members = [
 
 [dependencies]
 bioshell-core = { path = "./bioshell-core" }
-bioshell_numerical = { path = "./bioshell-numerical" }
+bioshell-numerical = { path = "./bioshell-numerical" }
 bioshell-ff = { path = "./bioshell-ff" }
 bioshell-sim = { path = "./bioshell-sim" }
 clap = { version = "3.1.18", features = ["derive"] }
