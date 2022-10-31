@@ -252,15 +252,15 @@ impl fmt::Display for NormalDistribution {
     /// Create a `NormalDistribution` and turn it into a string
     ///
     /// ```rust
-    /// use bioshell_core::Sequence;
     /// use std::fmt::Write;
+    /// use bioshell_numerical::statistics::NormalDistribution;
     ///
     /// let nd = NormalDistribution::new(2.0, 0.5);
     /// let mut actual = String::new();
     /// // populate `actual` with a string representation of the distribution
     /// write!(actual, "{}", nd).unwrap();
     ///
-    /// let expected = "N(mu=    5, sdev=  0.5)";
+    /// let expected = "N(mu= 2.0000, sdev= 0.5000)";
     /// assert_eq!(actual, expected)
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {

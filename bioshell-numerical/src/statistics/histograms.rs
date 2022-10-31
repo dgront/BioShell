@@ -7,7 +7,8 @@ use std::fmt;
 ///
 ///  Basic usage:
 /// ```
-/// let h = Histogram::by_bin_width(0.5);
+/// use bioshell_numerical::statistics::Histogram;
+/// let mut h = Histogram::by_bin_width(0.5);
 /// h.insert(1.1);
 /// h.insert(1.3);
 /// assert_eq!(h.which_bin(1.11), 2);
@@ -45,10 +46,10 @@ impl Histogram {
     pub fn bin_max(&self, bin_id: i32) -> f64 { (bin_id + 1) as f64 * self.bin_width }
 
     /// Returns the count for a given bin
-    pub fn get(&self, bin_id: &i32) -> f64 { self.data[bin_id] }
+    pub fn get(&self, bin_id: i32) -> f64 { self.data[&bin_id] }
 
     /// Returns the count for a bin that holds a given value
-    pub fn get_by_value(&self, val: f64) -> f64 { self.get(&(self.which_bin(val))) }
+    pub fn get_by_value(&self, val: f64) -> f64 { self.get(self.which_bin(val)) }
 
     /// Total number of counts in this histogram
     pub fn sum(&self) -> f64 { self.data.values().sum() }
