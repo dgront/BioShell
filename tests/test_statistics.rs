@@ -9,7 +9,7 @@ use std::fmt::Write;
 use bioshell_numerical::statistics::{Distribution, Estimable, Histogram, MultiNormalDistribution,
         NormalDistribution, OnlineMultivariateStatistics, expectation_maximization};
 
-use bioshell_numerical::clustering::{Euclidean, Optics};
+use bioshell_numerical::clustering::{EuclideanNeighbors, Optics};
 
 /// Create a histogram and fill it with deterministic observations
 #[test]
@@ -165,19 +165,19 @@ fn Optics_clustering_Gaussian_data() {
 
     let mut n1: MultiNormalDistribution = MultiNormalDistribution::new(2);
     let mu1 = DVector::<f64>::from_vec(vec![0.0, 0.0]);
-    let sig1 = DMatrix::<f64>::from_iterator(2, 2, vec![0.2, 0.1, 0.1, 0.2].into_iter());
+    let sig1 = DMatrix::<f64>::from_iterator(2, 2, vec![0.1, 0.05, 0.05, 0.1].into_iter());
     n1.set_parameters(&mu1, &sig1);
 
     let mut n2: MultiNormalDistribution = MultiNormalDistribution::new(2);
     let mu2 = DVector::<f64>::from_vec(vec![3.0, 3.0]);
-    let sig2 = DMatrix::<f64>::from_iterator(2, 2, vec![0.2, 0.03, 0.03, 0.2].into_iter());
+    let sig2 = DMatrix::<f64>::from_iterator(2, 2, vec![0.1, 0.03, 0.03, 0.1].into_iter());
     n2.set_parameters(&mu2, &sig2);
 
     // --- container for the data to be clustered
     let mut data: Vec<Vec<f64>> = Vec::new();
 
     let mut rng = SmallRng::seed_from_u64(0);
-    for _ in 0..100 {
+    for _ in 0..20 {
         let mut row = vec![0.0, 0.0];
         n1.sample(&mut rng, &mut row);
         data.push(row);
@@ -186,20 +186,10 @@ fn Optics_clustering_Gaussian_data() {
         data.push(row);
     }
 
-    let mut opt_clust = Optics::new(0.5, 5, Euclidean{});
-    opt_clust.run_clustering(&data);
+    let opt_clust = Optics::new(0.5, 5,
+                    Box::new(EuclideanNeighbors::new(data.clone())));
 
-    let &d =  &opt_clust.reacheability_distance();
-    let &o =  &opt_clust.clustering_order();
-    let mut cluster_index = 0;
     let cluster_size: Vec<usize> = opt_clust.clusters().iter().map(|r| r.len()).collect();
-    for ci in opt_clust.clusters() {
-        for i in ci.clone() {
-            let ei:usize = o[i];
-            println!("c: {} {} {} {}  {}", data[ei][0], data[ei][1], cluster_index, d[i], ei);
-        }
-        cluster_index += 1;
-    }
     println!("{:?}",cluster_size);
 }
 
@@ -212,8 +202,8 @@ fn test_Optics() {
                                    vec![18.0, 0.0]];
 
 
-    let mut opt_clust = Optics::new(2.5, 4, Euclidean{});
-    opt_clust.run_clustering(&data);
+    let opt_clust = Optics::new(2.5, 4,
+                                    Box::new(EuclideanNeighbors::new(data.clone())));
     let cluster_size: Vec<usize> = opt_clust.clusters().iter().map(|r| r.len()).collect();
     assert_eq!(data.len(), cluster_size.iter().sum());
     let expected_size: Vec<usize> = vec![8, 4, 1];
