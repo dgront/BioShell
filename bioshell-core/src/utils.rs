@@ -3,7 +3,7 @@ use std::io::stderr;
 use std::io::Write;
 use std::path::Path;
 use std::fs::{File};
-
+use csv;
 
 /// Check whether a `Writer` object created based on a given string would actually write to screen.
 ///
@@ -59,4 +59,33 @@ pub fn out_writer(out_fname: &str) -> Box<dyn Write>{
             Box::new(File::options().append(true).create(true).open(&path).unwrap()) as Box<dyn Write>
         }
     }
+}
+
+/// Reads real values from a file in the tab-separated format
+pub fn read_tsv(fname: &str) -> Vec<Vec<f64>> { read_csv_tsv(fname, b'\t') }
+
+/// Reads real values from a file in the coma-separated format
+pub fn read_csv(fname: &str) -> Vec<Vec<f64>> { read_csv_tsv(fname, b',') }
+
+fn read_csv_tsv(fname:&str, delimiter:u8) -> Vec<Vec<f64>> {
+
+    let file = File::open(fname).unwrap();
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .delimiter(delimiter)
+        .from_reader(file);
+    let mut data : Vec<Vec<f64>> = Vec::new();
+    for record in rdr.records() {
+        if let Ok(r) = record {
+            let row : Vec<f64> = r.iter().map(|e| {
+                match e.parse::<f64>(){
+                    Ok(v) => v,
+                    Err(_err) => panic!("Problem while parsing a float value: {}", e),
+                }
+            }).collect();
+            data.push(row);
+        }
+    }
+
+    return data;
 }

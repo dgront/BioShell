@@ -1,10 +1,10 @@
-use std::fs::File;
 use nalgebra::{DMatrix, DVector};
 use clap::{Parser};
-use csv;
 use rand::Rng;
 
 use bioshell_numerical::statistics::{MultiNormalDistribution, expectation_maximization};
+use bioshell_core::utils::{read_tsv};
+
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -18,36 +18,18 @@ struct Args {
     n_distr: usize,
 }
 
-fn read_csv(fname:&str) -> Vec<Vec<f64>> {
-
-    let file = File::open(fname).unwrap();
-    let mut rdr = csv::ReaderBuilder::new()
-        .has_headers(false)
-        .delimiter(b'\t')
-        .from_reader(file);
-    let mut data : Vec<Vec<f64>> = Vec::new();
-    for record in rdr.records() {
-        if let Ok(r) = record {
-            let mut row : Vec<f64> = r.iter().map(|e| e.parse::<f64>().unwrap()).collect();
-            data.push(row);
-        }
-    }
-
-    return data;
-}
 
 fn main() {
 
     let args = Args::parse();
 
     let fname = args.infile;
-    let sample = read_csv(&fname);
+    let sample = read_tsv(&fname);
     let n_dim: usize = sample[0].len();
     let n_data = sample.len();
     println!("{} rows loaded, data dimension is {}", n_data, n_dim);
 
     let n_dist: usize = args.n_distr;
-
 
     // ---------- Distributions to be inferred
     let mut normals = vec!(MultiNormalDistribution::new(n_dim); n_dist);

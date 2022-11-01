@@ -11,3 +11,6 @@ keywords = ["bioshell"]
 [lib]
 crate-type =["rlib"]
 
+[dependencies]
+csv = "1.1"
+
