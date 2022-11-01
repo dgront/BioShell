@@ -9,7 +9,7 @@ use std::fmt::Write;
 use bioshell_numerical::statistics::{Distribution, Estimable, Histogram, MultiNormalDistribution,
         NormalDistribution, OnlineMultivariateStatistics, expectation_maximization};
 
-use bioshell_numerical::clustering::{EuclideanNeighbors, Optics};
+use bioshell_numerical::clustering::{EuclideanPoints, Optics};
 
 /// Create a histogram and fill it with deterministic observations
 #[test]
@@ -187,7 +187,7 @@ fn Optics_clustering_Gaussian_data() {
     }
 
     let opt_clust = Optics::new(0.5, 5,
-                    Box::new(EuclideanNeighbors::new(data.clone())));
+                    Box::new(EuclideanPoints::new(data.clone())));
 
     let cluster_size: Vec<usize> = opt_clust.clusters().iter().map(|r| r.len()).collect();
     println!("{:?}",cluster_size);
@@ -203,7 +203,7 @@ fn test_Optics() {
 
 
     let opt_clust = Optics::new(2.5, 4,
-                                    Box::new(EuclideanNeighbors::new(data.clone())));
+                                    Box::new(EuclideanPoints::new(data.clone())));
     let cluster_size: Vec<usize> = opt_clust.clusters().iter().map(|r| r.len()).collect();
     assert_eq!(data.len(), cluster_size.iter().sum());
     let expected_size: Vec<usize> = vec![8, 4, 1];

@@ -1,11 +1,11 @@
 use clap::{Parser};
-use bioshell_numerical::clustering::{EuclideanNeighbors, Optics};
+use bioshell_numerical::clustering::{EuclideanPoints, Optics};
 use bioshell_core::utils::{read_tsv, out_writer};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
-/// Gaussian Mixture Model (GMM) estimation
-/// say gmm -h to see available options
+///  OPTICS (Ordering Points To Identify the Clustering Structure) clustering algorithm
+/// say optics -h to see available options
 struct Args {
     /// input observations
     #[clap(short, long, short='i')]
@@ -18,7 +18,9 @@ struct Args {
     epsilon: f64,
 }
 
-
+/// A simple application that performs clustering with the OPTICS method
+/// USAGE:
+///     optics -h
 fn main() {
 
     let args = Args::parse();
@@ -33,7 +35,7 @@ fn main() {
     let epsilon: f64 = args.epsilon;
 
     let opt_clust = Optics::new(epsilon, min_points,
-                                    Box::new(EuclideanNeighbors::new(sample.clone())));
+                                    Box::new(EuclideanPoints::new(sample.clone())));
 
     let mut clusters = opt_clust.clusters();
     clusters.sort_by(|c1, c2| c2.len().partial_cmp(&c1.len()).unwrap());
@@ -41,11 +43,16 @@ fn main() {
     for ci in &clusters {
         if ci.len() < min_cluster { continue; }
         i += 1;
-        let mut out = out_writer(format!("c{}.dat", i).as_str());
+        let fname = format!("c{}.dat", i);
+        let mut out = out_writer(fname.as_str());
         for iel in ci {
-            for val in &sample[*iel] { write!(out, "{}\t", val); }
-            write!(out, "\n");
+            for val in &sample[*iel] {
+                match write!(out, "{}\t", val) {
+                    Err(e) => println!("Error while writing to {} file: {:?}", fname, e),
+                    _ => ()
+                }
+            }
+            write!(out, "\n").ok();
         }
     }
-
 }

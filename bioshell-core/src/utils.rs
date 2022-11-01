@@ -38,7 +38,6 @@ pub fn writes_to_screen(out_fname: &str) -> bool {
 /// Empty file name also results in writing to `stdout`.
 ///
 /// # Arguments
-///
 /// * `out_fname` - file name, `"stdout"` or `"stderr"`
 ///
 /// # Examples
