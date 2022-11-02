@@ -2,7 +2,10 @@ use std::cmp::*;
 use std::fmt;
 use std::ops::{Range};
 
-/// Holds information about a neighbor: its index and the distance to it
+/// Holds information about a neighbor: its index and the distance to it.
+/// Objects of this class are created by the
+/// [`neighbors_of()`](PointsWithDistance::neighbors_of) method of the [`PointsWithDistance`](PointsWithDistance) trait
+/// and are used during the OPTICS clustering algorithm
 #[derive(Clone)]
 pub struct Neighbor {
     /// index of a neighbor point
@@ -101,6 +104,10 @@ impl PointsWithDistance for EuclideanPoints {
 }
 
 /// Provides the OPTICS (Ordering Points To Identify the Clustering Structure) clustering algorithm.
+/// OPTICS is an algorithm for density based clustering. It looks for a  neighbourhood
+/// of a certain radius `eps` must contain at least a minimal number of objects `min_points`.
+/// OPTICS arranges input data in order, storing the core distance and a reasonable reachability
+/// distance for each item.
 pub struct Optics {
     /// The radius of a neighborhood.
     pub eps: f64,
@@ -140,11 +147,12 @@ impl Optics {
     /// by the [`clustering_order()`](Optics::clustering_order) method
     pub fn reacheability_distance(&self) -> &Vec<f64> { &self.reacheability }
 
-    /// Read-only access to the order in which points were clustered,
-    /// provides results of the most recent [`run_clustering()`](Optics::run_clustering) call
+    /// Read-only access to the order in which points were clustered.
+    /// The clustering order together with [`reacheability_distance()`](Optics::reacheability_distance) array
+    /// provide so called *reacheability graph* of a OPTICS clustering process
     pub fn clustering_order(&self) -> &Vec<usize> { &self.clustering_order }
 
-    /// Copy of clusters created by the most recent [`run_clustering()`](Optics::run_clustering) call.
+    /// Copy of clusters created by the clustering process.
     /// Each cluster is represented as a ``Vec<usize>`` vector if indexes pointing to the actuall data
     /// subjected to clustering
     pub fn clusters(&self) -> Vec<Vec<usize>> {
