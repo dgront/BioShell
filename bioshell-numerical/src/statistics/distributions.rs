@@ -301,6 +301,7 @@ impl fmt::Display for MultiNormalDistribution {
     /// Create a `MultiNormalDistribution` and turn it into a string
     /// ```rust
     /// use std::fmt::Write;
+    /// use nalgebra::{DMatrix, DVector};
     /// use bioshell_numerical::statistics::MultiNormalDistribution;
     ///
     /// let mut n: MultiNormalDistribution = MultiNormalDistribution::new(2);
