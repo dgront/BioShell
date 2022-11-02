@@ -10,7 +10,12 @@ use crate::statistics::OnlineMultivariateStatistics;
 
 // ========== Distribution trait ==========
 
-/// Defines what any probability distribution must offer
+/// Defines what any probability distribution must offer.
+///
+/// A probability distribution function (pdf) trait primarily requires that a derived type will be able to:
+///   - evaluate the pdf(x) at any given ``x``
+///   - draw a random sample from the distribution
+/// Since the trait covers also multivariate distributions, the ``x`` is a vector, i.e. ``Vec<f64>``
 pub trait Distribution {
     /// Evaluates the probability distribution function at a given point
     fn pdf(&self, x: &Vec<f64>) -> f64;
@@ -194,8 +199,21 @@ impl Distribution for MultiNormalDistribution {
 }
 
 // ========== Estimable trait and its implementation for distributions ==========
+
+/// Provides an ability to estimate parameters of a [`Distribution`](Distribution)
 pub trait Estimable {
+    /// Estimate parameters of a probability distribution from a given sample
+    ///
+    /// # Arguments
+    /// * `sample` - observations used to infer the distribution parameters
     fn estimate(&mut self, sample: &Vec<Vec<f64>>);
+
+    /// Estimate parameters of a probability distribution from a given sample fraction
+    ///
+    /// # Arguments
+    /// * `sample` - observations used to infer the distribution parameters
+    /// * `selection` - boolean flags pointing to which data rows of a given sample should actually be used
+    ///     for estimation
     fn estimate_from_selected(&mut self, sample: &Vec<Vec<f64>>, selection: &Vec<bool>);
 }
 
@@ -278,9 +296,22 @@ macro_rules!  print_vector {
 
 impl fmt::Display for MultiNormalDistribution {
     /// Nicely prints a MultiNormalDistribution object
-    /// # Examples
     ///
+    /// # Examples
     /// Create a `MultiNormalDistribution` and turn it into a string
+    /// ```rust
+    /// use std::fmt::Write;
+    /// use bioshell_numerical::statistics::MultiNormalDistribution;
+    ///
+    /// let mut n: MultiNormalDistribution = MultiNormalDistribution::new(2);
+    /// n.set_parameters(&DVector::from_vec(vec![1.0, 2.0]),
+    /// &DMatrix::from_vec(2,2, vec![1.0, 0.5, 0.5, 1.0]));
+    ///
+    /// let expected = "mu =  [ 1.0000,  2.0000], sigma = [ [ 1.0000,  0.5000], [ 0.5000,  1.0000]]";
+    /// let mut actual = String::new();
+    /// write!(actual, "{}", n).unwrap();
+    /// assert_eq!(actual, expected);
+    /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let mut out: String = String::from("mu = ");
         print_vector!(&self.mean(), out);

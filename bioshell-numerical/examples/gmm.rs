@@ -11,9 +11,10 @@ use bioshell_core::utils::{read_tsv};
 /// Gaussian Mixture Model (GMM) estimation
 /// say gmm -h to see options
 struct Args {
-    /// input observations
+    /// file with N-dimensional input observations: N columns of real values
     #[clap(short, long, default_value = "", short='i')]
     infile: String,
+    /// number of N-dimensional normal distributions to be inferred
     #[clap(short, long, default_value = "3", short='n')]
     n_distr: usize,
 }
