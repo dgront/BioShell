@@ -75,11 +75,11 @@ fn read_csv_tsv(fname:&str, delimiter:u8) -> Vec<Vec<f64>> {
         .from_reader(file);
     let mut data : Vec<Vec<f64>> = Vec::new();
     for record in rdr.records() {
-        if let Ok(r) = record {
+        if let Ok(r) = &record {
             let row : Vec<f64> = r.iter().map(|e| {
                 match e.parse::<f64>(){
                     Ok(v) => v,
-                    Err(_err) => panic!("Problem while parsing a float value: {}", e),
+                    Err(_err) => panic!("Problem while parsing a float value: {}\nThe last record was: {:?}", e, &record),
                 }
             }).collect();
             data.push(row);

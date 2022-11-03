@@ -46,12 +46,17 @@ fn main() {
         let fname = format!("c{}.dat", i);
         let mut out = out_writer(fname.as_str());
         for iel in ci {
-            for val in &sample[*iel] {
-                match write!(out, "{}\t", val) {
+            match write!(out, "{}", sample[*iel][0]) {
+                Err(e) => println!("Error while writing to {} file: {:?}", fname, e),
+                _ => ()
+            }
+            for ival in 1..sample[*iel].len() {
+                match write!(out, "\t{}", sample[*iel][ival]) {
                     Err(e) => println!("Error while writing to {} file: {:?}", fname, e),
                     _ => ()
                 }
             }
+
             write!(out, "\n").ok();
         }
     }
