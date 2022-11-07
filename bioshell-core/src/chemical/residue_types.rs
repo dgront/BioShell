@@ -1,5 +1,10 @@
 use std::str::SplitWhitespace;
 
+/// Defines the types of monomers - residue types that are biomolecular building blocks.
+///
+/// The set of possible types is a shortened version of the full list of possibilities found in PDB files.
+/// Each of these types has a single-letter code assigned (such as 'P' for proteins and 'S' for sacharides);
+/// these codes are used by ``ResidueType::try_from()`` method to create a ``ResidueType``
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
 #[repr(i8)]
 pub enum MonomerType {
@@ -102,6 +107,8 @@ impl ResidueTypeManager {
 macro_rules! define_res_types {
 
     ($($name:ident $id:literal $one_letter_code:literal $three_letters_code:literal $res_type:ident),*) => {
+
+        /// Lists all the 20 standard amino acids, 5 standard DNA/RNA building blocks and a few _special_ types
         #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone, Copy)]
         #[repr(i16)]
         #[allow(non_camel_case_types)]
