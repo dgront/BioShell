@@ -1,30 +1,38 @@
+use std::collections::HashMap;
 use std::str::SplitWhitespace;
 
 /// Defines the types of monomers - residue types that are biomolecular building blocks.
 ///
 /// The set of possible types is a shortened version of the full list of possibilities found in PDB files.
 /// Each of these types has a single-letter code assigned (such as 'P' for proteins and 'S' for sacharides);
-/// these codes are used by ``ResidueType::try_from()`` method to create a ``ResidueType``
+/// these codes are used by [`try_from()`](ResidueType::try_from) method to create a [`ResidueType`](ResidueType)
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
 #[repr(i8)]
 pub enum MonomerType {
-    /// standard amino acid, single-character code: 'P'
+    /// standard amino acid, single-character code: ``'P'``
     PeptideLinking = 0,
-    /// standard deoxy-nucleotide, single-character code: 'D'
+    /// standard deoxy-nucleotide, single-character code: ``'D'``
     DNALinking,
-    /// standard nucleotide, single-character code: 'R'
+    /// standard nucleotide, single-character code: ``'R'``
     RNALinking,
-    /// a sugar residue, single-character code: 'S'
+    /// a sugar residue, single-character code: ``'S'``
     Sacharide,
-    /// most likely a ligand, single-character code: 'N'
+    /// most likely a ligand, single-character code: ``'N'``
     NonPolymer,
-    /// anything else, single-character code: 'O'
+    /// anything else, single-character code: ``'O'``
     OTHER
 }
 
 impl TryFrom<char> for MonomerType {
-    type Error = &'static str;
+    type Error = String;
 
+    /// Returns a ``MonomerType`` for its one-letter code
+    ///
+    /// # Example
+    /// ```rust
+    /// use bioshell_core::chemical::MonomerType;
+    /// assert_eq!(MonomerType::try_from('P').unwrap(), MonomerType::PeptideLinking);
+    /// ```
     fn try_from(value: char) -> Result<Self, Self::Error> {
         match value {
             'P' => Ok(MonomerType::PeptideLinking),
@@ -33,7 +41,7 @@ impl TryFrom<char> for MonomerType {
             'S' => Ok(MonomerType::Sacharide),
             'N' => Ok(MonomerType::NonPolymer),
             'O' => Ok(MonomerType::OTHER),
-            _ => {Err(&*format!("Can't find a MonomerType for the one-letter code: {}!", value))}
+            _ => {Err(format!("Can't find a MonomerType for the one-letter code: {}!", value))}
         }
     }
 }
@@ -55,25 +63,46 @@ pub trait ResidueTypeProperties {
 }
 
 /// Defines a residue type, i.e. a small molecule or its fragment that can be found in biomolecular data
+///
+/// Currently there is nearly 39 thousand residue types (_aka_ monomers) found in PDB files, all listed in
+/// this [Components-pub.cif](http://ligand-expo.rcsb.org/dictionaries/Components-pub.cif) file.
+///
+/// The purpose of the ``ResidueType`` is to provide conversion between these non-standard residue types
+/// and their _canonical_ variants they originate from. Note that for majority of cases such a conversion
+/// is not possible and the ``UNK`` standard residue (``X``) is used as the _canonical_ variant.
+///
+/// # Example
+/// ```rust
+/// use bioshell_core::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
+/// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
+/// assert_eq!(aln.code3, String::from("ALN"));
+/// assert_eq!(aln.parent_type, StandardResidueType::ALA);
+/// assert_eq!(aln.chem_compound_type, MonomerType::PeptideLinking);
+/// ```
+#[derive(Debug, Clone)]
 pub struct ResidueType {
-    /// three-letter code such as ALA for alanine
+    /// three-letter code of this ``ResidueType``, such as ALA for alanine
     pub code3: String,
     /// "standard" residue that this residue type is a variant of
     pub parent_type: StandardResidueType,
-    /// chemical type of this residue type
+    /// chemical type of this residue type says whether a monomer can form a protein or nucleic acid
     pub chem_compound_type: MonomerType,
-}
-
-
-pub struct ResidueTypeManager {
-    registered_types: Vec<ResidueType>
 }
 
 impl TryFrom<String> for ResidueType {
     type Error = &'static str;
 
-    /// Parses a string into a ResidueType instance.
-    /// Expected string format: ``"ALN A P"``
+    /// Parses a string into a ``ResidueType`` instance.
+    ///
+    /// Expected string format: ``"ALN A P"``, where ``"ALN"`` is a three-letter code of _NAPHTHALEN-2-YL-3-ALANINE_,
+    /// ``'A'`` is the one-letter code of its parent standard residue type and ``'P'`` is its monomer type code
+    /// (_Protein_ in this case)
+    ///
+    /// # Examples
+    /// ```rust
+    /// use bioshell_core::chemical::ResidueType;
+    /// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
+    /// ```
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let mut tokens: SplitWhitespace = value.split_whitespace();
         let code3 = String::from(tokens.next().unwrap());
@@ -85,21 +114,67 @@ impl TryFrom<String> for ResidueType {
     }
 }
 
-impl ResidueTypeManager {
-    pub fn new() ->  ResidueTypeManager{
-        let mut out = ResidueTypeManager{registered_types:vec![]};
 
-        for rt in StandardResidueType::TYPES {
-            out.registered_types.push(ResidueType{code3:rt.code3(), parent_type:rt,
-                chem_compound_type:rt.chem_compound_type()});
+pub struct ResidueTypeManager {
+    registered_types: Vec<ResidueType>,
+    by_code_3: HashMap<String, usize>
+}
+
+impl ResidueTypeManager {
+    /// Creates a new residue type manager
+    ///
+    /// ``ResidueType`` objects corresponding to standard StandardResidueType enum values are
+    /// automatically created and registered in this manager
+    pub fn new() ->  ResidueTypeManager{
+        let mut out = ResidueTypeManager{registered_types: vec![], by_code_3: HashMap::new()};
+
+        for srt in StandardResidueType::TYPES {
+            let rt = ResidueType{code3: srt.code3(), parent_type: srt,
+                chem_compound_type: srt.chem_compound_type()};
+            out.by_code_3.insert(srt.code3(), out.registered_types.len());
+            out.registered_types.push(rt);
         }
         return out;
     }
 
+    /// Counts the residue types registered in this manager
     pub fn count(&self) -> usize { self.registered_types.len() }
 
-    pub fn register_residue_type(&mut self, res_type: ResidueType) {
+    /// Register a new residue type in this manager.
+    ///
+    /// If the monomer (identified by its three-letter code) already exists in this manager,
+    /// it will not be inserted, i.e. this method does not replace an old monomer with a new one.
+    pub fn register_residue_type(&mut self, res_type: ResidueType) -> bool {
+        let key = &res_type.code3;
+        if self.by_code_3.contains_key(key) { return false; }
+        self.by_code_3.insert(key.clone(), self.registered_types.len());
         self.registered_types.push(res_type);
+        return true;
+    }
+
+    /// Provides a monomer for a given three-letter code.
+    ///
+    /// Returns an option that contains the monomer or ``None`` if it hasn't been registered
+    ///
+    /// # Examples
+    /// ```rust
+    /// use bioshell_core::chemical::{ResidueType, ResidueTypeManager};
+    /// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
+    /// let mut mgr = ResidueTypeManager::new();
+    /// // This should pass, as all standard residue types are preloaded by a constructor
+    /// let ala = mgr.by_code3(&String::from("ALA"));
+    /// assert!(ala.is_some());
+    /// // --- ALN hasn't been inserted yet
+    /// assert!(mgr.by_code3(&String::from("ALN")).is_none());
+    /// mgr.register_residue_type(aln);
+    /// assert!(mgr.by_code3(&String::from("ALN")).is_some());
+    /// ```
+    pub fn by_code3(&self, code3: &String) -> Option<&ResidueType> {
+        if self.by_code_3.contains_key(code3) {
+            return Some(&self.registered_types[self.by_code_3[code3]]);
+        } else {
+            return None;
+        }
     }
 }
 
@@ -154,7 +229,7 @@ macro_rules! define_res_types {
         }
 
         impl TryFrom<char> for StandardResidueType {
-            type Error = &'static str;
+            type Error = String;
 
             /// Returns a [`StandardResidueType`](StandardResidueType) enum for a given one-letter code
             fn try_from(value: char) -> Result<Self, Self::Error> {
@@ -162,7 +237,7 @@ macro_rules! define_res_types {
                     $(
                         $one_letter_code => Ok(StandardResidueType::$name),
                     )*
-                    _ => {Err(&*format!("Can't find an amino acid for the one-letter code: {}!", value))}
+                    _ => {Err(format!("Can't find an amino acid for the one-letter code: {}!", value))}
                 }
             }
         }

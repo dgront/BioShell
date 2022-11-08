@@ -21,8 +21,21 @@ fn test_residue_types() {
     let result = StandardResidueType::try_from('B');
     assert!(result.is_err());
 
-    let aln = ResidueType{parent_type: StandardResidueType::ALA, code3:String::from("ALN"), chem_compound_type: MonomerType::PeptideLinking};
+    // ---------- Create a new residue type
+    let alm = ResidueType{parent_type: StandardResidueType::ALA, code3:String::from("ALM"), chem_compound_type: MonomerType::PeptideLinking};
+
+    // ---------- Create a new RT manager, it should preload all the 29 standard residue types
     let mut mgr = ResidueTypeManager::new();
     assert_eq!(mgr.count(), 29);
+
+    // ---------- ALA should be already in the manager
+    let ala = mgr.by_code3(&String::from("ALA"));
+    assert!(ala.is_some());
+
+    // ---------- ... but ALN hasn't been registered yet
+    assert!(mgr.by_code3(&String::from("ALN")).is_none());
+    mgr.register_residue_type(alm);
+    let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
     mgr.register_residue_type(aln);
+    assert_eq!(mgr.count(), 31);
 }
