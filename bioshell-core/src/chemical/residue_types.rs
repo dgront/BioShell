@@ -4,7 +4,7 @@ use std::str::SplitWhitespace;
 /// Defines the types of monomers - residue types that are biomolecular building blocks.
 ///
 /// The set of possible types is a shortened version of the full list of possibilities found in PDB files.
-/// Each of these types has a single-letter code assigned (such as 'P' for proteins and 'S' for sacharides);
+/// Each of these types has a single-letter code assigned (such as ``'P'`` for proteins and ``'S'`` for sacharides);
 /// these codes are used by [`try_from()`](ResidueType::try_from) method to create a [`ResidueType`](ResidueType)
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
 #[repr(i8)]
@@ -81,9 +81,9 @@ pub trait ResidueTypeProperties {
 /// ```
 #[derive(Debug, Clone)]
 pub struct ResidueType {
-    /// three-letter code of this ``ResidueType``, such as ALA for alanine
+    /// three-letter code of this ``ResidueType``, such as ``"ALA"`` for alanine
     pub code3: String,
-    /// "standard" residue that this residue type is a variant of
+    /// _"standard"_ residue that this residue type is a variant of
     pub parent_type: StandardResidueType,
     /// chemical type of this residue type says whether a monomer can form a protein or nucleic acid
     pub chem_compound_type: MonomerType,
@@ -94,9 +94,10 @@ impl TryFrom<String> for ResidueType {
 
     /// Parses a string into a ``ResidueType`` instance.
     ///
-    /// Expected string format: ``"ALN A P"``, where ``"ALN"`` is a three-letter code of _NAPHTHALEN-2-YL-3-ALANINE_,
-    /// ``'A'`` is the one-letter code of its parent standard residue type and ``'P'`` is its monomer type code
-    /// (_Protein_ in this case)
+    /// Expected string format: ``"ALN A P"``, where ``"ALN"`` is a three-letter code (
+    /// in this example its _NAPHTHALEN-2-YL-3-ALANINE_, represented by ``"ALN"``),
+    /// ``'A'`` is the one-letter code of its parent standard residue type (which is alanine)
+    /// and ``'P'`` encodes is its monomer type (``MonomerType::PeptideLinking`` in this case)
     ///
     /// # Examples
     /// ```rust
@@ -114,7 +115,29 @@ impl TryFrom<String> for ResidueType {
     }
 }
 
-
+/// Provides unique integer ID for each registered ResidueType
+///
+/// The standard residue types (amino aicds, bases, etc) are registered by default. User can add
+/// additional, non-standard residue types into a manager.
+///
+/// # Examples
+/// ```rust
+/// use bioshell_core::chemical::{ResidueType, ResidueTypeManager};
+///
+/// let mut mgr = ResidueTypeManager::new();
+/// // --- This should pass, as all standard residue types (including alanine) are preloaded by a constructor
+/// let ala = mgr.by_code3(&String::from("ALA"));
+/// assert!(ala.is_some());
+/// // --- There are 29 standard residue types
+/// assert_eq!(mgr.count(), 29);
+/// // --- ALN hasn't been inserted yet
+/// assert!(mgr.by_code3(&String::from("ALN")).is_none());
+/// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
+/// mgr.register_residue_type(aln);
+/// assert!(mgr.by_code3(&String::from("ALN")).is_some());
+/// // --- ALN residue type has been registered at index the 29
+/// assert_eq!(mgr.index(&String::from("ALN")).unwrap(), 29);
+/// ```
 pub struct ResidueTypeManager {
     registered_types: Vec<ResidueType>,
     by_code_3: HashMap<String, usize>
@@ -172,6 +195,17 @@ impl ResidueTypeManager {
     pub fn by_code3(&self, code3: &String) -> Option<&ResidueType> {
         if self.by_code_3.contains_key(code3) {
             return Some(&self.registered_types[self.by_code_3[code3]]);
+        } else {
+            return None;
+        }
+    }
+
+    /// Returns an integer index identifying a residue type.
+    ///
+    /// Returns ``None`` if the residue type hasn't been registered by this manager.
+    pub fn index(&self, code3: &String) -> Option<usize> {
+        if self.by_code_3.contains_key(code3) {
+            return Some(self.by_code_3[code3]);
         } else {
             return None;
         }
@@ -243,6 +277,19 @@ macro_rules! define_res_types {
         }
 
         impl StandardResidueType {
+            /// contains all standard residue types, gathered in an array to iterate over them easily
+            ///
+            /// # Examples
+            /// ``` rust
+            /// use bioshell_core::chemical::{StandardResidueType, ResidueTypeProperties, MonomerType};
+            ///
+            /// // ---------- Iterate over standard amino acid enum types
+            /// let mut n_aa: i8 = 0;
+            /// for srt in StandardResidueType::TYPES {
+            ///     if srt.chem_compound_type() == MonomerType::PeptideLinking { n_aa += 1; }
+            /// }
+            /// assert_eq!(n_aa, 21);       // 20 standard amino acids + UNK
+            /// ```
             pub const TYPES: [Self; 29] = [
             $(
                 Self::$name,

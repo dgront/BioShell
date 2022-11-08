@@ -3,7 +3,14 @@ use bioshell_core::chemical::{ResidueType, ResidueTypeManager, MonomerType, Stan
 #[test]
 fn test_residue_types() {
 
-    // ---------- Create a few standard amino acid types
+    // ---------- Iterate over standard amino acid enum types
+    let mut n_aa: i8 = 0;
+    for srt in StandardResidueType::TYPES {
+        if srt.chem_compound_type() == MonomerType::PeptideLinking { n_aa += 1; }
+    }
+    assert_eq!(n_aa, 21);       // 20 standard amino acids + UNK
+
+    // ---------- Fetch a few standard amino acid types
     let cys: StandardResidueType = StandardResidueType::CYS;
     let trp: StandardResidueType = StandardResidueType::TRP;
 
