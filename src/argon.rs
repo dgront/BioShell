@@ -11,9 +11,9 @@ use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
 
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
-/// NVT or NPT simulation of argon fluid
-/// say argon -h to see options
+#[clap(name = "argon")]
+#[clap(version = "0.2")]
+#[clap(about = "NVT or NPT simulation of argon fluid", long_about = None)]
 struct Args {
     /// staring conformation in the PDB format
     #[clap(short, long, default_value = "", short='f')]

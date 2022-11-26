@@ -1,6 +1,8 @@
 use std::time::Instant;
 use std::ops::Range;
 
+use clap::{Parser};
+
 use bioshell_numerical::Vec3;
 use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb, System};
 use bioshell_ff::bonded::SimpleHarmonic;
@@ -9,6 +11,29 @@ use bioshell_sim::generators::random_chain;
 use bioshell_sim::sampling::movers::{single_atom_move};
 use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
 
+#[derive(Parser, Debug)]
+#[clap(name = "polymer")]
+#[clap(version = "0.2")]
+#[clap(about = "Simple polymer model", long_about = None)]
+/// simulation of a simple polymer model
+/// say polymer -h to see options
+struct Args {
+    /// staring conformation in the PDB format
+    #[clap(short, long, default_value = "", short='f')]
+    infile: String,
+    /// temperature of the simulation
+    #[clap(short, long, default_value_t = 1.0, short='t')]
+    temperature: f64,
+    /// Number of beads of a polymer chain
+    #[clap(short, long, default_value_t = 100, short='n')]
+    nbeads: usize,
+    /// Inner cycles
+    #[clap(short, long, default_value_t = 100)]
+    inner: i32,
+    /// outer cycles
+    #[clap(short, long, default_value_t = 100)]
+    outer: i32,
+}
 
 pub fn main() {
     const E_REP: f64 = 4.25;
@@ -16,14 +41,15 @@ pub fn main() {
     const E_TO: f64 = 6.0;
     const E_VAL: f64 = -1.0;
     const REP_VAL: f64 = 1000.0;
-    const N_BEADS: usize = 300;
-    const N_SMALL_CYCLES: i32 = 1000;
-    const N_LARGE_CYCLES: i16 = 10000;
-    const T: f64 = 1.8;
     const L: f64 = 900.0;
 
+    let args = Args::parse();
+
+    let n_beads: usize = args.nbeads;
+    let temperature: f64 = args.temperature;
+
     // ---------- Create system's coordinates
-    let mut coords = Coordinates::new(N_BEADS);
+    let mut coords = Coordinates::new(n_beads);
     coords.set_box_len(L);
     let start: Vec3 = Vec3::new(L/2.0, L/2.0, L/2.0);
     random_chain(3.8, E_FROM as f64, &start, &mut coords);
@@ -45,7 +71,7 @@ pub fn main() {
     total.add_component(Box::new(contacts), 1.0);
     println!("{}", total.energy(&system));
 
-    let mut sampler = IsothermalMC::new(T, Ensemle::NVT, 1.0);
+    let mut sampler = IsothermalMC::new(temperature, Ensemle::NVT, 1.0);
     sampler.energy = Box::new(total);    // --- The total has been moved to a box within the sampler
     let m: Box<dyn Fn(&mut System,f64) -> Range<usize>> = Box::new(single_atom_move);
     sampler.add_mover(m,3.0);
@@ -53,9 +79,9 @@ pub fn main() {
     // sampler.add_mover(m,5.0);
 
     let start = Instant::now();
-    for i in 0..N_LARGE_CYCLES {
-        let f_succ = sampler.run(&mut system, N_SMALL_CYCLES);
-        to_pdb(&system.coordinates(), i+1, "tra.pdb");
+    for i in 0..args.outer {
+        let f_succ = sampler.run(&mut system, args.inner);
+        to_pdb(&system.coordinates(), (i+1) as i16, "tra.pdb");
         println!("{} {} {}  {:.2?}", i, sampler.energy(&system), f_succ, start.elapsed());
     }
 }
