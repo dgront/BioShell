@@ -5,7 +5,7 @@ use clap::{Parser};
 
 use bioshell_numerical::Vec3;
 use bioshell_core::structure::Coordinates;
-use bioshell_core::io::pdb::{coordinates_to_pdb};
+use bioshell_core::io::pdb::{coordinates_to_pdb, pdb_to_coordinates};
 
 use bioshell_ff::{Energy, TotalEnergy, System};
 use bioshell_ff::bonded::SimpleHarmonic;
@@ -36,6 +36,9 @@ struct Args {
     /// outer cycles
     #[clap(short, long, default_value_t = 100)]
     outer: i32,
+    /// prefix for output file names
+    #[clap(long, default_value = "")]
+    prefix: String,
 }
 
 pub fn main() {
@@ -48,20 +51,34 @@ pub fn main() {
 
     let args = Args::parse();
 
-    let n_beads: usize = args.nbeads;
     let temperature: f64 = args.temperature;
-
     // ---------- Create system's coordinates
+    let mut n_beads: usize = 0;
     let mut coords = Coordinates::new(n_beads);
-    coords.set_box_len(L);
-    let start: Vec3 = Vec3::new(L/2.0, L/2.0, L/2.0);
-    random_chain(3.8, E_FROM as f64, &start, &mut coords);
+
+    if args.infile == "" {
+        n_beads = args.nbeads;
+        coords = Coordinates::new(n_beads);
+        coords.set_box_len(L);
+        let start: Vec3 = Vec3::new(L/2.0, L/2.0, L/2.0);
+        random_chain(3.8, E_FROM as f64, &start, &mut coords);
+    } else {
+        let res = pdb_to_coordinates(&args.infile).ok();
+        match res {
+            Some(x) => {coords = x},
+            _ => panic!("Can't read from file >{}<", args.infile)
+        };
+        coords.set_box_len(L);
+    }
+
     // ---------- Create system's list of neighbors
     let nbl:NbList = NbList::new(E_TO,4.0,Box::new(PolymerRules{}));
     // ---------- Create the system
     let mut system: System = System::new(coords, nbl);
 
-    coordinates_to_pdb(&system.coordinates(), 0, "tra.pdb");
+    let prefix = args.prefix;
+    let tra_fname = format!("{}tra.pdb", &prefix);
+    coordinates_to_pdb(&system.coordinates(), 0, tra_fname.as_str());
 
     // ---------- Contact energy
     let contacts = PairwiseNonbondedEvaluator::new(E_TO as f64,
@@ -72,7 +89,7 @@ pub fn main() {
     let mut total = TotalEnergy::default();
     total.add_component(Box::new(harmonic), 1.0);
     total.add_component(Box::new(contacts), 1.0);
-    println!("{}", total.energy(&system));
+    println!("# starting energy: {}", total.energy(&system));
 
     let mut sampler = IsothermalMC::new(temperature, Ensemle::NVT, 1.0);
     sampler.energy = Box::new(total);    // --- The total has been moved to a box within the sampler
@@ -84,7 +101,9 @@ pub fn main() {
     let start = Instant::now();
     for i in 0..args.outer {
         let f_succ = sampler.run(&mut system, args.inner);
-        coordinates_to_pdb(&system.coordinates(), (i+1) as i16, "tra.pdb");
+        coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str());
         println!("{} {} {}  {:.2?}", i, sampler.energy(&system), f_succ, start.elapsed());
     }
+
+    coordinates_to_pdb(&system.coordinates(), 1i16, format!("{}final.pdb", &prefix).as_str());
 }

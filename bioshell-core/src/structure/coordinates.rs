@@ -35,10 +35,14 @@ macro_rules! closest_image {
 }
 
 impl Coordinates {
+
     pub fn new(n: usize) -> Coordinates {
-        let mut v = Vec::with_capacity(n);
-        let zero = Vec3::from_float(0.0);
-        v.resize(n, zero);
+        let mut v = if n > 0 { Vec::with_capacity(n) } else { Vec::new() };
+
+        if n > 0 {
+            let zero = Vec3::from_float(0.0);
+            v.resize(n, zero);
+        }
         let l: f64 = 100000.0;
         return Coordinates {box_len: l, box_len_half: l/2.0, v};
     }
