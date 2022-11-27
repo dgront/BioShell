@@ -12,5 +12,6 @@ keywords = ["bioshell"]
 crate-type =["rlib"]
 
 [dependencies]
+bioshell-numerical = { path = "../bioshell-numerical" }
 csv = "1.1"
 

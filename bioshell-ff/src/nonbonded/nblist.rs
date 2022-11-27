@@ -1,5 +1,6 @@
 use bioshell_numerical::{Vec3};
-use crate::{Coordinates, CoordinatesView};
+use bioshell_core::structure::{Coordinates, CoordinatesView};
+
 
 /// Rules that define which atoms and which atom pairs will be excluded from hashing
 pub trait NbListRules {

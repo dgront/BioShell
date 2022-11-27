@@ -3,7 +3,10 @@ use std::ops::Range;
 
 use clap::{Parser};
 
-use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb, System};
+use bioshell_core::structure::Coordinates;
+use bioshell_core::io::pdb::{coordinates_to_pdb};
+
+use bioshell_ff::{Energy, TotalEnergy, System};
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic, NbList, ArgonRules};
 use bioshell_sim::generators::cubic_grid_atoms;
 use bioshell_sim::sampling::movers::{single_atom_move};
@@ -60,7 +63,7 @@ pub fn main() {
     let mut coords = Coordinates::new(n_atoms);
     coords.set_box_len(box_width(SIGMA as f64,n_atoms, density));
     cubic_grid_atoms(&mut coords);
-    to_pdb(&coords,1,"ar.pdb");
+    coordinates_to_pdb(&coords,1,"ar.pdb");
 
     // ---------- Create system's list of neighbors
     let nbl:NbList = NbList::new(CUTOFF as f64,4.0,Box::new(ArgonRules{}));
@@ -91,7 +94,7 @@ pub fn main() {
     let start = Instant::now();
     for i in 0..args.outer {
         let f_succ = sampler.run(&mut system, args.inner as i32);
-        to_pdb(&system.coordinates(), i as i16, "ar.pdb");
+        coordinates_to_pdb(&system.coordinates(), i as i16, "ar.pdb");
         println!("{} {} {}  {:.2?}", i, sampler.energy(&system) / system.size() as f64, f_succ, start.elapsed());
     }
 }

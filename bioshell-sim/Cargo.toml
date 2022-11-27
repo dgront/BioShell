@@ -14,5 +14,6 @@ crate-type =["rlib"]
 [dependencies]
 rand="0.8.5"
 bioshell-numerical = { path = "../bioshell-numerical" }
+bioshell-core = { path = "../bioshell-core" }
 bioshell-ff = { path = "../bioshell-ff" }
 

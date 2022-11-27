@@ -4,7 +4,10 @@ use std::ops::Range;
 use clap::{Parser};
 
 use bioshell_numerical::Vec3;
-use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb, System};
+use bioshell_core::structure::Coordinates;
+use bioshell_core::io::pdb::{coordinates_to_pdb};
+
+use bioshell_ff::{Energy, TotalEnergy, System};
 use bioshell_ff::bonded::SimpleHarmonic;
 use bioshell_ff::nonbonded::{SimpleContact, PairwiseNonbondedEvaluator, NbList, PolymerRules};
 use bioshell_sim::generators::random_chain;
@@ -58,7 +61,7 @@ pub fn main() {
     // ---------- Create the system
     let mut system: System = System::new(coords, nbl);
 
-    to_pdb(&system.coordinates(), 0, "tra.pdb");
+    coordinates_to_pdb(&system.coordinates(), 0, "tra.pdb");
 
     // ---------- Contact energy
     let contacts = PairwiseNonbondedEvaluator::new(E_TO as f64,
@@ -81,7 +84,7 @@ pub fn main() {
     let start = Instant::now();
     for i in 0..args.outer {
         let f_succ = sampler.run(&mut system, args.inner);
-        to_pdb(&system.coordinates(), (i+1) as i16, "tra.pdb");
+        coordinates_to_pdb(&system.coordinates(), (i+1) as i16, "tra.pdb");
         println!("{} {} {}  {:.2?}", i, sampler.energy(&system), f_succ, start.elapsed());
     }
 }

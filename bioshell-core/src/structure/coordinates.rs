@@ -1,9 +1,6 @@
 use std::ops::{Index, IndexMut};
 
-use std::io::Write;
-
 use bioshell_numerical::{Vec3};
-use bioshell_core::utils::out_writer;
 
 /// Stateless immutable view of coordinates
 pub struct CoordinatesView<'a> {  pub points: &'a  Coordinates, }
@@ -155,16 +152,4 @@ impl IndexMut<usize> for Coordinates {
     fn index_mut(&mut self, i: usize) -> &mut Vec3 {
         &mut self.v[i]
     }
-}
-
-pub fn to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str) {
-
-    let mut out_writer = out_writer(&out_fname);
-
-    out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
-    for i in 0..chain.size() {
-        out_writer.write(format!("ATOM   {:4}{}  ALA A{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
-                                 i+1, " CA ", i+1, chain.x(i), chain.y(i), chain.z(i)).as_bytes()).ok();
-    }
-    out_writer.write(b"ENDMDL\n").ok();
 }

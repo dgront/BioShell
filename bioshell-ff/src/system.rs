@@ -1,5 +1,5 @@
 use crate::nonbonded::{NbList, NbListRules};
-use crate::{Coordinates, CoordinatesView};
+use bioshell_core::structure::{Coordinates, CoordinatesView};
 
 
 #[derive(Clone)]

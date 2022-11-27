@@ -2,7 +2,10 @@ use std::time::Instant;
 use std::ops::Range;
 use rand::Rng;
 
-use bioshell_ff::{Coordinates, Energy, TotalEnergy, to_pdb, System};
+use bioshell_core::structure::Coordinates;
+use bioshell_core::io::pdb::{coordinates_to_pdb};
+
+use bioshell_ff::{Energy, TotalEnergy, System};
 use bioshell_ff::nonbonded::{NbList, PairwiseNonbondedEvaluator, SimpleContact, ArgonRules};
 use bioshell_sim::generators::square_grid_atoms;
 use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
@@ -37,7 +40,7 @@ pub fn main() {
     let mut coords = Coordinates::new(n_atoms);
     coords.set_box_len(box_width(R,n_atoms, density));
     square_grid_atoms(&mut coords);
-    to_pdb(&coords,1,"disks.pdb");
+    coordinates_to_pdb(&coords, 1, "disks.pdb");
 
     // ---------- Create system's list of neighbors
     let nbl:NbList = NbList::new(R+W as f64,6.0,Box::new(ArgonRules{}));
@@ -62,7 +65,7 @@ pub fn main() {
     let start = Instant::now();
     for i in 0..N_LARGE_CYCLES {
         let f_succ = sampler.run(&mut system, N_SMALL_CYCLES);
-        to_pdb(&system.coordinates(), i, "disks.pdb");
+        coordinates_to_pdb(&system.coordinates(), i, "disks.pdb");
         println!("{} {} {}  {:.2?}", i, sampler.energy(&system)/system.size() as f64, f_succ, start.elapsed());
     }
 }
