@@ -1,4 +1,4 @@
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, Range};
 
 use bioshell_numerical::{Vec3};
 
@@ -11,6 +11,7 @@ pub struct Coordinates {
     box_len: f64,
     box_len_half: f64,
     v: Vec<Vec3>,
+    chains: Vec<Range<usize>>
 }
 
 macro_rules! wrap_coordinate_to_box {
@@ -43,8 +44,9 @@ impl Coordinates {
             let zero = Vec3::from_float(0.0);
             v.resize(n, zero);
         }
+        let chains: Vec<Range<usize>> = vec![0..n];
         let l: f64 = 100000.0;
-        return Coordinates {box_len: l, box_len_half: l/2.0, v};
+        return Coordinates {box_len: l, box_len_half: l/2.0, v, chains};
     }
 
     #[inline(always)]
@@ -55,6 +57,15 @@ impl Coordinates {
         self.box_len = new_box_len;
         self.box_len_half = new_box_len / 2.0;
     }
+
+    /// Returns the number of chains in this system
+    pub fn count_chains(&self) -> usize { return self.chains.len(); }
+
+    /// Provides the (half-open) range of atoms that belong to a given chain.
+    ///
+    /// Per rust convention used in ``std::ops::Range`` struct, the returned
+    /// ``start..end`` range contains all atoms indexed by ``start <= idx < end``
+    pub fn chain_range(&self, idx: usize) -> &Range<usize> { &self.chains[idx] }
 
     pub fn distance_square(&self, i: usize, j: usize) -> f64 {
 
