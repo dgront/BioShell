@@ -1,16 +1,24 @@
 use std::fmt;
 
+/// 3D vector used to represent interaction center in a simulation
 #[derive(Clone)]
 pub struct Vec3 {
+    /// the ``x`` coordinate of this vector
     pub x: f64,
+    /// the ``y`` coordinate of this vector
     pub y: f64,
+    /// the ``z`` coordinate of this vector
     pub z: f64,
+    /// residue type assigned to this vector
     pub res_type: i8,
+    /// atom type assigned to this vector
     pub atom_type: i8,
+    /// index of a chain this atom belongs to
     pub chain_id: i16
 }
 
 impl fmt::Debug for Vec3 {
+    /// Prints nicely 3D coordinates of a vector
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{:.3} {:.3} {:.3}]", self.x, self.y, self.z)
     }
@@ -41,10 +49,16 @@ macro_rules! float3_operation {
 }
 
 impl Vec3 {
+    /// Creates a new vector from given coordinates.
+    ///
+    /// ``res_type``, ``atom_type`` and ``chain_id`` are by default set to ``0``
     pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
         Vec3 { x: x, y: y, z: z, res_type:0, atom_type: 0, chain_id: 0}
     }
 
+    /// Creates a new vector with all coordinates equal to a given value.
+    ///
+    /// ``res_type``, ``atom_type`` and ``chain_id`` are by default set to ``0``
     pub fn from_float(value: f64) -> Vec3 {
         Vec3 {
             x: value,
@@ -75,6 +89,7 @@ impl Vec3 {
     /// Subtracts float x, y, x values from this vector
     pub fn sub3(&mut self, x:f64, y:f64, z:f64) { float3_operation!(self, -=, x, y, z); }
 
+    /// Returns the squared length of this 3D vector
     pub fn length_squared(&self) -> f64 {
         return self.x * self.x + self.y * self.y + self.z * self.z;
     }

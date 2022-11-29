@@ -5,7 +5,9 @@ use bioshell_numerical::{Vec3};
 /// Stateless immutable view of coordinates
 pub struct CoordinatesView<'a> {  pub points: &'a  Coordinates, }
 
-
+/// Represents a system of Vec3 points in a simulation.
+///
+/// This system imposes simple cubic periodic boundary conditions on the modelled system
 #[derive(Clone, Debug)]
 pub struct Coordinates {
     box_len: f64,
@@ -102,18 +104,27 @@ impl Coordinates {
         return d2 + d*d;
     }
 
+    /// Calculates the difference in ``x`` coordinate between the i-th atom and a given ``x`` value
+    /// This function obeys periodic boundary conditions and returns the distance to the closest
+    /// image of the  position ``i``
     pub fn delta_x(&self, i: usize, x: f64) -> f64 {
         let mut d: f64;
         closest_image!(self.v[i].x,x, self.box_len, self.box_len_half, d);
         d
     }
 
+    /// Calculates the difference in ``y`` coordinate between the i-th atom and a given ``y`` value
+    /// This function obeys periodic boundary conditions and returns the distance to the closest
+    /// image of the  position ``i``
     pub fn delta_y(&self, i: usize, y: f64) -> f64 {
         let mut d: f64;
         closest_image!(self.v[i].y, y, self.box_len, self.box_len_half, d);
         d
     }
 
+    /// Calculates the difference in ``z`` coordinate between the i-th atom and a given ``z`` value
+    /// This function obeys periodic boundary conditions and returns the distance to the closest
+    /// image of the  position ``i``
     pub fn delta_z(&self, i: usize, z: f64) -> f64 {
         let mut d: f64;
         closest_image!(self.v[i].z, z, self.box_len, self.box_len_half, d);
