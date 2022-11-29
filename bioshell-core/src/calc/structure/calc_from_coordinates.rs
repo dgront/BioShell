@@ -1,3 +1,5 @@
+use bioshell_numerical::Vec3;
+
 use crate::structure::Coordinates;
 
 /// Computes the center of mass of a given chain
@@ -32,15 +34,10 @@ pub fn gyration_squared(chain: &Coordinates, chain_idx: usize) -> f64 {
     let r = chain.chain_range(chain_idx).clone();
     let n = (r.end-r.start) as f64;
     let (x0,y0, z0) = cm(chain, chain_idx);
-    let mut s: f64;
+    let v0 = Vec3::new(x0, y0, z0);
     let mut s2: f64 = 0.0;
     for ai in r {
-        s = chain[ai].x - x0;
-        s2 += s*s;
-        s = chain[ai].y - y0;
-        s2 += s*s;
-        s = chain[ai].z - z0;
-        s2 += s*s;
+        s2 += chain.closest_distance_square_to_vec(ai, &v0);
     }
 
     return s2 / n;
