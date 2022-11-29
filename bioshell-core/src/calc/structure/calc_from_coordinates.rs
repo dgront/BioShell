@@ -12,8 +12,8 @@ pub fn cm(chain: &Coordinates, chain_idx: usize) -> (f64, f64, f64) {
     let (mut cx, mut cy, mut cz) = (0f64, 0f64, 0f64);
     for ai in r {
         cx += chain.delta_x(ai, x0);
-        cy += chain.delta_x(ai, y0);
-        cz += chain.delta_x(ai, z0);
+        cy += chain.delta_y(ai, y0);
+        cz += chain.delta_z(ai, z0);
     }
     cx = cx / n + x0;
     cy = cy / n + y0;
