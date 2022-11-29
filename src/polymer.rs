@@ -100,10 +100,11 @@ pub fn main() {
     // sampler.add_mover(m,5.0);
 
     let start = Instant::now();
+    println!("#cycle   energy  f_acc   r_end_sq     rg_sq   time");
     for i in 0..args.outer {
         let f_succ = sampler.run(&mut system, args.inner);
         coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str(), true);
-        println!("{:6} {:9.3} {:5.3} {} {}  {:.2?}", i, sampler.energy(&system), f_succ,
+        println!("{:6} {:9.3} {:5.3} {:>10.3} {:>10.3}  {:.2?}", i, sampler.energy(&system), f_succ,
                  r_end_squared(&system.coordinates(), 0), gyration_squared(&&system.coordinates(), 0), start.elapsed());
     }
 
