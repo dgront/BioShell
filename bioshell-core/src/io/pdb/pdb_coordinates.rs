@@ -19,8 +19,8 @@ use crate::utils::{out_writer};
 /// # Examples
 /// ```rust
 /// ```
-pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str) {
-    let mut out_writer = out_writer(&out_fname);
+pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str, if_append: bool) {
+    let mut out_writer = out_writer(&out_fname, if_append);
 
     out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
     for i in 0..chain.size() {

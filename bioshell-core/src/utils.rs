@@ -39,23 +39,37 @@ pub fn writes_to_screen(out_fname: &str) -> bool {
 ///
 /// # Arguments
 /// * `out_fname` - file name, `"stdout"` or `"stderr"`
+/// * `if_append` - existing file will be removed if false, otherwise the new content will be appended
 ///
 /// # Examples
 ///
 /// ```
 /// use bioshell_core::utils::out_writer;
-/// let mut to_stream = out_writer("");
-/// to_stream = out_writer("stdout");
-/// let mut to_file = out_writer("file.out");
+/// let mut to_stream = out_writer("", true);
+/// to_stream = out_writer("stdout", true);
+/// let mut to_file = out_writer("file.out", false);
 /// ```
-pub fn out_writer(out_fname: &str) -> Box<dyn Write>{
+pub fn out_writer(out_fname: &str, if_append: bool) -> Box<dyn Write>{
     match out_fname {
         "" => Box::new(stdout()) as Box<dyn Write>,
         "stdout" => Box::new(stdout()) as Box<dyn Write>,
         "stderr" => Box::new(stderr()) as Box<dyn Write>,
         _ => {
             let path = Path::new(out_fname);
-            Box::new(File::options().append(true).create(true).open(&path).unwrap()) as Box<dyn Write>
+
+            if if_append {
+                let file = match File::options().append(true).write(true).create(true).open(&path) {
+                    Ok(file) => file,
+                    Err(e) => panic!("can't open >{:?}<, error is: {:?}", &path, e),
+                } ;
+                return Box::new(file) as Box<dyn Write>;
+            } else {
+                let file = match File::create(&path) {
+                    Ok(file) => file,
+                    Err(e) => panic!("can't open >{:?}<, error is: {:?}", &path, e),
+                };
+                return Box::new(file) as Box<dyn Write>;
+            }
         }
     }
 }

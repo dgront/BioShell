@@ -5,6 +5,7 @@ use clap::{Parser};
 
 use bioshell_numerical::Vec3;
 use bioshell_core::structure::Coordinates;
+use bioshell_core::calc::structure::{gyration_squared, r_end_squared};
 use bioshell_core::io::pdb::{coordinates_to_pdb, pdb_to_coordinates};
 
 use bioshell_ff::{Energy, TotalEnergy, System};
@@ -78,7 +79,7 @@ pub fn main() {
 
     let prefix = args.prefix;
     let tra_fname = format!("{}tra.pdb", &prefix);
-    coordinates_to_pdb(&system.coordinates(), 0, tra_fname.as_str());
+    coordinates_to_pdb(&system.coordinates(), 0, tra_fname.as_str(), true);
 
     // ---------- Contact energy
     let contacts = PairwiseNonbondedEvaluator::new(E_TO as f64,
@@ -101,9 +102,10 @@ pub fn main() {
     let start = Instant::now();
     for i in 0..args.outer {
         let f_succ = sampler.run(&mut system, args.inner);
-        coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str());
-        println!("{} {} {}  {:.2?}", i, sampler.energy(&system), f_succ, start.elapsed());
+        coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str(), true);
+        println!("{:6} {:9.3} {:5.3} {} {}  {:.2?}", i, sampler.energy(&system), f_succ,
+                 r_end_squared(&system.coordinates(), 0), gyration_squared(&&system.coordinates(), 0), start.elapsed());
     }
 
-    coordinates_to_pdb(&system.coordinates(), 1i16, format!("{}final.pdb", &prefix).as_str());
+    coordinates_to_pdb(&system.coordinates(), 1i16, format!("{}final.pdb", &prefix).as_str(), false);
 }

@@ -63,7 +63,7 @@ pub fn main() {
     let mut coords = Coordinates::new(n_atoms);
     coords.set_box_len(box_width(SIGMA as f64,n_atoms, density));
     cubic_grid_atoms(&mut coords);
-    coordinates_to_pdb(&coords,1,"ar.pdb");
+    coordinates_to_pdb(&coords,1,"ar.pdb", true);
 
     // ---------- Create system's list of neighbors
     let nbl:NbList = NbList::new(CUTOFF as f64,4.0,Box::new(ArgonRules{}));
@@ -94,7 +94,7 @@ pub fn main() {
     let start = Instant::now();
     for i in 0..args.outer {
         let f_succ = sampler.run(&mut system, args.inner as i32);
-        coordinates_to_pdb(&system.coordinates(), i as i16, "ar.pdb");
+        coordinates_to_pdb(&system.coordinates(), i as i16, "ar.pdb", true);
         println!("{} {} {}  {:.2?}", i, sampler.energy(&system) / system.size() as f64, f_succ, start.elapsed());
     }
 }
