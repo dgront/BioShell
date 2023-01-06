@@ -4,16 +4,20 @@ use std::ops::Range;
 use clap::{Parser};
 
 use bioshell_numerical::Vec3;
-use bioshell_core::structure::Coordinates;
-use bioshell_core::calc::structure::{gyration_squared, r_end_squared};
-use bioshell_core::io::pdb::{coordinates_to_pdb, pdb_to_coordinates};
 
-use bioshell_ff::{Energy, TotalEnergy, System};
+use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, random_chain, pdb_to_coordinates,
+                          gyration_squared, r_end_squared,
+                          NbList, PolymerRules};
+use bioshell_cartesians::movers::SingleAtomMove;
+
+use bioshell_sim::{Energy};
+
+use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion,
+                          AdaptiveMCProtocol, MoversSet};
+
+use bioshell_ff::{TotalEnergy};
 use bioshell_ff::bonded::SimpleHarmonic;
-use bioshell_ff::nonbonded::{SimpleContact, PairwiseNonbondedEvaluator, NbList, PolymerRules};
-use bioshell_sim::generators::random_chain;
-use bioshell_sim::sampling::movers::{single_atom_move};
-use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
 
 #[derive(Parser, Debug)]
 #[clap(name = "polymer")]
@@ -33,10 +37,10 @@ struct Args {
     nbeads: usize,
     /// Inner cycles
     #[clap(short, long, default_value_t = 100)]
-    inner: i32,
+    inner: usize,
     /// outer cycles
     #[clap(short, long, default_value_t = 100)]
-    outer: i32,
+    outer: usize,
     /// prefix for output file names
     #[clap(long, default_value = "")]
     prefix: String,
@@ -51,11 +55,12 @@ pub fn main() {
     const L: f64 = 900.0;
 
     let args = Args::parse();
-
+    // ---------- Temperature of the isothermal simulation (in the energy units)
     let temperature: f64 = args.temperature;
+
     // ---------- Create system's coordinates
-    let mut n_beads: usize = 0;
-    let mut coords = Coordinates::new(n_beads);
+    let mut n_beads: usize;
+    let mut coords: Coordinates;
 
     if args.infile == "" {
         n_beads = args.nbeads;
@@ -75,7 +80,7 @@ pub fn main() {
     // ---------- Create system's list of neighbors
     let nbl:NbList = NbList::new(E_TO,4.0,Box::new(PolymerRules{}));
     // ---------- Create the system
-    let mut system: System = System::new(coords, nbl);
+    let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
 
     let prefix = args.prefix;
     let tra_fname = format!("{}tra.pdb", &prefix);
@@ -86,25 +91,32 @@ pub fn main() {
             Box::new(SimpleContact::new(E_REP,E_FROM,E_TO,REP_VAL,E_VAL)));
     // ---------- Harmonic energy (i.e. springs between beads)
     let harmonic = SimpleHarmonic::new(3.8,5.0);
-
-    let mut total = TotalEnergy::default();
+    // ---------- Total energy contains the contacts energy and bond springs
+    let mut total = TotalEnergy::new();
     total.add_component(Box::new(harmonic), 1.0);
     total.add_component(Box::new(contacts), 1.0);
-    println!("# starting energy: {}", total.energy(&system));
+    let total_en: Box<dyn Energy<CartesianSystem>> = Box::new(total);
+    println!("# starting energy: {}", total_en.energy(&system));
 
-    let mut sampler = IsothermalMC::new(temperature, Ensemle::NVT, 1.0);
-    sampler.energy = Box::new(total);    // --- The total has been moved to a box within the sampler
-    let m: Box<dyn Fn(&mut System,f64) -> Range<usize>> = Box::new(single_atom_move);
-    sampler.add_mover(m,3.0);
-    // let m: Box<dyn Fn(&mut Coordinates,f64) -> Range<usize>> = Box::new(perturb_chain_fragment);
-    // sampler.add_mover(m,5.0);
+    // ---------- Create a sampler and add a mover into it
+    let mut simple_sampler: MCProtocol<MetropolisCriterion,CartesianSystem> =
+        MCProtocol::new(MetropolisCriterion::new(temperature));
+    simple_sampler.add_mover(Box::new(SingleAtomMove::new()));
+
+    // ---------- Decorate the sampler into an adaptive MC protocol
+    let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));
+    sampler.target_rate = 0.4;
 
     let start = Instant::now();
+    let mut recent_acceptance = AcceptanceStatistics::default();
     println!("#cycle   energy  f_acc   r_end_sq     rg_sq   time");
     for i in 0..args.outer {
-        let f_succ = sampler.run(&mut system, args.inner);
+        let stats = sampler.get_mover(0).acceptance_statistics();
+        sampler.make_sweeps(args.inner,&mut system, &total_en);
         coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str(), true);
-        println!("{:6} {:9.3} {:5.3} {:>10.3} {:>10.3}  {:.2?}", i, sampler.energy(&system), f_succ,
+        let f_succ = stats.recent_success_rate(&recent_acceptance);
+        recent_acceptance = stats;
+        println!("{:6} {:9.3} {:5.3} {:>10.3} {:>10.3}  {:.2?}", i, total_en.energy(&system), f_succ,
                  r_end_squared(&system.coordinates(), 0), gyration_squared(&&system.coordinates(), 0), start.elapsed());
     }
 

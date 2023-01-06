@@ -83,7 +83,7 @@ pub fn main() {
 
     // ---------- Decorate the sampler into an adaptive MC protocol
     let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));
-    sampler.target_rate = 0.2;
+    sampler.target_rate = 0.4;
 
     // ---------- Run the simulation!
     let start = Instant::now();

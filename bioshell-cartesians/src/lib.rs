@@ -5,6 +5,8 @@ mod calc_from_coordinates;
 mod cartesian_system;
 mod nblist;
 
+pub mod movers;
+
 pub use calc_from_coordinates::{r_end_squared, gyration_squared, cm};
 pub use builders::{random_chain, cubic_grid_atoms, square_grid_atoms};
 pub use coordinates::{Coordinates,CoordinatesView};

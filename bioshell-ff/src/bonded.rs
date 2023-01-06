@@ -57,8 +57,8 @@ impl Energy<CartesianSystem> for SimpleHarmonic {
         let end: usize = if pos.end >= old_system.size() - 1 { old_system.size() - 1 } else { pos.end + 1 };
         for ipos in start..end {
             if old_system.coordinates()[ipos].chain_id == old_system.coordinates()[ipos + 1].chain_id {
-                spring_kernel!(new_system.coordinates(), ipos, ipos+1, self.d0, en_old, +=);
-                spring_kernel!(old_system.coordinates(), ipos, ipos+1, self.d0, en_new, +=);
+                spring_kernel!(new_system.coordinates(), ipos, ipos+1, self.d0, en_new, +=);
+                spring_kernel!(old_system.coordinates(), ipos, ipos+1, self.d0, en_old, +=);
             }
         }
 

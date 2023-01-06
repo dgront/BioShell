@@ -1,8 +1,6 @@
 use std::ops::Range;
 
-use bioshell_sim::{System, Energy};
-use bioshell_cartesians::{CartesianSystem};
-
+use bioshell_sim::{Energy};
 
 // pub trait Energy {
 //     fn energy(&self, system: &System) -> f64;
@@ -28,7 +26,6 @@ use bioshell_cartesians::{CartesianSystem};
 
 /// Stores energy components and their weights
 /// Allows one calculate the total energy methods for a given Coordinates
-#[derive(Default)]
 pub struct TotalEnergy<S> {
     pub weights: Vec<f64>,
     pub components: Vec<Box<dyn Energy<S>>>,
@@ -36,6 +33,10 @@ pub struct TotalEnergy<S> {
 
 
 impl<S> TotalEnergy<S> {
+
+    pub fn new() -> TotalEnergy<S> {
+        TotalEnergy{weights: vec![], components: vec![] }
+    }
 
     pub fn add_component(&mut self, en: Box<dyn  Energy<S>>, w: f64) -> &mut TotalEnergy<S> {
         self.weights.push(w);

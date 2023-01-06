@@ -15,4 +15,5 @@ crate-type =["rlib"]
 rand="0.8.5"
 bioshell-core = { path = "../bioshell-core" }
 bioshell-sim = { path = "../bioshell-sim" }
+bioshell-montecarlo = { path = "../bioshell-montecarlo" }
 bioshell-numerical = { path = "../bioshell-numerical" }
