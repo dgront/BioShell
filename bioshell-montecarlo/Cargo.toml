@@ -1,9 +1,9 @@
 
 [package]
-name = "bioshell-sim"
+name = "bioshell-montecarlo"
 version = "4.0.0-dev"
 edition = "2021"
-description = "Interfaces and basic definitions used by  biomacromolecular simulation"
+description = "Monte Carlo sampling algorithms"
 homepage = "https://bioshell.pl"
 license = "Apache-2.0"
 keywords = ["bioshell"]
@@ -12,3 +12,6 @@ keywords = ["bioshell"]
 crate-type =["rlib"]
 
 [dependencies]
+rand="0.8.5"
+bioshell-sim = { path = "../bioshell-sim" }
+

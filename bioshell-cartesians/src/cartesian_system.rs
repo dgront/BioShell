@@ -1,16 +1,17 @@
-use crate::nonbonded::{NbList, NbListRules};
-use bioshell_core::structure::{Coordinates, CoordinatesView};
-
+use crate::{NbList, NbListRules};
+use crate::{Coordinates, CoordinatesView};
+use bioshell_sim::System;
 
 #[derive(Clone)]
-pub struct System {
+pub struct CartesianSystem {
     coordinates: Coordinates,
     neighbor_list: NbList,
 }
 
-impl System {
-    pub fn new(coordinates:Coordinates, neighbor_list:NbList) -> System {
-        let mut out = System{coordinates, neighbor_list};
+impl CartesianSystem {
+    pub fn new(coordinates:Coordinates, neighbor_list:NbList) -> CartesianSystem {
+
+        let mut out = CartesianSystem{coordinates, neighbor_list};
         out.neighbor_list.update_all(&out.coordinates);
 
         return out;
@@ -45,9 +46,6 @@ impl System {
     /// Provide immutable access to the list of neighbors
     pub fn neighbor_list(&self) -> & NbList { & self.neighbor_list }
 
-    /// Returns the number of atoms of this system
-    pub fn size(&self) -> usize { self.coordinates.size() }
-
     pub fn set(&mut self, i:usize, x: f64, y: f64, z: f64) {
         self.coordinates.set(i, x, y, z);
         self.neighbor_list.update(&self.coordinates, i);
@@ -56,12 +54,6 @@ impl System {
     pub fn add(&mut self, i:usize, x: f64, y: f64, z: f64) {
         self.coordinates.add(i, x, y, z);
         self.neighbor_list.update(&self.coordinates, i);
-    }
-
-    pub fn copy(&mut self, i:usize, rhs: &System) {
-        self.coordinates.copy(i,&rhs.coordinates());
-        let stls_v = CoordinatesView { points: &self.coordinates, };
-        self.neighbor_list.update_for_view(stls_v, i);
     }
 
     /// Provides the interaction cutoff radius used by the neighbor list
@@ -82,5 +74,17 @@ impl System {
         self.neighbor_list.set_rules(nb_rules);
         let stls_v = CoordinatesView { points: &self.coordinates, };
         self.neighbor_list.update_all_for_view(stls_v);
+    }
+}
+
+impl System for CartesianSystem {
+    /// Returns the number of atoms of this system
+    fn size(&self) -> usize { self.coordinates.size() }
+
+
+    fn copy_from(&mut self, i:usize, rhs: &CartesianSystem) {
+        self.coordinates.copy(i,&rhs.coordinates());
+        let stls_v = CoordinatesView { points: &self.coordinates, };
+        self.neighbor_list.update_for_view(stls_v, i);
     }
 }

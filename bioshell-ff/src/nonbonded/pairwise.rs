@@ -1,7 +1,7 @@
 use std::ops::Range;
 
-use crate::ff::Energy;
-use crate::{System, ZeroEnergy};
+use bioshell_sim::{System, Energy};
+use bioshell_cartesians::{CartesianSystem};
 
 /// A pairwise nonbonded interaction can evaluate its energy just from a squared distance value
 /// between two atoms
@@ -54,9 +54,9 @@ impl PairwiseNonbondedEvaluator {
     }
 }
 
-impl Energy for PairwiseNonbondedEvaluator {
+impl Energy<CartesianSystem> for PairwiseNonbondedEvaluator {
 
-    fn energy(&self, system: &System) -> f64 {
+    fn energy(&self, system: &CartesianSystem) -> f64 {
         let mut en:f64 = 0.0;
         for i in 0..system.size() {
             en += self.energy_by_pos(system, i);
@@ -65,7 +65,7 @@ impl Energy for PairwiseNonbondedEvaluator {
         return en / 2.0;
     }
 
-    fn energy_by_pos(&self, system: &System, pos:usize) -> f64 {
+    fn energy_by_pos(&self, system: &CartesianSystem, pos:usize) -> f64 {
         let mut en: f64 = 0.0;
 
         let chain = system.coordinates();
@@ -75,27 +75,25 @@ impl Energy for PairwiseNonbondedEvaluator {
         return en;
     }
 
-    fn delta_energy_by_range(&self, old: &System, moved: &Range<usize>, new: &System) -> f64 {
+    // todo Fix the problem with interactions within the moved set
+    fn delta_energy_by_range(&self, old_system: &CartesianSystem, new_system: &CartesianSystem, pos: &Range<usize>) -> (f64, f64) {
 
         let mut en_old: f64 = 0.0;
         let mut en_new: f64 = 0.0;
-        let old_coords = old.coordinates();
-        let new_coords = new.coordinates();
-        for jpos in moved.start..moved.end + 1 {
+        let old_coords = old_system.coordinates();
+        let new_coords = new_system.coordinates();
+        for jpos in pos.start..pos.end + 1 {
             // --- compute energy before and after a move for each moved jpos position
-            pairwise_contact_neighbors_loop!(self, old_coords, jpos, old.neighbor_list().neighbors(jpos), en_old);
-            pairwise_contact_neighbors_loop!(self, new_coords, jpos, new.neighbor_list().neighbors(jpos), en_new);
+            pairwise_contact_neighbors_loop!(self, old_coords, jpos, old_system.neighbor_list().neighbors(jpos), en_old);
+            pairwise_contact_neighbors_loop!(self, new_coords, jpos, new_system.neighbor_list().neighbors(jpos), en_new);
         }
 
-        return en_new - en_old;
+        return (en_old, en_new);
     }
 
     fn name(&self) -> String { String::from("PairwiseNonbonded") }
 }
 
-impl PairwiseNonbonded for ZeroEnergy {
-    fn energy_for_distance_squared(&self, _d2: f64) -> f64 { 0.0 }
-}
 
 pub struct SimpleContact {
     /// repulsion distance

@@ -2,9 +2,9 @@ use std::fs::File;
 use std::io::{self, BufReader, BufRead, Write};
 
 use bioshell_numerical::{Vec3};
-use crate::structure::Coordinates;
+use crate::Coordinates;
 
-use crate::utils::{out_writer};
+use bioshell_core::utils::{out_writer};
 
 
 /// Writes given [`Coordinates`](Coordinates) coordinates to a PDB file.

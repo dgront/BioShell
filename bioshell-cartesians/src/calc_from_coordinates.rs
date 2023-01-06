@@ -1,6 +1,6 @@
 use bioshell_numerical::Vec3;
 
-use crate::structure::Coordinates;
+use crate::Coordinates;
 
 /// Computes the center of mass of a given chain
 pub fn cm(chain: &Coordinates, chain_idx: usize) -> (f64, f64, f64) {

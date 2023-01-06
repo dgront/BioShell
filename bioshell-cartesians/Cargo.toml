@@ -1,9 +1,9 @@
 
 [package]
-name = "bioshell-ff"
+name = "bioshell-cartesians"
 version = "4.0.0-dev"
 edition = "2021"
-description = "Provides BioShell force field"
+description = "Cartesian coordinates used in simulations"
 homepage = "https://bioshell.pl"
 license = "Apache-2.0"
 keywords = ["bioshell"]
@@ -12,6 +12,7 @@ keywords = ["bioshell"]
 crate-type =["rlib"]
 
 [dependencies]
-bioshell-numerical = { path = "../bioshell-numerical" }
-bioshell-cartesians = { path = "../bioshell-cartesians" }
+rand="0.8.5"
+bioshell-core = { path = "../bioshell-core" }
 bioshell-sim = { path = "../bioshell-sim" }
+bioshell-numerical = { path = "../bioshell-numerical" }

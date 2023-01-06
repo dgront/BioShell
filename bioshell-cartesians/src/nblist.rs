@@ -1,5 +1,5 @@
 use bioshell_numerical::{Vec3};
-use bioshell_core::structure::{Coordinates, CoordinatesView};
+use crate::{Coordinates, CoordinatesView};
 
 
 /// Rules that define which atoms and which atom pairs will be excluded from hashing
