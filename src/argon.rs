@@ -3,14 +3,14 @@ use std::ops::Range;
 
 use clap::{Parser};
 
-use bioshell_core::structure::Coordinates;
-use bioshell_core::io::pdb::{coordinates_to_pdb};
-
-use bioshell_ff::{Energy, TotalEnergy, System};
-use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic, NbList, ArgonRules};
-use bioshell_sim::generators::cubic_grid_atoms;
-use bioshell_sim::sampling::movers::{single_atom_move};
-use bioshell_sim::sampling::protocols::{Ensemle, IsothermalMC, Sampler};
+use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubic_grid_atoms,
+                          NbList, ArgonRules};
+use bioshell_sim::{Energy, System};
+use bioshell_ff::TotalEnergy;
+use bioshell_cartesians::movers::SingleAtomMove;
+use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic};
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion,
+                          AdaptiveMCProtocol, MoversSet};
 
 
 #[derive(Parser, Debug)]
@@ -39,6 +39,9 @@ struct Args {
     /// outer cycles
     #[clap(short, long, default_value_t = 100)]
     outer: usize,
+    /// prefix for output file names
+    #[clap(long, default_value = "")]
+    prefix: String,
 }
 
 fn box_width(sphere_radius: f64, n_spheres: usize, density: f64) -> f64 {
@@ -55,46 +58,54 @@ pub fn main() {
     const CUTOFF: f64 = 10.0;
 
     let args = Args::parse();
-
+    let temperature: f64 = args.temperature;    // --- Temperature of the isothermal simulation (in the energy units)
     let n_atoms: usize = args.natoms;
     let density: f64 = args.density;
+    let prefix = args.prefix;
+    let tra_fname = format!("{}_tra.pdb", &prefix);
+    let final_fname = format!("{}_final.pdb", &prefix);
 
     // ---------- Create system's coordinates
     let mut coords = Coordinates::new(n_atoms);
     coords.set_box_len(box_width(SIGMA as f64,n_atoms, density));
     cubic_grid_atoms(&mut coords);
-    coordinates_to_pdb(&coords,1,"ar.pdb", true);
+    coordinates_to_pdb(&coords,1,tra_fname.as_str(), false);
 
     // ---------- Create system's list of neighbors
     let nbl:NbList = NbList::new(CUTOFF as f64,4.0,Box::new(ArgonRules{}));
 
     // ---------- Create the system
-    let mut system: System = System::new(coords, nbl);
+    let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
 
     // ---------- Create energy function
     let lj = PairwiseNonbondedEvaluator::new(CUTOFF as f64,
             Box::new(LennardJonesHomogenic::new(EPSILON_BY_K, SIGMA, CUTOFF)) );
-    let mut total = TotalEnergy::default();
-    total.add_component(Box::new(lj), 1.0);
-    println!("{}", total.energy(&system));
+    // ---------- Create energy function
+    let energy: Box<dyn Energy<CartesianSystem>> = Box::new(lj);
+    println!("{}", energy.energy(&system));
 
     // ---------- Create a sampler and add a mover into it
-    let mut ensemble = Ensemle::NVT;
+    let mut simple_sampler: MCProtocol<MetropolisCriterion,CartesianSystem> =
+        MCProtocol::new(MetropolisCriterion::new(temperature));
+    simple_sampler.add_mover(Box::new(SingleAtomMove::new()));
     let mut pressure = 1.0;
     if let Some(p) = args.pressure {
         pressure = p;
-        ensemble = Ensemle::NPT;
     }
-    let mut sampler = IsothermalMC::new(args.temperature as f64, ensemble, pressure as f64);
-    sampler.energy = Box::new(total);               // --- The total has been moved to a box within the sampler
-    let m: Box<dyn Fn(&mut System,f64) -> Range<usize>> = Box::new(single_atom_move);
-    sampler.add_mover(m,3.0);
+    // ---------- Decorate the sampler into an adaptive MC protocol
+    let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));
+    sampler.target_rate = 0.4;
 
     // ---------- Run the simulation!
     let start = Instant::now();
+    let mut recent_acceptance = AcceptanceStatistics::default();
     for i in 0..args.outer {
-        let f_succ = sampler.run(&mut system, args.inner as i32);
-        coordinates_to_pdb(&system.coordinates(), i as i16, "ar.pdb", true);
-        println!("{} {} {}  {:.2?}", i, sampler.energy(&system) / system.size() as f64, f_succ, start.elapsed());
+        let stats = sampler.get_mover(0).acceptance_statistics();
+        sampler.make_sweeps(args.inner,&mut system, &energy);
+        coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str(), true);
+        let f_succ = stats.recent_success_rate(&recent_acceptance);
+        recent_acceptance = stats;
+        println!("{:6} {:9.3} {:5.3} {:.2?}", i, energy.energy(&system), f_succ, start.elapsed());
     }
+    coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
 }
