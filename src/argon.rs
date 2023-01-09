@@ -1,15 +1,13 @@
 use std::time::Instant;
-use std::ops::Range;
 
 use clap::{Parser};
 
 use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubic_grid_atoms,
                           NbList, ArgonRules};
 use bioshell_sim::{Energy, System};
-use bioshell_ff::TotalEnergy;
 use bioshell_cartesians::movers::SingleAtomMove;
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion,
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, MCProtocol, MetropolisCriterion,
                           AdaptiveMCProtocol, MoversSet};
 
 
@@ -77,12 +75,10 @@ pub fn main() {
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
 
-    // ---------- Create energy function
-    let lj = PairwiseNonbondedEvaluator::new(CUTOFF as f64,
-            Box::new(LennardJonesHomogenic::new(EPSILON_BY_K, SIGMA, CUTOFF)) );
-    // ---------- Create energy function
-    let energy: Box<dyn Energy<CartesianSystem>> = Box::new(lj);
-    println!("{}", energy.energy(&system));
+    // ---------- Create energy function - just the LJ term
+    let lj = LennardJonesHomogenic::new(EPSILON_BY_K, SIGMA, CUTOFF);
+    let pairwise = PairwiseNonbondedEvaluator::new(CUTOFF as f64,lj);
+    let energy: Box<dyn Energy<CartesianSystem>> = Box::new(pairwise);
 
     // ---------- Create a sampler and add a mover into it
     let mut simple_sampler: MCProtocol<MetropolisCriterion,CartesianSystem> =
@@ -105,7 +101,7 @@ pub fn main() {
         coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str(), true);
         let f_succ = stats.recent_success_rate(&recent_acceptance);
         recent_acceptance = stats;
-        println!("{:6} {:9.3} {:5.3} {:.2?}", i, energy.energy(&system), f_succ, start.elapsed());
+        println!("{:6} {:9.3} {:5.3} {:.2?}", i, energy.energy(&system) / system.size() as f64, f_succ, start.elapsed());
     }
     coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
 }

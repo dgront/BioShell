@@ -1,5 +1,4 @@
 use std::time::Instant;
-use std::ops::Range;
 
 use clap::{Parser};
 
@@ -13,7 +12,7 @@ use bioshell_cartesians::movers::SingleAtomMove;
 use bioshell_sim::{Energy};
 
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion,
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, MCProtocol, MetropolisCriterion,
                           AdaptiveMCProtocol, MoversSet};
 
 use bioshell_ff::{TotalEnergy};
@@ -59,7 +58,7 @@ pub fn main() {
     let temperature: f64 = args.temperature;
 
     // ---------- Create system's coordinates
-    let mut n_beads: usize;
+    let n_beads: usize;
     let mut coords: Coordinates;
 
     if args.infile == "" {
@@ -71,7 +70,7 @@ pub fn main() {
     } else {
         let res = pdb_to_coordinates(&args.infile).ok();
         match res {
-            Some(x) => {coords = x},
+            Some(x) => { coords = x; },
             _ => panic!("Can't read from file >{}<", args.infile)
         };
         coords.set_box_len(L);
@@ -87,8 +86,8 @@ pub fn main() {
     coordinates_to_pdb(&system.coordinates(), 0, tra_fname.as_str(), true);
 
     // ---------- Contact energy
-    let contacts = PairwiseNonbondedEvaluator::new(E_TO as f64,
-            Box::new(SimpleContact::new(E_REP,E_FROM,E_TO,REP_VAL,E_VAL)));
+    let contact_kernel = SimpleContact::new(E_REP,E_FROM,E_TO,REP_VAL,E_VAL);
+    let contacts: PairwiseNonbondedEvaluator<SimpleContact> = PairwiseNonbondedEvaluator::new(E_TO as f64, contact_kernel);
     // ---------- Harmonic energy (i.e. springs between beads)
     let harmonic = SimpleHarmonic::new(3.8,5.0);
     // ---------- Total energy contains the contacts energy and bond springs

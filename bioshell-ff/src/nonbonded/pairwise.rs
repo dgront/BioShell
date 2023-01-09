@@ -39,22 +39,21 @@ macro_rules! pairwise_contact_neighbors_loop {
 ///
 /// The evaluator uses the provided [PairwiseNonbonded] instance to evaluate energy between all atoms
 /// in a given system.
-#[allow(unused)]
-pub struct PairwiseNonbondedEvaluator {
+pub struct PairwiseNonbondedEvaluator<E:PairwiseNonbonded> {
 
     pub cutoff: f64,
     cutoff_square: f64,
-    pub energy: Box<dyn PairwiseNonbonded>,
+    pub energy: E,
 }
 
-impl PairwiseNonbondedEvaluator {
+impl<E:PairwiseNonbonded> PairwiseNonbondedEvaluator<E> {
 
-    pub fn new(cutoff: f64, pairwise_energy: Box<dyn PairwiseNonbonded>) -> PairwiseNonbondedEvaluator {
+    pub fn new(cutoff: f64, pairwise_energy: E) -> PairwiseNonbondedEvaluator<E> {
         PairwiseNonbondedEvaluator { cutoff: cutoff, cutoff_square:cutoff*cutoff, energy: pairwise_energy }
     }
 }
 
-impl Energy<CartesianSystem> for PairwiseNonbondedEvaluator {
+impl<E:PairwiseNonbonded> Energy<CartesianSystem> for PairwiseNonbondedEvaluator<E> {
 
     fn energy(&self, system: &CartesianSystem) -> f64 {
         let mut en:f64 = 0.0;
@@ -93,6 +92,7 @@ impl Energy<CartesianSystem> for PairwiseNonbondedEvaluator {
 
     fn name(&self) -> String { String::from("PairwiseNonbonded") }
 }
+//----------------
 
 
 pub struct SimpleContact {
