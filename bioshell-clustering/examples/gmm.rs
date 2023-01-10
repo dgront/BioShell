@@ -2,7 +2,8 @@ use nalgebra::{DMatrix, DVector};
 use clap::{Parser};
 use rand::Rng;
 
-use bioshell_numerical::statistics::{MultiNormalDistribution, expectation_maximization};
+use bioshell_statistics::{MultiNormalDistribution};
+use bioshell_clustering::{expectation_maximization};
 use bioshell_core::utils::{read_tsv};
 
 

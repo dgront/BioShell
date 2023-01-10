@@ -1,6 +1,6 @@
 use clap::{Parser};
 
-use bioshell_numerical::statistics::{Estimable, MultiNormalDistribution};
+use bioshell_statistics::{Estimable, MultiNormalDistribution};
 use bioshell_core::utils::{read_tsv};
 
 #[derive(Parser, Debug)]

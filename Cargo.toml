@@ -13,6 +13,8 @@ members = [
     "bioshell-numerical",
     "bioshell-ff",
     "bioshell-sim",
+    "bioshell-statistics",
+    "bioshell-clustering",
     "bioshell-montecarlo",
     "bioshell-cartesians"
 ]
@@ -22,6 +24,8 @@ bioshell-core = { path = "./bioshell-core" }
 bioshell-numerical = { path = "./bioshell-numerical" }
 bioshell-ff = { path = "./bioshell-ff" }
 bioshell-sim = { path = "./bioshell-sim" }
+bioshell-clustering = { path = "./bioshell-clustering" }
+bioshell-statistics = { path = "./bioshell-statistics" }
 bioshell-montecarlo = { path = "./bioshell-montecarlo" }
 bioshell-cartesians = { path = "./bioshell-cartesians" }
 

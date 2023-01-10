@@ -1,5 +1,5 @@
 use clap::{Parser};
-use bioshell_numerical::clustering::{EuclideanPoints, Optics};
+use bioshell_clustering::{EuclideanPoints, Optics};
 use bioshell_core::utils::{read_tsv, out_writer};
 
 #[derive(Parser, Debug)]
@@ -44,7 +44,7 @@ fn main() {
         if ci.len() < min_cluster { continue; }
         i += 1;
         let fname = format!("c{}.dat", i);
-        let mut out = out_writer(fname.as_str());
+        let mut out = out_writer(fname.as_str(), false);
         for iel in ci {
             match write!(out, "{}", sample[*iel][0]) {
                 Err(e) => println!("Error while writing to {} file: {:?}", fname, e),
