@@ -73,8 +73,9 @@ pub fn main() {
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
 
     // ---------- Create energy function
-    let energy: Box<dyn Energy<CartesianSystem>> = Box::new(PairwiseNonbondedEvaluator::new(R+W,
-        Box::new(SimpleContact::new(R,R,R+W,1000.0,-1.0)) ));
+    let kernel = SimpleContact::new(R,R,R+W,1000.0,-1.0);
+    let pairwise = PairwiseNonbondedEvaluator::new(R+W,kernel);
+    let energy: Box<dyn Energy<CartesianSystem>> = Box::new(pairwise);
 
     // ---------- Create a sampler and add a mover into it
     let mut simple_sampler: MCProtocol<MetropolisCriterion,CartesianSystem> =
