@@ -2,13 +2,43 @@ use std::time::Instant;
 use std::ops::Range;
 use rand::Rng;
 
+use clap::{Parser};
+
 use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, square_grid_atoms,
-                          NbList, ArgonRules};
+                          NbList, ArgonRules, pdb_to_coordinates};
 use bioshell_sim::{Energy, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion,
                           AdaptiveMCProtocol, MoversSet};
+
+#[derive(Parser, Debug)]
+#[clap(name = "disks")]
+#[clap(version = "0.2")]
+#[clap(about = "Simple MC simulation of disks in 2D", long_about = None)]
+struct Args {
+    /// staring conformation in the PDB format
+    #[clap(short, long, default_value = "", short='f')]
+    infile: String,
+    /// temperature of the simulation
+    #[clap(short, long, default_value_t = 1.0, short='t')]
+    temperature: f64,
+    /// density of the simulated system
+    #[clap(short, long, default_value_t = 0.4, short='d')]
+    density: f64,
+    /// Number of disks in a box to simulate
+    #[clap(short, long, default_value_t = 400, short='n')]
+    ndisks: usize,
+    /// Inner cycles
+    #[clap(short, long, default_value_t = 100)]
+    inner: usize,
+    /// outer cycles
+    #[clap(short, long, default_value_t = 100)]
+    outer: usize,
+    /// prefix for output file names
+    #[clap(long, default_value = "")]
+    prefix: String,
+}
 
 fn box_width(disc_radius: f64, n_discs: usize, density: f64) -> f64 {
 
@@ -54,17 +84,35 @@ pub fn main() {
     const R: f64 = 3.0;
     const W: f64 = 1.0;
 
-    const N_SMALL_CYCLES: usize = 100;
-    const N_LARGE_CYCLES: usize = 1000;
-
-    let n_atoms: usize = 50 * 50;
-    let density: f64 = 0.4;
+    let args = Args::parse();
+    // ---------- Temperature of the isothermal simulation (in the energy units)
+    let temperature: f64 = args.temperature;
+    let density: f64 = args.density;
+    let prefix = args.prefix;
+    let tra_fname = format!("{}_tra.pdb", &prefix);
+    let final_fname = format!("{}_final.pdb", &prefix);
+    let n_atoms: usize;
+    let box_length: f64;
 
     // ---------- Create system's coordinates
-    let mut coords = Coordinates::new(n_atoms);
-    coords.set_box_len(box_width(R,n_atoms, density));
-    square_grid_atoms(&mut coords);
-    coordinates_to_pdb(&coords, 1, "disks.pdb", false);
+    let mut coords: Coordinates;
+    if args.infile == "" {
+        n_atoms = args.ndisks;
+        box_length = box_width(R, n_atoms, density);
+        coords = Coordinates::new(n_atoms);
+        coords.set_box_len(box_length);
+        square_grid_atoms(&mut coords);
+    } else {
+        let res = pdb_to_coordinates(&args.infile).ok();
+        match res {
+            Some(x) => { coords = x; },
+            _ => panic!("Can't read from file >{}<", args.infile)
+        };
+        n_atoms = coords.size();
+        box_length = box_width(R, n_atoms, density);
+        coords.set_box_len(box_length);
+    }
+    coordinates_to_pdb(&coords, 1, tra_fname.as_str(), false);
 
     // ---------- Create system's list of neighbors
     let nbl:NbList = NbList::new(R+W as f64,6.0,Box::new(ArgonRules{}));
@@ -79,7 +127,7 @@ pub fn main() {
 
     // ---------- Create a sampler and add a mover into it
     let mut simple_sampler: MCProtocol<MetropolisCriterion,CartesianSystem> =
-            MCProtocol::new(MetropolisCriterion::new(1.0));
+            MCProtocol::new(MetropolisCriterion::new(temperature));
     simple_sampler.add_mover(Box::new(DiskMover::new(3.0)));
 
     // ---------- Decorate the sampler into an adaptive MC protocol
@@ -89,12 +137,13 @@ pub fn main() {
     // ---------- Run the simulation!
     let start = Instant::now();
     let mut recent_acceptance = AcceptanceStatistics::default();
-    for i in 0..N_LARGE_CYCLES {
+    for i in 0..args.outer {
         let stats = sampler.get_mover(0).acceptance_statistics();
-        sampler.make_sweeps(N_SMALL_CYCLES,&mut system, &energy);
-        coordinates_to_pdb(&system.coordinates(), i as i16, "disks.pdb", true);
+        sampler.make_sweeps(args.inner,&mut system, &energy);
+        coordinates_to_pdb(&system.coordinates(), i as i16, tra_fname.as_str(), true);
         let f_succ = stats.recent_success_rate(&recent_acceptance);
         recent_acceptance = stats;
         println!("{} {} {}  {:.2?}", i, energy.energy(&system)/system.size() as f64, f_succ, start.elapsed());
     }
+    coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
 }
