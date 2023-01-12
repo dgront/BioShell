@@ -56,6 +56,20 @@ impl Histogram {
 
     /// Returns the bin width
     pub fn bin_width(&self) -> f64 { self.bin_width }
+
+    /// returns the mode of this histogram
+    pub fn mode(&self) -> (f64, f64, f64) {
+        let mut max_i: i32 = 0;
+        let mut max_v: f64 = 0.0;
+        for (i, val) in self.data.iter() {
+            if val > &max_v {
+                max_i = *i;
+                max_v = *val;
+            }
+        }
+
+        return (self.bin_min(max_i), self.bin_max(max_i), max_v);
+    }
 }
 
 
