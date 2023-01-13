@@ -169,9 +169,9 @@ impl NbList {
             self.recent_pos[i].x = system.x(i);
             self.recent_pos[i].y = system.y(i);
             self.recent_pos[i].z = system.z(i);
-            self.travelled[i].x = system.x(i);
-            self.travelled[i].y = system.y(i);
-            self.travelled[i].z = system.z(i);
+            self.travelled[i].x = 0.0;
+            self.travelled[i].y = 0.0;
+            self.travelled[i].z = 0.0;
             for j in 0..i {
                 // --- exclude excluded pairs, insert the relevant ones - now all in a single macro
                 insert_nb_pair!(j, i, system, self);
