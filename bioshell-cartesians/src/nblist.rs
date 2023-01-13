@@ -56,7 +56,8 @@ pub struct NbList {
     total_cutoff_sq: f64,               // total cutoff = cutoff + safety buffer
     max_moved_sq: f64,                  // how far atom can travel to trigger update
     nb_rules: Box<dyn NbListRules>,     // encodes rules for this NBL
-    recent_pos: Vec<Vec3>,              // positions from last NBL update
+    recent_pos: Vec<Vec3>,              // positions from the previous update() method call to compute displacement vector
+    travelled: Vec<Vec3>,               // vector of accumulative displacement of i-th atom since the last NBL update
     nb_lists: Vec<Vec<usize>>,          // the NBL itself
 }
 
@@ -78,7 +79,8 @@ impl NbList {
         let total = buffer_thickness + cutoff;
         let max_moved = buffer_thickness / 2.0;
         NbList { cutoff, buffer_width: buffer_thickness, total_cutoff_sq: total*total,
-            max_moved_sq:max_moved*max_moved, nb_rules, recent_pos: Vec::new(), nb_lists: neighbors }
+            max_moved_sq:max_moved*max_moved, nb_rules,
+            recent_pos: Vec::new(), travelled: Vec::new(), nb_lists: neighbors }
     }
 
     /// Provides the interaction cutoff radius
@@ -114,14 +116,27 @@ impl NbList {
 
         // --- Is the atom relevant for this list?
         if self.nb_rules.if_atom_excluded(system, which_atom) { return;}
-        // --- extend the list if needed
-        // self.extend(&system);
+
+        // --- accumulate the displacement
+        let x = system.x(which_atom);
+        let y = system.y(which_atom);
+        let z = system.z(which_atom);
+        self.travelled[which_atom].x += x - self.recent_pos[which_atom].x;
+        self.travelled[which_atom].y += y - self.recent_pos[which_atom].y;
+        self.travelled[which_atom].z += z - self.recent_pos[which_atom].z;
+
+        // --- record position after move even if the list is not to be updated
+        self.recent_pos[which_atom].x = x;
+        self.recent_pos[which_atom].y = y;
+        self.recent_pos[which_atom].z = z;
+
         // --- check if it moved far enough; if not - skip it
-        if system.closest_distance_square_to_vec(which_atom,&self.recent_pos[which_atom]) < self.max_moved_sq {return;}
-        // --- copy coordinates of the atom we are updating
-        self.recent_pos[which_atom].x = system.x(which_atom);
-        self.recent_pos[which_atom].y = system.y(which_atom);
-        self.recent_pos[which_atom].z = system.z(which_atom);
+        if self.travelled[which_atom].length_squared() < self.max_moved_sq {return;}
+
+        // --- reset the displacement because we are updating the NBL for that atom
+        self.travelled[which_atom].x = 0.0;
+        self.travelled[which_atom].y = 0.0;
+        self.travelled[which_atom].z = 0.0;
 
         // --- First clear information about which_atom in its partners
         for i_nb in  0..self.nb_lists[which_atom].len() {       // --- i_nb is the index of a neighbor
@@ -154,9 +169,11 @@ impl NbList {
             self.recent_pos[i].x = system.x(i);
             self.recent_pos[i].y = system.y(i);
             self.recent_pos[i].z = system.z(i);
+            self.travelled[i].x = system.x(i);
+            self.travelled[i].y = system.y(i);
+            self.travelled[i].z = system.z(i);
             for j in 0..i {
-                // --- exclude excluded pairs
-                // if self.nb_rules.if_pair_excluded(i, j) { continue; }
+                // --- exclude excluded pairs, insert the relevant ones - now all in a single macro
                 insert_nb_pair!(j, i, system, self);
             }
         }
@@ -181,6 +198,7 @@ impl NbList {
             for _ in self.nb_lists.len()..system.size() {
                 self.nb_lists.push(Vec::new());
                 self.recent_pos.push(Vec3::new(0.0,0.0,0.0));
+                self.travelled.push(Vec3::new(0.0,0.0,0.0));
             }
         }
     }
@@ -199,6 +217,8 @@ impl Clone for NbList {
         }
         // ---------- Copy the recent coordinates
         nbl.recent_pos = self.recent_pos.clone();
+        // ---------- Copy the displacement vector
+        nbl.travelled = self.travelled.clone();
 
         return nbl;
     }
