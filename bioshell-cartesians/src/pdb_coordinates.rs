@@ -15,6 +15,7 @@ use bioshell_core::utils::{out_writer};
 /// * `chain` - coordinates to be written
 /// * `i_model` - model number
 /// * `out_fname` - name of the output file
+/// * `if_append` - if false, this function will clear the content of a file and overwrite it with a new content
 ///
 /// # Examples
 /// ```rust
@@ -25,7 +26,7 @@ pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str, if
     out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
     for i in 0..chain.size() {
         out_writer.write(format!("ATOM   {:4}{}  ALA A{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
-                                 i+1, " CA ", i+1, chain.x(i), chain.y(i), chain.z(i)).as_bytes()).ok();
+                                 i, " CA ", i, chain.x(i), chain.y(i), chain.z(i)).as_bytes()).ok();
     }
     out_writer.write(b"ENDMDL\n").ok();
 }
