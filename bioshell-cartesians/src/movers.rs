@@ -16,6 +16,7 @@ impl ChangeVolume {
 }
 
 impl Mover<CartesianSystem> for ChangeVolume {
+    #[allow(non_snake_case)]
     fn perturb(&mut self, system: &mut CartesianSystem) -> Range<usize> {
         let mut rng = rand::thread_rng();
 

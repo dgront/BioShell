@@ -16,6 +16,7 @@ use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, Metr
 #[clap(name = "disks")]
 #[clap(version = "0.2")]
 #[clap(about = "Simple MC simulation of disks in 2D", long_about = None)]
+#[clap(after_help = "Example:\n\tdisks -d 0.4 -n 400 -i 1000 -o 1000 -t 0.42")]
 struct Args {
     /// staring conformation in the PDB format
     #[clap(short, long, default_value = "", short='f')]
