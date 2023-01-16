@@ -9,8 +9,7 @@ use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, squa
 use bioshell_sim::{Energy, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion,
-                          AdaptiveMCProtocol, MoversSet};
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion, AdaptiveMCProtocol, MoversSet, AcceptanceCriterion};
 
 #[derive(Parser, Debug)]
 #[clap(name = "disks")]
@@ -59,22 +58,32 @@ impl DiskMover {
     }
 }
 
-impl Mover<CartesianSystem> for DiskMover {
+impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, MetropolisCriterion> for DiskMover {
 
-    fn perturb(&mut self, system: &mut CartesianSystem) -> Range<usize> {
+    fn perturb(&mut self, system: &mut CartesianSystem,
+               energy: &PairwiseNonbondedEvaluator<SimpleContact>, acc: &mut MetropolisCriterion) -> Option<Range<usize>> {
         let mut rng = rand::thread_rng();
         let i_moved = rng.gen_range(0..system.size());
+        let old_x: f64 = system.coordinates()[i_moved].x;
+        let old_y: f64 = system.coordinates()[i_moved].y;
+        let old_en: f64 = energy.energy_by_pos(system, i_moved);
+
         system.add(i_moved,rng.gen_range(-self.max_step..self.max_step),
                    rng.gen_range(-self.max_step..self.max_step), 0.0);
 
-        i_moved..i_moved
+        let new_en: f64 = energy.energy_by_pos(system, i_moved);
+        if acc.check(old_en, new_en) {
+            system.update_nbl(i_moved);
+            self.succ_rate.n_succ += 1;
+            return Option::from(i_moved..i_moved);
+        } else {
+            self.succ_rate.n_failed += 1;
+            system.set(i_moved, old_x, old_y, 0.0);
+            return Option::None;
+        }
     }
 
     fn acceptance_statistics(&self) -> AcceptanceStatistics { self.succ_rate.clone() }
-
-    fn add_success(&mut self) { self.succ_rate.n_succ += 1; }
-
-    fn add_failure(&mut self) { self.succ_rate.n_failed += 1; }
 
     fn max_range(&self) -> f64 { return self.max_step; }
 
@@ -124,10 +133,10 @@ pub fn main() {
     // ---------- Create energy function
     let kernel = SimpleContact::new(R,R,R+W,1000.0,-1.0);
     let pairwise = PairwiseNonbondedEvaluator::new(R+W,kernel);
-    let energy: Box<dyn Energy<CartesianSystem>> = Box::new(pairwise);
+    // let energy: Box<dyn Energy<CartesianSystem>> = Box::new(pairwise);
 
     // ---------- Create a sampler and add a mover into it
-    let mut simple_sampler: MCProtocol<MetropolisCriterion,CartesianSystem> =
+    let mut simple_sampler: MCProtocol<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, MetropolisCriterion> =
             MCProtocol::new(MetropolisCriterion::new(temperature));
     simple_sampler.add_mover(Box::new(DiskMover::new(3.0)));
 
@@ -140,11 +149,11 @@ pub fn main() {
     let mut recent_acceptance = AcceptanceStatistics::default();
     for i in 0..args.outer {
         let stats = sampler.get_mover(0).acceptance_statistics();
-        sampler.make_sweeps(args.inner,&mut system, &energy);
+        sampler.make_sweeps(args.inner,&mut system, &pairwise);
         coordinates_to_pdb(&system.coordinates(), i as i16, tra_fname.as_str(), true);
         let f_succ = stats.recent_success_rate(&recent_acceptance);
         recent_acceptance = stats;
-        println!("{} {} {}  {:.2?}", i, energy.energy(&system)/system.size() as f64, f_succ, start.elapsed());
+        println!("{} {} {}  {:.2?}", i, pairwise.energy(&system)/system.size() as f64, f_succ, start.elapsed());
     }
     coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
 }

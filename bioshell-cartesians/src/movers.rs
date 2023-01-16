@@ -2,9 +2,10 @@ use std::ops::Range;
 use rand::Rng;
 
 use crate::{CartesianSystem};
-use bioshell_sim::System;
-use bioshell_montecarlo::{AcceptanceStatistics, Mover};
+use bioshell_sim::{Energy, System};
+use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 
+/*
 /// performs a volume change
 pub struct ChangeVolume {
     max_step: f64,
@@ -31,14 +32,11 @@ impl Mover<CartesianSystem> for ChangeVolume {
 
     fn acceptance_statistics(&self) -> AcceptanceStatistics { self.succ_rate.clone() }
 
-    fn add_success(&mut self) { self.succ_rate.n_succ += 1; }
-
-    fn add_failure(&mut self) { self.succ_rate.n_failed += 1; }
-
     fn max_range(&self) -> f64 { self.max_step }
 
     fn set_max_range(&mut self, new_val: f64) { self.max_step = new_val; }
 }
+*/
 
 pub struct SingleAtomMove {
     max_step: f64,
@@ -49,27 +47,41 @@ impl SingleAtomMove {
     pub fn new() -> SingleAtomMove { SingleAtomMove{ max_step: 2.0, succ_rate: Default::default() } }
 }
 
-impl Mover<CartesianSystem> for SingleAtomMove {
-    fn perturb(&mut self, system: &mut CartesianSystem) -> Range<usize> {
+impl<E: Energy<CartesianSystem>, T: AcceptanceCriterion> Mover<CartesianSystem, E, T> for SingleAtomMove {
+
+    fn perturb(&mut self, system: &mut CartesianSystem, energy: &E, acc: &mut T) -> Option<Range<usize>> {
+
         let mut rng = rand::thread_rng();
         let i_moved = rng.gen_range(0..system.size());
+
+        let old_x: f64 = system.coordinates()[i_moved].x;
+        let old_y: f64 = system.coordinates()[i_moved].y;
+        let old_z: f64 = system.coordinates()[i_moved].z;
+        let old_en: f64 = energy.energy_by_pos(system, i_moved);
+
         system.add(i_moved,rng.gen_range(-self.max_step..self.max_step),
                    rng.gen_range(-self.max_step..self.max_step),rng.gen_range(-self.max_step..self.max_step));
 
-        i_moved..i_moved
+        let new_en: f64 = energy.energy_by_pos(system, i_moved);
+        if acc.check(old_en, new_en) {
+            system.update_nbl(i_moved);
+            self.succ_rate.n_succ += 1;
+            return Option::from(i_moved..i_moved);
+        } else {
+            self.succ_rate.n_failed += 1;
+            system.set(i_moved, old_x, old_y, old_z);
+            return Option::None;
+        }
     }
 
     fn acceptance_statistics(&self) -> AcceptanceStatistics { self.succ_rate.clone() }
-
-    fn add_success(&mut self) { self.succ_rate.n_succ += 1; }
-
-    fn add_failure(&mut self) { self.succ_rate.n_failed += 1; }
 
     fn max_range(&self) -> f64 { self.max_step }
 
     fn set_max_range(&mut self, new_val: f64) { self.max_step = new_val; }
 }
 
+/*
 pub struct PerturbChainFragment {
     max_step: f64,
     succ_rate: AcceptanceStatistics
@@ -123,5 +135,5 @@ impl Mover<CartesianSystem> for PerturbChainFragment {
     fn set_max_range(&mut self, new_val: f64) { self.max_step = new_val; }
 }
 
-
+*/
 
