@@ -93,6 +93,7 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, Metropoli
 pub fn main() {
     const R: f64 = 3.0;
     const W: f64 = 1.0;
+    const MAX_MOVE_RANGE: f64 = 1.0;
 
     let args = Args::parse();
     // ---------- Temperature of the isothermal simulation (in the energy units)
@@ -125,7 +126,7 @@ pub fn main() {
     coordinates_to_pdb(&coords, 1, tra_fname.as_str(), false);
 
     // ---------- Create system's list of neighbors
-    let nbl:NbList = NbList::new(R+W as f64,6.0,Box::new(ArgonRules{}));
+    let nbl:NbList = NbList::new(R+W as f64,MAX_MOVE_RANGE*2.0,Box::new(ArgonRules{}));
 
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
@@ -138,7 +139,7 @@ pub fn main() {
     // ---------- Create a sampler and add a mover into it
     let mut simple_sampler: MCProtocol<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, MetropolisCriterion> =
             MCProtocol::new(MetropolisCriterion::new(temperature));
-    simple_sampler.add_mover(Box::new(DiskMover::new(3.0)));
+    simple_sampler.add_mover(Box::new(DiskMover::new(MAX_MOVE_RANGE)));
 
     // ---------- Decorate the sampler into an adaptive MC protocol
     let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));
@@ -149,11 +150,13 @@ pub fn main() {
     let mut recent_acceptance = AcceptanceStatistics::default();
     for i in 0..args.outer {
         let stats = sampler.get_mover(0).acceptance_statistics();
+        let max_move_range = sampler.get_mover(0).max_range();
         sampler.make_sweeps(args.inner,&mut system, &pairwise);
         coordinates_to_pdb(&system.coordinates(), i as i16, tra_fname.as_str(), true);
         let f_succ = stats.recent_success_rate(&recent_acceptance);
         recent_acceptance = stats;
-        println!("{} {} {}  {:.2?}", i, pairwise.energy(&system)/system.size() as f64, f_succ, start.elapsed());
+        println!("{} {} {:.3} {:.3}  {:.2?}", i, pairwise.energy(&system)/system.size() as f64, f_succ,
+                 max_move_range, start.elapsed());
     }
     coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
 }

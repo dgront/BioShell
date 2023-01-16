@@ -176,7 +176,7 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> AdaptiveMCProtocol<S, E, T
         let mut allowed_ranges:Vec<Range<f64>> = vec![];
         for i in 0..sampler.count_movers() {
             let r = sampler.get_mover(i).max_range();
-            allowed_ranges.push(r * 0.2..r * 5.0);
+            allowed_ranges.push(r * 0.5..r * 4.0);
         }
         let out = AdaptiveMCProtocol { target_rate: 0.4, factor: 0.95, sampler, allowed_ranges};
         return out;
