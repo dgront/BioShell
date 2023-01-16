@@ -46,14 +46,42 @@ impl CartesianSystem {
     /// Provide immutable access to the list of neighbors
     pub fn neighbor_list(&self) -> & NbList { & self.neighbor_list }
 
-    pub fn set(&mut self, i:usize, x: f64, y: f64, z: f64) {
-        self.coordinates.set(i, x, y, z);
-        self.neighbor_list.update(&self.coordinates, i);
+    /// Recalculate neighbors for the i-th atom of this system.
+    ///
+    /// Call this method after the i-th atom has been moved.
+    ///
+    /// # Arguments
+    /// * `i` - index of an atom to be recalculated
+    pub fn update_nbl(&mut self, pos: usize) {
+        self.neighbor_list.update(&self.coordinates, pos);
     }
 
+    /// Changes this system by setting new coordinates for one of its atoms.
+    ///
+    /// This method **does not** trigger a non-bonded list update. To recalculate neighbors for
+    /// the moved atom, call `update_nbl()` method
+    ///
+    /// # Arguments
+    /// * `i` - index of an atom to be modified
+    /// * `x` - the new X coordinate value
+    /// * `y` - the new X coordinate value
+    /// * `z` - the new X coordinate value
+    pub fn set(&mut self, i:usize, x: f64, y: f64, z: f64) {
+        self.coordinates.set(i, x, y, z);
+    }
+
+    /// Adds x, y, z to a given atom of this system
+    ///
+    /// This method **does not** trigger a non-bonded list update. To recalculate neighbors for
+    /// the moved atom, call `update_nbl()` method
+    ///
+    /// # Arguments
+    /// * `i` - index of an atom to be modified
+    /// * `x` - the new X coordinate value
+    /// * `y` - the new X coordinate value
+    /// * `z` - the new X coordinate value
     pub fn add(&mut self, i:usize, x: f64, y: f64, z: f64) {
         self.coordinates.add(i, x, y, z);
-        self.neighbor_list.update(&self.coordinates, i);
     }
 
     /// Provides the interaction cutoff radius used by the neighbor list
