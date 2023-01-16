@@ -94,11 +94,10 @@ pub fn main() {
     let mut total = TotalEnergy::new();
     total.add_component(Box::new(harmonic), 1.0);
     total.add_component(Box::new(contacts), 1.0);
-    let total_en: Box<dyn Energy<CartesianSystem>> = Box::new(total);
-    println!("# starting energy: {}", total_en.energy(&system));
+    println!("# starting energy: {}", total.energy(&system));
 
     // ---------- Create a sampler and add a mover into it
-    let mut simple_sampler: MCProtocol<MetropolisCriterion,CartesianSystem> =
+    let mut simple_sampler: MCProtocol<CartesianSystem, TotalEnergy<CartesianSystem>, MetropolisCriterion> =
         MCProtocol::new(MetropolisCriterion::new(temperature));
     simple_sampler.add_mover(Box::new(SingleAtomMove::new()));
 
@@ -111,11 +110,11 @@ pub fn main() {
     println!("#cycle   energy  f_acc   r_end_sq     rg_sq   time");
     for i in 0..args.outer {
         let stats = sampler.get_mover(0).acceptance_statistics();
-        sampler.make_sweeps(args.inner,&mut system, &total_en);
+        sampler.make_sweeps(args.inner,&mut system, &total);
         coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str(), true);
         let f_succ = stats.recent_success_rate(&recent_acceptance);
         recent_acceptance = stats;
-        println!("{:6} {:9.3} {:5.3} {:>10.3} {:>10.3}  {:.2?}", i, total_en.energy(&system), f_succ,
+        println!("{:6} {:9.3} {:5.3} {:>10.3} {:>10.3}  {:.2?}", i, total.energy(&system), f_succ,
                  r_end_squared(&system.coordinates(), 0), gyration_squared(&&system.coordinates(), 0), start.elapsed());
     }
 

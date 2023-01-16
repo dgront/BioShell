@@ -77,11 +77,11 @@ pub fn main() {
 
     // ---------- Create energy function - just the LJ term
     let lj = LennardJonesHomogenic::new(EPSILON_BY_K, SIGMA, CUTOFF);
-    let pairwise = PairwiseNonbondedEvaluator::new(CUTOFF as f64,lj);
-    let energy: Box<dyn Energy<CartesianSystem>> = Box::new(pairwise);
+    let pairwise_lj = PairwiseNonbondedEvaluator::new(CUTOFF as f64,lj);
+    // let energy: Box<dyn Energy<CartesianSystem>> = Box::new(pairwise);
 
     // ---------- Create a sampler and add a mover into it
-    let mut simple_sampler: MCProtocol<MetropolisCriterion,CartesianSystem> =
+    let mut simple_sampler: MCProtocol<CartesianSystem, PairwiseNonbondedEvaluator<LennardJonesHomogenic>, MetropolisCriterion> =
         MCProtocol::new(MetropolisCriterion::new(temperature));
     simple_sampler.add_mover(Box::new(SingleAtomMove::new()));
     let mut pressure = 1.0;
@@ -97,11 +97,11 @@ pub fn main() {
     let mut recent_acceptance = AcceptanceStatistics::default();
     for i in 0..args.outer {
         let stats = sampler.get_mover(0).acceptance_statistics();
-        sampler.make_sweeps(args.inner,&mut system, &energy);
+        sampler.make_sweeps(args.inner,&mut system, &pairwise_lj);
         coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str(), true);
         let f_succ = stats.recent_success_rate(&recent_acceptance);
         recent_acceptance = stats;
-        println!("{:6} {:9.3} {:5.3} {:.2?}", i, energy.energy(&system) / system.size() as f64, f_succ, start.elapsed());
+        println!("{:6} {:9.3} {:5.3} {:.2?}", i, pairwise_lj.energy(&system) / system.size() as f64, f_succ, start.elapsed());
     }
     coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
 }
