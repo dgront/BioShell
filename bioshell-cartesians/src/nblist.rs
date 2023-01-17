@@ -3,6 +3,10 @@ use crate::{Coordinates, CoordinatesView};
 
 
 /// Rules that define which atoms and which atom pairs will be excluded from hashing
+///
+/// For example, atoms that are directly connected with a covalent bond are typically excluded.
+/// ``NbListRules::if_pair_excluded(i, j)`` should return ``true`` in such cases
+///
 pub trait NbListRules {
     fn if_atom_excluded(&self, coordinates: &Coordinates, i_atom:usize) -> bool;
     fn if_pair_excluded(&self, coordinates: &Coordinates, i_atom:usize, j_atom:usize) -> bool;

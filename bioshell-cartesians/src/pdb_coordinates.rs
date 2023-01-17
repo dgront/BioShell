@@ -6,10 +6,11 @@ use crate::Coordinates;
 
 use bioshell_core::utils::{out_writer};
 
+const CHAIN_ORDER: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 /// Writes given [`Coordinates`](Coordinates) coordinates to a PDB file.
 ///
-/// All atoms are written as a single poly-alanine chain and named ``" CA "``
+/// All atoms are written as poly-alanine chains and named ``" CA "``
 ///
 /// # Arguments
 /// * `chain` - coordinates to be written
@@ -31,6 +32,17 @@ pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str, if
     out_writer.write(b"ENDMDL\n").ok();
 }
 
+/// Reads a content of a PDB file into a  [`Coordinates`](Coordinates) object.
+///
+/// This function supports only single-model files, i.e. it can't be used to load a PDB trajectory
+/// with multiple conformations
+///
+/// # Arguments
+/// * `input_fname` - name of the input file
+///
+/// # Examples
+/// ```rust
+/// ```
 pub fn pdb_to_coordinates(input_fname: &str) -> Result<Coordinates, io::Error> {
 
     let file = match File::open(input_fname) {
