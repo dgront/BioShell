@@ -6,7 +6,7 @@ use crate::Coordinates;
 
 use bioshell_core::utils::{out_writer};
 
-const CHAIN_ORDER: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const CHAINS_ORDER: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 /// Writes given [`Coordinates`](Coordinates) coordinates to a PDB file.
 ///
@@ -26,8 +26,9 @@ pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str, if
 
     out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
     for i in 0..chain.size() {
-        out_writer.write(format!("ATOM   {:4}{}  ALA A{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
-                                 i, " CA ", i, chain.x(i), chain.y(i), chain.z(i)).as_bytes()).ok();
+        let chain_id = CHAINS_ORDER.chars().nth(chain[i].chain_id as usize).unwrap();
+        out_writer.write(format!("ATOM   {:4}{}  ALA {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
+                                 i, " CA ", chain_id, i, chain.x(i), chain.y(i), chain.z(i)).as_bytes()).ok();
     }
     out_writer.write(b"ENDMDL\n").ok();
 }
@@ -82,9 +83,12 @@ fn xzy_from_atom_line(atom_line: &String, x: &mut f64, y: &mut f64, z: &mut f64)
 fn vec_from_atom_line(atom_line: &String) -> Vec3 {
 
     let mut v = Vec3{x: 0.0, y:0.0, z:0.0, atom_type: 0, chain_id: 0, res_type: 0};
+    let chars: Vec<char> = atom_line.chars().collect();
+    v.chain_id = CHAINS_ORDER.find(chars[21]).unwrap() as i16;
     v.x = atom_line[30..38].trim().parse::<f64>().unwrap();
     v.y = atom_line[38..46].trim().parse::<f64>().unwrap();
     v.z = atom_line[46..54].trim().parse::<f64>().unwrap();
+
 
     return v;
 }
