@@ -91,7 +91,7 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, Metropoli
 }
 
 pub fn main() {
-    const R: f64 = 3.0;
+    const R: f64 = 4.0;
     const W: f64 = 1.0;
     const MAX_MOVE_RANGE: f64 = 1.0;
 
@@ -132,7 +132,7 @@ pub fn main() {
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
 
     // ---------- Create energy function
-    let kernel = SimpleContact::new(R,R,R+W,1000.0,-1.0);
+    let kernel = SimpleContact::new(R,R,R+W,100000.0,-1.0);
     let pairwise = PairwiseNonbondedEvaluator::new(R+W,kernel);
     // let energy: Box<dyn Energy<CartesianSystem>> = Box::new(pairwise);
 
