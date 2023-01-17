@@ -22,6 +22,9 @@ pub struct Histogram {
 
 impl Histogram {
     /// Creates a new histogram with a given bin size
+    ///
+    ///  # Arguments
+    /// * `width` - width of each bin of this histogram
     pub fn by_bin_width(width:f64) -> Histogram {
         Histogram{data: HashMap::new(), bin_width:width}
     }
