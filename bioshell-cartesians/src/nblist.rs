@@ -5,8 +5,9 @@ use crate::{Coordinates, CoordinatesView};
 /// Rules that define which atoms and which atom pairs will be excluded from hashing
 ///
 /// This trait defines exclusion rules for a neighbor list structs, such as  [`NbList`](NbList).
-/// By default, a neighbor list provides all spatial neighbors of a given atom. An object
-/// derived from this [`NbListRules`] trait asks a neighbor list to omit some of them.
+/// By default, a neighbor list provides all spatial neighbors of a given atom for efficient
+/// evaluation of pairwise interactions.  An object derived from this [`NbListRules`] trait asks
+/// a neighbor list to omit some of them.
 ///
 /// For example, atoms that are directly connected with a covalent bond are typically excluded.
 /// ``NbListRules::if_pair_excluded(i, j)`` should return ``true`` in such cases. To exclude,
@@ -41,7 +42,10 @@ impl NbListRules for ArgonRules {
     /// Always returns ``false``, because all atoms interact
     fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool { false }
 
-    /// Always returns ``false``, because all atom pairs are included in pairwise interactions
+    /// Returns ``false``, because all atom pairs are included in pairwise interactions.
+    ///
+    /// The only exception is when ``i_atom == j_atom``: this will return false because an atom
+    /// can't interact with itself
     fn if_pair_excluded(&self, _coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool {
         i_atom == j_atom
     }
@@ -51,14 +55,31 @@ impl NbListRules for ArgonRules {
     }
 }
 
+/// Implements simple polymer style interaction rules.
+///
+/// According to these rules:
+///    - every atom is included
+///    - direct neighbors do not interact as it is assumed they are connected with a pseudo-bond,
+///      e.g. a harmonic spring. More precisely, ``if_pair_excluded(i, j)`` returns ``true`` if
+///      ``|i-j| < 2`` and the two atoms belong to the same chain
+///
 #[derive(Clone)]
 pub struct PolymerRules;
 
 impl NbListRules for PolymerRules {
 
+    /// Always returns ``false``, because all atoms interact
     fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool { false }
 
-    fn if_pair_excluded(&self, _coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool {
+    /// Excludes direct neighbors in a chain.
+    ///
+    /// I.e. returns ``true`` if ``|i-j| < 2`` and the two atoms belong to the same chain
+    fn if_pair_excluded(&self, coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool {
+
+        // ---------- atoms of different chains always interact
+        if coordinates[i_atom].chain_id != coordinates[j_atom].chain_id { return false; }
+
+        // ---------- exclude direct neighbors in a chain
         if i_atom >  j_atom {
             return i_atom - j_atom < 2;
         } else {
