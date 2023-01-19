@@ -8,7 +8,7 @@ use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, squa
                           NbList, ArgonRules, pdb_to_coordinates};
 use bioshell_sim::{Energy, System};
 
-use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
+use bioshell_ff::nonbonded::{PairwiseNonbonded, PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion, AdaptiveMCProtocol, MoversSet, AcceptanceCriterion};
 
 #[derive(Parser, Debug)]
@@ -29,15 +29,18 @@ struct Args {
     /// Number of disks in a box to simulate
     #[clap(short, long, default_value_t = 400, short='n')]
     ndisks: usize,
-    /// Inner cycles
+    /// the number of inner MC cycles
     #[clap(short, long, default_value_t = 100)]
     inner: usize,
-    /// outer cycles
+    /// the number of outer MC cycles
     #[clap(short, long, default_value_t = 100)]
     outer: usize,
     /// prefix for output file names
     #[clap(long, default_value = "")]
     prefix: String,
+    /// don't run any simulation, just write energy value for each disk of the starting conformation
+    #[clap(long)]
+    rescore: bool
 }
 
 fn box_width(disc_radius: f64, n_discs: usize, density: f64) -> f64 {
@@ -62,21 +65,49 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, Metropoli
 
     fn perturb(&mut self, system: &mut CartesianSystem,
                energy: &PairwiseNonbondedEvaluator<SimpleContact>, acc: &mut MetropolisCriterion) -> Option<Range<usize>> {
+
         let mut rng = rand::thread_rng();
+        // ---------- index of a disk we move
         let i_moved = rng.gen_range(0..system.size());
+        // ---------- backup its coordinates and record current energy
         let old_x: f64 = system.coordinates()[i_moved].x;
         let old_y: f64 = system.coordinates()[i_moved].y;
         let old_en: f64 = energy.energy_by_pos(system, i_moved);
 
+        // ---------- test the energy consistency - in debug build only
+        #[cfg(debug_assertions)]
+            let total_en_before: f64 = energy.energy(system);
+
+        // ---------- actually make the move and update the NBL (mandatory!!)
         system.add(i_moved,rng.gen_range(-self.max_step..self.max_step),
                    rng.gen_range(-self.max_step..self.max_step), 0.0);
+        system.update_nbl(i_moved);
 
+        // ---------- calculate the new energy
         let new_en: f64 = energy.energy_by_pos(system, i_moved);
+
+        // ---------- check the MC acceptance criterion
         if acc.check(old_en, new_en) {
             system.update_nbl(i_moved);
+
+            // ---------- energy consistency test - part two
+            #[cfg(debug_assertions)] {
+                let total_en_after: f64 = energy.energy(system);
+                let total_delta: f64 = total_en_after - total_en_before;
+                let local_delta = new_en - old_en;
+                if f64::abs(total_delta - local_delta) > 0.01 {
+
+                    let str = format!("Inconsistent energy! Total {total_en_before} -> \
+                        {total_en_after} with delta = {total_delta}, local delta: {local_delta} \
+                        after moveing disk {}", i_moved);
+                    panic!("{}", str);
+                }
+            }
+
             self.succ_rate.n_succ += 1;
             return Option::from(i_moved..i_moved);
         } else {
+            // ---------- undo the move
             self.succ_rate.n_failed += 1;
             system.set(i_moved, old_x, old_y, 0.0);
             return Option::None;
@@ -88,6 +119,16 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, Metropoli
     fn max_range(&self) -> f64 { return self.max_step; }
 
     fn set_max_range(&mut self, new_val: f64) { self.max_step = new_val; }
+}
+
+fn rescore(conformation: &CartesianSystem, energy: &PairwiseNonbondedEvaluator<SimpleContact>) {
+    let mut total: f64 = 0.0;
+    for pos in 0..conformation.size() {
+        let en: f64 = energy.energy_by_pos(conformation, pos);
+        total += en;
+        println!("{} {}", pos, en);
+    }
+    println!("total, by-pos: {} {}", energy.energy(conformation), total/2.0);
 }
 
 pub fn main() {
@@ -126,7 +167,7 @@ pub fn main() {
     coordinates_to_pdb(&coords, 1, tra_fname.as_str(), false);
 
     // ---------- Create system's list of neighbors
-    let nbl:NbList = NbList::new(R+W as f64,MAX_MOVE_RANGE*2.0,Box::new(ArgonRules{}));
+    let nbl:NbList = NbList::new(R+W as f64,MAX_MOVE_RANGE*3.0,Box::new(ArgonRules{}));
 
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
@@ -134,7 +175,12 @@ pub fn main() {
     // ---------- Create energy function
     let kernel = SimpleContact::new(R,R,R+W,100000.0,-1.0);
     let pairwise = PairwiseNonbondedEvaluator::new(R+W,kernel);
-    // let energy: Box<dyn Energy<CartesianSystem>> = Box::new(pairwise);
+
+    // ---------- Just rescore, no simulation this time
+    if args.rescore {
+        rescore(&system, &pairwise);
+        return;
+    }
 
     // ---------- Create a sampler and add a mover into it
     let mut simple_sampler: MCProtocol<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, MetropolisCriterion> =
