@@ -38,10 +38,10 @@ impl Energy<CartesianSystem> for SimpleHarmonic {
     fn energy_by_pos(&self, system: &CartesianSystem, pos: usize) -> f64 {
         let mut en: f64 = 0.0;
         if pos > 0 && system.coordinates()[pos].chain_id == system.coordinates()[pos - 1].chain_id {
-            spring_kernel!(system.coordinates(),pos, pos-1,self.d0, en, +=);
+            spring_kernel!(system.coordinates(),pos, pos-1, self.d0, en, +=);
         }
         if pos < system.size() - 1 && system.coordinates()[pos].chain_id == system.coordinates()[pos + 1].chain_id {
-            spring_kernel!(system.coordinates(),pos, pos-1,self.d0, en, +=);
+            spring_kernel!(system.coordinates(),pos, pos+1, self.d0, en, +=);
         }
 
         return en * self.k as f64;
