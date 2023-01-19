@@ -155,7 +155,7 @@ pub fn main() {
     let final_fname = format!("{}_final.pdb", &prefix);
     let n_atoms: usize;
     let box_length: f64;
-    let buffer_thickness = args.buffer;
+    let buffer_thickness = args.buffer.max(MAX_MOVE_RANGE);
 
     // ---------- Create system's coordinates
     let mut coords: Coordinates;
@@ -185,7 +185,7 @@ pub fn main() {
         NBL buffer:  {:.3}", temperature, density, n_atoms, box_length, buffer_thickness);
 
     // ---------- Create system's list of neighbors
-    let nbl:NbList = NbList::new(R+W as f64,MAX_MOVE_RANGE*5.0,Box::new(ArgonRules{}));
+    let nbl:NbList = NbList::new(R+W as f64,buffer_thickness,Box::new(ArgonRules{}));
 
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
