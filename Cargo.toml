@@ -33,6 +33,9 @@ clap = { version = "3.1.18", features = ["derive"] }
 rand = "0.8.5"
 rand_distr="0.4.3"
 nalgebra = "0.31.1"
+# ---------- Logging
+log = "0.4.0"
+env_logger = "0.9.0"
 
 [[bin]]
 name = "polymer"

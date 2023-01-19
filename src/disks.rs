@@ -1,6 +1,9 @@
+use std::env;
 use std::time::Instant;
 use std::ops::Range;
 use rand::Rng;
+
+use log::{info};
 
 use clap::{Parser};
 
@@ -40,7 +43,10 @@ struct Args {
     prefix: String,
     /// don't run any simulation, just write energy value for each disk of the starting conformation
     #[clap(long)]
-    rescore: bool
+    rescore: bool,
+    /// thickness of the buffer zone used by non-bonded list to hash interactions
+    #[clap(long, default_value_t = 4.0)]
+    buffer: f64,
 }
 
 fn box_width(disc_radius: f64, n_discs: usize, density: f64) -> f64 {
@@ -110,6 +116,7 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, Metropoli
             // ---------- undo the move
             self.succ_rate.n_failed += 1;
             system.set(i_moved, old_x, old_y, 0.0);
+            system.update_nbl(i_moved);
             return Option::None;
         }
     }
@@ -136,6 +143,9 @@ pub fn main() {
     const W: f64 = 1.0;
     const MAX_MOVE_RANGE: f64 = 1.0;
 
+    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    env_logger::init();
+
     let args = Args::parse();
     // ---------- Temperature of the isothermal simulation (in the energy units)
     let temperature: f64 = args.temperature;
@@ -145,6 +155,7 @@ pub fn main() {
     let final_fname = format!("{}_final.pdb", &prefix);
     let n_atoms: usize;
     let box_length: f64;
+    let buffer_thickness = args.buffer;
 
     // ---------- Create system's coordinates
     let mut coords: Coordinates;
@@ -166,8 +177,15 @@ pub fn main() {
     }
     coordinates_to_pdb(&coords, 1, tra_fname.as_str(), false);
 
+    info!("Simulation settings:
+        temperature: {:.3}
+        density:     {}
+        no. disks:   {}
+        box length:  {:.3}
+        NBL buffer:  {:.3}", temperature, density, n_atoms, box_length, buffer_thickness);
+
     // ---------- Create system's list of neighbors
-    let nbl:NbList = NbList::new(R+W as f64,MAX_MOVE_RANGE*3.0,Box::new(ArgonRules{}));
+    let nbl:NbList = NbList::new(R+W as f64,MAX_MOVE_RANGE*5.0,Box::new(ArgonRules{}));
 
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
