@@ -57,7 +57,7 @@ impl OnlineMultivariateStatistics {
     }
 
     /// Accumulate a single 1-dimensional point
-    pub fn accumulate_1D(&mut self, x:f64) {
+    pub fn accumulate_1d(&mut self, x:f64) {
         let v = vec![x];
         self.accumulate(&v);
     }

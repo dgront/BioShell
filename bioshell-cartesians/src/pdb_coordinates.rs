@@ -85,6 +85,7 @@ fn vec_from_atom_line(atom_line: &String) -> Vec3 {
     let mut v = Vec3{x: 0.0, y:0.0, z:0.0, atom_type: 0, chain_id: 0, res_type: 0};
     let chars: Vec<char> = atom_line.chars().collect();
     v.chain_id = CHAINS_ORDER.find(chars[21]).unwrap() as i16;
+    xzy_from_atom_line(atom_line, &mut v.x, &mut v.y, &mut v.z);
     v.x = atom_line[30..38].trim().parse::<f64>().unwrap();
     v.y = atom_line[38..46].trim().parse::<f64>().unwrap();
     v.z = atom_line[46..54].trim().parse::<f64>().unwrap();
