@@ -1,6 +1,8 @@
+use std::env;
 use std::time::Instant;
 
 use clap::{Parser};
+use log::{info};
 
 use bioshell_numerical::Vec3;
 
@@ -43,6 +45,9 @@ struct Args {
     /// prefix for output file names
     #[clap(long, default_value = "")]
     prefix: String,
+    /// thickness of the buffer zone used by non-bonded list to hash non-bonded interactions
+    #[clap(long, default_value_t = 4.0)]
+    buffer: f64,
 }
 
 pub fn main() {
@@ -52,10 +57,17 @@ pub fn main() {
     const E_VAL: f64 = -1.0;
     const REP_VAL: f64 = 1000.0;
     const L: f64 = 900.0;
+    const MAX_MOVE_RANGE: f64 = 1.0;
+
+    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    env_logger::init();
 
     let args = Args::parse();
     // ---------- Temperature of the isothermal simulation (in the energy units)
     let temperature: f64 = args.temperature;
+
+    // ---------- NBL buffer radius
+    let buffer_thickness = args.buffer.max(MAX_MOVE_RANGE * 4.0);
 
     // ---------- Create system's coordinates
     let n_beads: usize;
@@ -74,10 +86,17 @@ pub fn main() {
             _ => panic!("Can't read from file >{}<", args.infile)
         };
         coords.set_box_len(L);
+        n_beads = coords.size();
     }
 
+    info!("Simulation settings:
+        temperature: {:.3}
+        no. beads:   {}
+        box length:  {:.3}
+        NBL buffer:  {:.3}", temperature, n_beads, L, buffer_thickness);
+
     // ---------- Create system's list of neighbors
-    let nbl:NbList = NbList::new(E_TO,4.0,Box::new(PolymerRules{}));
+    let nbl:NbList = NbList::new(E_TO,buffer_thickness,Box::new(PolymerRules{}));
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
 
@@ -99,7 +118,7 @@ pub fn main() {
     // ---------- Create a sampler and add a mover into it
     let mut simple_sampler: MCProtocol<CartesianSystem, TotalEnergy<CartesianSystem>, MetropolisCriterion> =
         MCProtocol::new(MetropolisCriterion::new(temperature));
-    simple_sampler.add_mover(Box::new(SingleAtomMove::new()));
+    simple_sampler.add_mover(Box::new(SingleAtomMove::new(MAX_MOVE_RANGE)));
 
     // ---------- Decorate the sampler into an adaptive MC protocol
     let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));

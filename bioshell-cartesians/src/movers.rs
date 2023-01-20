@@ -44,7 +44,7 @@ pub struct SingleAtomMove {
 }
 
 impl SingleAtomMove {
-    pub fn new() -> SingleAtomMove { SingleAtomMove{ max_step: 2.0, succ_rate: Default::default() } }
+    pub fn new(max_range: f64) -> SingleAtomMove { SingleAtomMove{ max_step: max_range, succ_rate: Default::default() } }
 }
 
 impl<E: Energy<CartesianSystem>, T: AcceptanceCriterion> Mover<CartesianSystem, E, T> for SingleAtomMove {

@@ -44,7 +44,7 @@ struct Args {
     /// don't run any simulation, just write energy value for each disk of the starting conformation
     #[clap(long)]
     rescore: bool,
-    /// thickness of the buffer zone used by non-bonded list to hash interactions
+    /// thickness of the buffer zone used by non-bonded list to hash non-bonded interactions
     #[clap(long, default_value_t = 4.0)]
     buffer: f64,
 }
