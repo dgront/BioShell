@@ -84,6 +84,17 @@ impl CartesianSystem {
         self.coordinates.add(i, x, y, z);
     }
 
+    /// Copies coordinates of a given atom from another system.
+    ///
+    /// # Arguments
+    /// * `i` - index of an atom to be copied; it's the same index in both source and destination coordinates
+    /// * `rhs` - the source to copy from
+    fn copy_from(&mut self, i:usize, rhs: &CartesianSystem) {
+        self.coordinates.copy(i,&rhs.coordinates());
+        let stls_v = CoordinatesView { points: &self.coordinates, };
+        self.neighbor_list.update_for_view(stls_v, i);
+    }
+
     /// Provides the interaction cutoff radius used by the neighbor list
     pub fn cutoff(&self) -> f64 { self.neighbor_list.cutoff() }
 
@@ -108,11 +119,4 @@ impl CartesianSystem {
 impl System for CartesianSystem {
     /// Returns the number of atoms of this system
     fn size(&self) -> usize { self.coordinates.size() }
-
-
-    fn copy_from(&mut self, i:usize, rhs: &CartesianSystem) {
-        self.coordinates.copy(i,&rhs.coordinates());
-        let stls_v = CoordinatesView { points: &self.coordinates, };
-        self.neighbor_list.update_for_view(stls_v, i);
-    }
 }

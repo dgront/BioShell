@@ -83,7 +83,7 @@ pub fn main() {
     // ---------- Create a sampler and add a mover into it
     let mut simple_sampler: MCProtocol<CartesianSystem, PairwiseNonbondedEvaluator<LennardJonesHomogenic>, MetropolisCriterion> =
         MCProtocol::new(MetropolisCriterion::new(temperature));
-    simple_sampler.add_mover(Box::new(SingleAtomMove::new()));
+    simple_sampler.add_mover(Box::new(SingleAtomMove::new(1.0)));
     let mut pressure = 1.0;
     if let Some(p) = args.pressure {
         pressure = p;

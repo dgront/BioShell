@@ -49,19 +49,17 @@ impl Energy<CartesianSystem> for SimpleHarmonic {
 
     fn name(&self) -> String { String::from("SimpleHarmonic") }
 
-    fn delta_energy_by_range(&self, old_system: &CartesianSystem, new_system: &CartesianSystem, pos: &Range<usize>) -> (f64, f64) {
+    fn energy_by_range(&self, system: &CartesianSystem, range: &Range<usize>) -> f64 {
 
-        let mut en_old: f64 = 0.0;
-        let mut en_new: f64 = 0.0;
-        let start: usize = if pos.start > 0 { pos.start - 1 } else { pos.start };
-        let end: usize = if pos.end >= old_system.size() - 1 { old_system.size() - 1 } else { pos.end + 1 };
+        let mut total_en: f64 = 0.0;
+        let start: usize = if range.start > 0 { range.start - 1 } else { range.start };
+        let end: usize = if range.end >= system.size() - 1 { system.size() - 1 } else { range.end + 1 };
         for ipos in start..end {
-            if old_system.coordinates()[ipos].chain_id == old_system.coordinates()[ipos + 1].chain_id {
-                spring_kernel!(new_system.coordinates(), ipos, ipos+1, self.d0, en_new, +=);
-                spring_kernel!(old_system.coordinates(), ipos, ipos+1, self.d0, en_old, +=);
+            if system.coordinates()[ipos].chain_id == system.coordinates()[ipos + 1].chain_id {
+                spring_kernel!(system.coordinates(), ipos, ipos+1, self.d0, total_en, +=);
             }
         }
 
-        return (en_old * self.k, en_new * self.k);
+        return total_en * self.k;
     }
 }

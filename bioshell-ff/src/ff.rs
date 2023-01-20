@@ -23,6 +23,17 @@ impl<S> TotalEnergy<S> {
     }
 }
 
+
+// macro_rules! accumulate_energy_terms {
+//     ($val:expr, $L:expr, $coord:expr) => {
+//         $coord = $val;
+//         if $coord > $L { $coord = $coord - $L}
+//         else {
+//             if $coord < 0.0 { $coord = $L + $coord}
+//         }
+//     }
+// }
+
 impl<S> Energy<S> for TotalEnergy<S> {
 
     fn energy(&self, system: &S) -> f64 {
@@ -43,15 +54,14 @@ impl<S> Energy<S> for TotalEnergy<S> {
         return total;
     }
 
-    fn delta_energy_by_range(&self, old: &S, new: &S, pos: &Range<usize>) -> (f64,f64) {
-        let (mut total_old, mut total_new) = (0.0, 0.0);
+    fn energy_by_range(&self, system: &S, range: &Range<usize>) -> f64 {
+
+        let mut total_en: f64 = 0.0;
         let en_w = self.components.iter().zip(self.weights.iter());
         for (en, w) in en_w {
-            let (o,n) = en.delta_energy_by_range(&old, &new, &pos);
-            total_new += w * n;
-            total_old += w * o;
+            total_en += w * en.energy_by_range(&system, &range);
         }
-        return (total_old, total_new);
+        return total_en;
     }
 
     fn name(&self) -> String { String::from("TotalEnergy") }
