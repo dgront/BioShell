@@ -7,7 +7,7 @@ use std::fmt;
 ///
 ///  Basic usage:
 /// ```
-/// use bioshell_numerical::statistics::Histogram;
+/// use bioshell_statistics::Histogram;
 /// let mut h = Histogram::by_bin_width(0.5);
 /// h.insert(1.1);
 /// h.insert(1.3);

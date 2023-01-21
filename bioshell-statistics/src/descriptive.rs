@@ -2,6 +2,40 @@
 ///
 /// This struct accumulates observations without actually storing them, and on the fly provides
 /// basic descriptive parameters of the accumulated sample
+///
+/// # Examples
+/// The following example:
+/// - creates a 2-dimensional normal distribution
+/// - creates an `OnlineMultivariateStatistics` object
+/// - withdraws 50000 observations from the distribution and accumulates them
+/// - checks the convergence of expectations vector
+///
+/// Refer to [`MultiNormalDistribution`](MultiNormalDistribution) struct documentation to see
+/// how to initialize parameters of the distribution.
+/// ```
+/// use bioshell_statistics::{OnlineMultivariateStatistics, MultiNormalDistribution, Distribution};
+/// # use nalgebra::{DMatrix, DVector};
+/// # use rand::rngs::SmallRng;
+/// # use rand::SeedableRng;
+///
+/// # let mu = DVector::from_vec(vec![1.0, 2.0]);
+/// # let sig = DMatrix::<f64>::from_iterator(2, 2, vec![0.2, 0.1, 0.1, 2.0].into_iter());
+/// let mut gen: MultiNormalDistribution = MultiNormalDistribution::new(2);
+/// // ------ initialize MultiNormalDistribution here ...
+/// # gen.set_parameters(&mu, &sig);
+/// # let mut stats = OnlineMultivariateStatistics::new(2);
+/// let mut observation = [0.0, 0.0];
+/// let mut rng = SmallRng::seed_from_u64(0);
+/// for i in 0..50000 {
+///         gen.sample(&mut rng, &mut observation);   // --- fill observation vector with new random values
+///         stats.accumulate(&observation);             // --- accumulate them
+///         if i % 1000 == 0 {
+///             println!("Average converged to {:.4}, {:.4}", stats.avg(0), stats.avg(1));
+///         }
+/// }
+/// assert!((stats.avg(0) - 1.0).abs() < 0.01);
+/// assert!((stats.avg(1) - 2.0).abs() < 0.01);
+/// ```
 pub struct OnlineMultivariateStatistics {
     dim: usize,
     count: usize,
@@ -29,7 +63,7 @@ impl OnlineMultivariateStatistics {
     pub fn dim(&self) -> usize { self.dim }
 
     /// Accumulate a single N-dimensional point
-    pub fn accumulate(&mut self, d:&Vec<f64>) {
+    pub fn accumulate(&mut self, d:&[f64]) {
 
         assert_eq!(d.len(), self.dim);                  // --- incoming vector must be of the same size at the statistics
 
@@ -58,7 +92,7 @@ impl OnlineMultivariateStatistics {
 
     /// Accumulate a single 1-dimensional point
     pub fn accumulate_1d(&mut self, x:f64) {
-        let v = vec![x];
+        let v = [x];
         self.accumulate(&v);
     }
 
