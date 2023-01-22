@@ -23,17 +23,6 @@ impl<S> TotalEnergy<S> {
     }
 }
 
-
-// macro_rules! accumulate_energy_terms {
-//     ($val:expr, $L:expr, $coord:expr) => {
-//         $coord = $val;
-//         if $coord > $L { $coord = $coord - $L}
-//         else {
-//             if $coord < 0.0 { $coord = $L + $coord}
-//         }
-//     }
-// }
-
 impl<S> Energy<S> for TotalEnergy<S> {
 
     fn energy(&self, system: &S) -> f64 {
