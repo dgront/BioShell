@@ -1,8 +1,8 @@
 
 use std::ops::Range;
 use std::default::Default;
-use rand::Rng;
-use rand::rngs::ThreadRng;
+use rand::{Rng, SeedableRng};
+use rand::rngs::{SmallRng, ThreadRng};
 
 use bioshell_sim::{System, Energy};
 
@@ -40,20 +40,22 @@ pub trait AcceptanceCriterion {
 
 pub struct MetropolisCriterion {
     pub temperature: f64,
-    rng: ThreadRng,
+    rng: SmallRng,
 }
 
 impl MetropolisCriterion {
-    pub fn new(temperature: f64) -> MetropolisCriterion { MetropolisCriterion{temperature, rng:rand::thread_rng() } }
+    pub fn new(temperature: f64) -> MetropolisCriterion { MetropolisCriterion{temperature, rng:SmallRng::from_entropy() } }
 }
 
 impl AcceptanceCriterion for MetropolisCriterion {
     fn check(&mut self, energy_before: f64, energy_after: f64) -> bool {
 
-        let delta_e = energy_after - energy_before;
-        if delta_e <= 0.0 || self.rng.gen_range(0.0..1.0) <= (-delta_e / self.temperature).exp() {
-            return true
+        if energy_after <= energy_before { return true; }
+        else {
+            let delta_e = energy_after - energy_before;
+            if self.rng.gen_range(0.0..1.0) < (-delta_e / self.temperature).exp() { return true; }
         }
+
         return false;
     }
 }
