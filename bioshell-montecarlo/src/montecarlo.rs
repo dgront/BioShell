@@ -34,16 +34,32 @@ impl Default for AcceptanceStatistics {
     }
 }
 
+/// Metropolis acceptance criterion.
+///
+/// AcceptanceCriterion will return `true` or `false` when a Markov chain Monte Carlo move
+/// from energy `energy_before` to `energy_after` should be accepted or not, respectively
 pub trait AcceptanceCriterion {
     fn check(&mut self, energy_before: f64, energy_after: f64) -> bool;
 }
 
+/// Classical Metropolis acceptance criterion.
+///
+/// A change of a system is accepted with probability `$P$`:
+/// ```math
+/// P(E_b \to E_a) = \begin{cases}\begin{align*}
+///     1 &  \quad \text{when} \quad E_a \le E_b \\
+///     e^{\Delta E / T} &  \quad \text{otherwise}
+/// \end{align*}\end{cases}
+/// ```
+/// where `$\Delta E = E_a - E_b$` and the provided temperature `$T$` must be already expressed in
+/// in the units of the Boltzmann constant `$k_B$`
 pub struct MetropolisCriterion {
     pub temperature: f64,
     rng: SmallRng,
 }
 
 impl MetropolisCriterion {
+    /// Creates a new acceptance criterion that will result in Boltzmann distribution for the given temperature
     pub fn new(temperature: f64) -> MetropolisCriterion { MetropolisCriterion{temperature, rng:SmallRng::from_entropy() } }
 }
 
@@ -60,10 +76,22 @@ impl AcceptanceCriterion for MetropolisCriterion {
     }
 }
 
+/// Mover changes a given conformation of a system
+///
 pub trait Mover<S: System, E: Energy<S>, T: AcceptanceCriterion> {
+
+    /// Introduce a change into the given system
+    ///
+    /// The change may be accepted according to the acceptance criterion
     fn perturb(&mut self, system: &mut S, energy: &E, acc: &mut T) -> Option<Range<usize>>;
+
+    /// The change may be accepted according to the acceptance criterion
     fn acceptance_statistics(&self) -> AcceptanceStatistics;
+
+    /// Maximum range of perturbation allowed for that mover
     fn max_range(&self) -> f64;
+
+    /// Sets the new maximum range of perturbation.
     fn set_max_range(&mut self, new_val: f64);
 }
 
@@ -71,12 +99,19 @@ pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
     fn make_sweeps(&mut self, n:usize, coords: &mut S, energy: &E);
 }
 
+/// A container for movers.
+///
+/// Sampling molecular conformations often utilizes more than one move type. Samplers
+/// that implement [`MoversSet`](MoversSet) allow one to add several movers to a given simulation
 pub trait MoversSet<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 
+    /// Add a mover to this set
     fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>);
 
+    /// Mutable access to a mover
     fn get_mover(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>>;
 
+    /// Count movers contained in this set
     fn count_movers(&self) -> usize;
 }
 
@@ -107,51 +142,7 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for MCPr
             }
         }
     }
-
-    /*
-    fn make_sweeps(&mut self, n:usize, coords: &mut S, energy: &Box<dyn Energy<S>>) {
-        let mut future_coords = coords.clone();
-        for _ in 0..n {
-            for i_mover in 0..self.movers.len() {
-                let mover = &mut self.movers[i_mover];
-                for _ in 0..coords.size() {
-                    // ---------- Make a move on future system
-                    let range: Range<usize> = mover.perturb(&mut future_coords);
-                    // ---------- Evaluate energy difference
-                    let (en_before, en_after) = energy.delta_energy_by_range(coords, &future_coords, &range);
-                    // ---------- test the energy consistency
-                    #[cfg(debug_assertions)] {
-                        let delta_en = en_after - en_before;
-                        if delta_en < 1000.0 {      // ---------- test only when it's unlikely the move will be rejected
-                            let en_old = energy.energy(&coords);
-                            let en_new = energy.energy(&future_coords);
-                            let total_delta = en_new - en_old;
-                            if f64::abs(total_delta - delta_en) > 0.01 {
-                                let str = format!("Inconsistent energy! Total {en_old} -> {en_new} with delta = {total_delta}, local delta: {delta_en} after move {:?}", range);
-                                panic!("{}", str);
-                            }
-                        }
-                    }
-                    // ---------- apply acceptance criterion, copy or undo the move
-                    if self.acceptance_criterion.check(en_before, en_after) {
-                        // --- update mover counts, copy future_pose on current_pose to make the move
-                        for ipos in range.start..range.end + 1 {
-                            coords.copy_from(ipos, &future_coords);
-                        }
-                        mover.add_success();
-                    } else {
-                        // --- update mover failures, copy current_pose on future_pose to clear the move
-                        for ipos in range.start..range.end + 1 {
-                            future_coords.copy_from(ipos, &coords);
-                        }
-                        mover.add_failure();
-                    }
-                }
-            }
-        }
-    }*/
 }
-
 
 impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MoversSet<S, E, T> for MCProtocol<S, E, T> {
 
@@ -164,6 +155,7 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MoversSet<S, E, T> for MCP
     fn count_movers(&self) -> usize { self.movers.len() }
 }
 
+// blanket implementation
 impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MoversSetSampler<S, E, T> for MCProtocol<S, E, T> {}
 
 pub struct AdaptiveMCProtocol<S: System, E: Energy<S>, T: AcceptanceCriterion> {
