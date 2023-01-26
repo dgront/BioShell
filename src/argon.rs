@@ -6,8 +6,7 @@ use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubi
 use bioshell_sim::{Energy, System};
 use bioshell_cartesians::movers::SingleAtomMove;
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, MCProtocol, MetropolisCriterion,
-                          AdaptiveMCProtocol, MoversSet};
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, MCProtocol, MetropolisCriterion, AdaptiveMCProtocol};
 
 
 #[derive(Parser, Debug)]

@@ -32,6 +32,12 @@ impl< E: Energy<CartesianSystem>> Sampler<CartesianSystem, E, MetropolisCriterio
     }
 
     fn acceptance_criterion(&mut self) -> &mut MetropolisCriterion { self.sampler.acceptance_criterion() }
+
+    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<CartesianSystem, E, MetropolisCriterion>>) { self.sampler.add_mover(perturb_fn); }
+
+    fn get_mover(&mut self, which_one: usize) -> &mut Box<dyn Mover<CartesianSystem, E, MetropolisCriterion>> { self.sampler.get_mover(which_one) }
+
+    fn count_movers(&self) -> usize { self.sampler.count_movers() }
 }
 
 impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E, MetropolisCriterion> for VolumeChangingProtocol<E> {

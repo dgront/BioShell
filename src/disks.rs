@@ -12,7 +12,7 @@ use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, squa
 use bioshell_sim::{Energy, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbonded, PairwiseNonbondedEvaluator, SimpleContact};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion, AdaptiveMCProtocol, MoversSet, AcceptanceCriterion};
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion, AdaptiveMCProtocol, AcceptanceCriterion};
 
 #[derive(Parser, Debug)]
 #[clap(name = "disks")]

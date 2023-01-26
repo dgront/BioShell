@@ -15,7 +15,7 @@ use bioshell_sim::{Energy};
 
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{Sampler, AcceptanceStatistics, MCProtocol, MetropolisCriterion,
-                          AdaptiveMCProtocol, MoversSet};
+                          AdaptiveMCProtocol};
 
 use bioshell_ff::{TotalEnergy};
 use bioshell_ff::bonded::SimpleHarmonic;

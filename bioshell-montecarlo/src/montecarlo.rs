@@ -107,13 +107,6 @@ pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 
     /// Provides statistics of the success rate for this mover
     fn acceptance_criterion(&mut self) -> &mut T;
-}
-
-/// A container for movers.
-///
-/// Sampling molecular conformations often utilizes more than one move type. Samplers
-/// that implement [`MoversSet`](MoversSet) allow one to add several movers to a given simulation
-pub trait MoversSet<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 
     /// Add a mover to this set
     fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>);
@@ -125,7 +118,6 @@ pub trait MoversSet<S: System, E: Energy<S>, T: AcceptanceCriterion> {
     fn count_movers(&self) -> usize;
 }
 
-pub trait MoversSetSampler<S: System, E: Energy<S>, T: AcceptanceCriterion> : MoversSet<S, E, T> + Sampler<S, E, T> {}
 
 pub struct MCProtocol<S: System, E: Energy<S>, T: AcceptanceCriterion> {
     acceptance_crit: T,
@@ -153,9 +145,6 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for MCPr
     }
 
     fn acceptance_criterion(&mut self) -> &mut T { &mut self.acceptance_crit }
-}
-
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MoversSet<S, E, T> for MCProtocol<S, E, T> {
 
     fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>){
         self.movers.push(perturb_fn);
@@ -166,18 +155,16 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MoversSet<S, E, T> for MCP
     fn count_movers(&self) -> usize { self.movers.len() }
 }
 
-// blanket implementation
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MoversSetSampler<S, E, T> for MCProtocol<S, E, T> {}
 
 pub struct AdaptiveMCProtocol<S: System, E: Energy<S>, T: AcceptanceCriterion> {
     pub target_rate: f64,
     pub factor: f64,
-    sampler: Box<dyn MoversSetSampler<S, E, T>>,
+    sampler: Box<dyn Sampler<S, E, T>>,
     allowed_ranges: Vec<Range<f64>>
 }
 
 impl<S: System, E: Energy<S>, T: AcceptanceCriterion> AdaptiveMCProtocol<S, E, T> {
-    pub fn new(mut sampler: Box<dyn MoversSetSampler<S, E, T>>) -> AdaptiveMCProtocol<S, E, T> {
+    pub fn new(mut sampler: Box<dyn Sampler<S, E, T>>) -> AdaptiveMCProtocol<S, E, T> {
         let mut allowed_ranges:Vec<Range<f64>> = vec![];
         for i in 0..sampler.count_movers() {
             let r = sampler.get_mover(i).max_range();
@@ -211,9 +198,7 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for Adap
     }
 
     fn acceptance_criterion(&mut self) -> &mut T { self.sampler.acceptance_criterion() }
-}
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MoversSet<S, E, T>  for AdaptiveMCProtocol<S, E, T> {
     fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>) { self.sampler.add_mover(perturb_fn); }
 
     fn get_mover(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { self.sampler.get_mover(which_one) }
