@@ -3,7 +3,7 @@ use rand::Rng;
 
 use crate::{CartesianSystem};
 use bioshell_sim::{Energy, System};
-use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover, MetropolisCriterion, Sampler};
+use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover, MetropolisCriterion};
 
 /// A mover that moves a single, randomly selected atom by a small random vector.
 ///
@@ -87,7 +87,7 @@ impl ChangeVolume {
 
 impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E, MetropolisCriterion> for ChangeVolume {
 
-    #[allow(non_upper_case_globals)]
+    #[allow(non_snake_case)]
     fn perturb(&mut self, system: &mut CartesianSystem, energy: &E, acc: &mut MetropolisCriterion) -> Option<Range<usize>> {
 
         // ---------- attempt the volume change

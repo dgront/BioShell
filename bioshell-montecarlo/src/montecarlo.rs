@@ -52,7 +52,8 @@ pub trait AcceptanceCriterion {
 /// \end{align*}\end{cases}
 /// ```
 /// where `$\Delta E = E_a - E_b$` and the provided temperature `$T$` must be already expressed in
-/// in the units of the Boltzmann constant `$k_B$`
+/// in the units of the Boltzmann constant `$k_B$`. This criterion, when used in atomistic
+/// Monte Carlo simulation, results in NVT ensemble
 #[derive(Clone)]
 pub struct MetropolisCriterion {
     pub temperature: f64,
@@ -181,7 +182,7 @@ pub struct AdaptiveMCProtocol<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 }
 
 impl<S: System, E: Energy<S>, T: AcceptanceCriterion> AdaptiveMCProtocol<S, E, T> {
-    pub fn new(mut sampler: Box<dyn Sampler<S, E, T>>) -> AdaptiveMCProtocol<S, E, T> {
+    pub fn new(sampler: Box<dyn Sampler<S, E, T>>) -> AdaptiveMCProtocol<S, E, T> {
         let mut allowed_ranges:Vec<Range<f64>> = vec![];
         for i in 0..sampler.count_movers() {
             let r = sampler.get_mover(i).max_range();
@@ -204,7 +205,7 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for Adap
             let stats_after = self.sampler.get_mover(i).acceptance_statistics();
             let rate = stats_after.recent_success_rate(&stats_before[i]);
 
-            let mut mover = self.sampler.get_mover_mut(i);
+            let mover = self.sampler.get_mover_mut(i);
             let mut range = mover.max_range();
             if rate < self.target_rate - 0.05 { range = range * self.factor; }
             if rate > self.target_rate + 0.05 { range = range / self.factor; }
