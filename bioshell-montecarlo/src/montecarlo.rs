@@ -174,6 +174,10 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for MCPr
 }
 
 
+/// Adds to a given sampler the ability to adapt movers' range on the fly
+///
+/// This protocol monitors success rates for each mover contained in a given Monte Carlo [`Sampler`](Sampler)
+/// and adjusts their `max_move_range` property to keep the success rate close to the desired value.
 pub struct AdaptiveMCProtocol<S: System, E: Energy<S>, T: AcceptanceCriterion> {
     pub target_rate: f64,
     pub factor: f64,
