@@ -5,39 +5,6 @@ use crate::{CartesianSystem};
 use bioshell_sim::{Energy, System};
 use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 
-/*
-/// performs a volume change
-pub struct ChangeVolume {
-    max_step: f64,
-    succ_rate: AcceptanceStatistics
-}
-
-impl ChangeVolume {
-    pub fn new() -> ChangeVolume { ChangeVolume{ max_step: 0.1, succ_rate: Default::default() } }
-}
-
-impl Mover<CartesianSystem> for ChangeVolume {
-    #[allow(non_snake_case)]
-    fn perturb(&mut self, system: &mut CartesianSystem) -> Range<usize> {
-        let mut rng = rand::thread_rng();
-
-        let v0 = system.volume();
-        let lnV0 = v0.ln();
-        let lnV = lnV0 + rng.gen_range(-self.max_step..self.max_step);
-        let new_len = lnV.exp().powf(0.333333333);
-        system.set_box_len(new_len);
-
-        0..system.size()
-    }
-
-    fn acceptance_statistics(&self) -> AcceptanceStatistics { self.succ_rate.clone() }
-
-    fn max_range(&self) -> f64 { self.max_step }
-
-    fn set_max_range(&mut self, new_val: f64) { self.max_step = new_val; }
-}
-*/
-
 pub struct SingleAtomMove {
     max_step: f64,
     succ_rate: AcceptanceStatistics

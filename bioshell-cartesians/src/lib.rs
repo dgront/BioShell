@@ -4,6 +4,7 @@ mod pdb_coordinates;
 mod calc_from_coordinates;
 mod cartesian_system;
 mod nblist;
+mod cartesian_montecarlo;
 
 pub mod movers;
 
@@ -13,3 +14,4 @@ pub use coordinates::{Coordinates,CoordinatesView};
 pub use pdb_coordinates::{pdb_to_coordinates, coordinates_to_pdb};
 pub use cartesian_system::{CartesianSystem};
 pub use nblist::{NbListRules, ArgonRules, PolymerRules, NbList};
+pub use cartesian_montecarlo::{VolumeChangingProtocol};

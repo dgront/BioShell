@@ -2,8 +2,7 @@ use std::time::Instant;
 
 use clap::{Parser};
 
-use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubic_grid_atoms,
-                          NbList, ArgonRules};
+use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubic_grid_atoms, NbList, ArgonRules, VolumeChangingProtocol};
 use bioshell_sim::{Energy, System};
 use bioshell_cartesians::movers::SingleAtomMove;
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic};
@@ -91,6 +90,8 @@ pub fn main() {
     // ---------- Decorate the sampler into an adaptive MC protocol
     let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));
     sampler.target_rate = 0.4;
+
+    // let mut sampler = VolumeChangingProtocol::new(pressure, Box::new(sampler));
 
     // ---------- Run the simulation!
     let start = Instant::now();
