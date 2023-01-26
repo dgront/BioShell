@@ -12,6 +12,10 @@ keywords = ["bioshell"]
 crate-type =["rlib"]
 
 [dependencies]
-rand="0.8.5"
+rand = { version = "0.8.5", features = [ "small_rng" ] }
 bioshell-sim = { path = "../bioshell-sim" }
 
+[package.metadata.docs.rs]
+# To build locally use
+#   RUSTDOCFLAGS="--html-in-header katex-header.html" cargo doc --no-deps --document-private-items --open
+rustdoc-args = ["--html-in-header", "katex-header.html"]

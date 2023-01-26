@@ -14,13 +14,13 @@ use crate::OnlineMultivariateStatistics;
 /// A probability distribution function (pdf) trait primarily requires that a derived type will be able to:
 ///   - evaluate the pdf(x) at any given ``x``
 ///   - draw a random sample from the distribution
-/// Since the trait covers also multivariate distributions, the ``x`` is a vector, i.e. ``Vec<f64>``
+/// Since this trait covers also multivariate distributions, the ``x`` is a vector, i.e. ``Vec<f64>``
 pub trait Distribution {
     /// Evaluates the probability distribution function at a given point
     fn pdf(&self, x: &Vec<f64>) -> f64;
 
     /// Withdraws a random observation from this probability distribution
-    fn sample<R: Rng + ?Sized>(&mut self, rng: &mut R, out: &mut Vec<f64>);
+    fn sample<R: Rng + ?Sized>(&mut self, rng: &mut R, out: &mut [f64]);
 
     /// Says how many dimensions this distribution has
     fn dim(&self) -> usize;
@@ -29,6 +29,16 @@ pub trait Distribution {
 
 // ========== Normal probability distribution structure and implementation ==========
 /// Normal probability distribution
+///
+/// ```
+/// use bioshell_statistics::{Distribution, NormalDistribution};
+/// // --- create a N(2.0, 1.5) distribution
+/// let mut n: NormalDistribution = NormalDistribution::new(2.0, 1.5);
+///
+/// // --- evaluate pdf at x = 1.0
+/// let prob = n.pdf(&vec![1.0]);
+/// assert!((prob - 0.21297).abs() < 0.0001);   // 0.21297 is the value from statistical tables
+/// ```
 #[derive(Clone)]
 // #[pyclass]
 pub struct NormalDistribution {
@@ -70,7 +80,7 @@ impl Distribution for NormalDistribution {
         return self.const_1 * (-(ix * ix) / (2.0 * self.sigma * self.sigma)).exp();
     }
 
-    fn sample<R: Rng + ?Sized>(&mut self, rand: &mut R, out: &mut Vec<f64>) {
+    fn sample<R: Rng + ?Sized>(&mut self, rand: &mut R, out: &mut [f64]) {
         out[0] = self.normal_generator.sample(rand);
     }
 
@@ -79,6 +89,26 @@ impl Distribution for NormalDistribution {
 
 // ========== Multivariate Normal probability distribution structure and implementation ==========
 
+/// N-dimentional normal probability distribution
+///
+/// # Examples
+/// To properly initialize an N-dimensional Gaussian distribution, one has to prepare a vector
+/// of expected values and a covariance matrix; both are objects of types defined in the
+/// `nalgebra` crate: `DMatrix` and `DVector`
+/// ```
+/// use bioshell_statistics::{Distribution, MultiNormalDistribution};
+/// use nalgebra::{DMatrix, DVector};
+///
+/// // --- create a 2-D normal distribution
+/// let mut n: MultiNormalDistribution = MultiNormalDistribution::new(2);
+/// // --- set expected values and a covariance matrix
+/// n.set_parameters(&DVector::from_vec(vec![0.1, 0.1]),
+///         &DMatrix::from_vec(2, 2, vec![0.2, 0.1, 0.1, 2.0]));
+///
+/// // --- evaluate pdf at x = [1.0, 0.0]
+/// let logprob = n.logpdf(&vec![1.0, 0.0]);
+/// assert!((logprob + 3.469636899044226).abs() < 0.0001);
+/// ```
 #[derive(Clone)]
 pub struct MultiNormalDistribution {
     dim: usize,
@@ -122,6 +152,7 @@ impl MultiNormalDistribution {
         self.setup();
     }
 
+    /// Returns log-probability for a given pdf vector
     pub fn logpdf(&self, x: &Vec<f64>) -> f64 {
         let n: usize = x.len();
         let mut xm = DVector::from_vec(x.clone());
@@ -184,7 +215,7 @@ impl Distribution for MultiNormalDistribution {
         self.logpdf(x).exp()
     }
 
-    fn sample<R: Rng + ?Sized>(&mut self, rng: &mut R, out: &mut Vec<f64>) {
+    fn sample<R: Rng + ?Sized>(&mut self, rng: &mut R, out: &mut [f64]) {
         for i in 0..self.dim {
             self.tmp[i] = self.normal_generator.sample(rng);
         }
@@ -199,12 +230,18 @@ impl Distribution for MultiNormalDistribution {
 
 // ========== Estimable trait and its implementation for distributions ==========
 
-/// Provides an ability to estimate parameters of a [`Distribution`](Distribution)
+/// Provides an ability to estimate parameters of a probability [`Distribution`](Distribution)
+///
+/// Any [`Distribution`](Distribution) that is [`Estimable`](Estimable), must implement
+/// [`estimate()`](estimate) method, which estimates parameters of this distribution from
+/// a provided data sample. Resulting parameters are stored within `self` i.e. the
+///  `Distribution` object estimates itself from the sample
 pub trait Estimable {
     /// Estimate parameters of a probability distribution from a given sample
     ///
     /// # Arguments
-    /// * `sample` - observations used to infer the distribution parameters
+    /// * `sample` - observations used to infer the distribution parameters;
+    /// dimensionality of the data must match this `Distribution` object
     fn estimate(&mut self, sample: &Vec<Vec<f64>>);
 
     /// Estimate parameters of a probability distribution from a given sample fraction
@@ -218,6 +255,19 @@ pub trait Estimable {
 
 impl Estimable for NormalDistribution {
 
+    /// Estimate parameters of this [`NormalDistribution`](NormalDistribution) from a given sample
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_statistics::{Estimable, NormalDistribution};
+    ///
+    /// let mut n: NormalDistribution = NormalDistribution::new(0.0, 1.0);
+    ///
+    /// // --- evaluate pdf at x = 1.0
+    /// let sample = vec![vec![1.1], vec![1.2], vec![1.4], vec![1.3]];
+    /// n.estimate(&sample);
+    /// assert!((n.mean() - 1.25).abs() < 0.0001);
+    /// ```
     fn estimate(&mut self, sample: &Vec<Vec<f64>>) {
         assert_eq!(sample[0].len(), 1);
 
@@ -270,7 +320,7 @@ impl fmt::Display for NormalDistribution {
     ///
     /// ```rust
     /// use std::fmt::Write;
-    /// use bioshell_numerical::statistics::NormalDistribution;
+    /// use bioshell_statistics::NormalDistribution;
     ///
     /// let nd = NormalDistribution::new(2.0, 0.5);
     /// let mut actual = String::new();
@@ -301,7 +351,7 @@ impl fmt::Display for MultiNormalDistribution {
     /// ```rust
     /// use std::fmt::Write;
     /// use nalgebra::{DMatrix, DVector};
-    /// use bioshell_numerical::statistics::MultiNormalDistribution;
+    /// use bioshell_statistics::MultiNormalDistribution;
     ///
     /// let mut n: MultiNormalDistribution = MultiNormalDistribution::new(2);
     /// n.set_parameters(&DVector::from_vec(vec![1.0, 2.0]),

@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css" integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js" integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx" crossorigin="anonymous"></script>
+<style type="text/css">
+.katex { font-size: 1.07em; }
+</style>
+<script>
+  "use strict";
+  document.addEventListener("DOMContentLoaded", function () {
+    // display blocks
+    document.querySelectorAll('pre.language-math > code').forEach((el) => {
+      let p = document.createElement("p");
+      katex.render(el.innerText, p, {displayMode: true, throwOnError: false});
+      el.parentNode.parentNode.replaceChild(p, el.parentNode);
+    });
+
+    // inline blocks
+    document.querySelectorAll(':not(pre) > code').forEach((el) => {
+      let text = el.innerText;
+      if (!text.startsWith('$') || !text.endsWith('$')) {
+        return;
+      }
+      let span = document.createElement("span");
+      katex.render(text.substr(1, text.length - 2), span, {displayMode: false, throwOnError: false});
+      el.parentNode.replaceChild(span, el);
+    });
+
+    // comment in code
+    document.querySelectorAll('pre span.comment').forEach((el) => {
+      let html = el.innerText;
+      let children = [];
+      let offset = 0;
+      [...html.matchAll(/(?:[^\$]|^)(\$(?:\\.|[^\$])+\$)(?!\$)/g)].forEach((match) => {
+        let textBefore = html.substring(offset, match.index + 1);
+        children.push(document.createTextNode(textBefore));
+        let math = match[1].substring(1, match[1].length - 1);
+        let span = document.createElement("span");
+        katex.render(math, span, {displayMode: false, throwOnError: false});
+        children.push(span);
+        offset = match.index + match[0].length;
+      });
+      if (offset == 0) {
+        return;
+      }
+      let textAfter = html.substring(offset);
+      if (textAfter.length > 0) {
+        children.push(document.createTextNode(textAfter));
+      }
+      while (el.firstChild) { el.firstChild.remove(); }
+      children.forEach((child) => el.appendChild(child));
+    });
+  });
+</script>
+

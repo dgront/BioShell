@@ -34,37 +34,64 @@ impl Default for AcceptanceStatistics {
     }
 }
 
+/// Metropolis acceptance criterion.
+///
+/// AcceptanceCriterion will return `true` or `false` when a Markov chain Monte Carlo move
+/// from energy `energy_before` to `energy_after` should be accepted or not, respectively
 pub trait AcceptanceCriterion {
     fn check(&mut self, energy_before: f64, energy_after: f64) -> bool;
 }
 
+/// Classical Metropolis acceptance criterion.
+///
+/// A change of a system is accepted with probability `$P$`:
+/// ```math
+/// P(E_b \to E_a) = \begin{cases}\begin{align*}
+///     1 &  \quad \text{when} \quad E_a \le E_b \\
+///     e^{\Delta E / T} &  \quad \text{otherwise}
+/// \end{align*}\end{cases}
+/// ```
+/// where `$\Delta E = E_a - E_b$` and the provided temperature `$T$` must be already expressed in
+/// in the units of the Boltzmann constant `$k_B$`
 pub struct MetropolisCriterion {
     pub temperature: f64,
     rng: SmallRng,
 }
 
 impl MetropolisCriterion {
+    /// Creates a new acceptance criterion that will result in Boltzmann distribution for the given temperature
     pub fn new(temperature: f64) -> MetropolisCriterion { MetropolisCriterion{temperature, rng:SmallRng::from_entropy() } }
 }
 
 impl AcceptanceCriterion for MetropolisCriterion {
     fn check(&mut self, energy_before: f64, energy_after: f64) -> bool {
 
-        let delta_e = energy_after - energy_before;
-        if delta_e <= 0.0 || self.rng.gen_range(0.0..1.0) <= (-delta_e / self.temperature).exp() {
-            return true
+        if energy_after <= energy_before { return true; }
+        else {
+            let delta_e = energy_after - energy_before;
+            if self.rng.gen_range(0.0..1.0) < (-delta_e / self.temperature).exp() { return true; }
         }
+
         return false;
     }
 }
 
+/// Mover changes a given conformation of a system
+///
 pub trait Mover<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 
+    /// Introduce a change into the given system
+    ///
+    /// The change may be accepted according to the acceptance criterion
     fn perturb(&mut self, system: &mut S, energy: &E, acc: &mut T) -> Option<Range<usize>>;
 
-    /// Provides statistics of the success rate for this mover
+    /// The change may be accepted according to the acceptance criterion
     fn acceptance_statistics(&self) -> AcceptanceStatistics;
+
+    /// Maximum range of perturbation allowed for that mover
     fn max_range(&self) -> f64;
+
+    /// Sets the new maximum range of perturbation.
     fn set_max_range(&mut self, new_val: f64);
 }
 
@@ -82,12 +109,19 @@ pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
     fn acceptance_criterion(&mut self) -> &mut T;
 }
 
+/// A container for movers.
+///
+/// Sampling molecular conformations often utilizes more than one move type. Samplers
+/// that implement [`MoversSet`](MoversSet) allow one to add several movers to a given simulation
 pub trait MoversSet<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 
+    /// Add a mover to this set
     fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>);
 
+    /// Mutable access to a mover
     fn get_mover(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>>;
 
+    /// Count movers contained in this set
     fn count_movers(&self) -> usize;
 }
 
@@ -121,7 +155,6 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for MCPr
     fn acceptance_criterion(&mut self) -> &mut T { &mut self.acceptance_crit }
 }
 
-
 impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MoversSet<S, E, T> for MCProtocol<S, E, T> {
 
     fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>){
@@ -133,6 +166,7 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MoversSet<S, E, T> for MCP
     fn count_movers(&self) -> usize { self.movers.len() }
 }
 
+// blanket implementation
 impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MoversSetSampler<S, E, T> for MCProtocol<S, E, T> {}
 
 pub struct AdaptiveMCProtocol<S: System, E: Energy<S>, T: AcceptanceCriterion> {

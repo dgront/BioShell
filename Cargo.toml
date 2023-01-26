@@ -30,9 +30,10 @@ bioshell-montecarlo = { path = "./bioshell-montecarlo" }
 bioshell-cartesians = { path = "./bioshell-cartesians" }
 
 clap = { version = "3.1.18", features = ["derive"] }
-rand = "0.8.5"
+rand = { version = "0.8.5", features = [ "small_rng" ] }
 rand_distr="0.4.3"
 nalgebra = "0.31.1"
+
 # ---------- Logging
 log = "0.4.0"
 env_logger = "0.9.0"
@@ -48,3 +49,8 @@ path = "src/disks.rs"
 [[bin]]
 name = "argon"
 path = "src/argon.rs"
+
+[package.metadata.docs.rs]
+# To build locally use
+#   RUSTDOCFLAGS="--html-in-header katex-header.html" cargo doc --no-deps --document-private-items --open
+rustdoc-args = ["--html-in-header", "katex-header.html"]

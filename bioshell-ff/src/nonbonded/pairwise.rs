@@ -74,21 +74,10 @@ impl<E:PairwiseNonbonded> Energy<CartesianSystem> for PairwiseNonbondedEvaluator
         return en;
     }
 
-    // todo Fix the problem with interactions within the moved set
-    fn delta_energy_by_range(&self, old_system: &CartesianSystem, new_system: &CartesianSystem, pos: &Range<usize>) -> (f64, f64) {
-
-        let mut en_old: f64 = 0.0;
-        let mut en_new: f64 = 0.0;
-        let old_coords = old_system.coordinates();
-        let new_coords = new_system.coordinates();
-        for jpos in pos.start..pos.end + 1 {
-            // --- compute energy before and after a move for each moved jpos position
-            pairwise_contact_neighbors_loop!(self, old_coords, jpos, old_system.neighbor_list().neighbors(jpos), en_old);
-            pairwise_contact_neighbors_loop!(self, new_coords, jpos, new_system.neighbor_list().neighbors(jpos), en_new);
-        }
-
-        return (en_old, en_new);
+    fn energy_by_range(&self, system: &CartesianSystem, range: &Range<usize>) -> f64 {
+        todo!()
     }
+
 
     fn name(&self) -> String { String::from("PairwiseNonbonded") }
 }
