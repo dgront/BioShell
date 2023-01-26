@@ -101,9 +101,10 @@ pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 
     /// Make `n` Monte Carlo sweeps
     ///
-    /// During each sweep `coords.size()` random perturbations are attempted for each mover.
-    /// Statistics for success rate are recorded in  [`AcceptanceStatistics`](AcceptanceStatistics)
-    /// struct that is stored internally by each mover
+    /// During each sweep `coords.size()` random perturbations are attempted for each mover added
+    /// to this sampler.
+    /// Statistics for success rate are recorded separately for each mover by
+    /// [`AcceptanceStatistics`](AcceptanceStatistics) structs that are stored se by each mover.
     fn make_sweeps(&mut self, n:usize, coords: &mut S, energy: &E);
 
     /// Provides statistics of the success rate for this mover
