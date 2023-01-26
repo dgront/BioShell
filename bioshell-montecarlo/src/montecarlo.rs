@@ -53,6 +53,7 @@ pub trait AcceptanceCriterion {
 /// ```
 /// where `$\Delta E = E_a - E_b$` and the provided temperature `$T$` must be already expressed in
 /// in the units of the Boltzmann constant `$k_B$`
+#[derive(Clone)]
 pub struct MetropolisCriterion {
     pub temperature: f64,
     rng: SmallRng,
@@ -111,11 +112,24 @@ pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
     /// Add a mover to this set
     fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>);
 
+    /// Immutable access to a mover
+    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>>;
+
     /// Mutable access to a mover
-    fn get_mover(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>>;
+    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>>;
 
     /// Count movers contained in this set
     fn count_movers(&self) -> usize;
+
+    fn acceptance_statistics(&self) -> Vec<AcceptanceStatistics> {
+
+        let mut out:Vec<AcceptanceStatistics> = vec![];
+        for i in 0..self.count_movers() {
+            let stats = self.get_mover(i).acceptance_statistics().clone();
+            out.push(stats);
+        }
+        return out;
+    }
 }
 
 
@@ -150,7 +164,9 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for MCPr
         self.movers.push(perturb_fn);
     }
 
-    fn get_mover(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { &mut self.movers[which_one] }
+    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>> { &self.movers[which_one] }
+
+    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { &mut self.movers[which_one] }
 
     fn count_movers(&self) -> usize { self.movers.len() }
 }
@@ -187,7 +203,7 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for Adap
             let stats_after = self.sampler.get_mover(i).acceptance_statistics();
             let rate = stats_after.recent_success_rate(&stats_before[i]);
 
-            let mover = self.sampler.get_mover(i);
+            let mut mover = self.sampler.get_mover_mut(i);
             let mut range = mover.max_range();
             if rate < self.target_rate - 0.05 { range = range * self.factor; }
             if rate > self.target_rate + 0.05 { range = range / self.factor; }
@@ -199,9 +215,15 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for Adap
 
     fn acceptance_criterion(&mut self) -> &mut T { self.sampler.acceptance_criterion() }
 
-    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>) { self.sampler.add_mover(perturb_fn); }
+    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>) {
+        let r = perturb_fn.max_range();
+        self.sampler.add_mover(perturb_fn);
+        self.allowed_ranges.push(r * 0.5..r * 4.0);
+    }
 
-    fn get_mover(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { self.sampler.get_mover(which_one) }
+    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>> { self.sampler.get_mover(which_one) }
+
+    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { self.sampler.get_mover_mut(which_one) }
 
     fn count_movers(&self) -> usize { self.sampler.count_movers() }
 }

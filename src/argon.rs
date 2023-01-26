@@ -2,9 +2,9 @@ use std::time::Instant;
 
 use clap::{Parser};
 
-use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubic_grid_atoms, NbList, ArgonRules, VolumeChangingProtocol};
+use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubic_grid_atoms, NbList, ArgonRules};
 use bioshell_sim::{Energy, System};
-use bioshell_cartesians::movers::SingleAtomMove;
+use bioshell_cartesians::movers::{ChangeVolume, SingleAtomMove};
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic};
 use bioshell_montecarlo::{Sampler, AcceptanceStatistics, MCProtocol, MetropolisCriterion, AdaptiveMCProtocol};
 
@@ -48,9 +48,20 @@ fn box_width(sphere_radius: f64, n_spheres: usize, density: f64) -> f64 {
 
 pub fn main() {
 
-    const EPSILON: f64 = 1.654E-21;	                // [J] per molecule
-    const EPSILON_BY_K: f64 = EPSILON / 1.381E-23; 	// = 119.6 in Kelvins
-    const SIGMA: f64 = 3.4;		                    // in Angstroms
+    // ---------- Parameters from:
+    // L. A. Rowley, D. Nicholson and N. G. Parsonage
+    // "Monte Carlo grand canonical ensemble calculation in a gas-liquid transition region for 12-6 Argon",
+    // Journal of Computational Physics 17 pp. 401-414 (1975)
+    // const EPSILON: f64 = 1.654E-21;	                // [J] per molecule
+    // const EPSILON_BY_K: f64 = EPSILON / 1.381E-23; 	// = 119.8 in Kelvins
+    // const SIGMA: f64 = 3.4;		                    // in Angstroms
+    // ---------- Parameters from:
+    // John A. White "Lennard-Jones as a model for argon and test of extended renormalization group calculations",
+    // Journal of Chemical Physics 111 pp. 9352-9356 (1999)
+    const EPSILON: f64 = 1.7355E-21;	                // [J] per molecule
+    const EPSILON_BY_K: f64 = EPSILON / 1.380649E-23; 	// = 125.7 in Kelvins
+    const SIGMA: f64 = 3.3345;		                    // in Angstroms
+
     const CUTOFF: f64 = 10.0;
 
     let args = Args::parse();
@@ -76,32 +87,43 @@ pub fn main() {
     // ---------- Create energy function - just the LJ term
     let lj = LennardJonesHomogenic::new(EPSILON_BY_K, SIGMA, CUTOFF);
     let pairwise_lj = PairwiseNonbondedEvaluator::new(CUTOFF as f64,lj);
-    // let energy: Box<dyn Energy<CartesianSystem>> = Box::new(pairwise);
 
     // ---------- Create a sampler and add a mover into it
     let mut simple_sampler: MCProtocol<CartesianSystem, PairwiseNonbondedEvaluator<LennardJonesHomogenic>, MetropolisCriterion> =
         MCProtocol::new(MetropolisCriterion::new(temperature));
     simple_sampler.add_mover(Box::new(SingleAtomMove::new(1.0)));
-    let mut pressure = 1.0;
-    if let Some(p) = args.pressure {
-        pressure = p;
-    }
+
     // ---------- Decorate the sampler into an adaptive MC protocol
     let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));
     sampler.target_rate = 0.4;
 
-    // let mut sampler = VolumeChangingProtocol::new(pressure, Box::new(sampler));
+    // ---------- If a pressure value has been provided, turn this simulation into NPT by addin a volume changing move
+    let pressure: f64;
+
+    if let Some(p) = args.pressure {
+        pressure = p;
+        sampler.add_mover(Box::new(ChangeVolume::new(pressure)));
+    }
 
     // ---------- Run the simulation!
     let start = Instant::now();
-    let mut recent_acceptance = AcceptanceStatistics::default();
+    // let mut recent_acceptance = AcceptanceStatistics::default();
+    let mut recent_acceptance= vec!(AcceptanceStatistics::default(); sampler.count_movers());
     for i in 0..args.outer {
-        let stats = sampler.get_mover(0).acceptance_statistics();
+
         sampler.make_sweeps(args.inner,&mut system, &pairwise_lj);
+
         coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str(), true);
-        let f_succ = stats.recent_success_rate(&recent_acceptance);
-        recent_acceptance = stats;
-        println!("{:6} {:9.3} {:5.3} {:.2?}", i, pairwise_lj.energy(&system) / system.size() as f64, f_succ, start.elapsed());
+
+        print!("{:6} {:9.3}  ", i, pairwise_lj.energy(&system) / system.size() as f64);
+        for i in 0..sampler.count_movers() {
+            let mover = sampler.get_mover(i);
+            let stats = mover.acceptance_statistics();
+            let f_succ = stats.recent_success_rate(&recent_acceptance[i]);
+            recent_acceptance[i] = stats;
+            print!("{:5.3} {:6.4?}   ",  f_succ, mover.max_range());
+        }
+        println!(" {:.2?}", start.elapsed());
     }
     coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
 }
