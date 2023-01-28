@@ -229,3 +229,40 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for Adap
 
     fn count_movers(&self) -> usize { self.sampler.count_movers() }
 }
+
+pub struct PERM<S: System, E: Energy<S>, T: AcceptanceCriterion> {
+    acceptance_crit: T,
+    movers: Vec<Box<dyn Mover<S, E, T>>>
+}
+
+impl<S: System, E: Energy<S>, T: AcceptanceCriterion> PERM<S, E, T> {
+    pub fn new(acceptance_crit: T) -> PERM<S, E, T> {
+        PERM { acceptance_crit, movers: vec![] }
+    }
+}
+
+impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for PERM<S, E, T> {
+
+    fn make_sweeps(&mut self, n: usize, coords: &mut S, energy: &E) {
+        for _ in 0..n {
+            for i_mover in 0..self.movers.len() {
+                let mover = &mut self.movers[i_mover];
+                for _ in 0..coords.size() {
+                    let _outcome = mover.perturb(coords, energy, &mut self.acceptance_crit);
+                }
+            }
+        }
+    }
+
+    fn acceptance_criterion(&mut self) -> &mut T { &mut self.acceptance_crit }
+
+    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>){
+        self.movers.push(perturb_fn);
+    }
+
+    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>> { &self.movers[which_one] }
+
+    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { &mut self.movers[which_one] }
+
+    fn count_movers(&self) -> usize { self.movers.len() }
+}
