@@ -7,15 +7,13 @@ use log::{info};
 use bioshell_numerical::Vec3;
 
 use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, random_chain, pdb_to_coordinates,
-                          gyration_squared, r_end_squared,
-                          NbList, PolymerRules};
+                          gyration_squared, r_end_squared, NbList, PolymerRules};
 use bioshell_cartesians::movers::SingleAtomMove;
 
 use bioshell_sim::{Energy};
 
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, MCProtocol, MetropolisCriterion,
-                          AdaptiveMCProtocol};
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, AdaptiveMCProtocol};
 
 use bioshell_ff::{TotalEnergy};
 use bioshell_ff::bonded::SimpleHarmonic;
@@ -129,8 +127,7 @@ pub fn main() {
     println!("# starting energy: {}", total.energy(&system));
 
     // ---------- Create a sampler and add a mover into it
-    let mut simple_sampler: MCProtocol<CartesianSystem, TotalEnergy<CartesianSystem>, MetropolisCriterion> =
-        MCProtocol::new(MetropolisCriterion::new(temperature));
+    let mut simple_sampler: IsothermalMC<CartesianSystem, TotalEnergy<CartesianSystem>> = IsothermalMC::new(temperature);
     simple_sampler.add_mover(Box::new(SingleAtomMove::new(MAX_MOVE_RANGE)));
 
     // ---------- Decorate the sampler into an adaptive MC protocol

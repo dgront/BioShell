@@ -7,7 +7,7 @@ use rand::rngs::{SmallRng};
 use clap::{Parser};
 
 use bioshell_sim::{Energy, System};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, MCProtocol, MetropolisCriterion, Mover, MoversSet, AcceptanceCriterion};
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, Mover, AcceptanceCriterion};
 
 
 #[derive(Parser, Debug)]
@@ -139,9 +139,9 @@ impl FlipMover {
     }
 }
 
-impl Mover<IsingSystem, IsingEnergy, MetropolisCriterion> for FlipMover {
+impl Mover<IsingSystem, IsingEnergy> for FlipMover {
 
-    fn perturb(&mut self, system: &mut IsingSystem, energy: &IsingEnergy, acc: &mut MetropolisCriterion) -> Option<Range<usize>> {
+    fn perturb(&mut self, system: &mut IsingSystem, energy: &IsingEnergy, acc: &mut dyn AcceptanceCriterion) -> Option<Range<usize>> {
         let i: usize = self.rng.gen_range(0..SIZE);
         let j: usize = self.rng.gen_range(0..SIZE);
         let delta_e: f64 = -2.0 * IsingEnergy::energy_by_ij(system, i, j) as f64;
@@ -177,8 +177,7 @@ pub fn main() {
     let en = IsingEnergy{};
 
     // ---------- Create a sampler and add a mover into it
-    let mut simple_sampler: MCProtocol<IsingSystem, IsingEnergy, MetropolisCriterion> =
-        MCProtocol::new(MetropolisCriterion::new(temperature));
+    let mut simple_sampler: IsothermalMC<IsingSystem, IsingEnergy> = IsothermalMC::new(temperature);
     simple_sampler.add_mover(Box::new(FlipMover::new()));
 
     // ---------- Run the simulation!
