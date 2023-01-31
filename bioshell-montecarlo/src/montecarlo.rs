@@ -80,12 +80,12 @@ impl AcceptanceCriterion for MetropolisCriterion {
 
 /// Mover changes a given conformation of a system
 ///
-pub trait Mover<S: System, E: Energy<S>, T: AcceptanceCriterion> {
+pub trait Mover<S: System, E: Energy<S>> {
 
     /// Introduce a change into the given system
     ///
     /// The change may be accepted according to the acceptance criterion
-    fn perturb(&mut self, system: &mut S, energy: &E, acc: &mut T) -> Option<Range<usize>>;
+    fn perturb(&mut self, system: &mut S, energy: &E, acc: &mut dyn AcceptanceCriterion) -> Option<Range<usize>>;
 
     /// The change may be accepted according to the acceptance criterion
     fn acceptance_statistics(&self) -> AcceptanceStatistics;
@@ -98,7 +98,7 @@ pub trait Mover<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 }
 
 /// Defines a basic interface for a Monte Carlo sampling scheme.
-pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
+pub trait Sampler<S: System, E: Energy<S>> {
 
     /// Make `n` Monte Carlo sweeps
     ///
@@ -109,16 +109,16 @@ pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
     fn make_sweeps(&mut self, n:usize, coords: &mut S, energy: &E);
 
     /// Provides statistics of the success rate for this mover
-    fn acceptance_criterion(&mut self) -> &mut T;
+    // fn acceptance_criterion(&mut self) -> &mut T;
 
     /// Add a mover to this set
-    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>);
+    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E>>);
 
     /// Immutable access to a mover
-    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>>;
+    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E>>;
 
     /// Mutable access to a mover
-    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>>;
+    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E>>;
 
     /// Count movers contained in this set
     fn count_movers(&self) -> usize;
@@ -135,20 +135,21 @@ pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 }
 
 
-pub struct MCProtocol<S: System, E: Energy<S>, T: AcceptanceCriterion> {
-    acceptance_crit: T,
-    movers: Vec<Box<dyn Mover<S, E, T>>>
+pub struct IsothermalMC<S: System, E: Energy<S>> {
+    acceptance_crit: MetropolisCriterion,
+    movers: Vec<Box<dyn Mover<S, E>>>
 }
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MCProtocol<S, E, T> {
-    pub fn new(acceptance_crit: T) -> MCProtocol<S, E, T> {
-        MCProtocol {
-            acceptance_crit, movers: vec![]
+impl<S: System, E: Energy<S>> IsothermalMC<S, E> {
+    pub fn new(temperature: f64) -> IsothermalMC<S, E> {
+        IsothermalMC {
+            acceptance_crit: MetropolisCriterion::new(temperature),
+            movers: vec![]
         }
     }
 }
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for MCProtocol<S, E, T> {
+impl<S: System, E: Energy<S>> Sampler<S, E>  for IsothermalMC<S, E> {
     fn make_sweeps(&mut self, n: usize, coords: &mut S, energy: &E) {
         for _ in 0..n {
             for i_mover in 0..self.movers.len() {
@@ -160,29 +161,29 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for MCPr
         }
     }
 
-    fn acceptance_criterion(&mut self) -> &mut T { &mut self.acceptance_crit }
+    // fn acceptance_criterion(&mut self) -> &mut T { &mut self.acceptance_crit }
 
-    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>){
+    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E>>){
         self.movers.push(perturb_fn);
     }
 
-    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>> { &self.movers[which_one] }
+    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E>> { &self.movers[which_one] }
 
-    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { &mut self.movers[which_one] }
+    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E>> { &mut self.movers[which_one] }
 
     fn count_movers(&self) -> usize { self.movers.len() }
 }
 
 
-pub struct AdaptiveMCProtocol<S: System, E: Energy<S>, T: AcceptanceCriterion> {
+pub struct AdaptiveMCProtocol<S: System, E: Energy<S>> {
     pub target_rate: f64,
     pub factor: f64,
-    sampler: Box<dyn Sampler<S, E, T>>,
+    sampler: Box<dyn Sampler<S, E>>,
     allowed_ranges: Vec<Range<f64>>
 }
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> AdaptiveMCProtocol<S, E, T> {
-    pub fn new(sampler: Box<dyn Sampler<S, E, T>>) -> AdaptiveMCProtocol<S, E, T> {
+impl<S: System, E: Energy<S>> AdaptiveMCProtocol<S, E> {
+    pub fn new(sampler: Box<dyn Sampler<S, E>>) -> AdaptiveMCProtocol<S, E> {
         let mut allowed_ranges:Vec<Range<f64>> = vec![];
         for i in 0..sampler.count_movers() {
             let r = sampler.get_mover(i).max_range();
@@ -193,7 +194,7 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> AdaptiveMCProtocol<S, E, T
     }
 }
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for AdaptiveMCProtocol<S, E, T> {
+impl<S: System, E: Energy<S>> Sampler<S, E>  for AdaptiveMCProtocol<S, E> {
 
     fn make_sweeps(&mut self, n: usize, coords: &mut S, energy: &E) {
         let mut stats_before: Vec<AcceptanceStatistics> = vec![];
@@ -215,17 +216,17 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for Adap
         }
     }
 
-    fn acceptance_criterion(&mut self) -> &mut T { self.sampler.acceptance_criterion() }
+    // fn acceptance_criterion(&mut self) -> &mut T { self.sampler.acceptance_criterion() }
 
-    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>) {
+    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E>>) {
         let r = perturb_fn.max_range();
         self.sampler.add_mover(perturb_fn);
         self.allowed_ranges.push(r * 0.5..r * 4.0);
     }
 
-    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>> { self.sampler.get_mover(which_one) }
+    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E>> { self.sampler.get_mover(which_one) }
 
-    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { self.sampler.get_mover_mut(which_one) }
+    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E>> { self.sampler.get_mover_mut(which_one) }
 
     fn count_movers(&self) -> usize { self.sampler.count_movers() }
 }

@@ -3,7 +3,7 @@ use rand::Rng;
 
 use crate::{CartesianSystem};
 use bioshell_sim::{Energy, System};
-use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover, MetropolisCriterion};
+use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 
 /// A mover that moves a single, randomly selected atom by a small random vector.
 ///
@@ -22,9 +22,9 @@ impl SingleAtomMove {
     pub fn new(max_range: f64) -> SingleAtomMove { SingleAtomMove{ max_step: max_range, succ_rate: Default::default() } }
 }
 
-impl<E: Energy<CartesianSystem>, T: AcceptanceCriterion> Mover<CartesianSystem, E, T> for SingleAtomMove {
+impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for SingleAtomMove {
 
-    fn perturb(&mut self, system: &mut CartesianSystem, energy: &E, acc: &mut T) -> Option<Range<usize>> {
+    fn perturb(&mut self, system: &mut CartesianSystem, energy: &E, acc: &mut dyn AcceptanceCriterion) -> Option<Range<usize>> {
 
         let mut rng = rand::thread_rng();
         let i_moved = rng.gen_range(0..system.size());
@@ -70,6 +70,7 @@ impl<E: Energy<CartesianSystem>, T: AcceptanceCriterion> Mover<CartesianSystem, 
 pub struct ChangeVolume {
     /// pressure of the system `$p$`
     pub pressure: f64,
+    pub temperature: f64,
     max_step: f64,
     succ_rate: AcceptanceStatistics
 }
@@ -79,16 +80,16 @@ const pV_to_Kelvins: f64 = 1.0E-30 / 1.380649E-23; // 10^-30 divided by the Bolt
 
 impl ChangeVolume {
 
-    pub fn new(pressure: f64) -> ChangeVolume {
-        ChangeVolume {pressure, max_step: 0.01, succ_rate: Default::default()}
+    pub fn new(pressure: f64, temperature: f64) -> ChangeVolume {
+        ChangeVolume {pressure, temperature, max_step: 0.01, succ_rate: Default::default()}
     }
 }
 
 
-impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E, MetropolisCriterion> for ChangeVolume {
+impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for ChangeVolume {
 
     #[allow(non_snake_case)]
-    fn perturb(&mut self, system: &mut CartesianSystem, energy: &E, acc: &mut MetropolisCriterion) -> Option<Range<usize>> {
+    fn perturb(&mut self, system: &mut CartesianSystem, energy: &E, _acc: &mut dyn AcceptanceCriterion) -> Option<Range<usize>> {
 
         // ---------- attempt the volume change
         let en_before = energy.energy(system);
@@ -108,10 +109,10 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E, MetropolisCriterion> 
         }
         system.set_box_len(new_len);
         let en_after = energy.energy(system);
-        let weight = ((en_after - en_before) + self.pressure*(new_V - v0) * pV_to_Kelvins) / acc.temperature -
+        let weight = ((en_after - en_before) + self.pressure*(new_V - v0) * pV_to_Kelvins) / self.temperature -
             (system.size() + 1) as f64  * (new_V / v0).ln();
 
-        if rng.gen_range(0.0..1.0) > (-weight/acc.temperature).exp() { // --- move rejected
+        if rng.gen_range(0.0..1.0) > (-weight/self.temperature).exp() { // --- move rejected
             for i in 0..system.size() {
                 let x = system.coordinates().x(i) / f;
                 let y = system.coordinates().y(i) / f;

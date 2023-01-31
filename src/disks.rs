@@ -12,7 +12,7 @@ use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, squa
 use bioshell_sim::{Energy, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbonded, PairwiseNonbondedEvaluator, SimpleContact};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, MCProtocol, MetropolisCriterion, AdaptiveMCProtocol, AcceptanceCriterion};
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, IsothermalMC, AdaptiveMCProtocol, AcceptanceCriterion};
 
 #[derive(Parser, Debug)]
 #[clap(name = "disks")]
@@ -67,10 +67,10 @@ impl DiskMover {
     }
 }
 
-impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, MetropolisCriterion> for DiskMover {
+impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> for DiskMover {
 
     fn perturb(&mut self, system: &mut CartesianSystem,
-               energy: &PairwiseNonbondedEvaluator<SimpleContact>, acc: &mut MetropolisCriterion) -> Option<Range<usize>> {
+               energy: &PairwiseNonbondedEvaluator<SimpleContact>, acc: &mut dyn AcceptanceCriterion) -> Option<Range<usize>> {
 
         let mut rng = rand::thread_rng();
         // ---------- index of a disk we move
@@ -201,8 +201,8 @@ pub fn main() {
     }
 
     // ---------- Create a sampler and add a mover into it
-    let mut simple_sampler: MCProtocol<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>, MetropolisCriterion> =
-            MCProtocol::new(MetropolisCriterion::new(temperature));
+    let mut simple_sampler: IsothermalMC<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> =
+            IsothermalMC::new(temperature);
     simple_sampler.add_mover(Box::new(DiskMover::new(MAX_MOVE_RANGE)));
 
     // ---------- Decorate the sampler into an adaptive MC protocol
