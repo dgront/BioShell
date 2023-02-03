@@ -1,6 +1,7 @@
 use std::ops::{Index, IndexMut, Range};
 
 use bioshell_numerical::{Vec3};
+use bioshell_sim::System;
 
 /// Stateless immutable view of coordinates
 pub struct CoordinatesView<'a> {  pub points: &'a  Coordinates, }
@@ -12,6 +13,7 @@ pub struct CoordinatesView<'a> {  pub points: &'a  Coordinates, }
 pub struct Coordinates {
     box_len: f64,
     box_len_half: f64,
+    current_size: usize,
     v: Vec<Vec3>,
     chains: Vec<Range<usize>>
 }
@@ -48,7 +50,7 @@ impl Coordinates {
         }
         let chains: Vec<Range<usize>> = vec![0..n];
         let l: f64 = 100000.0;
-        return Coordinates {box_len: l, box_len_half: l/2.0, v, chains};
+        return Coordinates {current_size:0, box_len: l, box_len_half: l/2.0, v, chains};
     }
 
     #[inline(always)]
@@ -131,8 +133,6 @@ impl Coordinates {
         d
     }
 
-    pub fn size(&self) -> usize { return self.v.len(); }
-
     pub fn x(&self, i:usize) -> f64 { self.v[i].x }
 
     pub fn y(&self, i:usize) -> f64 { self.v[i].y }
@@ -178,4 +178,16 @@ impl IndexMut<usize> for Coordinates {
     fn index_mut(&mut self, i: usize) -> &mut Vec3 {
         &mut self.v[i]
     }
+}
+
+
+impl System for Coordinates {
+    /// Returns the current number of atoms of this system
+    fn size(&self) -> usize { return self.current_size; }
+
+    /// Changes the number of atoms of this system
+    fn set_size(&mut self, new_size: usize)  { self.current_size = new_size; }
+
+    /// Returns the maximum number of atoms of this system
+    fn capacity(&self) -> usize { return self.v.len(); }
 }

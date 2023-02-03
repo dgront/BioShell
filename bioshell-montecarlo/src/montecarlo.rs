@@ -34,7 +34,7 @@ impl Default for AcceptanceStatistics {
     }
 }
 
-/// Metropolis acceptance criterion.
+/// Acceptance criterion for a Markov chain Monte Carlo
 ///
 /// AcceptanceCriterion will return `true` or `false` when a Markov chain Monte Carlo move
 /// from energy `energy_before` to `energy_after` should be accepted or not, respectively
@@ -231,39 +231,46 @@ impl<S: System, E: Energy<S>> Sampler<S, E>  for AdaptiveMCProtocol<S, E> {
     fn count_movers(&self) -> usize { self.sampler.count_movers() }
 }
 
-pub struct PERM<S: System, E: Energy<S>, T: AcceptanceCriterion> {
-    acceptance_crit: T,
-    movers: Vec<Box<dyn Mover<S, E, T>>>
+pub trait StepwiseMover<S: System, E: Energy<S>> {
+    fn start(&mut self, system: &mut S, energy: &E) -> f64;
+    fn grow_by_one(&mut self, system: &mut S, energy: &E) -> f64;
 }
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> PERM<S, E, T> {
-    pub fn new(acceptance_crit: T) -> PERM<S, E, T> {
-        PERM { acceptance_crit, movers: vec![] }
+pub trait StepwiseBuilder<S: System, E: Energy<S>> {
+
+    fn build(&mut self, system: &mut S, energy: &E) -> f64;
+}
+
+pub struct PERM<S: System, E: Energy<S>> {
+    temperature: f64,
+    step: Box<dyn StepwiseMover<S, E>>
+}
+
+impl<S: System, E: Energy<S>> PERM<S, E> {
+
+    pub fn new(temperature: f64, step: Box<dyn StepwiseMover<S, E>>) -> PERM<S, E> {
+        return PERM{temperature, step};
     }
 }
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for PERM<S, E, T> {
+impl<S: System, E: Energy<S>> StepwiseBuilder<S, E> for PERM<S, E> {
 
-    fn make_sweeps(&mut self, n: usize, coords: &mut S, energy: &E) {
-        for _ in 0..n {
-            for i_mover in 0..self.movers.len() {
-                let mover = &mut self.movers[i_mover];
-                for _ in 0..coords.size() {
-                    let _outcome = mover.perturb(coords, energy, &mut self.acceptance_crit);
-                }
-            }
+    fn build(&mut self, system: &mut S, energy: &E) -> f64 {
+        // ---------- initialise the system by placing the first element (atom, residue, etc.)
+        self.step.start(system, energy);
+        let mut w_tot: f64 = 1.0;
+        for i in 1..system.size() {
+            // ---------- add next element of the system
+            let w: f64 = self.step.grow_by_one(system, energy);
+            w_tot *= w;
         }
+
+        return w_tot;
     }
-
-    fn acceptance_criterion(&mut self) -> &mut T { &mut self.acceptance_crit }
-
-    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>){
-        self.movers.push(perturb_fn);
-    }
-
-    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>> { &self.movers[which_one] }
-
-    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { &mut self.movers[which_one] }
-
-    fn count_movers(&self) -> usize { self.movers.len() }
 }
+
+
+
+
+
+

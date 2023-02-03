@@ -119,4 +119,10 @@ impl CartesianSystem {
 impl System for CartesianSystem {
     /// Returns the number of atoms of this system
     fn size(&self) -> usize { self.coordinates.size() }
+
+    /// Change the number of atoms of this system
+    fn set_size(&mut self, new_size: usize) { self.coordinates.set_size(new_size); }
+
+    /// Returns the maximum number of atoms system may have
+    fn capacity(&self) -> usize { self.coordinates.capacity() }
 }

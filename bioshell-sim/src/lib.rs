@@ -22,6 +22,12 @@ pub trait Energy<S> {
 /// BioShell's approach to molecular simulations assumes each modelled system comprises a number
 /// of interaction centers: spins, atoms, etc.
 pub trait System: Clone {
-    /// Returns the size of the modelled system
+    /// Returns the current size of the modelled system
     fn size(&self) -> usize;
+
+    /// Changes the current size of the modelled system
+    fn set_size(&mut self, new_size: usize);
+
+    /// Returns the maximum size of the modelled system
+    fn capacity(&self) -> usize;
 }

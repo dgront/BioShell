@@ -1,39 +1,69 @@
 use rand::Rng;
+use bioshell_montecarlo::{StepwiseBuilder, StepwiseMover};
 
-use crate::{Coordinates};
-
+use crate::{CartesianSystem, Coordinates};
+use bioshell_sim::{System, Energy};
 use bioshell_numerical::Vec3;
 
-pub fn random_chain(bond_length:f64, repulsion_distance: f64, start: &Vec3, system: &mut Coordinates) {
+pub struct RandomChain {
+    pub bond_length: f64,
+    pub energy_cutoff: f64,
+    pub n_attempts: i16
+}
 
-    let cutoff2 = (repulsion_distance * repulsion_distance) as f64;
+impl Default for RandomChain {
+    fn default() -> Self { RandomChain {bond_length: 3.8, energy_cutoff:0.00001, n_attempts:10} }
+}
 
-    system.set_x(0, start.x);
-    system.set_y(0, start.y);
-    system.set_z(0, start.z);
+impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for RandomChain {
 
-    let (x, y, z) = random_unit_versor();
-    system.set_x(1, system.x(0) + (x * bond_length) as f64);
-    system.set_y(1, system.y(0) + (y * bond_length) as f64);
-    system.set_z(1, system.z(0) + (z * bond_length) as f64);
+    fn start(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
+        let c = system.box_len() / 2.0;
+        system.set(0, c, c, c);
+        let (x, y, z) = random_unit_versor();
+        system.set(1, c + x * self.bond_length, c + y * self.bond_length, c + z * self.bond_length);
+        system.set_size(2);
 
-    for i in 2..system.size() {
-        let mut go_on: bool = true;
-        while go_on {
-            let (x, y, z) = random_unit_versor();
-            system.set_x(i, system.x(i-1) + (x * bond_length) as f64);
-            system.set_y(i, system.y(i-1) + (y * bond_length) as f64);
-            system.set_z(i, system.z(i-1) + (z * bond_length) as f64);
-            go_on = false;
-            for j in 0..(i-1) {
-                if system.closest_distance_square(j, i) <= cutoff2 {
-                    go_on = true;
-                    break;
-                }
+        return 1.0
+    }
+
+    fn grow_by_one(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
+
+        let i = system.size();
+        system.set_size(i + 1);
+        let mut n_try = 0;
+        while n_try < self.n_attempts {
+            let (mut x, mut y, mut z) = random_unit_versor();
+            x = x * self.bond_length + system.coordinates().x(i-1);
+            y = y * self.bond_length + system.coordinates().y(i-1);
+            z = z * self.bond_length + system.coordinates().z(i-1);
+            system.set(i, x, y, z);
+            system.update_nbl(i);
+
+            let en = energy.energy_by_pos(system, i);
+            if en <= self.energy_cutoff {
+                return 1.0;
             }
+            n_try += 1;
         }
+        return 0.0
     }
 }
+
+impl<E: Energy<CartesianSystem>> StepwiseBuilder<CartesianSystem, E> for RandomChain {
+
+    fn build(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
+        let mut step = RandomChain::default();
+        let mut w_total = 1.0;
+        step.start(system, energy);
+        while system.size() < system.capacity() {
+            let w = step.grow_by_one(system, energy);
+            w_total *= w;
+        }
+        return w_total;
+    }
+}
+
 
 pub fn cubic_grid_atoms(system: &mut Coordinates) {
 

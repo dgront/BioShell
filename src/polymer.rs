@@ -4,16 +4,14 @@ use std::time::Instant;
 use clap::{Parser};
 use log::{info};
 
-use bioshell_numerical::Vec3;
-
-use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, random_chain, pdb_to_coordinates,
+use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, RandomChain, pdb_to_coordinates,
                           gyration_squared, r_end_squared, NbList, PolymerRules};
 use bioshell_cartesians::movers::SingleAtomMove;
 
-use bioshell_sim::{Energy};
+use bioshell_sim::{Energy, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, AdaptiveMCProtocol};
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, AdaptiveMCProtocol, StepwiseBuilder};
 
 use bioshell_ff::{TotalEnergy};
 use bioshell_ff::bonded::SimpleHarmonic;
@@ -71,9 +69,11 @@ pub fn main() {
 
     let args = Args::parse();
     // ---------- Temperature of the isothermal simulation (in the energy units)
-    let temperature: f64 = args.temperature;
-    let density: f64 = args.density;
+    let temperature: f64 = args.temperature;    // --- Temperature of the isothermal simulation (in the energy units)
+    let density: f64 = args.density;            // --- density of the system
     let box_length: f64;
+    let prefix = args.prefix;                   // --- prefix for the output files
+    let tra_fname = format!("{}tra.pdb", &prefix);
 
     // ---------- NBL buffer radius
     let buffer_thickness = args.buffer.max(MAX_MOVE_RANGE * 4.0);
@@ -87,8 +87,6 @@ pub fn main() {
         coords = Coordinates::new(n_beads);
         box_length = box_width(E_REP, n_beads, density);
         coords.set_box_len(box_length);
-        let start: Vec3 = Vec3::new(box_length/2.0, box_length/2.0, box_length/2.0);
-        random_chain(3.8, E_FROM as f64, &start, &mut coords);
     } else {
         let res = pdb_to_coordinates(&args.infile).ok();
         match res {
@@ -111,10 +109,6 @@ pub fn main() {
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
 
-    let prefix = args.prefix;
-    let tra_fname = format!("{}tra.pdb", &prefix);
-    coordinates_to_pdb(&system.coordinates(), 0, tra_fname.as_str(), false);
-
     // ---------- Contact energy
     let contact_kernel = SimpleContact::new(E_REP,E_FROM,E_TO,REP_VAL,E_VAL);
     let contacts: PairwiseNonbondedEvaluator<SimpleContact> = PairwiseNonbondedEvaluator::new(E_TO as f64, contact_kernel);
@@ -124,6 +118,10 @@ pub fn main() {
     let mut total = TotalEnergy::new();
     total.add_component(Box::new(harmonic), 1.0);
     total.add_component(Box::new(contacts), 1.0);
+    if system.size() == 0 { RandomChain::default().build(&mut system, &total); }
+
+    // ---------- Show the starting point
+    coordinates_to_pdb(&system.coordinates(), 0, tra_fname.as_str(), false);
     println!("# starting energy: {}", total.energy(&system));
 
     // ---------- Create a sampler and add a mover into it

@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{self, BufReader, BufRead, Write};
 
+use bioshell_sim::System;
 use bioshell_numerical::{Vec3};
 use crate::Coordinates;
 
