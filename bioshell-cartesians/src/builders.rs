@@ -1,9 +1,8 @@
-use rand::Rng;
 use bioshell_montecarlo::{StepwiseBuilder, StepwiseMover};
 
 use crate::{CartesianSystem, Coordinates};
 use bioshell_sim::{System, Energy};
-use bioshell_numerical::Vec3;
+use bioshell_numerical::{random_point_nearby, random_unit_versor, Vec3};
 
 pub struct RandomChain {
     pub bond_length: f64,
@@ -12,7 +11,7 @@ pub struct RandomChain {
 }
 
 impl Default for RandomChain {
-    fn default() -> Self { RandomChain {bond_length: 3.8, energy_cutoff:0.00001, n_attempts:10} }
+    fn default() -> Self { RandomChain {bond_length: 3.8, energy_cutoff:0.00001, n_attempts: 100} }
 }
 
 impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for RandomChain {
@@ -20,8 +19,8 @@ impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for RandomCha
     fn start(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
         let c = system.box_len() / 2.0;
         system.set(0, c, c, c);
-        let (x, y, z) = random_unit_versor();
-        system.set(1, c + x * self.bond_length, c + y * self.bond_length, c + z * self.bond_length);
+        let v = random_point_nearby(&system.coordinates()[0], self.bond_length);
+        system.copy_from_vec(1, &v);
         system.set_size(2);
 
         return 1.0
@@ -33,11 +32,8 @@ impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for RandomCha
         system.set_size(i + 1);
         let mut n_try = 0;
         while n_try < self.n_attempts {
-            let (mut x, mut y, mut z) = random_unit_versor();
-            x = x * self.bond_length + system.coordinates().x(i-1);
-            y = y * self.bond_length + system.coordinates().y(i-1);
-            z = z * self.bond_length + system.coordinates().z(i-1);
-            system.set(i, x, y, z);
+            let v = random_point_nearby(&system.coordinates()[i-1], self.bond_length);
+            system.copy_from_vec(i, &v);
             system.update_nbl(i);
 
             let en = energy.energy_by_pos(system, i);
@@ -93,12 +89,3 @@ pub fn square_grid_atoms(system: &mut Coordinates) {
     }
 }
 
-fn random_unit_versor() -> (f64, f64, f64) {
-
-    let mut rng = rand::thread_rng();
-    let x : f64 = rng.gen_range(-1.0..1.0);
-    let y : f64 = rng.gen_range(-1.0..1.0);
-    let z : f64 = rng.gen_range(-1.0..1.0);
-    let l =  { (x * x + y * y + z * z).sqrt() };
-    return ((x/l) as f64, (y/l) as f64, (z/l) as f64);
-}

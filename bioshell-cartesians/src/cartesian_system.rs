@@ -1,3 +1,4 @@
+use bioshell_numerical::Vec3;
 use crate::{NbList, NbListRules};
 use crate::{Coordinates, CoordinatesView};
 use bioshell_sim::System;
@@ -89,8 +90,19 @@ impl CartesianSystem {
     /// # Arguments
     /// * `i` - index of an atom to be copied; it's the same index in both source and destination coordinates
     /// * `rhs` - the source to copy from
-    fn copy_from(&mut self, i:usize, rhs: &CartesianSystem) {
-        self.coordinates.copy(i,&rhs.coordinates());
+    pub fn copy_from(&mut self, i:usize, rhs: &CartesianSystem) {
+        self.coordinates.copy_from_coordinates(i, &rhs.coordinates());
+        let stls_v = CoordinatesView { points: &self.coordinates, };
+        self.neighbor_list.update_for_view(stls_v, i);
+    }
+
+    /// Copies coordinates of a given atom from a given vector.
+    ///
+    /// # Arguments
+    /// * `i` - index of an atom to be copied; it's the same index in both source and destination coordinates
+    /// * `rhs` - the source vector to copy x, y and z from
+    pub fn copy_from_vec(&mut self, i:usize, rhs: &Vec3) {
+        self.coordinates.copy_from_vec(i, rhs);
         let stls_v = CoordinatesView { points: &self.coordinates, };
         self.neighbor_list.update_for_view(stls_v, i);
     }

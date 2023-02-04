@@ -158,12 +158,21 @@ impl Coordinates {
     }
 
     /// Copy coordinates of i-th atom from a given rhs coordinates
-    /// This method (unlike set()) does not apply PBC. To the contrary, it assumes the two systems:
-    ///  this and RHS have exactly the same simulation box geometry
-    pub fn copy(&mut self, i:usize, rhs: &Coordinates) {
+    /// This method (unlike the [`set()`](set) method) does not apply PBC. To the contrary,
+    /// it assumes the two systems: `self` and `rhs` have exactly the same simulation box geometry
+    pub fn copy_from_coordinates(&mut self, i:usize, rhs: &Coordinates) {
         self.v[i].x = rhs.v[i].x;
         self.v[i].y = rhs.v[i].y;
         self.v[i].z = rhs.v[i].z;
+    }
+
+    /// Copy coordinates of i-th atom from a given rhs coordinates
+    /// This method (unlike the [`set()`](set) method) does not apply PBC. To the contrary,
+    /// it assumes the two systems: `self` and `rhs` have exactly the same simulation box geometry
+    pub fn copy_from_vec(&mut self, i:usize, rhs: &Vec3) {
+        self.v[i].x = rhs.x;
+        self.v[i].y = rhs.y;
+        self.v[i].z = rhs.z;
     }
 }
 

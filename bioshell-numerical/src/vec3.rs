@@ -1,4 +1,7 @@
 use std::fmt;
+use rand::distributions::Distribution;
+use rand::thread_rng;
+use rand_distr::Normal;
 
 /// 3D vector used to represent interaction center in a simulation
 #[derive(Clone)]
@@ -171,4 +174,39 @@ pub fn dihedral_angle4(a: &Vec3, b: &Vec3, c: &Vec3, d: &Vec3) -> f64 {
     let y: f64 = Vec3::dot(&Vec3::cross(&b1, &v), &w) as f64;
 
     return f64::atan2(y, x);
+}
+
+macro_rules! three_normal_rands {
+    ($rng:expr) => {
+        {
+            let mut rng = thread_rng();
+            let normal = Normal::new(0.0, 1.0).unwrap();
+            (normal.sample(&mut rng), normal.sample(&mut rng), normal.sample(&mut rng))
+        }
+    };
+}
+
+/// Generates a random point on a unit sphere.
+/// Coordinates of the newly generated point are returned as a tuple
+pub fn random_unit_versor() -> (f64, f64, f64) {
+
+    let (x, y, z) = three_normal_rands!(rand::thread_rng());
+    let mut l: f64 = x * x + y * y + z * z;
+    l = l.sqrt();
+    return ((x/l) as f64, (y/l) as f64, (z/l) as f64);
+}
+
+/// Generates a random point that grows a chain in a random direction.
+///
+/// The newly generated point is randomly located on a sphere of a given `radius` and centered
+/// on a given `center`
+pub fn random_point_nearby(center: &Vec3, radius: f64) -> Vec3 {
+
+    let (mut x, mut y, mut z) = three_normal_rands!(rand::thread_rng());
+    let mut l: f64 = x * x + y * y + z * z;
+    l = l.sqrt() / radius;
+    x = x/l + center.x;
+    y = x/l + center.y;
+    z = x/l + center.z;
+    return Vec3{x, y, z, res_type: center.res_type, atom_type: center.atom_type, chain_id: center.chain_id };
 }
