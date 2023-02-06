@@ -75,13 +75,13 @@ impl PERMChainStep {
     }
 }
 
-impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for PERMChainStep {
+impl<E: Energy<Coordinates>> StepwiseMover<Coordinates, E> for PERMChainStep {
 
     /// Starts a new chain by placing its first bead in the center of a simulation box
     ///
     /// Always returns 1.0 for the statistical weight of the newly started chain as a single bead
     /// has nothing to interact with. The energy parameter is not used therefore.
-    fn start(&mut self, system: &mut CartesianSystem, _energy: &E) -> f64 {
+    fn start(&mut self, system: &mut Coordinates, _energy: &E) -> f64 {
         let c = system.box_len() / 2.0;
         system.set(0, c, c, c);
         system.set_size(1);
@@ -89,14 +89,14 @@ impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for PERMChain
         return 1.0
     }
 
-    fn grow_by_one(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
+    fn grow_by_one(&mut self, system: &mut Coordinates, energy: &E) -> f64 {
 
         let i = system.size();
         system.set_size(i + 1);
 
         let mut weights: Vec<f64> = Vec::with_capacity(self.n_trials as usize);
         let mut vn: Vec<Vec3> = Vec::with_capacity(self.n_trials as usize);
-        let center: Vec3 = (&system.coordinates()[i-1]).clone();
+        let center: Vec3 = (&system[i-1]).clone();
         // ---------- propose n_trials random proposals and score them
         for k in 0..self.n_trials {
             let v_k = random_point_nearby(&center, self.bond_length);

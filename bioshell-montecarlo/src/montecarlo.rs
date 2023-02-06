@@ -3,7 +3,7 @@ use log::{debug, info};
 use std::ops::Range;
 use std::default::Default;
 use std::fmt;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display};
 use rand::{Rng, SeedableRng};
 use rand::rngs::{SmallRng};
 
@@ -244,6 +244,7 @@ pub trait StepwiseBuilder<S: System, E: Energy<S>> {
     fn build(&mut self, system: &mut S, energy: &E) -> f64;
 }
 
+#[allow(non_snake_case)]
 pub struct PERM<S: System, E: Energy<S>> {
     /// controls the pruning rate
     pub c_low: f64,
@@ -260,6 +261,7 @@ pub struct PERM<S: System, E: Energy<S>> {
 
 impl<S: System, E: Energy<S>> PERM<S, E> {
 
+    #[allow(non_snake_case)]
     pub fn new(n:usize, c_low: f64, c_hi: f64, step: Box<dyn StepwiseMover<S, E>>) -> PERM<S, E> {
         let Z = vec![0.0; n];
         let W_low = vec![0.0; n];
@@ -297,7 +299,8 @@ impl<S: System, E: Energy<S>> Display for PERM<S, E> {
                           self.chains_cnt, i, self.Z[i], self.W_low[i], self.W_hi[i]);
         }
         write!(f, "{}", out)
-    }}
+    }
+}
 
 impl<S: System, E: Energy<S>> StepwiseBuilder<S, E> for PERM<S, E> {
 
@@ -306,26 +309,27 @@ impl<S: System, E: Energy<S>> StepwiseBuilder<S, E> for PERM<S, E> {
     /// The generated state (e.g. new coordinates) will be stored in the given `system` reference;
     /// statistical weight of this new chain will be returned.
     fn build(&mut self, system: &mut S, energy: &E) -> f64 {
-        let mut current_pos: usize;
-        // ---------- if the stack is empty, initialise a new system by placing the first element (atom, residue, etc.)
-        // ---------- then put it on stack
-        if self.chains.len() == 0 {
-            debug!("pushing a new system on stack");
+        let mut current_pos: usize;     // --- grow the current chain from the current_pos to the maximum length (i.e. capacity)
+        let mut w_tot: f64;             // --- total (cumulative) weight of the current chain
+        // ---------- take the most recent stub from the stack, if there is one there waiting
+        if self.chains.len() > 0 {
+            let (sys, mut w) = self.chains.pop().unwrap();
+            for i in 0..sys.size() {
+                system.copy_from(i, &sys);
+            }
+            current_pos = sys.size();
+            system.set_size(current_pos);
+            w_tot = w;
+        } else {
+            current_pos = 1;
             self.step.start(system, energy);
-            let mut sys = system.clone();
-            self.chains.push((sys, 1.0));
+            w_tot = 1.0;
+            debug!("starting a new system");
         }
-        // ---------- take a most recent chain from the stack
-        let (mut sys, mut w_tot) = self.chains.pop().unwrap();
-        // ---------- copy the already grown part from the working copy to the returned System reference
-        for current_pos in 0..sys.size() {
-            system.copy_from(current_pos, &sys);
-        }
-        // ---------- grow the current chain from the current_pos to the maximum length (i.e. capacity)
-        current_pos = sys.size();
+
         for i in current_pos..self.capacity() {
             // ---------- add next element of the system
-            let w: f64 = self.step.grow_by_one(&mut sys, energy);
+            let w: f64 = self.step.grow_by_one(system, energy);
             w_tot *= w;
             if w_tot < self.W_low[i] {      // --- prune event
                 let mut rng = rand::thread_rng();
@@ -335,11 +339,9 @@ impl<S: System, E: Energy<S>> StepwiseBuilder<S, E> for PERM<S, E> {
             }
             if w_tot > self.W_hi[i] {      // --- enrich event
                 w_tot *= 0.5;
-                self.chains.push((sys.clone(), w_tot));
-                info!("enrichment: pushing on stack a cloned system of size {}",sys.size());
+                self.chains.push((system.clone(), w_tot));
+                info!("enrichment: pushing on stack a cloned system of size {}",system.size());
             }
-            system.copy_from(i, &sys);
-            system.set_size(i+1);
             self.Z[i] += w_tot;
         }
 
