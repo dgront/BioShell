@@ -136,51 +136,6 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for ChangeVolume {
     fn set_max_range(&mut self, new_val: f64) { self.max_step = new_val; }
 }
 
-pub struct PolymerPERMStep {
-    pub temperature: f64,
-    pub bond_length: f64,
-    pub n_trials: i16,
-}
-
-impl PolymerPERMStep {
-    pub fn new(temperature: f64, n_trials: i16) -> PolymerPERMStep {
-        PolymerPERMStep { temperature, bond_length: 3.8, n_trials }
-    }
-}
-
-impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for PolymerPERMStep {
-
-    fn start(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
-        let c = system.box_len() / 2.0;
-        system.set(0, c, c, c);
-        system.set_size(1);
-
-        return 1.0
-    }
-
-    fn grow_by_one(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
-
-        let i = system.size();
-        system.set_size(i + 1);
-
-        let mut weights: Vec<f64> = Vec::with_capacity(self.n_trials as usize);
-        let mut vn: Vec<Vec3> = Vec::with_capacity(self.n_trials as usize);
-        let center: Vec3 = (&system.coordinates()[i]).clone();
-        // ---------- propose n_trials random proposals and score them
-        for k in 0..self.n_trials {
-            let v_k = random_point_nearby(&center, self.bond_length);
-            system.copy_from_vec(i+1, &v_k);
-            let en = energy.energy_by_pos(system, i+1);
-            weights.push((-en/self.temperature));
-            vn.push(v_k);
-        }
-        // ---------- select one of the possible extension by importance sampling
-        // ---------- set the coordinates
-
-        // ---------- return the statistical weight
-        return 0.0
-    }
-}
 
 /*
 pub struct PerturbChainFragment {

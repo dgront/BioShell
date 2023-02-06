@@ -157,16 +157,8 @@ impl Coordinates {
         wrap_coordinate_to_box!(self.v[i].z + z, self.box_len, self.v[i].z);
     }
 
-    /// Copy coordinates of i-th atom from a given rhs coordinates
-    /// This method (unlike the [`set()`](set) method) does not apply PBC. To the contrary,
-    /// it assumes the two systems: `self` and `rhs` have exactly the same simulation box geometry
-    pub fn copy_from_coordinates(&mut self, i:usize, rhs: &Coordinates) {
-        self.v[i].x = rhs.v[i].x;
-        self.v[i].y = rhs.v[i].y;
-        self.v[i].z = rhs.v[i].z;
-    }
-
-    /// Copy coordinates of i-th atom from a given rhs coordinates
+    /// Copy coordinates of i-th atom from a given vector.
+    ///
     /// This method (unlike the [`set()`](set) method) does not apply PBC. To the contrary,
     /// it assumes the two systems: `self` and `rhs` have exactly the same simulation box geometry
     pub fn copy_from_vec(&mut self, i:usize, rhs: &Vec3) {
@@ -199,4 +191,14 @@ impl System for Coordinates {
 
     /// Returns the maximum number of atoms of this system
     fn capacity(&self) -> usize { return self.v.len(); }
+
+    /// Copy coordinates of i-th atom from a given `rhs` coordinates.
+    ///
+    /// This method (unlike the [`set()`](set) method) does not apply PBC. To the contrary,
+    /// it assumes the two systems: `self` and `rhs` have exactly the same simulation box geometry
+    fn copy_from(&mut self, i:usize, rhs: &Self) {
+        self.v[i].x = rhs.v[i].x;
+        self.v[i].y = rhs.v[i].y;
+        self.v[i].z = rhs.v[i].z;
+    }
 }

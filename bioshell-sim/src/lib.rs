@@ -30,4 +30,7 @@ pub trait System: Clone {
 
     /// Returns the maximum size of the modelled system
     fn capacity(&self) -> usize;
+
+    /// Sets i-th component of this system by copying its DOFs from a given `rhs` object
+    fn copy_from(&mut self, i:usize, rhs: &Self);
 }

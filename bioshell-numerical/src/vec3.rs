@@ -206,7 +206,7 @@ pub fn random_point_nearby(center: &Vec3, radius: f64) -> Vec3 {
     let mut l: f64 = x * x + y * y + z * z;
     l = l.sqrt() / radius;
     x = x/l + center.x;
-    y = x/l + center.y;
-    z = x/l + center.z;
+    y = y/l + center.y;
+    z = z/l + center.z;
     return Vec3{x, y, z, res_type: center.res_type, atom_type: center.atom_type, chain_id: center.chain_id };
 }
