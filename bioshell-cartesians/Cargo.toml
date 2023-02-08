@@ -18,6 +18,10 @@ bioshell-sim = { path = "../bioshell-sim" }
 bioshell-montecarlo = { path = "../bioshell-montecarlo" }
 bioshell-numerical = { path = "../bioshell-numerical" }
 
+# ---------- Logging
+log = "0.4.0"
+env_logger = "0.9.0"
+
 [package.metadata.docs.rs]
 # To build locally use
 #   RUSTDOCFLAGS="--html-in-header katex-header.html" cargo doc --no-deps --document-private-items --open

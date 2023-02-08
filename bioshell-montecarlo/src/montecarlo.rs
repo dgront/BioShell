@@ -1,6 +1,9 @@
+use log::{debug, info};
 
 use std::ops::Range;
 use std::default::Default;
+use std::fmt;
+use std::fmt::{Display};
 use rand::{Rng, SeedableRng};
 use rand::rngs::{SmallRng};
 
@@ -34,7 +37,7 @@ impl Default for AcceptanceStatistics {
     }
 }
 
-/// Metropolis acceptance criterion.
+/// Acceptance criterion for a Markov chain Monte Carlo
 ///
 /// AcceptanceCriterion will return `true` or `false` when a Markov chain Monte Carlo move
 /// from energy `energy_before` to `energy_after` should be accepted or not, respectively
@@ -80,12 +83,12 @@ impl AcceptanceCriterion for MetropolisCriterion {
 
 /// Mover changes a given conformation of a system
 ///
-pub trait Mover<S: System, E: Energy<S>, T: AcceptanceCriterion> {
+pub trait Mover<S: System, E: Energy<S>> {
 
     /// Introduce a change into the given system
     ///
     /// The change may be accepted according to the acceptance criterion
-    fn perturb(&mut self, system: &mut S, energy: &E, acc: &mut T) -> Option<Range<usize>>;
+    fn perturb(&mut self, system: &mut S, energy: &E, acc: &mut dyn AcceptanceCriterion) -> Option<Range<usize>>;
 
     /// The change may be accepted according to the acceptance criterion
     fn acceptance_statistics(&self) -> AcceptanceStatistics;
@@ -98,7 +101,7 @@ pub trait Mover<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 }
 
 /// Defines a basic interface for a Monte Carlo sampling scheme.
-pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
+pub trait Sampler<S: System, E: Energy<S>> {
 
     /// Make `n` Monte Carlo sweeps
     ///
@@ -109,16 +112,16 @@ pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
     fn make_sweeps(&mut self, n:usize, coords: &mut S, energy: &E);
 
     /// Provides statistics of the success rate for this mover
-    fn acceptance_criterion(&mut self) -> &mut T;
+    // fn acceptance_criterion(&mut self) -> &mut T;
 
     /// Add a mover to this set
-    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>);
+    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E>>);
 
     /// Immutable access to a mover
-    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>>;
+    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E>>;
 
     /// Mutable access to a mover
-    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>>;
+    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E>>;
 
     /// Count movers contained in this set
     fn count_movers(&self) -> usize;
@@ -135,20 +138,21 @@ pub trait Sampler<S: System, E: Energy<S>, T: AcceptanceCriterion> {
 }
 
 
-pub struct MCProtocol<S: System, E: Energy<S>, T: AcceptanceCriterion> {
-    acceptance_crit: T,
-    movers: Vec<Box<dyn Mover<S, E, T>>>
+pub struct IsothermalMC<S: System, E: Energy<S>> {
+    acceptance_crit: MetropolisCriterion,
+    movers: Vec<Box<dyn Mover<S, E>>>
 }
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> MCProtocol<S, E, T> {
-    pub fn new(acceptance_crit: T) -> MCProtocol<S, E, T> {
-        MCProtocol {
-            acceptance_crit, movers: vec![]
+impl<S: System, E: Energy<S>> IsothermalMC<S, E> {
+    pub fn new(temperature: f64) -> IsothermalMC<S, E> {
+        IsothermalMC {
+            acceptance_crit: MetropolisCriterion::new(temperature),
+            movers: vec![]
         }
     }
 }
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for MCProtocol<S, E, T> {
+impl<S: System, E: Energy<S>> Sampler<S, E>  for IsothermalMC<S, E> {
     fn make_sweeps(&mut self, n: usize, coords: &mut S, energy: &E) {
         for _ in 0..n {
             for i_mover in 0..self.movers.len() {
@@ -160,15 +164,15 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for MCPr
         }
     }
 
-    fn acceptance_criterion(&mut self) -> &mut T { &mut self.acceptance_crit }
+    // fn acceptance_criterion(&mut self) -> &mut T { &mut self.acceptance_crit }
 
-    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>){
+    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E>>){
         self.movers.push(perturb_fn);
     }
 
-    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>> { &self.movers[which_one] }
+    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E>> { &self.movers[which_one] }
 
-    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { &mut self.movers[which_one] }
+    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E>> { &mut self.movers[which_one] }
 
     fn count_movers(&self) -> usize { self.movers.len() }
 }
@@ -178,15 +182,15 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for MCPr
 ///
 /// This protocol monitors success rates for each mover contained in a given Monte Carlo [`Sampler`](Sampler)
 /// and adjusts their `max_move_range` property to keep the success rate close to the desired value.
-pub struct AdaptiveMCProtocol<S: System, E: Energy<S>, T: AcceptanceCriterion> {
+pub struct AdaptiveMCProtocol<S: System, E: Energy<S>> {
     pub target_rate: f64,
     pub factor: f64,
-    sampler: Box<dyn Sampler<S, E, T>>,
+    sampler: Box<dyn Sampler<S, E>>,
     allowed_ranges: Vec<Range<f64>>
 }
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> AdaptiveMCProtocol<S, E, T> {
-    pub fn new(sampler: Box<dyn Sampler<S, E, T>>) -> AdaptiveMCProtocol<S, E, T> {
+impl<S: System, E: Energy<S>> AdaptiveMCProtocol<S, E> {
+    pub fn new(sampler: Box<dyn Sampler<S, E>>) -> AdaptiveMCProtocol<S, E> {
         let mut allowed_ranges:Vec<Range<f64>> = vec![];
         for i in 0..sampler.count_movers() {
             let r = sampler.get_mover(i).max_range();
@@ -197,7 +201,7 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> AdaptiveMCProtocol<S, E, T
     }
 }
 
-impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for AdaptiveMCProtocol<S, E, T> {
+impl<S: System, E: Energy<S>> Sampler<S, E>  for AdaptiveMCProtocol<S, E> {
 
     fn make_sweeps(&mut self, n: usize, coords: &mut S, energy: &E) {
         let mut stats_before: Vec<AcceptanceStatistics> = vec![];
@@ -219,17 +223,139 @@ impl<S: System, E: Energy<S>, T: AcceptanceCriterion> Sampler<S, E, T>  for Adap
         }
     }
 
-    fn acceptance_criterion(&mut self) -> &mut T { self.sampler.acceptance_criterion() }
+    // fn acceptance_criterion(&mut self) -> &mut T { self.sampler.acceptance_criterion() }
 
-    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E, T>>) {
+    fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E>>) {
         let r = perturb_fn.max_range();
         self.sampler.add_mover(perturb_fn);
         self.allowed_ranges.push(r * 0.5..r * 4.0);
     }
 
-    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E, T>> { self.sampler.get_mover(which_one) }
+    fn get_mover(&self, which_one: usize) -> &Box<dyn Mover<S, E>> { self.sampler.get_mover(which_one) }
 
-    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E, T>> { self.sampler.get_mover_mut(which_one) }
+    fn get_mover_mut(&mut self, which_one: usize) -> &mut Box<dyn Mover<S, E>> { self.sampler.get_mover_mut(which_one) }
 
     fn count_movers(&self) -> usize { self.sampler.count_movers() }
 }
+
+pub trait StepwiseMover<S: System, E: Energy<S>> {
+    fn start(&mut self, system: &mut S, energy: &E) -> f64;
+    fn grow_by_one(&mut self, system: &mut S, energy: &E) -> f64;
+}
+
+pub trait StepwiseBuilder<S: System, E: Energy<S>> {
+
+    fn build(&mut self, system: &mut S, energy: &E) -> f64;
+}
+
+#[allow(non_snake_case)]
+pub struct PERM<S: System, E: Energy<S>> {
+    /// controls the pruning rate
+    pub c_low: f64,
+    /// controls the enrichment rate
+    pub c_hi: f64,
+    /// the number of full chains built do far
+    chains_cnt: i64,
+    Z: Vec<f64>,                        // --- partition function for each chain length
+    W_low: Vec<f64>,                    // --- lower bound for the W (pruning criteria)
+    W_hi: Vec<f64>,                     // --- upper bound for the W (enrichment criteria)
+    step: Box<dyn StepwiseMover<S, E>>, // --- stepwise mover used to build up chains
+    chains: Vec<(S, f64)>               // --- stack for enriched chains
+}
+
+impl<S: System, E: Energy<S>> PERM<S, E> {
+
+    #[allow(non_snake_case)]
+    pub fn new(n:usize, c_low: f64, c_hi: f64, step: Box<dyn StepwiseMover<S, E>>) -> PERM<S, E> {
+        let Z = vec![0.0; n];
+        let W_low = vec![0.0; n];
+        let large = 1000000.0;
+        let mut W_hi = vec![large; n];
+        for i in 1..W_hi.len() { W_hi[i] = W_hi[i - 1] * large; }
+        let chains = Vec::new();
+        return PERM{c_low, c_hi, chains_cnt: 0, Z, W_low, W_hi, chains, step};
+    }
+
+    /// Returns the capacity (maximum size) of system generated by this PERM generator
+    pub fn capacity(&self) -> usize { self.W_low.len() }
+
+    /// Returns the number of chains created so far
+    pub fn count_chains(&self) -> i64 { self.chains_cnt }
+
+    /// Updates the internal weights that control pruning and enrichment events
+    pub fn update_weights(&mut self) {
+        for i in 0..self.capacity() {
+            self.W_low[i] = self.c_low * self.Z[i] / self.Z[0];
+            self.W_hi[i] = self.c_hi * self.Z[i] / self.Z[0];
+        }
+    }
+
+    pub fn chains_left(&self) -> bool { !self.chains.is_empty() }
+}
+
+impl<S: System, E: Energy<S>> Display for PERM<S, E> {
+    /// Creates a `String` representation of this `PERM` sampler.
+    /// The output shows the current state of the internal data: i, Z, W_lo, W_hi in respective columns
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        let mut out: String = String::new();
+        for i in 0..self.capacity() {
+            out = format!("{}{:.6} {:.4} {:.2} {:.2} {:.2}\n", out,
+                          self.chains_cnt, i, self.Z[i], self.W_low[i], self.W_hi[i]);
+        }
+        write!(f, "{}", out)
+    }
+}
+
+impl<S: System, E: Energy<S>> StepwiseBuilder<S, E> for PERM<S, E> {
+
+    /// Generate a new system
+    ///
+    /// The generated state (e.g. new coordinates) will be stored in the given `system` reference;
+    /// statistical weight of this new chain will be returned.
+    fn build(&mut self, system: &mut S, energy: &E) -> f64 {
+        let mut current_pos: usize;     // --- grow the current chain from the current_pos to the maximum length (i.e. capacity)
+        let mut w_tot: f64;             // --- total (cumulative) weight of the current chain
+        // ---------- take the most recent stub from the stack, if there is one there waiting
+        if self.chains.len() > 0 {
+            let (sys, mut w) = self.chains.pop().unwrap();
+            for i in 0..sys.size() {
+                system.copy_from(i, &sys);
+            }
+            current_pos = sys.size();
+            system.set_size(current_pos);
+            w_tot = w;
+        } else {
+            current_pos = 1;
+            self.step.start(system, energy);
+            w_tot = 1.0;
+            self.Z[0] += 1.0;
+            debug!("starting a new system");
+        }
+
+        for i in current_pos..self.capacity() {
+            // ---------- add next element of the system
+            let w: f64 = self.step.grow_by_one(system, energy);
+            w_tot *= w;
+            if w_tot < self.W_low[i] {      // --- prune event
+                let mut rng = rand::thread_rng();
+                let if_prune = rng.gen_range(0.0..1.0);
+                if if_prune < 0.5 { return 0.0;}
+                else { w_tot *= 2.0; }
+            }
+            if w_tot > self.W_hi[i] {      // --- enrich event
+                w_tot *= 0.5;
+                self.chains.push((system.clone(), w_tot));
+                info!("enrichment: pushing on stack a cloned system of size {}",system.size());
+            }
+            self.Z[i] += w_tot;
+        }
+
+        return w_tot;
+    }
+}
+
+
+
+
+
+

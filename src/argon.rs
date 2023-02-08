@@ -6,7 +6,7 @@ use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubi
 use bioshell_sim::{Energy, System};
 use bioshell_cartesians::movers::{ChangeVolume, SingleAtomMove};
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, MCProtocol, MetropolisCriterion, AdaptiveMCProtocol};
+use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, AdaptiveMCProtocol};
 
 
 #[derive(Parser, Debug)]
@@ -89,20 +89,17 @@ pub fn main() {
     let pairwise_lj = PairwiseNonbondedEvaluator::new(CUTOFF as f64,lj);
 
     // ---------- Create a sampler and add a mover into it
-    let mut simple_sampler: MCProtocol<CartesianSystem, PairwiseNonbondedEvaluator<LennardJonesHomogenic>, MetropolisCriterion> =
-        MCProtocol::new(MetropolisCriterion::new(temperature));
+    let mut simple_sampler: IsothermalMC<CartesianSystem, PairwiseNonbondedEvaluator<LennardJonesHomogenic>> =
+        IsothermalMC::new(temperature);
     simple_sampler.add_mover(Box::new(SingleAtomMove::new(1.0)));
 
     // ---------- Decorate the sampler into an adaptive MC protocol
     let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));
     sampler.target_rate = 0.4;
 
-    // ---------- If a pressure value has been provided, turn this simulation into NPT by addin a volume changing move
-    let pressure: f64;
-
-    if let Some(p) = args.pressure {
-        pressure = p;
-        sampler.add_mover(Box::new(ChangeVolume::new(pressure)));
+    // ---------- If a pressure value has been provided, turn this simulation into NPT by adding a volume changing move
+    if let Some(pressure) = args.pressure {
+        sampler.add_mover(Box::new(ChangeVolume::new(temperature, pressure)));
     }
 
     // ---------- Run the simulation!

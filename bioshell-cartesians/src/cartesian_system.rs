@@ -1,3 +1,4 @@
+use bioshell_numerical::Vec3;
 use crate::{NbList, NbListRules};
 use crate::{Coordinates, CoordinatesView};
 use bioshell_sim::System;
@@ -84,13 +85,14 @@ impl CartesianSystem {
         self.coordinates.add(i, x, y, z);
     }
 
-    /// Copies coordinates of a given atom from another system.
+    /// Copies coordinates of a given atom from a given vector.
     ///
+    /// This method also triggers neighbor list update at position `i`.
     /// # Arguments
     /// * `i` - index of an atom to be copied; it's the same index in both source and destination coordinates
-    /// * `rhs` - the source to copy from
-    fn copy_from(&mut self, i:usize, rhs: &CartesianSystem) {
-        self.coordinates.copy(i,&rhs.coordinates());
+    /// * `rhs` - the source vector to copy x, y and z from
+    pub fn copy_from_vec(&mut self, i:usize, rhs: &Vec3) {
+        self.coordinates.copy_from_vec(i, rhs);
         let stls_v = CoordinatesView { points: &self.coordinates, };
         self.neighbor_list.update_for_view(stls_v, i);
     }
@@ -108,7 +110,7 @@ impl CartesianSystem {
     pub fn set_buffer_width(&mut self, width: f64) { self.neighbor_list.set_buffer_width(width); }
 
     /// Sets new rules that define which atoms and atom pairs can be neighbors.
-    /// Note: remember to update this neighbor list after this call!
+    /// This method also triggers neighbor list update.
     pub fn set_rules(&mut self, nb_rules: Box<dyn NbListRules>) {
         self.neighbor_list.set_rules(nb_rules);
         let stls_v = CoordinatesView { points: &self.coordinates, };
@@ -119,4 +121,22 @@ impl CartesianSystem {
 impl System for CartesianSystem {
     /// Returns the number of atoms of this system
     fn size(&self) -> usize { self.coordinates.size() }
+
+    /// Change the number of atoms of this system
+    fn set_size(&mut self, new_size: usize) { self.coordinates.set_size(new_size); }
+
+    /// Returns the maximum number of atoms system may have
+    fn capacity(&self) -> usize { self.coordinates.capacity() }
+
+    /// Copies coordinates of a given atom from another system.
+    ///
+    /// This method also triggers neighbor list update at position `i`.
+    /// # Arguments
+    /// * `i` - index of an atom to be copied; it's the same index in both source and destination coordinates
+    /// * `rhs` - the source to copy from
+    fn copy_from(&mut self, i:usize, rhs: &Self) {
+        self.coordinates.copy_from(i, rhs.coordinates());
+        let stls_v = CoordinatesView { points: &self.coordinates, };
+        self.neighbor_list.update_for_view(stls_v, i);
+    }
 }

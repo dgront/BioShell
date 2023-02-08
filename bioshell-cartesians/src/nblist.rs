@@ -1,4 +1,5 @@
 use bioshell_numerical::{Vec3};
+use bioshell_sim::System;
 use crate::{Coordinates, CoordinatesView};
 
 
@@ -9,10 +10,10 @@ use crate::{Coordinates, CoordinatesView};
 /// evaluation of pairwise interactions.  An object derived from this [`NbListRules`] trait asks
 /// a neighbor list to omit some of them.
 ///
-/// For example, atoms that are directly connected with a covalent bond are typically excluded.
-/// ``NbListRules::if_pair_excluded(i, j)`` should return ``true`` in such cases. To exclude,
-/// a given atom from energy evaluation, ``NbListRules::if_atom_excluded(i, j)`` can be used.
-///
+/// For example, atoms that are directly connected with a covalent bond are typically excluded
+/// from non-bonded energy evaluation. ``NbListRules::if_pair_excluded(i, j)`` should return
+/// ``true`` in such cases. To exclude a given atom `i` from any energy evaluation,
+/// ``NbListRules::if_atom_excluded(i)`` can be used.
 pub trait NbListRules {
 
     /// Says if an atom is excluded from any interactions
@@ -32,8 +33,8 @@ impl Clone for Box<dyn NbListRules>  {
 #[derive(Clone)]
 /// Implements interaction rules for a monoatomic fluid simulation, such as argon gas.
 ///
-/// According to these simple rules all atoms always interact and all pairs are included in NBL
-/// hashing.
+/// According to these simple rules all atoms always interact which each other, so all pairs
+/// are included in NBL hashing.
 ///
 pub struct ArgonRules;
 
@@ -236,8 +237,8 @@ impl NbList {
 
     /// Add inner vectors to this non-bonded list so it has at least as many rows as the number of atoms in the given structure
     fn extend(&mut self, system: &Coordinates) {
-        if system.size() > self.nb_lists.len() {
-            for _ in self.nb_lists.len()..system.size() {
+        if system.capacity() > self.nb_lists.len() {
+            for _ in self.nb_lists.len()..system.capacity() {
                 self.nb_lists.push(Vec::new());
                 self.recent_pos.push(Vec3::new(0.0,0.0,0.0));
                 self.travelled.push(Vec3::new(0.0,0.0,0.0));

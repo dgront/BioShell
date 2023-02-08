@@ -1,37 +1,128 @@
-use rand::Rng;
+use rand::{Rng};
 
-use crate::{Coordinates};
+use bioshell_montecarlo::{StepwiseBuilder, StepwiseMover};
+use bioshell_sim::{System, Energy};
+use bioshell_numerical::{random_point_nearby, Vec3};
 
-use bioshell_numerical::Vec3;
+use crate::{CartesianSystem, Coordinates};
 
-pub fn random_chain(bond_length:f64, repulsion_distance: f64, start: &Vec3, system: &mut Coordinates) {
+pub struct RandomChain {
+    pub bond_length: f64,
+    pub energy_cutoff: f64,
+    pub n_attempts: i16
+}
 
-    let cutoff2 = (repulsion_distance * repulsion_distance) as f64;
+impl Default for RandomChain {
+    fn default() -> Self { RandomChain {bond_length: 3.8, energy_cutoff:0.00001, n_attempts: 100} }
+}
 
-    system.set_x(0, start.x);
-    system.set_y(0, start.y);
-    system.set_z(0, start.z);
+impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for RandomChain {
 
-    let (x, y, z) = random_unit_versor();
-    system.set_x(1, system.x(0) + (x * bond_length) as f64);
-    system.set_y(1, system.y(0) + (y * bond_length) as f64);
-    system.set_z(1, system.z(0) + (z * bond_length) as f64);
+    fn start(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
+        let c = system.box_len() / 2.0;
+        system.set(0, c, c, c);
+        let v = random_point_nearby(&system.coordinates()[0], self.bond_length);
+        system.copy_from_vec(1, &v);
+        system.set_size(2);
 
-    for i in 2..system.size() {
-        let mut go_on: bool = true;
-        while go_on {
-            let (x, y, z) = random_unit_versor();
-            system.set_x(i, system.x(i-1) + (x * bond_length) as f64);
-            system.set_y(i, system.y(i-1) + (y * bond_length) as f64);
-            system.set_z(i, system.z(i-1) + (z * bond_length) as f64);
-            go_on = false;
-            for j in 0..(i-1) {
-                if system.closest_distance_square(j, i) <= cutoff2 {
-                    go_on = true;
-                    break;
-                }
+        return 1.0
+    }
+
+    fn grow_by_one(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
+
+        let i = system.size();
+        system.set_size(i + 1);
+        let mut n_try = 0;
+        while n_try < self.n_attempts {
+            let v = random_point_nearby(&system.coordinates()[i-1], self.bond_length);
+            system.copy_from_vec(i, &v);
+            system.update_nbl(i);
+
+            let en = energy.energy_by_pos(system, i);
+            if en <= self.energy_cutoff {
+                return 1.0;
             }
+            n_try += 1;
         }
+        return 0.0
+    }
+}
+
+impl<E: Energy<CartesianSystem>> StepwiseBuilder<CartesianSystem, E> for RandomChain {
+
+    fn build(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
+        let mut step = RandomChain::default();
+        let mut w_total = 1.0;
+        step.start(system, energy);
+        while system.size() < system.capacity() {
+            let w = step.grow_by_one(system, energy);
+            w_total *= w;
+        }
+        return w_total;
+    }
+}
+
+
+pub struct PERMChainStep {
+    pub temperature: f64,
+    pub bond_length: f64,
+    pub n_trials: i16,
+}
+
+impl PERMChainStep {
+    pub fn new(temperature: f64, n_trials: i16) -> PERMChainStep {
+        PERMChainStep { temperature, bond_length: 3.8, n_trials }
+    }
+}
+
+impl<E: Energy<Coordinates>> StepwiseMover<Coordinates, E> for PERMChainStep {
+
+    /// Starts a new chain by placing its first bead in the center of a simulation box
+    ///
+    /// Always returns 1.0 for the statistical weight of the newly started chain as a single bead
+    /// has nothing to interact with. The energy parameter is not used therefore.
+    fn start(&mut self, system: &mut Coordinates, _energy: &E) -> f64 {
+        let c = system.box_len() / 2.0;
+        system.set(0, c, c, c);
+        system.set_size(1);
+
+        return 1.0
+    }
+
+    fn grow_by_one(&mut self, system: &mut Coordinates, energy: &E) -> f64 {
+
+        let i = system.size();
+        system.set_size(i + 1);
+
+        let mut weights: Vec<f64> = Vec::with_capacity(self.n_trials as usize);
+        let mut vn: Vec<Vec3> = Vec::with_capacity(self.n_trials as usize);
+        let center: Vec3 = (&system[i-1]).clone();
+        // ---------- propose n_trials random proposals and score them
+        for k in 0..self.n_trials {
+            let v_k = random_point_nearby(&center, self.bond_length);
+            system.copy_from_vec(i, &v_k);
+            let en = energy.energy_by_pos(system, i);
+            weights.push((-en/self.temperature).exp());
+            vn.push(v_k);
+        }
+        let total = weights.iter().sum();
+        if total < 1e-100 { return 0.0; }       // --- no suitable move generated
+
+        // ---------- select one of the possible extension by importance sampling
+        let mut rng = rand::thread_rng();
+        let r = rng.gen_range(0.0..total);
+        let mut which_v: usize = 0;
+        let mut s = weights[which_v];
+        while s <= r {
+            which_v += 1;
+            s += weights[which_v]
+        }
+
+        // ---------- set the coordinates
+        system.copy_from_vec(i, &vn[which_v]);
+
+        // ---------- return the statistical weight
+        return total;
     }
 }
 
@@ -63,12 +154,3 @@ pub fn square_grid_atoms(system: &mut Coordinates) {
     }
 }
 
-fn random_unit_versor() -> (f64, f64, f64) {
-
-    let mut rng = rand::thread_rng();
-    let x : f64 = rng.gen_range(-1.0..1.0);
-    let y : f64 = rng.gen_range(-1.0..1.0);
-    let z : f64 = rng.gen_range(-1.0..1.0);
-    let l =  { (x * x + y * y + z * z).sqrt() };
-    return ((x/l) as f64, (y/l) as f64, (z/l) as f64);
-}

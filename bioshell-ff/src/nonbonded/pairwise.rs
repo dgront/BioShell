@@ -1,13 +1,19 @@
 use std::ops::Range;
 
 use bioshell_sim::{System, Energy};
-use bioshell_cartesians::{CartesianSystem};
+use bioshell_cartesians::{CartesianSystem, Coordinates};
 
 /// A pairwise nonbonded interaction can evaluate its energy just from a squared distance value
 /// between two atoms
 pub trait PairwiseNonbonded {
 
     fn energy_for_distance_squared(&self, d2: f64) -> f64;
+}
+
+macro_rules! atom_xyz {
+    ($chain:expr, $pos:expr) => {
+        ($chain[$pos].x, $chain[$pos].y, $chain[$pos].z)
+    }
 }
 
 macro_rules! pairwise_contact_kernel {
@@ -25,15 +31,42 @@ macro_rules! pairwise_contact_kernel {
 
 macro_rules! pairwise_contact_neighbors_loop {
     ($self:expr, $chain:expr, $pos:expr, $neighbors:expr, $en:expr) => {
-            let x: f64 = $chain[$pos].x;
-            let y: f64 = $chain[$pos].y;
-            let z: f64 = $chain[$pos].z;
+            let (x, y, z) = atom_xyz!($chain, $pos);
             for i in $neighbors {
                 pairwise_contact_kernel!(x, y, z, $chain, *i, $self, $en);
             }
     }
 }
 
+macro_rules! pairwise_contact_kernel_with_cutoff {
+    ($x:expr, $y:expr, $z:expr, $chain:expr, $i:expr, $self:expr, $en:expr) => {
+
+        let mut d = $chain.delta_x($i, $x);
+        let mut d2 = d*d;
+        if d2 >= $self.cutoff_square { continue }
+        d = $chain.delta_y($i, $y);
+        d2 += d*d;
+        if d2 >= $self.cutoff_square { continue }
+        d = $chain.delta_z($i, $z);
+        d2 += d*d;
+        if d2 < $self.cutoff_square { $en += $self.energy.energy_for_distance_squared(d2); }
+    }
+}
+
+// !!!!!!!!!!!! THIS APPLIES POLYMER_RULES FOR NOW, MUST BE CHANGED !!!!!
+macro_rules! pairwise_contact_loop {
+    ($self:expr, $chain:expr, $pos:expr, $en:expr) => {
+            let (x, y, z) = atom_xyz!($chain, $pos);
+            if $pos > 1 {
+                for i in 0..$pos-1 {
+                    pairwise_contact_kernel_with_cutoff!(x, y, z, $chain, i, $self, $en);
+                }
+            }
+            for i in $pos+2..$chain.size() {
+                pairwise_contact_kernel_with_cutoff!(x, y, z, $chain, i, $self, $en);
+            }
+    }
+}
 
 /// Evaluates pairwise nonbonded interactions between all atoms.
 ///
@@ -78,6 +111,30 @@ impl<E:PairwiseNonbonded> Energy<CartesianSystem> for PairwiseNonbondedEvaluator
         todo!()
     }
 
+    fn name(&self) -> String { String::from("PairwiseNonbonded") }
+}
+
+impl<E:PairwiseNonbonded> Energy<Coordinates> for PairwiseNonbondedEvaluator<E> {
+
+    fn energy(&self, system: &Coordinates) -> f64 {
+        let mut en:f64 = 0.0;
+        for i in 0..system.size() {
+            en += self.energy_by_pos(system, i);
+        }
+
+        return en / 2.0;
+    }
+
+    fn energy_by_pos(&self, system: &Coordinates, pos:usize) -> f64 {
+        let mut en: f64 = 0.0;
+        pairwise_contact_loop!(self, system, pos, en);
+
+        return en;
+    }
+
+    fn energy_by_range(&self, system: &Coordinates, range: &Range<usize>) -> f64 {
+        todo!()
+    }
 
     fn name(&self) -> String { String::from("PairwiseNonbonded") }
 }
