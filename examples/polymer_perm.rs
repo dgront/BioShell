@@ -11,7 +11,7 @@ use bioshell_sim::{Energy};
 
 
 #[derive(Parser, Debug)]
-#[clap(name = "ising")]
+#[clap(name = "polymer_perm")]
 #[clap(about = "PERM generator for simple polymer chains", long_about = None)]
 struct Args {
     /// loads a staring conformation from a text file

@@ -281,8 +281,8 @@ impl<S: System, E: Energy<S>> PERM<S, E> {
     /// Updates the internal weights that control pruning and enrichment events
     pub fn update_weights(&mut self) {
         for i in 0..self.capacity() {
-            self.W_low[i] = self.c_low * self.Z[i];
-            self.W_hi[i] = self.c_hi * self.Z[i];
+            self.W_low[i] = self.c_low * self.Z[i] / self.Z[0];
+            self.W_hi[i] = self.c_hi * self.Z[i] / self.Z[0];
         }
     }
 
@@ -324,6 +324,7 @@ impl<S: System, E: Energy<S>> StepwiseBuilder<S, E> for PERM<S, E> {
             current_pos = 1;
             self.step.start(system, energy);
             w_tot = 1.0;
+            self.Z[0] += 1.0;
             debug!("starting a new system");
         }
 
