@@ -237,8 +237,8 @@ impl NbList {
 
     /// Add inner vectors to this non-bonded list so it has at least as many rows as the number of atoms in the given structure
     fn extend(&mut self, system: &Coordinates) {
-        if system.capacity() > self.nb_lists.len() {
-            for _ in self.nb_lists.len()..system.capacity() {
+        if system.size() > self.nb_lists.len() {
+            for _ in self.nb_lists.len()..system.size() {
                 self.nb_lists.push(Vec::new());
                 self.recent_pos.push(Vec3::new(0.0,0.0,0.0));
                 self.travelled.push(Vec3::new(0.0,0.0,0.0));
@@ -246,7 +246,6 @@ impl NbList {
         }
     }
 }
-
 
 impl Clone for NbList {
     fn clone(&self) -> NbList {

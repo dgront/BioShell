@@ -25,12 +25,16 @@ pub trait System: Clone {
     /// Returns the current size of the modelled system
     fn size(&self) -> usize;
 
+    /// Sets i-th component of this system by copying its DOFs from a given `rhs` object
+    fn copy_from(&mut self, i:usize, rhs: &Self);
+}
+
+/// Defines a [`System`](System) that can change its number of atoms, DOFs, etc.
+pub trait ResizableSystem: System {
+
     /// Changes the current size of the modelled system
     fn set_size(&mut self, new_size: usize);
 
     /// Returns the maximum size of the modelled system
     fn capacity(&self) -> usize;
-
-    /// Sets i-th component of this system by copying its DOFs from a given `rhs` object
-    fn copy_from(&mut self, i:usize, rhs: &Self);
 }

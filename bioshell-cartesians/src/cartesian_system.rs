@@ -1,7 +1,7 @@
 use bioshell_numerical::Vec3;
 use crate::{NbList, NbListRules};
 use crate::{Coordinates, CoordinatesView};
-use bioshell_sim::System;
+use bioshell_sim::{ResizableSystem, System};
 
 #[derive(Clone)]
 pub struct CartesianSystem {
@@ -122,12 +122,6 @@ impl System for CartesianSystem {
     /// Returns the number of atoms of this system
     fn size(&self) -> usize { self.coordinates.size() }
 
-    /// Change the number of atoms of this system
-    fn set_size(&mut self, new_size: usize) { self.coordinates.set_size(new_size); }
-
-    /// Returns the maximum number of atoms system may have
-    fn capacity(&self) -> usize { self.coordinates.capacity() }
-
     /// Copies coordinates of a given atom from another system.
     ///
     /// This method also triggers neighbor list update at position `i`.
@@ -139,4 +133,12 @@ impl System for CartesianSystem {
         let stls_v = CoordinatesView { points: &self.coordinates, };
         self.neighbor_list.update_for_view(stls_v, i);
     }
+}
+
+impl ResizableSystem for CartesianSystem {
+    /// Change the number of atoms of this system
+    fn set_size(&mut self, new_size: usize) { self.coordinates.set_size(new_size); }
+
+    /// Returns the maximum number of atoms system may have
+    fn capacity(&self) -> usize { self.coordinates.capacity() }
 }

@@ -1,7 +1,7 @@
 use rand::{Rng};
 
 use bioshell_montecarlo::{StepwiseBuilder, StepwiseMover};
-use bioshell_sim::{System, Energy};
+use bioshell_sim::{System, ResizableSystem, Energy};
 use bioshell_numerical::{random_point_nearby, Vec3};
 
 use crate::{CartesianSystem, Coordinates};

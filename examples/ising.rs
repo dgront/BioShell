@@ -53,6 +53,13 @@ impl IsingSystem {
 
 impl System for IsingSystem {
     fn size(&self) -> usize { SIZE*SIZE }
+
+    fn copy_from(&mut self, pos: usize, rhs: &Self) {
+        let i = pos / SIZE;
+        let j = pos % SIZE;
+
+        self.state[i][j] = rhs.state[i][j];
+    }
 }
 
 impl fmt::Display for IsingSystem {

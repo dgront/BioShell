@@ -1,7 +1,7 @@
 use std::ops::{Index, IndexMut, Range};
 
 use bioshell_numerical::{Vec3};
-use bioshell_sim::System;
+use bioshell_sim::{ResizableSystem, System};
 
 /// Stateless immutable view of coordinates
 pub struct CoordinatesView<'a> {  pub points: &'a  Coordinates, }
@@ -186,12 +186,6 @@ impl System for Coordinates {
     /// Returns the current number of atoms of this system
     fn size(&self) -> usize { return self.current_size; }
 
-    /// Changes the number of atoms of this system
-    fn set_size(&mut self, new_size: usize)  { self.current_size = new_size; }
-
-    /// Returns the maximum number of atoms of this system
-    fn capacity(&self) -> usize { return self.v.len(); }
-
     /// Copy coordinates of i-th atom from a given `rhs` coordinates.
     ///
     /// This method (unlike the [`set()`](set) method) does not apply PBC. To the contrary,
@@ -201,4 +195,13 @@ impl System for Coordinates {
         self.v[i].y = rhs.v[i].y;
         self.v[i].z = rhs.v[i].z;
     }
+}
+
+impl ResizableSystem for Coordinates {
+
+    /// Changes the number of atoms of this system
+    fn set_size(&mut self, new_size: usize)  { self.current_size = new_size; }
+
+    /// Returns the maximum number of atoms of this system
+    fn capacity(&self) -> usize { return self.v.len(); }
 }

@@ -7,7 +7,7 @@ use std::fmt::{Display};
 use rand::{Rng, SeedableRng};
 use rand::rngs::{SmallRng};
 
-use bioshell_sim::{System, Energy};
+use bioshell_sim::{System, Energy, ResizableSystem};
 
 #[derive(Clone, Debug)]
 /// Counts how many system perturbations were successful.
@@ -239,18 +239,18 @@ impl<S: System, E: Energy<S>> Sampler<S, E>  for AdaptiveMCProtocol<S, E> {
     fn count_movers(&self) -> usize { self.sampler.count_movers() }
 }
 
-pub trait StepwiseMover<S: System, E: Energy<S>> {
+pub trait StepwiseMover<S: ResizableSystem, E: Energy<S>> {
     fn start(&mut self, system: &mut S, energy: &E) -> f64;
     fn grow_by_one(&mut self, system: &mut S, energy: &E) -> f64;
 }
 
-pub trait StepwiseBuilder<S: System, E: Energy<S>> {
+pub trait StepwiseBuilder<S: ResizableSystem, E: Energy<S>> {
 
     fn build(&mut self, system: &mut S, energy: &E) -> f64;
 }
 
 #[allow(non_snake_case)]
-pub struct PERM<S: System, E: Energy<S>> {
+pub struct PERM<S: ResizableSystem, E: Energy<S>> {
     /// controls the pruning rate
     pub c_low: f64,
     /// controls the enrichment rate
@@ -267,7 +267,7 @@ pub struct PERM<S: System, E: Energy<S>> {
     chains: Vec<(S, f64)>               // --- stack for enriched chains
 }
 
-impl<S: System, E: Energy<S>> PERM<S, E> {
+impl<S: ResizableSystem, E: Energy<S>> PERM<S, E> {
 
     #[allow(non_snake_case)]
     pub fn new(n:usize, c_low: f64, c_hi: f64, step: Box<dyn StepwiseMover<S, E>>) -> PERM<S, E> {
@@ -303,7 +303,7 @@ impl<S: System, E: Energy<S>> PERM<S, E> {
     pub fn chains_left(&self) -> bool { !self.chains.is_empty() }
 }
 
-impl<S: System, E: Energy<S>> Display for PERM<S, E> {
+impl<S: ResizableSystem, E: Energy<S>> Display for PERM<S, E> {
     /// Creates a `String` representation of this `PERM` sampler.
     /// The output shows the current state of the internal data: i, Z, W_lo, W_hi in respective columns
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
@@ -316,7 +316,7 @@ impl<S: System, E: Energy<S>> Display for PERM<S, E> {
     }
 }
 
-impl<S: System, E: Energy<S>> StepwiseBuilder<S, E> for PERM<S, E> {
+impl<S: ResizableSystem, E: Energy<S>> StepwiseBuilder<S, E> for PERM<S, E> {
 
     /// Generate a new system
     ///
