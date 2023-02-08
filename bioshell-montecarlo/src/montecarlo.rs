@@ -10,18 +10,30 @@ use rand::rngs::{SmallRng};
 use bioshell_sim::{System, Energy};
 
 #[derive(Clone, Debug)]
+/// Counts how many system perturbations were successful.
+///
+/// The total number of Monte Carlo moves attempted is `n_succ + n_failed`
 pub struct AcceptanceStatistics {
+    /// number of successful perturbations
     pub n_succ:i32,
+    /// number of failures
     pub n_failed:i32,
 }
 
 impl AcceptanceStatistics {
+    /// Computes the success rate for a given Monte Carlo Markov chain
+    ///
+    /// Simply returns `n_succ / (n_succ + n_failed)`
     pub fn success_rate(&self) -> f64 {
         let sum = self.n_succ + self.n_failed;
         if sum == 0 { return 0.0; }
         return self.n_succ as f64 / (sum as f64);
     }
 
+    /// Computes the success rate since the given point in simulation
+    ///
+    /// The success rate is computed based on *new* observations that were made
+    /// after the given `prev_stats` were recorded
     pub fn recent_success_rate(&self, prev_stats: &AcceptanceStatistics) -> f64 {
         let succ = self.n_succ - prev_stats.n_succ;
         let fail = self.n_failed - prev_stats.n_failed;
@@ -125,16 +137,6 @@ pub trait Sampler<S: System, E: Energy<S>> {
 
     /// Count movers contained in this set
     fn count_movers(&self) -> usize;
-
-    fn acceptance_statistics(&self) -> Vec<AcceptanceStatistics> {
-
-        let mut out:Vec<AcceptanceStatistics> = vec![];
-        for i in 0..self.count_movers() {
-            let stats = self.get_mover(i).acceptance_statistics().clone();
-            out.push(stats);
-        }
-        return out;
-    }
 }
 
 
@@ -150,6 +152,9 @@ impl<S: System, E: Energy<S>> IsothermalMC<S, E> {
             movers: vec![]
         }
     }
+
+    /// Returns temperature of this simulation
+    pub fn temperature(&self) -> f64 { self.acceptance_crit.temperature }
 }
 
 impl<S: System, E: Energy<S>> Sampler<S, E>  for IsothermalMC<S, E> {
@@ -163,8 +168,6 @@ impl<S: System, E: Energy<S>> Sampler<S, E>  for IsothermalMC<S, E> {
             }
         }
     }
-
-    // fn acceptance_criterion(&mut self) -> &mut T { &mut self.acceptance_crit }
 
     fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E>>){
         self.movers.push(perturb_fn);
@@ -222,8 +225,6 @@ impl<S: System, E: Energy<S>> Sampler<S, E>  for AdaptiveMCProtocol<S, E> {
             mover.set_max_range(range);
         }
     }
-
-    // fn acceptance_criterion(&mut self) -> &mut T { self.sampler.acceptance_criterion() }
 
     fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E>>) {
         let r = perturb_fn.max_range();
