@@ -71,7 +71,7 @@ pub fn main() {
             // coordinates_to_pdb(&system, i_chain as i16, tra_fname.as_str(), true);
         }
 
-        info!("Chain {:7} finished after {:.2?}",i_cycle, start.elapsed());
+        info!("Chain {:7} finished after {:.2?}", i_chain, start.elapsed());
         // println!("{}", sampler);
     }
 }
