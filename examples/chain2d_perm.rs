@@ -14,11 +14,11 @@ use bioshell_sim::{Energy, System};
 /// Builds a simple chain on 2D square lattice
 pub struct ChainBuilder {
     /// temperature for the simulation
-    /// bond length - use 4.0 for nicely looking PDB trajectory
     pub temperature: f64,
+    /// bond length - use 4.0 for nicely looking PDB trajectory
     pub bond_length: f64,
-    weights: [f64; 4],      /// scratch memory to store weight for a single step
-    moves: [(f64,f64); 4],  /// scratch memory to store proposed move coordinates
+    weights: [f64; 4],      // scratch memory to store weight for a single step
+    moves: [(f64,f64); 4],  // scratch memory to store proposed move coordinates
 }
 
 impl ChainBuilder {
@@ -82,21 +82,16 @@ impl<E: Energy<Coordinates>> StepwiseMover<Coordinates, E> for ChainBuilder {
 #[clap(name = "chain2d_perm")]
 #[clap(about = "Simple PERM demo builds chains on a 2D square lattice", long_about = None)]
 struct Args {
-    /// loads a staring conformation from a text file
-    #[clap(short, long, default_value = "", short='f')]
-    infile: String,
+
     /// temperature of the simulation
     #[clap(short, long, default_value_t = 1.0)]
     temperature: f64,
     /// Number of beads of a polymer chain
     #[clap(short, long, default_value_t = 25, short='n')]
     n_beads: usize,
-    /// number of chains to be generated for each cycle
+    /// number of chains to be generated
     #[clap(short='k', long, default_value_t = 10)]
     chains: usize,
-    /// prefix for output file names
-    #[clap(long, default_value = "")]
-    prefix: String,
 }
 
 
@@ -107,8 +102,6 @@ pub fn main() {
 
     let args = Args::parse();
     let temperature: f64 = args.temperature;    // --- Temperature of the isothermal simulation (in the energy units)
-    let prefix = args.prefix;
-    let tra_fname = format!("{}_tra.pdb", &prefix);
 
     // ---------- Create system's coordinates
     let mut system = Coordinates::new(args.n_beads);
@@ -131,8 +124,7 @@ pub fn main() {
         if w > 0.0 {
             i_chain += 1;
             println!("en, w: {:5} {:5.1e}", contacts.energy(&system), w);
-            coordinates_to_pdb(&system, i_chain as i16, tra_fname.as_str(), true);
-            sampler.update_weights();
+            coordinates_to_pdb(&system, i_chain as i16, "chain2d_tra.pdb", true);
             info!("chain {:5} finished after {:.2?}", i_chain, start.elapsed());
             // println!("{}", sampler);
         }

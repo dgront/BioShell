@@ -18,7 +18,7 @@ impl Default for RandomChain {
 
 impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for RandomChain {
 
-    fn start(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
+    fn start(&mut self, system: &mut CartesianSystem, _energy: &E) -> f64 {
         let c = system.box_len() / 2.0;
         system.set(0, c, c, c);
         let v = random_point_nearby(&system.coordinates()[0], self.bond_length);

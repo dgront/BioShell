@@ -3,7 +3,7 @@ use std::time::Instant;
 use log::{info, error};
 
 use clap::{Parser};
-use bioshell_cartesians::{CartesianSystem, Coordinates, coordinates_to_pdb, NbList, PERMChainStep, PolymerRules};
+use bioshell_cartesians::{CartesianSystem, Coordinates, coordinates_to_pdb, PERMChainStep};
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{PERM, StepwiseBuilder};
 
@@ -23,12 +23,9 @@ struct Args {
     /// Number of beads of a polymer chain
     #[clap(short, long, default_value_t = 20, short='n')]
     n_beads: usize,
-    /// number of chains to be generated for each cycle
+    /// number of chains to be generated
     #[clap(short='k', long, default_value_t = 10)]
     chains: usize,
-    /// number of PERM cycles to be performed; at every cycle n_chains are created and W+ and W- bounding parameters are updated
-    #[clap(short='c', long, default_value_t = 1000)]
-    cycles: usize,
     /// prefix for output file names
     #[clap(long, default_value = "")]
     prefix: String,
@@ -62,21 +59,19 @@ pub fn main() {
 
     // ---------- Create a PERM generator
     let mover = PERMChainStep::new(temperature, 16);
-    let mut sampler = PERM::new(args.n_beads,0.01, 1.0,  Box::new(mover));
+    let mut sampler = PERM::new(args.n_beads,0.1, 10.0,  Box::new(mover));
     // ---------- Run the generator!
     let start = Instant::now();
-    for i_cycle in 0..args.cycles {
-        let mut i_chain = 0;
-        while i_chain < args.chains {
-            let w = sampler.build(&mut system, &contacts);
-            if w > 0.0 {
-                i_chain += 1;
-                println!("en, w: {:5} {:5.1e}", contacts.energy(&system), w);
-                coordinates_to_pdb(&system, i_chain as i16, tra_fname.as_str(), true);
-            }
+    let mut i_chain = 0;
+    while i_chain < args.chains {
+        let w = sampler.build(&mut system, &contacts);
+        if w > 0.0 {
+            i_chain += 1;
+            println!("en, w: {:5} {:5.1e}", contacts.energy(&system), w);
+            // coordinates_to_pdb(&system, i_chain as i16, tra_fname.as_str(), true);
         }
-        sampler.update_weights();
-        info!("Cycle {:5} finished after {:.2?}",i_cycle, start.elapsed());
+
+        info!("Chain {:7} finished after {:.2?}",i_cycle, start.elapsed());
         // println!("{}", sampler);
     }
 }

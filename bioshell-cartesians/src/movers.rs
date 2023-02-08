@@ -3,8 +3,7 @@ use rand::Rng;
 
 use crate::{CartesianSystem};
 use bioshell_sim::{Energy, System};
-use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover, StepwiseMover};
-use bioshell_numerical::{random_point_nearby, Vec3};
+use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 
 /// A mover that moves a single, randomly selected atom by a small random vector.
 ///
