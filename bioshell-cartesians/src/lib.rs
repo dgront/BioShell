@@ -6,6 +6,7 @@ mod cartesian_system;
 mod nblist;
 
 pub mod movers;
+pub mod observers;
 
 pub use calc_from_coordinates::{r_end_squared, gyration_squared, cm};
 pub use builders::{RandomChain, cubic_grid_atoms, square_grid_atoms, PERMChainStep};

@@ -4,10 +4,11 @@ use std::ops::Range;
 use std::default::Default;
 use std::fmt;
 use std::fmt::{Display};
+use std::time::Instant;
 use rand::{Rng, SeedableRng};
 use rand::rngs::{SmallRng};
 
-use bioshell_sim::{System, Energy, ResizableSystem};
+use bioshell_sim::{System, Energy, ResizableSystem, ObserversSet};
 
 #[derive(Clone, Debug)]
 /// Counts how many system perturbations were successful.
@@ -123,8 +124,25 @@ pub trait Sampler<S: System, E: Energy<S>> {
     /// [`AcceptanceStatistics`](AcceptanceStatistics) structs that are stored se by each mover.
     fn make_sweeps(&mut self, n:usize, coords: &mut S, energy: &E);
 
-    /// Provides statistics of the success rate for this mover
-    // fn acceptance_criterion(&mut self) -> &mut T;
+    /// Run a Monte Carlo simulation
+    ///
+    /// A simulation consists of a `n_outer` rounds of `n_inner` Monte Carlo sweeps. After each
+    /// round of Monte Carlo sweeps observations are taken.
+    fn run_simulation(&mut self, n_inner:usize, n_outer: usize, coords: &mut S, energy: &E, observers: &mut ObserversSet<S>) {
+        // ---------- Run the simulation!
+        let start = Instant::now();
+        let mut recent_acceptance: Vec<AcceptanceStatistics> = vec![AcceptanceStatistics::default(); self.count_movers()];
+        for i in 0..n_outer {
+            self.make_sweeps(n_inner, coords, &energy);
+            print!("{:6} {:9.3}  ", i, energy.energy(&coords) / coords.size() as f64);
+            for i_mover in 0..self.count_movers() {
+                let stats = self.get_mover(i_mover).acceptance_statistics();
+                print!("{:5.3} ", stats.recent_success_rate(&recent_acceptance[i_mover]));
+                recent_acceptance[i_mover] = stats;
+            }
+            println!(" {:.2?}", start.elapsed());
+        }
+    }
 
     /// Add a mover to this set
     fn add_mover(&mut self, perturb_fn: Box<dyn Mover<S, E>>);

@@ -9,7 +9,8 @@ use clap::{Parser};
 
 use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, square_grid_atoms,
                           NbList, ArgonRules, pdb_to_coordinates};
-use bioshell_sim::{Energy, System};
+use bioshell_cartesians::observers::PdbTrajectory;
+use bioshell_sim::{Energy, Observer, ObserversSet, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbonded, PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, IsothermalMC, AdaptiveMCProtocol, AcceptanceCriterion};
@@ -105,7 +106,7 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> for DiskM
 
                     let str = format!("Inconsistent energy! Total {total_en_before} -> \
                         {total_en_after} with delta = {total_delta}, local delta: {local_delta} \
-                        after moveing disk {}", i_moved);
+                        after moving disk {}", i_moved);
                     panic!("{}", str);
                 }
             }
@@ -175,7 +176,6 @@ pub fn main() {
         box_length = box_width(R, n_atoms, density);
         coords.set_box_len(box_length);
     }
-    coordinates_to_pdb(&coords, 1, tra_fname.as_str(), false);
 
     info!("Simulation settings:
         temperature: {:.3}
@@ -210,17 +210,12 @@ pub fn main() {
     sampler.target_rate = 0.4;
 
     // ---------- Run the simulation!
-    let start = Instant::now();
-    let mut recent_acceptance = AcceptanceStatistics::default();
-    for i in 0..args.outer {
-        let stats = sampler.get_mover(0).acceptance_statistics();
-        let max_move_range = sampler.get_mover(0).max_range();
-        sampler.make_sweeps(args.inner,&mut system, &pairwise);
-        coordinates_to_pdb(&system.coordinates(), i as i16, tra_fname.as_str(), true);
-        let f_succ = stats.recent_success_rate(&recent_acceptance);
-        recent_acceptance = stats;
-        println!("{} {} {:.3} {:.3}  {:.2?}", i, pairwise.energy(&system)/system.size() as f64, f_succ,
-                 max_move_range, start.elapsed());
-    }
+    let mut observers: ObserversSet<CartesianSystem> = ObserversSet::new();
+    let mut tra = Box::new(PdbTrajectory::new(tra_fname, false));
+    tra.observe(&system);
+    tra.if_append = true;
+    observers.add_observer(tra, 1);
+    sampler.run_simulation(args.outer, args.inner, &mut system, &pairwise, &mut observers);
+
     coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
 }

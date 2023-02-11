@@ -6,7 +6,7 @@ use rand::rngs::{SmallRng};
 
 use clap::{Parser};
 
-use bioshell_sim::{Energy, System};
+use bioshell_sim::{Energy, ObserversSet, System};
 use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, Mover, AcceptanceCriterion};
 
 
@@ -188,14 +188,6 @@ pub fn main() {
     simple_sampler.add_mover(Box::new(FlipMover::new()));
 
     // ---------- Run the simulation!
-    let start = Instant::now();
-    let mut recent_acceptance = AcceptanceStatistics::default();
-    for i in 0..args.outer {
-        let stats = simple_sampler.get_mover(0).acceptance_statistics();
-        simple_sampler.make_sweeps(args.inner,&mut ising, &en);
-        let f_succ = stats.recent_success_rate(&recent_acceptance);
-        recent_acceptance = stats;
-        println!("{:6} {:9.3} {:5.3} {:.2?}", i, en.energy(&ising) / ising.size() as f64, f_succ, start.elapsed());
-        // println!("{}",ising);
-    }
+    let mut observations: ObserversSet<IsingSystem> = ObserversSet::new();
+    simple_sampler.run_simulation(args.inner, args.outer, &mut ising, &en, &mut observations);
 }
