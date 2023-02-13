@@ -40,7 +40,8 @@ pub struct ArgonRules;
 
 impl NbListRules for ArgonRules {
 
-    /// Always returns ``false``, because all atoms interact
+    /// Always returns ``false``, because all atoms interact.
+    /// All arguments of this method are therefore ignored
     fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool { false }
 
     /// Returns ``false``, because all atom pairs are included in pairwise interactions.
@@ -69,12 +70,15 @@ pub struct PolymerRules;
 
 impl NbListRules for PolymerRules {
 
-    /// Always returns ``false``, because all atoms interact
+    /// Always returns ``false``, because all atoms of a polymer interact
+    /// All arguments of this method are therefore ignored
     fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool { false }
 
     /// Excludes direct neighbors in a chain.
     ///
-    /// I.e. returns ``true`` if ``|i-j| < 2`` and the two atoms belong to the same chain
+    /// I.e. returns ``true`` if ``|i-j| < 2`` and the two atoms belong to the same chain;
+    /// this prevents contact (non-bonded) interaction between atoms (beads) that are connected
+    /// with bonds (e.g. harmonic springs). For any other pair of atoms this method returns `true`
     fn if_pair_excluded(&self, coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool {
 
         // ---------- atoms of different chains always interact
@@ -157,10 +161,13 @@ impl NbList {
     /// Updates the list of neighbors after a given atom was moved.
     pub fn update(&mut self, system: &Coordinates, which_atom: usize) {
 
-        // --- Is the atom relevant for this list?
+        // ---------- Is the atom relevant for this list?
         if self.nb_rules.if_atom_excluded(system, which_atom) { return;}
 
-        // --- accumulate the displacement
+        // ---------- Extend the data structure if needed
+        self.extend(&system);
+
+        // ---------- accumulate the displacement
         let x = system.x(which_atom);
         let y = system.y(which_atom);
         let z = system.z(which_atom);

@@ -141,6 +141,7 @@ pub trait Sampler<S: System, E: Energy<S>> {
                 recent_acceptance[i_mover] = stats;
             }
             println!(" {:.2?}", start.elapsed());
+            observers.observe(coords);
         }
     }
 

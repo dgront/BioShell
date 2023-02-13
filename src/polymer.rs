@@ -7,8 +7,9 @@ use log::{info};
 use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, RandomChain, pdb_to_coordinates,
                           gyration_squared, r_end_squared, NbList, PolymerRules};
 use bioshell_cartesians::movers::SingleAtomMove;
+use bioshell_cartesians::observers::{REndSquared, GyrationSquared, PdbTrajectory};
 
-use bioshell_sim::{Energy, System};
+use bioshell_sim::{Energy, ObserversSet, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, AdaptiveMCProtocol, StepwiseBuilder};
@@ -132,21 +133,11 @@ pub fn main() {
     let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));
     sampler.target_rate = 0.4;
 
-    let start = Instant::now();
-    let mut recent_acceptance = AcceptanceStatistics::default();
-    println!("#cycle   energy  f_acc   r_end_sq     rg_sq   time");
-    for i in 0..args.outer {
-        let stats = sampler.get_mover(0).acceptance_statistics();
-        sampler.make_sweeps(args.inner,&mut system, &total);
-        coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str(), true);
-        let f_succ = stats.recent_success_rate(&recent_acceptance);
-        let max_move_range = sampler.get_mover(0).max_range();
-        recent_acceptance = stats;
-        println!("{:6} {:9.3} {:5.3} {:5.3} {:>10.3} {:>10.3}  {:.2?}", i, total.energy(&system), f_succ,
-                 max_move_range,
-                 r_end_squared(&system.coordinates(), 0),
-                 gyration_squared(&&system.coordinates(), 0), start.elapsed());
-    }
+    let mut observations: ObserversSet<CartesianSystem> = ObserversSet::new();
+    observations.add_observer(Box::new(PdbTrajectory::new(tra_fname, true)), 1);
+    observations.add_observer(Box::new(GyrationSquared::new("rg.dat".to_string(), true)), 1);
+    observations.add_observer(Box::new(REndSquared::new("r2.dat".to_string(), true)), 1);
+    sampler.run_simulation(args.inner, args.outer, &mut system, &total, &mut observations);
 
     coordinates_to_pdb(&system.coordinates(), 1i16, format!("{}final.pdb", &prefix).as_str(), false);
 }

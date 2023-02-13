@@ -41,12 +41,16 @@ pub trait ResizableSystem: System {
 }
 
 
-/// Observer takes observations of a system of a generic type `O`
+/// Observer takes observations of a system of a generic type `S`.
+///
+/// Observers are used to observe properties of a system during a simulation.
+/// The `Sampler::run_simulation()` method will call observers provided in a [`ObserversSet`](ObserversSet)
+/// at every outer loop iteration.
 pub trait Observer {
     /// The type of objects being observed byt his observer
-    type O;
+    type S;
     /// Takes observations
-    fn observe(&mut self, object: &Self::O);
+    fn observe(&mut self, object: &Self::S);
     fn flush(&mut self);
     fn name(&self) -> &str;
     fn as_any(&self) -> &dyn Any;
@@ -55,10 +59,11 @@ pub trait Observer {
 
 /// A set of observers, that observe a system of a generic type `S`
 ///
-///
+/// `ObserversSet` should be provided to `Sampler::run_simulation()` method to take observations
+/// during a simulation.
 pub struct  ObserversSet<S: 'static> {
     n_called: u32,
-    observers: Vec<Box<dyn Observer<O = S>>>,
+    observers: Vec<Box<dyn Observer<S = S>>>,
     lag_times : Vec<u32>
 }
 
@@ -68,12 +73,12 @@ impl<S> ObserversSet<S> {
         ObserversSet {n_called: 0, observers:Vec::new(), lag_times:Vec::new() }
     }
 
-    pub fn add_observer(&mut self, o: Box<dyn Observer<O=S>>, lag_time: u32) {
+    pub fn add_observer(&mut self, o: Box<dyn Observer<S=S>>, lag_time: u32) {
         self.observers.push(o);
         self.lag_times.push(lag_time);
     }
 
-    pub fn get_observers(&self) -> &Vec<Box<dyn Observer<O=S>>> { &self.observers }
+    pub fn get_observers(&self) -> &Vec<Box<dyn Observer<S=S>>> { &self.observers }
 
     pub fn observe(&mut self, object: &S) {
         for i in 0..self.observers.len() {

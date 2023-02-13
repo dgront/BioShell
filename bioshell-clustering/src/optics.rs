@@ -31,8 +31,6 @@ pub trait PointsWithDistance {
     /// # Arguments
     /// * `i` - index of the first point
     /// * `j` - index of the second point
-    /// # Returns
-    /// the distance between the two points
     fn distance(&self, i:usize, j:usize) -> f64;
 
     /// Returns a vector of neighbors located close enough to a given point

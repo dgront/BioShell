@@ -3,8 +3,9 @@ use std::time::Instant;
 use clap::{Parser};
 
 use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubic_grid_atoms, NbList, ArgonRules};
-use bioshell_sim::{Energy, System};
+use bioshell_sim::{Energy, Observer, ObserversSet, System};
 use bioshell_cartesians::movers::{ChangeVolume, SingleAtomMove};
+use bioshell_cartesians::observers::PdbTrajectory;
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic};
 use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, AdaptiveMCProtocol};
 
@@ -103,24 +104,12 @@ pub fn main() {
     }
 
     // ---------- Run the simulation!
-    let start = Instant::now();
-    // let mut recent_acceptance = AcceptanceStatistics::default();
-    let mut recent_acceptance= vec!(AcceptanceStatistics::default(); sampler.count_movers());
-    for i in 0..args.outer {
+    let mut observers: ObserversSet<CartesianSystem> = ObserversSet::new();
+    let mut pdb_tra = PdbTrajectory::new(tra_fname, false);
+    pdb_tra.observe(&system);
+    pdb_tra.if_append = true;
+    observers.add_observer(Box::new(pdb_tra), 1);
+    sampler.run_simulation(args.inner, args.outer, &mut system, &pairwise_lj, &mut observers);
 
-        sampler.make_sweeps(args.inner,&mut system, &pairwise_lj);
-
-        coordinates_to_pdb(&system.coordinates(), (i+1) as i16, tra_fname.as_str(), true);
-
-        print!("{:6} {:9.3}  ", i, pairwise_lj.energy(&system) / system.size() as f64);
-        for i in 0..sampler.count_movers() {
-            let mover = sampler.get_mover(i);
-            let stats = mover.acceptance_statistics();
-            let f_succ = stats.recent_success_rate(&recent_acceptance[i]);
-            recent_acceptance[i] = stats;
-            print!("{:5.3} {:6.4?}   ",  f_succ, mover.max_range());
-        }
-        println!(" {:.2?}", start.elapsed());
-    }
     coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
 }

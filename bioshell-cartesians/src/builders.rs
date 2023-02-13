@@ -20,10 +20,10 @@ impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for RandomCha
 
     fn start(&mut self, system: &mut CartesianSystem, _energy: &E) -> f64 {
         let c = system.box_len() / 2.0;
+        system.set_size(2);
         system.set(0, c, c, c);
         let v = random_point_nearby(&system.coordinates()[0], self.bond_length);
         system.copy_from_vec(1, &v);
-        system.set_size(2);
 
         return 1.0
     }
@@ -52,13 +52,11 @@ impl<E: Energy<CartesianSystem>> StepwiseBuilder<CartesianSystem, E> for RandomC
 
     fn build(&mut self, system: &mut CartesianSystem, energy: &E) -> f64 {
         let mut step = RandomChain::default();
-        let mut w_total = 1.0;
         step.start(system, energy);
         while system.size() < system.capacity() {
             let w = step.grow_by_one(system, energy);
-            w_total *= w;
         }
-        return w_total;
+        return 1.0;
     }
 }
 
