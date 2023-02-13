@@ -3,14 +3,14 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 
 #[derive(Default, Clone, Debug)]
+/// Amino acid / nucleic sequence.
+///
 pub struct Sequence {
     id: String,
     seq: Vec<char>,
 }
 
 
-/// Amino acid / nucleic sequence.
-///
 impl Sequence {
     /// Create a new instance of a Sequence.
     /// # Example
@@ -73,9 +73,9 @@ impl fmt::Display for Sequence {
     /// use bioshell_core::sequence::Sequence;
     /// use std::fmt::Write;
     /// // create a Sequence object
-    /// let read_id = "2gb1";
+    /// let seq_id = "2gb1";
     /// let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
-    /// let seq = Sequence::from_attrs(read_id, sequence);
+    /// let seq = Sequence::from_attrs(seq_id, sequence);
     ///
     /// let mut actual = String::new();
     /// // populate `actual` with a string representation of the sequence
