@@ -1,3 +1,4 @@
+//! Provides means to build a Cartesian system, either in a deterministic or a stochastic way
 use rand::{Rng};
 
 use bioshell_montecarlo::{StepwiseBuilder, StepwiseMover};
