@@ -48,11 +48,17 @@ impl ResidueTypeOrder {
 }
 
 #[derive(Clone, Debug)]
+/// Represents sequence profile.
+///
 /// Sequence profile describes preference for each of the 20 standard amino acid residue types
 /// (possibly also with the gap symbol) at each of the residue positions in the query sequence.
+/// For a protein sequence of N residues, these preferences are stored as a Nx20 probability matrix
+/// normalised row-wise, i.e. they sum up to `1.0` for each sequence position. These probabilities
+/// reflect how likely is to find any amino acid type (say, GLY or TYR) at that position.
 ///
-/// The preferences are represented as probabilities that add to `1.0` for each sequence position
-///
+/// Integer indexes are used to refer to both a residue position in a sequence and an amino acid (ro nucleotide) type;
+/// both indexes start from 0. Residue type indexes must be consistent with the [`ResidueTypeOrder`]
+/// object used by a given profile.
 pub struct SequenceProfile {
     mapping: ResidueTypeOrder,
     data: Vec<Vec<f32>>,
@@ -86,12 +92,14 @@ impl SequenceProfile {
         SequenceProfile{mapping, data}
     }
 
+    /// Returns a probability for a given sequence position and a residue type.
     pub fn fraction(&self, pos: usize, aa: usize) -> f32 { self.data[pos][aa] }
 
+    /// Provides unmutable access to the residue ordering used by this sequence profile
     pub fn residue_order(&self) -> &ResidueTypeOrder { &self.mapping }
 
+    /// Returns the number of sequence positions in this sequence profile
     pub fn len(&self) -> usize { self.data.len() }
-
 }
 
 impl Display for SequenceProfile {
