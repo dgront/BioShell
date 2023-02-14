@@ -9,7 +9,7 @@ use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{PERM, StepwiseBuilder, StepwiseMover};
 use bioshell_numerical::Vec3;
 
-use bioshell_sim::{Energy, System};
+use bioshell_sim::{Energy, ResizableSystem, System};
 
 /// Builds a simple chain on 2D square lattice
 pub struct ChainBuilder {

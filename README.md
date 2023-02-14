@@ -33,6 +33,10 @@ cargo build --release
 ```bash
 cargo build --example polymer_perm --release
 ```
+- to compile all examples:
+```bash
+cargo build --examples --release
+```
 
  - to build documentation:
 ```
