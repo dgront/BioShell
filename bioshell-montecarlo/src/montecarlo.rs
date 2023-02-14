@@ -13,6 +13,8 @@ use bioshell_sim::{System, Energy, ResizableSystem, ObserversSet};
 #[derive(Clone, Debug)]
 /// Counts how many system perturbations were successful.
 ///
+/// Each Monte Carlo [`Mover`](Mover) must contain an [AcceptanceStatistics]
+/// and update its counters accordingly to the outcome of a [`Mover::perturb()`] call.
 /// The total number of Monte Carlo moves attempted is `n_succ + n_failed`
 pub struct AcceptanceStatistics {
     /// number of successful perturbations
@@ -22,7 +24,7 @@ pub struct AcceptanceStatistics {
 }
 
 impl AcceptanceStatistics {
-    /// Computes the success rate for a given Monte Carlo Markov chain
+    /// Computes the success rate for a given Monte Carlo Markov chain.
     ///
     /// Simply returns `n_succ / (n_succ + n_failed)`
     pub fn success_rate(&self) -> f64 {
@@ -158,7 +160,7 @@ pub trait Sampler<S: System, E: Energy<S>> {
     fn count_movers(&self) -> usize;
 }
 
-
+/// Isothermal Monte Carlo simulation.
 pub struct IsothermalMC<S: System, E: Energy<S>> {
     acceptance_crit: MetropolisCriterion,
     movers: Vec<Box<dyn Mover<S, E>>>
