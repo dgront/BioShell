@@ -5,14 +5,14 @@ use clap::{Parser};
 use log::{info};
 
 use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, RandomChain, pdb_to_coordinates,
-                          gyration_squared, r_end_squared, NbList, PolymerRules};
+                          NbList, PolymerRules, box_width};
 use bioshell_cartesians::movers::SingleAtomMove;
 use bioshell_cartesians::observers::{REndSquared, GyrationSquared, PdbTrajectory};
 
 use bioshell_sim::{Energy, ObserversSet, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, AdaptiveMCProtocol, StepwiseBuilder};
+use bioshell_montecarlo::{Sampler, IsothermalMC, AdaptiveMCProtocol, StepwiseBuilder};
 
 use bioshell_ff::{TotalEnergy};
 use bioshell_ff::bonded::SimpleHarmonic;
@@ -50,12 +50,6 @@ struct Args {
     buffer: f64,
 }
 
-
-fn box_width(bead_radius: f64, n_atoms: usize, density: f64) -> f64 {
-
-    let v: f64 = 0.75 * std::f64::consts::PI * bead_radius.powi(3);
-    (n_atoms as f64 * v / density).powf(1.0 / 3.0)
-}
 
 pub fn main() {
     const E_REP: f64 = 4.25;

@@ -39,6 +39,18 @@ macro_rules! closest_image {
     }
 }
 
+/// Finds the length of a simulation box to achieve assumed density
+///
+/// # Arguments
+/// * `atom_radius` - atomic radius is same for all atoms of the system
+/// * `n_atoms` - number of atoms in the system
+/// * `density` - target density
+pub fn box_width(atom_radius: f64, n_atoms: usize, density: f64) -> f64 {
+
+    let v: f64 = 4.0/3.0 * std::f64::consts::PI * atom_radius.powi(3);
+    (n_atoms as f64 * v/density).powf(1.0/3.0)
+}
+
 impl Coordinates {
 
     pub fn new(n: usize) -> Coordinates {

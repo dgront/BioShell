@@ -2,12 +2,12 @@ use std::time::Instant;
 
 use clap::{Parser};
 
-use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubic_grid_atoms, NbList, ArgonRules};
-use bioshell_sim::{Energy, Observer, ObserversSet, System};
+use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubic_grid_atoms, NbList, ArgonRules, box_width};
+use bioshell_sim::{Observer, ObserversSet};
 use bioshell_cartesians::movers::{ChangeVolume, SingleAtomMove};
 use bioshell_cartesians::observers::PdbTrajectory;
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, AdaptiveMCProtocol};
+use bioshell_montecarlo::{Sampler, IsothermalMC, AdaptiveMCProtocol};
 
 
 #[derive(Parser, Debug)]
@@ -39,12 +39,6 @@ struct Args {
     /// prefix for output file names
     #[clap(long, default_value = "")]
     prefix: String,
-}
-
-fn box_width(sphere_radius: f64, n_spheres: usize, density: f64) -> f64 {
-
-    let v: f64 = 4.0/3.0 * std::f64::consts::PI * sphere_radius.powi(3);
-    (n_spheres as f64 * v/density).powf(1.0/3.0)
 }
 
 pub fn main() {
