@@ -86,11 +86,6 @@ pub fn main() {
         n_beads = args.nbeads;
         n_chains = args.nchains;
         coords = Coordinates::new(n_beads);
-        box_length = match args.boxwidth {
-            None => {box_width(E_REP, n_beads, density)},
-            Some(w) => {w}
-        };
-        coords.set_box_len(box_length);
     } else {
         let res = pdb_to_coordinates(&args.infile).ok();
         match res {
@@ -99,9 +94,12 @@ pub fn main() {
         };
         n_beads = coords.size();
         n_chains = coords.count_chains();
-        box_length = box_width(E_REP, n_beads, density);
-        coords.set_box_len(box_length);
     }
+    box_length = match args.boxwidth {
+        None => {box_width(E_REP, n_beads, density)},
+        Some(w) => {w}
+    };
+    coords.set_box_len(box_length);
 
     info!("Simulation settings:
         temperature: {:.3}
