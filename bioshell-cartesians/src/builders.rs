@@ -36,7 +36,7 @@ impl<E: Energy<CartesianSystem>> StepwiseMover<CartesianSystem, E> for RandomCha
         let mut n_try = 0;
         while n_try < self.n_attempts {
             let v = random_point_nearby(&system.coordinates()[i-1], self.bond_length);
-            system.copy_from_vec(i, &v);
+            system.set(i,v.x, v.y, v.z);
             system.update_nbl(i);
 
             let en = energy.energy_by_pos(system, i);
@@ -118,7 +118,7 @@ impl<E: Energy<Coordinates>> StepwiseMover<Coordinates, E> for PERMChainStep {
         }
 
         // ---------- set the coordinates
-        system.copy_from_vec(i, &vn[which_v]);
+        system.set(i,vn[which_v].x, vn[which_v].y, vn[which_v].z);
 
         // ---------- return the statistical weight
         return total;
