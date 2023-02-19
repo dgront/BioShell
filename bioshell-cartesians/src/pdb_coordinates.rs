@@ -11,7 +11,9 @@ const CHAINS_ORDER: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 /// Writes given [`Coordinates`](Coordinates) coordinates to a PDB file.
 ///
-/// All atoms are written as poly-alanine chains and named ``" CA "``
+/// All atoms are written as poly-alanine chains and named ``" CA "``; chains are indexed by
+/// subsequent capital letters, followed by digits if necessary. **Note**: this method can handle
+/// a system comprising no more that 37 chains.
 ///
 /// # Arguments
 /// * `chain` - coordinates to be written
@@ -85,7 +87,7 @@ fn vec_from_atom_line(atom_line: &String) -> Vec3 {
 
     let mut v = Vec3{x: 0.0, y:0.0, z:0.0, atom_type: 0, chain_id: 0, res_type: 0};
     let chars: Vec<char> = atom_line.chars().collect();
-    v.chain_id = CHAINS_ORDER.find(chars[21]).unwrap() as i16;
+    v.chain_id = CHAINS_ORDER.find(chars[21]).unwrap() as u16;
     xzy_from_atom_line(atom_line, &mut v.x, &mut v.y, &mut v.z);
     v.x = atom_line[30..38].trim().parse::<f64>().unwrap();
     v.y = atom_line[38..46].trim().parse::<f64>().unwrap();

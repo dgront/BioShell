@@ -13,11 +13,11 @@ pub struct Vec3 {
     /// the ``z`` coordinate of this vector
     pub z: f64,
     /// residue type assigned to this vector
-    pub res_type: i8,
+    pub res_type: u8,
     /// atom type assigned to this vector
-    pub atom_type: i8,
+    pub atom_type: u8,
     /// index of a chain this atom belongs to
-    pub chain_id: i16
+    pub chain_id: u16
 }
 
 impl fmt::Debug for Vec3 {

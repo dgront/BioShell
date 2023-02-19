@@ -55,7 +55,7 @@ impl<E: Energy<CartesianSystem>> StepwiseBuilder<CartesianSystem, E> for RandomC
         let mut step = RandomChain::default();
         step.start(system, energy);
         while system.size() < system.capacity() {
-            let w = step.grow_by_one(system, energy);
+            step.grow_by_one(system, energy);
         }
         return 1.0;
     }
@@ -97,7 +97,7 @@ impl<E: Energy<Coordinates>> StepwiseMover<Coordinates, E> for PERMChainStep {
         let mut vn: Vec<Vec3> = Vec::with_capacity(self.n_trials as usize);
         let center: Vec3 = (&system[i-1]).clone();
         // ---------- propose n_trials random proposals and score them
-        for k in 0..self.n_trials {
+        for _k in 0..self.n_trials {
             let v_k = random_point_nearby(&center, self.bond_length);
             system.copy_from_vec(i, &v_k);
             let en = energy.energy_by_pos(system, i);

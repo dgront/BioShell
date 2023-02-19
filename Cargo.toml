@@ -39,16 +39,9 @@ log = "0.4.0"
 env_logger = "0.9.0"
 
 [[bin]]
-name = "polymer"
-path = "src/polymer.rs"
+name = "surpass_alfa"
+path = "src/surpass_alfa.rs"
 
-[[bin]]
-name = "disks"
-path = "src/disks.rs"
-
-[[bin]]
-name = "argon"
-path = "src/argon.rs"
 
 [package.metadata.docs.rs]
 # To build locally use

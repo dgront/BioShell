@@ -5,24 +5,22 @@ use clap::{Parser};
 use log::{info};
 
 use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, RandomChain, pdb_to_coordinates,
-                          gyration_squared, r_end_squared, NbList, PolymerRules};
+                          box_width, NbList, PolymerRules};
 use bioshell_cartesians::movers::SingleAtomMove;
 use bioshell_cartesians::observers::{REndSquared, GyrationSquared, PdbTrajectory};
 
 use bioshell_sim::{Energy, ObserversSet, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, IsothermalMC, AdaptiveMCProtocol, StepwiseBuilder};
+use bioshell_montecarlo::{Sampler, IsothermalMC, AdaptiveMCProtocol, StepwiseBuilder};
 
 use bioshell_ff::{TotalEnergy};
 use bioshell_ff::bonded::SimpleHarmonic;
 
 #[derive(Parser, Debug)]
-#[clap(name = "polymer")]
+#[clap(name = "surpass_alfa")]
 #[clap(version = "0.2")]
-#[clap(about = "Simple polymer model", long_about = None)]
-/// simulation of a simple polymer model
-/// say polymer -h to see options
+#[clap(about = "SURPASS-alfa is a coarse grained protein model", long_about = None)]
 struct Args {
     /// staring conformation in the PDB format
     #[clap(short, long, default_value = "", short='f')]
@@ -30,12 +28,18 @@ struct Args {
     /// temperature of the simulation
     #[clap(short, long, default_value_t = 1.0, short='t')]
     temperature: f64,
-    /// Number of beads of a polymer chain
+    /// Total number of residues from all chains in the simulation
     #[clap(short, long, default_value_t = 100, short='n')]
     nbeads: usize,
-    /// by-volume density of the simulated system
+    /// Number of chains of the modelled system
+    #[clap(short, long, default_value_t = 1, short='c')]
+    nchains: usize,
+    /// by-volume density of the simulated system; surpass_alfa will automatically calculate the width of a simulation box
     #[clap(short, long, default_value_t = 0.4, short='d')]
     density: f64,
+    /// width of a simulation box in Angstroms; to avoid manual calculations, use the "--density" option to automatically assign box width to match given density of the system
+    #[clap(short, long, short='w')]
+    boxwidth: Option<f64>,
     /// Inner cycles
     #[clap(short, long, default_value_t = 100)]
     inner: usize,
@@ -50,12 +54,6 @@ struct Args {
     buffer: f64,
 }
 
-
-fn box_width(bead_radius: f64, n_atoms: usize, density: f64) -> f64 {
-
-    let v: f64 = 0.75 * std::f64::consts::PI * bead_radius.powi(3);
-    (n_atoms as f64 * v / density).powf(1.0 / 3.0)
-}
 
 pub fn main() {
     const E_REP: f64 = 4.25;
@@ -81,12 +79,17 @@ pub fn main() {
 
     // ---------- Create system's coordinates
     let n_beads: usize;
+    let n_chains: usize;
     let mut coords: Coordinates;
 
     if args.infile == "" {
         n_beads = args.nbeads;
+        n_chains = args.nchains;
         coords = Coordinates::new(n_beads);
-        box_length = box_width(E_REP, n_beads, density);
+        box_length = match args.boxwidth {
+            None => {box_width(E_REP, n_beads, density)},
+            Some(w) => {w}
+        };
         coords.set_box_len(box_length);
     } else {
         let res = pdb_to_coordinates(&args.infile).ok();
@@ -95,6 +98,7 @@ pub fn main() {
             _ => panic!("Can't read from file >{}<", args.infile)
         };
         n_beads = coords.size();
+        n_chains = coords.count_chains();
         box_length = box_width(E_REP, n_beads, density);
         coords.set_box_len(box_length);
     }
@@ -119,7 +123,16 @@ pub fn main() {
     let mut total = TotalEnergy::new();
     total.add_component(Box::new(harmonic), 1.0);
     total.add_component(Box::new(contacts), 1.0);
-    if system.size() == 0 { RandomChain::default().build(&mut system, &total); }
+    if system.size() == 0 {
+        RandomChain::default().build(&mut system, &total);
+        let res_per_chain = n_beads / n_chains;
+        let mut chain_ranges: Vec<(usize, usize)> = vec![];
+        for i in 0..n_chains {
+            chain_ranges.push((i * res_per_chain, (i + 1) * res_per_chain));
+        }
+        chain_ranges[n_chains - 1].1 = n_beads;
+        system.set_chains(&chain_ranges);
+    }
 
     // ---------- Show the starting point
     coordinates_to_pdb(&system.coordinates(), 0, tra_fname.as_str(), false);

@@ -71,6 +71,20 @@ impl CartesianSystem {
         self.coordinates.set(i, x, y, z);
     }
 
+    /// Assigns the residue type for the atom `i` to `t`
+    pub fn set_res_type(&mut self, i:usize, t: u8) { self.coordinates[i].res_type = t; }
+
+    /// Assigns the type of the atom `i` to `t`
+    pub fn set_atom_type(&mut self, i:usize, t: u8) { self.coordinates[i].atom_type = t; }
+
+
+    /// Assign each atom of this system to a chain.
+    ///
+    /// This method calls [`Coordinates::set_chains()`] to assign chains of this system
+    pub fn set_chains(&mut self, chain_ranges: &Vec<(usize, usize)>) {
+        self.coordinates.set_chains(chain_ranges);
+    }
+
     /// Adds x, y, z to a given atom of this system
     ///
     /// This method **does not** trigger a non-bonded list update. To recalculate neighbors for

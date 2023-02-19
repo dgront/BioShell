@@ -145,10 +145,46 @@ impl Coordinates {
         d
     }
 
+    /// Provides the chain index type of the `i`-th atom of this system
+    pub fn chain_id(&self, i:usize) -> u16 { self.v[i].chain_id }
+
+    /// Provides the residue type of the `i`-th **atom** of this system
+    pub fn res_type(&self, i:usize) -> u8 { self.v[i].res_type }
+
+    /// Provides the type of the `i`-th atom of this system
+    pub fn atom_type(&self, i:usize) -> u8 { self.v[i].atom_type }
+
+    /// Assign each atom of this system to a chain
+    ///
+    /// This method assigns a new chain index for each atom based of a vector of atom ranges.
+    /// The number of chains of this system will we equal to `chain_ranges.size()`,
+    /// the `k`-th chain will include atoms `$r0 \le i \t r1$` where `$r0$` and `$r1$` are defined
+    /// by the `k`-th range: from `chain_ranges[k].0` to `chain_ranges[k].1`
+    ///
+    /// Assigning all the chains for this [`Coordinates`] help avoiding incorrect assignments
+    pub fn set_chains(&mut self, chain_ranges: &Vec<(usize, usize)>) {
+        assert_eq!(chain_ranges.last().unwrap().1, self.current_size,
+                   "chain ranges do not mach the size of the coordinates");
+        let mut id: u16 = 0;
+        for r in chain_ranges {
+            for i in r.0..r.1 { self.v[i].chain_id = id; }
+            id += 1;
+        }
+    }
+
+    /// Assigns the residue type for the **atom** `i` to `t`
+    pub fn set_res_type(&mut self, i:usize, t: u8) { self.v[i].res_type = t; }
+
+    /// Assigns the type of the atom `i` to `t`
+    pub fn set_atom_type(&mut self, i:usize, t: u8) { self.v[i].atom_type = t; }
+
+    /// 'x' coordinate of `i`-th atom of this system
     pub fn x(&self, i:usize) -> f64 { self.v[i].x }
 
+    /// 'y' coordinate of `i`-th atom of this system
     pub fn y(&self, i:usize) -> f64 { self.v[i].y }
 
+    /// 'z' coordinate of `i`-th atom of this system
     pub fn z(&self, i:usize) -> f64 { self.v[i].z }
 
     pub fn set_x(&mut self, i:usize, x: f64) {  wrap_coordinate_to_box!(x, self.box_len, self.v[i].x); }
