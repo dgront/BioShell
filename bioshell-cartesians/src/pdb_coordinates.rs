@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{self, BufReader, BufRead, Write};
 
-use bioshell_sim::System;
+use bioshell_sim::{ResizableSystem, System};
 use bioshell_numerical::{Vec3};
 use crate::Coordinates;
 
@@ -28,10 +28,17 @@ pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str, if
     let mut out_writer = out_writer(&out_fname, if_append);
 
     out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
+    let mut i_res = 0;
+    let mut prev_chain: char = ' ';
     for i in 0..chain.size() {
         let chain_id = CHAINS_ORDER.chars().nth(chain[i].chain_id as usize).unwrap();
+        if chain_id != prev_chain {
+            prev_chain = chain_id;
+            i_res = 0;
+        }
         out_writer.write(format!("ATOM   {:4}{}  ALA {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
-                                 i, " CA ", chain_id, i, chain.x(i), chain.y(i), chain.z(i)).as_bytes()).ok();
+                                 i, " CA ", chain_id, i_res, chain.x(i), chain.y(i), chain.z(i)).as_bytes()).ok();
+        i_res += 1
     }
     out_writer.write(b"ENDMDL\n").ok();
 }
@@ -66,8 +73,10 @@ pub fn pdb_to_coordinates(input_fname: &str) -> Result<Coordinates, io::Error> {
     }
 
     let mut coords: Coordinates = Coordinates::new(buff.len());
+    coords.set_size(buff.len());
     for i in 0..buff.len() {
         coords.set(i, buff[i].x, buff[i].y, buff[i].z);
+        coords[i].chain_id = buff[i].chain_id;
     }
 
     return Ok(coords);
