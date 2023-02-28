@@ -14,14 +14,14 @@ the BioShell v.3 package.
 ## Project structure
 Curretnly the BioShell v.4 project has been divided into the following crates:
 
- - bioshell-core
- - bioshell-sim
- - bioshell-montecarlo
- - bioshell-statistics
- - bioshell-numerical
- - bioshell-clustering
- - bioshell-cartesians
- - bioshell-ff
+ - **bioshell-core**: core BioShell's functionality
+ - **bioshell-sim**: base traits (interfaces) defining molecular simulation engine 
+ - **bioshell-montecarlo**: Monte Carlo sampling schemes
+ - **bioshell-statistics**: statistical utilities used in bioinformatics applications as well as during simulations
+ - **bioshell-numerical**: data structures (such as a 3D vector) and numerical utilities that operate on them 
+ - **bioshell-clustering**: clustering methods, such as K-means and OPTICS
+ - **bioshell-cartesians**: provides structs necessary for modeling Cartesian systems, such as polymers, argon fluid, etc.
+ - **bioshell-ff**: provides molecular force fields
 
 ## Building
 You need to install `rust` toolchain to compile the package.
