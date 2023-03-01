@@ -24,21 +24,30 @@ Curretnly the BioShell v.4 project has been divided into the following crates:
  - **bioshell-ff**: provides molecular force fields
 
 ## Building
-You need to install `rust` toolchain to compile the package.
-- to compile all libaries and executables:
+You need to install `rust` toolchain to compile the package. You can:
+ 
+ - compile the whole project, i.e. all its libraries (called crates) by executing the following command in the root folder of the project: 
 ```bash
 cargo build --release
 ```
- - to compile an example:
-```bash
-cargo build --example polymer_perm --release
-```
-- to compile all examples:
+This will compile also all the executables (currently the ``surpass_alfa`` application)
+- compile all examples:
 ```bash
 cargo build --examples --release
 ```
+- compile a selected example:
+```bash
+cargo build --example polymer_perm --release
+```
+All the above commands compile the *release* (i.e. optimized) version. To obtain the *debug* build, just remove the ``--release`` flag.
 
- - to build documentation:
+Documentation has to be built separately for each crate. Enter the crate folder (e.g. ``bioshell-statistics``) and execute the following:
 ```
 RUSTDOCFLAGS="--html-in-header katex-header.html" cargo doc --no-deps --open
 ```
+
+To run all tests (for all the crates of the project), run the:
+```
+cargo test
+```
+command in the root folder. Alternatively, you can test a single crate by running that command in a respective subfolder.
