@@ -1,6 +1,7 @@
 use crate::Vec3;
 
 #[derive(Clone)]
+/// Linear transformations from one vector in space to another.
 pub struct Rototranslation {
     /// Rotation matrix represented row-wise
     pub m: [f64; 9],
@@ -52,6 +53,19 @@ impl Rototranslation {
 
     /// Apply this rototranslation to a given vector
     pub fn apply_mut(&self, v: &mut Vec3) {
+
+    }
+
+    /// Apply the inverse of this rototranslation to a given vector.
+    /// Returns a transformed copy of a given vector
+    pub fn apply_inverse(&self, v: &Vec3) -> Vec3 {
+        let mut v = v.clone();
+        self.apply_inverse_mut(&mut v);
+        return v;
+    }
+
+    /// Apply the inverse of this rototranslation to a given vector
+    pub fn apply_inverse_mut(&self, v: &mut Vec3) {
 
     }
 }
