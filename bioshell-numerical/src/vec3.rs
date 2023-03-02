@@ -3,7 +3,31 @@ use rand::distributions::Distribution;
 use rand::thread_rng;
 use rand_distr::Normal;
 
-/// 3D vector used to represent interaction center in a simulation
+
+/// 3D vector used to represent an interaction center in a simulation
+///
+/// Vec3 struct contains coordinates of a point, chain index and staple atom typing data. Its implementation
+/// provides basic vector-type calculations.
+///
+/// The example below tests a few basic properties of a unit cube of with 1.0:
+/// ```
+/// # use bioshell_numerical::{dihedral_angle4, planar_angle3, Vec3};
+/// let cube_points = [[0f64, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0],
+///     [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0, 1.0]];
+/// let cube_vec: Vec<Vec3>  = cube_points.iter().map(|p| Vec3::new(p[0],p[1],p[2])).collect();
+///
+/// let mut center_expected = Vec3::new(0.5, 0.5, 0.5);
+/// let mut center = Vec3::new(0.0, 0.0, 0.0);
+/// for v in &cube_vec { center.add(&v) }
+/// center.div(8.0);
+///
+/// assert!(center_expected.distance_to(&center) < 0.0001);
+/// center.sub(&center_expected);
+/// assert!(center.length() < 0.00001);
+///
+/// assert!((planar_angle3(&cube_vec[3], &cube_vec[0], &cube_vec[1]).to_degrees() - 90.0).abs() < 0.0001);
+/// assert!((dihedral_angle4(&cube_vec[3], &cube_vec[0], &cube_vec[1], &cube_vec[5]).to_degrees() - 90.0).abs() < 0.0001);
+/// ```
 #[derive(Clone)]
 pub struct Vec3 {
     /// the ``x`` coordinate of this vector
@@ -74,6 +98,22 @@ impl Vec3 {
     /// Assigns new content to this vector
     pub fn set(&mut self, v: &Vec3) { vec_operation!(self,v,=); }
 
+    /// Turns self into the opposite vector
+    /// Sum of a vector and its opposite should be zero:
+    /// ```
+    /// # use bioshell_numerical::Vec3;
+    /// let v1 = Vec3::new(1.0, 2.0, 3.0);
+    /// let mut v2 = v1.clone();
+    /// v2.opposite();
+    /// v2.add(&v1);
+    /// assert!(v2.length() < 0.00001);
+    /// ```
+    pub fn opposite(&mut self) {
+        self.x = -self.x;
+        self.y = -self.y;
+        self.z = -self.z;
+    }
+
     /// Adds a vector to this vector
     pub fn add(&mut self, v: &Vec3) { vec_operation!(self,v,+=); }
 
@@ -98,6 +138,12 @@ impl Vec3 {
     }
 
     /// Returns a normalized copy of this vector
+    /// ```
+    /// # use bioshell_numerical::Vec3;
+    ///
+    /// let v = Vec3::new(3.0, 2.0, 1.0).normalized();
+    /// assert!((v.length() - 1.0).abs() < 0.00001);
+    /// ```
     pub fn normalized(&self) -> Vec3 {
         let mut v = self.clone();
         v.div(self.length());
@@ -115,11 +161,47 @@ impl Vec3 {
     }
 
     /// Calculate a dot product of two vectors
+    ///
+    /// ```
+    /// # use bioshell_numerical::Vec3;
+    /// // let's try two ortogonal vectors
+    /// let v1 = Vec3::new(3.0, 2.0, 1.0);
+    /// let v2 = Vec3::new(-2.0, 3.0, 0.0);
+    /// assert!((Vec3::dot(&v1, &v2)).abs() < 0.00001);
+    /// ```
     pub fn dot(a: &Vec3, b: &Vec3) -> f64 {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
 
+    /// Calculate the squared distance to another point
+    /// ```
+    /// # use bioshell_numerical::Vec3;
+    /// // Classic Pytagoras triangle with edges 3, 4 and 5
+    /// let d = Vec3::new(3.0, 0.0, 0.0).distance_square_to(&Vec3::new(0.0, 4.0, 0.0));
+    /// assert!((d-25.0).abs() < 0.00001);
+    /// ```
+    pub fn distance_square_to(&self, p: &Vec3) -> f64 {
+        let mut d = self.x - p.x;
+        let mut d2 = d*d;
+        d = self.y - p.y;
+        d2 += d*d;
+        d = self.z - p.z;
+        d2 += d*d;
+        return d2;
+    }
+    /// Calculate the distance to another point
+    pub fn distance_to(&self, p: &Vec3) -> f64 { self.distance_square_to(p).sqrt() }
+
     /// Calculate vector product
+    /// ```
+    /// # use bioshell_numerical::Vec3;
+    /// // multiply X and Y versors to get Z
+    /// let x = Vec3::new(1.0, 0.0, 0.0);
+    /// let y = Vec3::new(0.0, 1.0, 0.0);
+    /// let z = Vec3::cross(&x, &y);
+    /// assert!((z.z - 1.0).abs() < 0.0001);
+    /// assert!((z.length() - 1.0).abs() < 0.0001);
+    /// ```
     pub fn cross(a: &Vec3, b: &Vec3) -> Vec3 {
         return Vec3 {
             x: a.y * b.z - a.z * b.y,
@@ -187,6 +269,7 @@ macro_rules! three_normal_rands {
 }
 
 /// Generates a random point on a unit sphere.
+///
 /// Coordinates of the newly generated point are returned as a tuple
 pub fn random_unit_versor() -> (f64, f64, f64) {
 
@@ -196,7 +279,7 @@ pub fn random_unit_versor() -> (f64, f64, f64) {
     return ((x/l) as f64, (y/l) as f64, (z/l) as f64);
 }
 
-/// Generates a random point that grows a chain in a random direction.
+/// Generates a random point nearby a given location.
 ///
 /// The newly generated point is randomly located on a sphere of a given `radius` and centered
 /// on a given `center`
