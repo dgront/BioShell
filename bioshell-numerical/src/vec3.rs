@@ -98,7 +98,8 @@ impl Vec3 {
     /// Assigns new content to this vector
     pub fn set(&mut self, v: &Vec3) { vec_operation!(self,v,=); }
 
-    /// Turns self into the opposite vector
+    /// Turns self into the opposite vector.
+    ///
     /// Sum of a vector and its opposite should be zero:
     /// ```
     /// # use bioshell_numerical::Vec3;
@@ -140,7 +141,6 @@ impl Vec3 {
     /// Returns a normalized copy of this vector
     /// ```
     /// # use bioshell_numerical::Vec3;
-    ///
     /// let v = Vec3::new(3.0, 2.0, 1.0).normalized();
     /// assert!((v.length() - 1.0).abs() < 0.00001);
     /// ```
@@ -192,7 +192,9 @@ impl Vec3 {
     /// Calculate the distance to another point
     pub fn distance_to(&self, p: &Vec3) -> f64 { self.distance_square_to(p).sqrt() }
 
-    /// Calculate vector product
+    /// Calculate vector product.
+    ///
+    /// This method does not normalize the input vectors.
     /// ```
     /// # use bioshell_numerical::Vec3;
     /// // multiply X and Y versors to get Z
