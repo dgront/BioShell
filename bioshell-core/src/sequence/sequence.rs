@@ -93,12 +93,14 @@ impl fmt::Display for Sequence {
     }
 }
 
+/// Read sequences in FASTA format from a buffer
+///
+/// To read a text file, use the [`from_file()`](from_file()) function
 pub fn from_fasta_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufRead {
 
     let mut out:Vec<Sequence> = Vec::new();
     let mut lines:Vec<String> = Vec::new();
     let mut buffer = String::new();
-    // let mut cnt: Option<usize>;
 
     loop {
         buffer.clear();
@@ -130,21 +132,6 @@ pub fn from_fasta_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufR
     }
 
     return out;
-}
-
-pub fn from_fasta_file(filename: &str) -> Vec<Sequence> {
-
-    // Open the file in read-only mode (ignoring errors).
-
-    let file = match File::open(filename) {
-        Ok(file) => file,
-        Err(_) => {
-            eprintln!("\nCan't open an input FASTA file: {}\n", filename);
-            std::process::exit(1);
-        }
-    };
-    let mut reader = BufReader::new(file);
-    return from_fasta_reader(&mut reader);
 }
 
 /// Read sequences in Stockholm format
@@ -190,6 +177,25 @@ pub fn from_stockholm_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: 
     }
 
     return out;
+}
+
+/// Reads sequences from a file in a format known to BioShell
+///
+/// This function opens a given file, creates a buffered reader and passes it to a format-specific
+/// reader function, such as [`from_stockholm_reader()`](from_stockholm_reader()) or
+/// [`from_fasta_reader()`](from_fasta_reader())
+pub fn from_file(filename: &str, reader_func: fn(&mut BufReader<File>) -> Vec<Sequence>) -> Vec<Sequence> {
+
+    // Open the file in read-only mode (ignoring errors).
+    let file = match File::open(filename) {
+        Ok(file) => file,
+        Err(_) => {
+            eprintln!("\nCan't open an input  file: {}\n", filename);
+            std::process::exit(1);
+        }
+    };
+    let mut reader = BufReader::new(file);
+    return reader_func(&mut reader);
 }
 
 /// Defines how A3M data will be processed
