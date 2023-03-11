@@ -19,7 +19,3 @@ clap = { version = "3.1.18", features = ["derive"] }
 
 bioshell-statistics = { path = "../bioshell-statistics" }
 bioshell-core = { path = "../bioshell-core" }
-
-[dependencies.pyo3]
-version = "0.15.1"
-features = ["extension-module"]

@@ -28,8 +28,9 @@ use rand_distr::Normal;
 /// assert!((planar_angle3(&cube_vec[3], &cube_vec[0], &cube_vec[1]).to_degrees() - 90.0).abs() < 0.0001);
 /// assert!((dihedral_angle4(&cube_vec[3], &cube_vec[0], &cube_vec[1], &cube_vec[5]).to_degrees() - 90.0).abs() < 0.0001);
 /// ```
-#[derive(Clone)]
-pub struct Vec3 {
+#[derive(Clone, Copy)]
+pub struct Vec3
+{
     /// the ``x`` coordinate of this vector
     pub x: f64,
     /// the ``y`` coordinate of this vector
@@ -75,7 +76,14 @@ macro_rules! float3_operation {
     };
 }
 
+
+
 impl Vec3 {
+    pub fn show(&self)
+    {
+        println!("[{},{},{}]", self.x, self.y, self.z);
+        println!(">{},{},{}<", self.atom_type, self.chain_id, self.res_type);
+    }
     /// Creates a new vector from given coordinates.
     ///
     /// ``res_type``, ``atom_type`` and ``chain_id`` are by default set to ``0``
@@ -116,9 +124,24 @@ impl Vec3 {
 
     /// Adds a vector to this vector
     pub fn add(&mut self, v: &Vec3) { vec_operation!(self,v,+=); }
+    pub fn add_s(v1: &Vec3, v2: &Vec3) ->Vec3
+    {
+        return Vec3::new(v1.x+v2.x,
+                         v1.y+v2.y,
+                         v1.z+v2.z);
+    }
 
     /// Subtracts a vector from this vector
-    pub fn sub(&mut self, v: &Vec3) { vec_operation!(self,v,-=); }
+    pub fn sub(&mut self, v: &Vec3)
+    {
+        vec_operation!(self,v,-=);
+    }
+    pub fn sub_s(v1: &Vec3, v2: &Vec3) ->Vec3
+    {
+        return Vec3::new(v1.x-v2.x,
+                         v1.y-v2.y,
+                         v1.z-v2.z);
+    }
 
     /// Subtracts a vector from this vector
     pub fn mul(&mut self, f: f64) { scalar_operation!(self,f,*=); }
@@ -133,7 +156,8 @@ impl Vec3 {
     pub fn sub3(&mut self, x:f64, y:f64, z:f64) { float3_operation!(self, -=, x, y, z); }
 
     /// Returns the squared length of this 3D vector
-    pub fn length_squared(&self) -> f64 {
+    pub fn length_squared(&self) -> f64
+    {
         return self.x * self.x + self.y * self.y + self.z * self.z;
     }
 
@@ -169,7 +193,8 @@ impl Vec3 {
     /// let v2 = Vec3::new(-2.0, 3.0, 0.0);
     /// assert!((Vec3::dot(&v1, &v2)).abs() < 0.00001);
     /// ```
-    pub fn dot(a: &Vec3, b: &Vec3) -> f64 {
+    pub fn dot(a: &Vec3, b: &Vec3) -> f64
+    {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
 
@@ -233,8 +258,8 @@ pub fn planar_angle3(a: &Vec3, b: &Vec3, c: &Vec3) -> f64 {
 
 
 /// Calculates a dihedral angle of the a-b-c-d points in 3D
-pub fn dihedral_angle4(a: &Vec3, b: &Vec3, c: &Vec3, d: &Vec3) -> f64 {
-
+pub fn dihedral_angle4(a: &Vec3, b: &Vec3, c: &Vec3, d: &Vec3) -> f64
+{
     let mut b0 = b.clone();             // b0 = -1.0*(b - a)
     b0.sub(a);
     b0.mul(-1.0);
@@ -258,7 +283,8 @@ pub fn dihedral_angle4(a: &Vec3, b: &Vec3, c: &Vec3, d: &Vec3) -> f64 {
     return f64::atan2(y, x);
 }
 
-macro_rules! three_normal_rands {
+macro_rules! three_normal_rands
+{
     ($rng:expr) => {
         {
             let mut rng = thread_rng();
@@ -271,8 +297,8 @@ macro_rules! three_normal_rands {
 /// Generates a random point on a unit sphere.
 ///
 /// Coordinates of the newly generated point are returned as a tuple
-pub fn random_unit_versor() -> (f64, f64, f64) {
-
+pub fn random_unit_versor() -> (f64, f64, f64)
+{
     let (x, y, z) = three_normal_rands!(rand::thread_rng());
     let mut l: f64 = x * x + y * y + z * z;
     l = l.sqrt();
@@ -283,8 +309,8 @@ pub fn random_unit_versor() -> (f64, f64, f64) {
 ///
 /// The newly generated point is randomly located on a sphere of a given `radius` and centered
 /// on a given `center`
-pub fn random_point_nearby(center: &Vec3, radius: f64) -> Vec3 {
-
+pub fn random_point_nearby(center: &Vec3, radius: f64) -> Vec3
+{
     let (mut x, mut y, mut z) = three_normal_rands!(rand::thread_rng());
     let mut l: f64 = x * x + y * y + z * z;
     l = l.sqrt() / radius;
