@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
@@ -6,7 +7,9 @@ use std::io::{BufRead, BufReader, Read};
 /// Amino acid / nucleic sequence.
 ///
 pub struct Sequence {
+    /// identifies this sequence
     id: String,
+    /// a sequence is represented as a vector of characters
     seq: Vec<char>,
 }
 
@@ -102,7 +105,7 @@ pub fn from_fasta_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufR
         let cnt = reader.read_line(&mut buffer);
         match cnt {
             Ok(cnt) => { if cnt == 0 { break; } },
-            Err(e) => panic!("cannot from a FASTA buffer, error occurred:  {:?}", e),
+            Err(e) => panic!("Cannot read from a FASTA buffer, error occurred:  {:?}", e),
         };
         lines.push(buffer.to_owned());
     }
@@ -142,6 +145,51 @@ pub fn from_fasta_file(filename: &str) -> Vec<Sequence> {
     };
     let mut reader = BufReader::new(file);
     return from_fasta_reader(&mut reader);
+}
+
+/// Read sequences in Stockholm format
+///
+/// For the detailed description of the format, see: https://sonnhammer.sbc.su.se/Stockholm.html
+pub fn from_stockholm_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufRead {
+
+    let mut out:Vec<Sequence> = Vec::new();
+    let mut lines:Vec<String> = Vec::new();
+    let mut buffer = String::new();
+    let mut data: HashMap<String, String> = HashMap::new();
+    let mut keys: Vec<String> = vec![];
+
+    loop {
+        buffer.clear();
+        let cnt = reader.read_line(&mut buffer);
+        match cnt {
+            Ok(cnt) => { if cnt == 0 { break; } },
+            Err(e) => panic!("Cannot read from a Stockholm buffer, error occurred:  {:?}", e),
+        };
+        if ! buffer.starts_with('#') {
+            let tokens: Vec<&str> = buffer.split_ascii_whitespace().collect::<Vec<&str>>();
+            if tokens.len() != 2 { continue;}
+            else {
+                let seq_id: String = tokens[0].to_owned();
+                let seq: String = tokens[1].to_owned();
+                match data.get_mut(&seq_id) {
+                    None => {
+                        data.insert(seq_id.clone(), seq);
+                        keys.push(seq_id);
+                    }
+                    Some(subseq) => {
+                        subseq.push_str(&seq);
+                    }
+                };
+            }
+            lines.push(buffer.to_owned());
+        }
+    }
+    for key in keys {
+        let seq: &String = data.get(&key).unwrap();
+        out.push(Sequence::new(&key, seq));
+    }
+
+    return out;
 }
 
 /// Defines how A3M data will be processed

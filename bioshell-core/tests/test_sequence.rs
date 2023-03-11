@@ -1,5 +1,5 @@
 use std::fmt::Write;
-use bioshell_core::sequence::{Sequence, from_fasta_reader, a3m_to_fasta, A3mConversionMode};
+use bioshell_core::sequence::{Sequence, from_fasta_reader, a3m_to_fasta, A3mConversionMode, from_stockholm_reader};
 use std::io::BufReader;
 
 #[test]
@@ -37,7 +37,34 @@ AQCEATIESNDAMQYDLKEMVVDKSCKQFTVHLKHVGKMAKSAMGHNWVLTKEADKEGVATDGMNAGLAQDYVKAGDT
 RVIAHTKVIGGGESDSVTFDVSKLTPGEAYAYFCSFPGHWAMMKGTLKLSN";
     let mut reader = BufReader::new(fasta.as_bytes());
     let records = from_fasta_reader(&mut reader);
-    assert_eq!(2, records.len())
+    assert_eq!(2, records.len());
+    assert_eq!(records[0].len(), 56);
+}
+
+
+#[test]
+fn read_stockholm() {
+    let input = "#=GF PDB 2gb1
+#=GS DE 2gb1 protein
+2gb1A                   MTYKLILNGKTLKGETTTEAVDAAT
+UniRef100_UPI0000D834FD HQYKLALNGKTLKGETTTEAVDAAT
+
+2gb1A                   AEKVFKQYANDNGVDGEWTYDDATK
+UniRef100_UPI0000D834FD AEKVFKQYANDNGVDGEWTYDDATK
+
+2gb1A                   TFTVTE
+UniRef100_UPI0000D834FD TFTVTE
+";
+    let mut reader = BufReader::new(input.as_bytes());
+    let records = from_stockholm_reader(&mut reader);
+    assert_eq!(2, records.len());
+
+    assert_eq!(records[0].len(), 56);
+    assert_eq!(records[1].len(), 56);
+    assert_eq!(records[0].id(), "2gb1A");
+    assert_eq!(records[1].id(), "UniRef100_UPI0000D834FD");
+    let ss: String = records[1].seq().into_iter().collect();
+    assert_eq!(ss, "HQYKLALNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
 }
 
 #[test]
