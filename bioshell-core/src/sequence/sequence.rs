@@ -254,3 +254,57 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
         A3mConversionMode::ExpandWithGaps => { todo!() }
     }
 }
+
+/// Removes gaps from a sequence alignment
+///
+/// Given a gapped sequence and a (multiple) sequence alignment, this function removes
+/// the columns from the alignment where the reference sequence has a gap.
+/// # Arguments
+/// * `reference` - a reference sequence
+/// * `sequences` - aligned sequences, e.g. a multiple sequence alignment
+///
+/// # Example
+/// ```rust
+/// use bioshell_core::sequence::{Sequence, from_stockholm_reader, remove_gaps_by_sequence};
+/// let msa = "A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
+/// A0A6G1KYC8/54-83                -------TK----AT---AW-EM--PK-QM---
+/// A0A2Z6MTB8/60-86                -------TR----QS---SW-EK--P-------
+/// A0A2Z6MTB8/102-129              -------TQ----QS---TW-TI--PEE-----
+/// H2XMA8/16-49                    -------TQ----RT---TW-QD--PR------
+/// UPI000A31515F/122-163           -------TR----ES---AW-TK--PD------
+/// UPI000A31515F/383-441           -------TL----ES---TW-EK--PQE-----
+/// UPI00057AF938/507-540           -------TR----TT---TW-KH--PC------
+/// UPI00138FB958/985-1021          -------TQ----QT---SW-LH--PVSQ----";
+/// let mut reader = BufReader::new(alignment.as_bytes());
+/// let mut sequences = from_stockholm_reader(&mut reader);
+/// let ref_seq = sequences[8].clone();
+/// remove_gaps_by_sequence(&ref_seq, &mut sequences);
+/// assert_eq!("TKQTTWEKPA--", sequences[0].to_string());
+/// assert_eq!("TQQTSWLHPVSQ", sequences[8].to_string());
+/// ```
+pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequence>) {
+
+    let n_seq: usize = sequences.len();
+    // --- check if all the sequences are of the same length
+    for i in 0..n_seq {
+        if sequences[i].len() != reference.len() {
+            panic!("The following sequence has different length that the reference: {}", sequences[i].to_string());
+        }
+    }
+    // --- create the list of indexes of elements to be copied
+    let mut pos: Vec<usize> = vec![];
+    for i in 0..reference.len() {
+        let c = reference.seq[i] as char;
+        if c != '-' && c != '_' { pos.push(i); }
+    }
+    // --- copy
+    for j in 0..n_seq {
+        let id = &sequences[j].id;
+        let old_aa: &Vec<u8> = sequences[j].seq();
+        let mut new_aa: Vec<u8> = vec![];
+        for pi in &pos {
+            new_aa.push(old_aa[*pi]);
+        }
+        sequences[j] = Sequence::from_attrs(id.clone(), new_aa);
+    }
+}

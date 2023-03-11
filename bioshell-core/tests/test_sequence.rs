@@ -1,5 +1,6 @@
 use std::fmt::Write;
-use bioshell_core::sequence::{Sequence, from_fasta_reader, a3m_to_fasta, A3mConversionMode, from_stockholm_reader};
+use bioshell_core::sequence::{Sequence, from_fasta_reader, a3m_to_fasta, A3mConversionMode,
+                              from_stockholm_reader, remove_gaps_by_sequence};
 use std::io::BufReader;
 
 #[test]
@@ -77,4 +78,37 @@ fn convert_a3m() {
     for s in seqs {
         assert_eq!(s.to_string(), expected);
     }
+}
+
+#[test]
+fn remove_gaps() {
+    let alignment = "UniRef90_A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
+UniRef90_A0A6G1KYC8/54-83                -------TK----AT---AW-EM--PK-QM---
+UniRef90_A0A2Z6MTB8/60-86                -------TR----QS---SW-EK--P-------
+UniRef90_A0A2Z6MTB8/102-129              -------TQ----QS---TW-TI--PEE-----
+UniRef90_H2XMA8/16-49                    -------TQ----RT---TW-QD--PR------
+UniRef90_UPI000A31515F/122-163           -------TR----ES---AW-TK--PD------
+UniRef90_UPI000A31515F/383-441           -------TL----ES---TW-EK--PQE-----
+UniRef90_UPI00057AF938/507-540           -------TR----TT---TW-KH--PC------
+UniRef90_UPI00138FB958/985-1021          -------TQ----QT---SW-LH--PVSQ----
+UniRef90_Q8CGF7-2/122-163                -------TR----ES---AW-TK--PD------
+UniRef90_Q8CGF7-2/385-443                -------TL----ES---TW-EK--PQE-----
+UniRef90_A0A1I8AJG4/92-118               -------TK----QS---SW-TK--PD------
+UniRef90_A0A1I8AJG4/124-150              -------TK----TT---TW-TL--PE------
+UniRef90_M4E0Z8/202-231                  -------TK----QS---TW-EK--PVE-----
+UniRef90_M4E0Z8/244-272                  -------TK----QS---TW-TM--PEE-----
+UniRef90_UPI0010A0DD51/122-163           -------TR----ES---AW-TK--PD------
+UniRef90_UPI0010A0DD51/389-447           -------TL----ES---TW-EK--PQE-----
+UniRef90_UPI000F744328/122-163           -------TR----ES---AW-TK--PD------
+UniRef90_UPI000F744328/389-447           -------TL----ES---TW-EK--PQE-----";
+    let mut reader = BufReader::new(alignment.as_bytes());
+    let mut sequences = from_stockholm_reader(&mut reader);
+    assert_eq!(19, sequences.len());
+
+    assert_eq!("-------TQ----QT---SW-LH--PVSQ----", sequences[8].to_string());
+    let ref_seq = sequences[8].clone();
+    remove_gaps_by_sequence(&ref_seq, &mut sequences);
+
+    assert_eq!("TKQTTWEKPA--", sequences[0].to_string());
+    assert_eq!("TQQTSWLHPVSQ", sequences[8].to_string());
 }
