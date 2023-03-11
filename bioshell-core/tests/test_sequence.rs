@@ -13,8 +13,8 @@ fn create_sequence() {
         assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string())
     }
     {
-        let read_id = "2gb1";
-        let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
+        let read_id = String::from("2gb1");
+        let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE".as_bytes().to_vec();
         let seq = Sequence::from_attrs(read_id, sequence);
 
         let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
@@ -63,20 +63,18 @@ UniRef100_UPI0000D834FD TFTVTE
     assert_eq!(records[1].len(), 56);
     assert_eq!(records[0].id(), "2gb1A");
     assert_eq!(records[1].id(), "UniRef100_UPI0000D834FD");
-    let ss: String = records[1].seq().into_iter().collect();
+    let ss: String = records[1].to_string();
     assert_eq!(ss, "HQYKLALNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
 }
 
 #[test]
 fn convert_a3m() {
-    let mut seqs = vec![Sequence::from_attrs("s1", "ABC"),
-                    Sequence::from_attrs("s2", "AaBC"),
-                    Sequence::from_attrs("s3", "ABbC")];
+    let mut seqs = vec![Sequence::from_attrs(String::from("s1"), "ABC".as_bytes().to_vec()),
+                    Sequence::from_attrs(String::from("s2"), "AaBC".as_bytes().to_vec()),
+                    Sequence::from_attrs(String::from("s3"), "ABbC".as_bytes().to_vec())];
     a3m_to_fasta(&mut seqs, &A3mConversionMode::RemoveSmallCaps);
     let expected = "ABC";
     for s in seqs {
-        for i in 0..s.len() {
-            assert_eq!(s.seq()[i], expected.chars().nth(i).unwrap());
-        }
+        assert_eq!(s.to_string(), expected);
     }
 }

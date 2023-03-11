@@ -9,61 +9,59 @@ use std::io::{BufRead, BufReader, Read};
 pub struct Sequence {
     /// identifies this sequence
     id: String,
-    /// a sequence is represented as a vector of characters
-    seq: Vec<char>,
+    /// a sequence is represented as a vector of u8 bytes
+    seq: Vec<u8>,
 }
 
-
 impl Sequence {
-    /// Create a new instance of a Sequence.
+    /// Create a new instance of a Sequence from Strings.
     /// # Example
     /// ```rust
     /// use bioshell_core::sequence::Sequence;
     ///
-    /// let read_id: String = String::from("2gb1");
+    /// let seq_id: String = String::from("2gb1");
     /// let sequence: String = String::from("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
-    /// let seq = Sequence::new(&read_id, &sequence);
+    /// let seq = Sequence::new(&seq_id, &sequence);
     ///
     /// assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string())
     /// ```
     pub fn new(id: &String, seq: &String) -> Self {
         Sequence {
             id: id.to_owned(),
-            seq: seq.chars().collect()
+            seq: seq.chars().map(|c| c as u8).collect()
         }
     }
-    /// Create a new instance of a Sequence from `&str` content.
+
+    /// Create a new instance of a Sequence by consuming the given data
     /// # Example
     /// ```rust
     /// use bioshell_core::sequence::Sequence;
     ///
-    /// let read_id = "2gb1";
-    /// let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
-    /// let seq = Sequence::from_attrs(read_id, sequence);
+    /// let seq_id = String::from("2gb1");
+    /// let sequence: Vec<u8> = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE".as_bytes().to_vec();
+    /// let seq = Sequence::from_attrs(seq_id, sequence);
     ///
     /// let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
     /// assert_eq!(expected, seq.to_string());
     /// ```
-    pub fn from_attrs(id: &str, seq: &str) -> Self {
-        Sequence {
-            id: String::from(id),
-            seq: seq.chars().collect()
-        }
+    pub fn from_attrs(id: String, seq: Vec<u8>) -> Self {
+        Sequence {id, seq}
     }
+
     /// Return the reference of the id of this Sequence.
     pub fn id(&self) -> &str { self.id.as_ref() }
 
     /// Return the reference of the sequence itself
-    pub fn seq(&self) -> &Vec<char> { &self.seq }
+    pub fn seq(&self) -> &Vec<u8> { &self.seq }
 
     /// Return the length of this sequence
     pub fn len(&self) -> usize { self.seq.len() }
 
-    /// Returns amino acid character at a given position in this `Sequence`
-    pub fn char(&self, pos:usize) -> char { self.seq[pos] }
+    /// Returns an amino acid character at a given position in this `Sequence`
+    pub fn char(&self, pos:usize) -> char { self.seq[pos] as char }
 
     /// Creates a string representing this sequence
-    pub fn to_string(&self) -> String { self.seq.iter().collect::<String>() }
+    pub fn to_string(&self) -> String { String::from_utf8(self.seq.clone()).unwrap() }
 }
 
 impl fmt::Display for Sequence {
@@ -76,9 +74,9 @@ impl fmt::Display for Sequence {
     /// use bioshell_core::sequence::Sequence;
     /// use std::fmt::Write;
     /// // create a Sequence object
-    /// let seq_id = "2gb1";
+    /// let seq_id = String::from("2gb1");
     /// let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
-    /// let seq = Sequence::from_attrs(seq_id, sequence);
+    /// let seq = Sequence::from_attrs(seq_id, sequence.to_vec());
     ///
     /// let mut actual = String::new();
     /// // populate `actual` with a string representation of the sequence
@@ -206,16 +204,51 @@ pub enum A3mConversionMode {
     ExpandWithGaps,
 }
 
-/// Process sequences read from A3M file by either expanding or removing insertions
+/// Process sequences read from A3M file by either expanding or removing insertions.
 ///
+/// Lower case letters are used to denote parts of a sequence that is not aligned to another sequence.
+/// A typical alignment in the *A3M* format may look like:
+/// <pre>
+/// MTYKLILNGKTLKgeTTTEAVDAAT
+/// HQYKLALNGKTLKaqTTTEAVDAAT
+/// </pre>
+/// This alignment can be converted to *upper-case only* version (as in the FASTA format) by two ways:
+///  - by aligning the lower-case letters with gaps; this would result in the following alignment:
+/// <pre>
+/// MTYKLILNGKTLKGE--TTTEAVDAAT
+/// HQYKLALNGKTLK--AQTTTEAVDAAT
+/// </pre>
+///  - by removing them in both sequences (if possible), which would lead to:
+/// <pre>
+/// MTYKLILNGKTLKTTTEAVDAAT
+/// HQYKLALNGKTLKTTTEAVDAAT
+/// </pre>
+/// This method removes the lower case letters accordingly to the desired scenario, requested by `mode` flag,
+/// from all the sequences found in the given `sequences` vector.
+///
+/// # Examples
+/// ```rust
+/// use bioshell_core::sequence::{Sequence, a3m_to_fasta, A3mConversionMode};
+/// // create two Sequence objects
+/// let mut sequences = vec![Sequence::from_attrs(String::from("seq1"), "MTYKLILNGKTLKgeTTTEAVDAAT".to_vec()),
+///         Sequence::new(String::from_attrs("seq2"), "HQYKLALNGKTLKaqTTTEAVDAAT".to_vec())];
+///
+/// a3m_to_fasta(&mut sequences, A3mConversionMode.RemoveSmallCaps);
+/// assert_eq!(sequences[0].to_string(), "MTYKLILNGKTLKTTTEAVDAAT");
+/// ```
 pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
     match mode {
         A3mConversionMode::RemoveSmallCaps => {
             for i in 0..sequences.len() {
                 let seq = &sequences[i];
-                let seq_str: String = seq.seq.iter().
-                    filter(|c| c.is_uppercase() || (*c).eq(&'-') || (*c).eq(&'_')).collect();
-                sequences[i] = Sequence::new(&seq.id, &seq_str);
+                let mut seq_data: Vec<u8> = vec![];
+                for c in &seq.seq {
+                    let cu = *c as char;
+                    if cu.is_uppercase() || cu.eq(&'-') || cu.eq(&'_') {
+                        seq_data.push(*c);
+                    }
+                }
+                sequences[i] = Sequence::from_attrs(seq.id.clone(), seq_data);
             }
         }
         A3mConversionMode::ExpandWithGaps => { todo!() }
