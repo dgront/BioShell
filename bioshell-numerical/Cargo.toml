@@ -15,12 +15,7 @@ crate-type =["rlib", "cdylib"]
 rand = { version = "0.8.5", features = [ "small_rng" ] }
 clap = { version = "3.1.18", features = ["derive"] }
 rand_distr = {}   # for NormalDistribution
-<<<<<<< HEAD
-# math = { version = "0.9.0", features = [] }
-
 
 [[bin]]
 name="bioshell_numerical"
 path="main.rs"
-=======
->>>>>>> 0e673e79d45364b22d8fe660b1f31394a9f5f427

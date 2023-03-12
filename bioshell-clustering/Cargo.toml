@@ -18,9 +18,4 @@ nalgebra = "0.31.1"
 clap = { version = "3.1.18", features = ["derive"] }
 
 bioshell-statistics = { path = "../bioshell-statistics" }
-<<<<<<< HEAD
 bioshell-core = { path = "../bioshell-core" }
-=======
-bioshell-core = { path = "../bioshell-core" }
-
->>>>>>> 0e673e79d45364b22d8fe660b1f31394a9f5f427
