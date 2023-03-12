@@ -15,7 +15,7 @@ impl ResidueTypeOrder {
     /// Creates a new mapping for a given order of letters
     pub fn new(chars_ordered: &str) -> ResidueTypeOrder {
         let index_to_aa = chars_ordered.as_bytes().to_vec();
-        let mut aa_to_index: Vec<usize> = vec![0; chars_ordered.len()];
+        let mut aa_to_index: Vec<usize> = vec![0; 128];
         for (i, aai) in chars_ordered.chars().enumerate() {
             aa_to_index[aai as usize] = i;
         }
