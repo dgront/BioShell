@@ -276,7 +276,7 @@ pub struct PERM<S: ResizableSystem, E: Energy<S>> {
     pub c_low: f64,
     /// controls the enrichment rate
     pub c_hi: f64,
-    /// [update_weights]`update_weights()` method is called every `n` full chains generated
+    /// [update_weights()]`update_weights()` method is called every `n` full chains generated
     pub update_after_n: usize,
     /// the number of full chains built do far
     chains_cnt: i64,
@@ -321,7 +321,30 @@ impl<S: ResizableSystem, E: Energy<S>> PERM<S, E> {
         }
     }
 
+    /// Provides statistics for the `i`-th step of generated chains.
+    ///
+    /// Returns `$W_i^L$`, `$W_i^H$` and `$Z_i / Z_0$`, i.e. the two critical values for pruning
+    /// and enriching events (`$W_i^L$` and `$W_i^H$`, respectively) as well as the current value
+    /// of the (normalized) partition function.
+    pub fn weights(&self, i: usize) -> (f64, f64, f64) {
+        (self.W_low[i], self.W_hi[i], self.Z[i] / self.Z[0])
+    }
+
     pub fn chains_left(&self) -> bool { !self.chains.is_empty() }
+
+    /// Sets a value each `w[i]` is divided by.
+    ///
+    /// The [`PERM`](PERM) method accumulates the total weight for a growing system as a product of weights
+    /// obtained at each step, i.e. by adding a new element to a chain. Even for a modest value of
+    /// a per-element weight, their product for a long chain can exceed the capacity of the `f64` variable.
+    /// Therefore, the weight for a chain of `k` elements is stored internally by [`PERM`](PERM)
+    /// as:
+    /// ```math
+    /// w = \prod_1^{k} \frac{w_i}{c} = \frac{1}{c^k} \prod_1^{k} \frac{w_i}
+    /// ```
+    /// By default, `c=10`; however it's reasonable to set the `c` constant to the expected value of
+    /// `$w_i$`
+    pub fn set_w_scale(&mut self, w_div: f64) { self.Z_div_step = w_div; }
 }
 
 impl<S: ResizableSystem, E: Energy<S>> Display for PERM<S, E> {
@@ -343,6 +366,8 @@ impl<S: ResizableSystem, E: Energy<S>> StepwiseBuilder<S, E> for PERM<S, E> {
     ///
     /// The generated state (e.g. new coordinates) will be stored in the given `system` reference;
     /// statistical weight of this new chain will be returned.
+    ///
+    /// If the current chain has been pruned, this method returns 0.0 for its weight.
     fn build(&mut self, system: &mut S, energy: &E) -> f64 {
         let current_pos: usize;         // --- grow the current chain from the current_pos to the maximum length (i.e. capacity)
         let mut w_tot: f64;             // --- total (cumulative) weight of the current chain
@@ -364,7 +389,7 @@ impl<S: ResizableSystem, E: Energy<S>> StepwiseBuilder<S, E> for PERM<S, E> {
         }
 
         for i in current_pos..self.capacity() {
-            // ---------- add next element of the system
+            // ---------- add the next element of the system
             let w: f64 = self.step.grow_by_one(system, energy);
             w_tot *= w / self.Z_div_step;                                                         // --- adjust the weight so it fits info f64
             if w_tot < self.W_low[i] && self.chains_cnt > (self.update_after_n * 2) as i64 {      // --- prune event

@@ -1,58 +1,14 @@
-use std::fmt;
 use core::fmt::{Formatter, Display};
 use std::fs::File;
-use std::collections::HashMap;
 
-use crate::sequence::Sequence;
-
-/// Provides `u8` (one byte) index for a residue type letter, e.g. for a standard amino acid
-#[derive(Clone, Debug)]
-pub struct ResidueTypeOrder {
-    index_to_aa: Vec<char>,
-    aa_to_index_map: HashMap<char, u8>,
-}
-
-impl ResidueTypeOrder {
-
-    /// Creates a new mapping for a given order of letters
-    pub fn new(chars_ordered: &str) -> ResidueTypeOrder {
-        let index_to_aa = chars_ordered.chars().collect();
-        let mut aa_to_index_map: HashMap<char, u8> = HashMap::new();
-        for (i, aai) in chars_ordered.chars().enumerate() {
-            aa_to_index_map.insert(aai, i as u8);
-        }
-        ResidueTypeOrder{index_to_aa, aa_to_index_map}
-    }
-
-    /// Creates a new mapping for amino acids in the NCBI's order: `ARNDCQEGHILKMFPSTWYVX`
-    pub fn aa_standard() -> ResidueTypeOrder { ResidueTypeOrder::new("ARNDCQEGHILKMFPSTWYVX") }
-
-    /// Returns the size of this mapping i.e. the number of residue types mapped
-    pub fn size(&self) -> usize { self.index_to_aa.len() }
-
-    /// Convert a given amino acid (or nucleotide) character to its order index
-    pub fn encode_letter(&self, aa: &char) -> u8 {
-        let aa_id: &u8 = match self.aa_to_index_map.get(&aa) {
-            Some(i) => { i },
-            None => {
-                eprintln!("Unknown amino acid symbol {}, converted to gap", &aa);
-                &self.aa_to_index_map[&'-']
-            }
-        };
-
-        *aa_id
-    }
-
-    /// Converts a residue type order index into its letter
-    pub fn decode_letter(&self, res_id:u8) -> char { self.index_to_aa[res_id as usize] }
-}
+use crate::sequence::{Sequence, ResidueTypeOrder};
 
 #[derive(Clone, Debug)]
-/// Represents sequence profile.
+/// Represents a sequence profile.
 ///
 /// Sequence profile describes preference for each of the 20 standard amino acid residue types
 /// (possibly also with the gap symbol) at each of the residue positions in the query sequence.
-/// For a protein sequence of N residues, these preferences are stored as a Nx20 probability matrix
+/// For a protein sequence of N residues, these preferences are stored as a `Nx20` probability matrix
 /// normalised row-wise, i.e. they sum up to `1.0` for each sequence position. These probabilities
 /// reflect how likely is to find any amino acid type (say, GLY or TYR) at that position.
 ///
@@ -65,6 +21,7 @@ pub struct SequenceProfile {
 }
 
 impl SequenceProfile {
+    /// Creates a sequence profile from a given pool of aligned sequences
     pub fn new(mapping: ResidueTypeOrder, msa: &Vec<Sequence>) -> SequenceProfile {
 
         let n = msa[0].len();
@@ -76,8 +33,9 @@ impl SequenceProfile {
                 eprintln!("\nSequence of incorrect length! Is: {}, should be: {}. The sequence skipped::\n {}\n",
                           sequence.len(), n, sequence);
                 continue;
-            }            for idx in 0..n {
-                let aa_idx = mapping.encode_letter(&sequence.char(idx)) as usize;
+            }
+            for idx in 0..n {
+                let aa_idx = mapping.type_to_index(&sequence.seq()[idx]) as usize;
                 data[idx][aa_idx] += 1.0;
             }
         }
@@ -95,14 +53,15 @@ impl SequenceProfile {
     /// Returns a probability for a given sequence position and a residue type.
     pub fn fraction(&self, pos: usize, aa: usize) -> f32 { self.data[pos][aa] }
 
-    /// Provides unmutable access to the residue ordering used by this sequence profile
-    pub fn residue_order(&self) -> &ResidueTypeOrder { &self.mapping }
+    /// Provides immutable access to the residue ordering used by this sequence profile
+    pub fn column_order(&self) -> &ResidueTypeOrder { &self.mapping }
 
     /// Returns the number of sequence positions in this sequence profile
     pub fn len(&self) -> usize { self.data.len() }
 }
 
 impl Display for SequenceProfile {
+    /// Prints a sequence profile as a nice table
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for (i, row) in self.data.iter().enumerate() {
             write!(f, "{i:4} ");
