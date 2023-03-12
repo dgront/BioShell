@@ -36,9 +36,9 @@ impl Matrix3x3
         Matrix3x3 { _array: m }
     }
 
-    pub fn from_column_values(cx_x:f64, cx_y:f64, cx_z:f64,
-                              cy_x:f64, cy_y:f64, cy_z:f64,
-                              cz_x:f64, cz_y:f64, cz_z:f64)->Self
+    pub fn from_column_values(cx_x: f64, cx_y: f64, cx_z: f64,
+                              cy_x: f64, cy_y: f64, cy_z: f64,
+                              cz_x: f64, cz_y: f64, cz_z: f64) -> Self
     {
         Self::new([
             cx_x, cx_y, cx_z,
@@ -72,6 +72,4 @@ impl Matrix3x3
             rx1.z, ry1.z, rz1.z,
         ])
     }
-
-
 }
