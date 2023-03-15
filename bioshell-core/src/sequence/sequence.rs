@@ -360,3 +360,15 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
         sequences[j] = Sequence::from_attrs(id.clone(), new_aa);
     }
 }
+
+/// Counts residues of a given type in a [`Sequence`](Sequence)
+///
+/// # Examples
+/// ```rust
+/// let seq_str = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQY";
+/// let sequence = Sequence::from_attrs(String::from("test_seq"), sequence.to_vec());
+/// assert_eq!(count_residue_type(&sequence,'T'),6);
+/// ```
+pub fn count_residue_type(sequence: &Sequence, res_type: char) -> usize {
+    sequence.seq.iter().filter(|&c| *c == res_type as u8).count()
+}
