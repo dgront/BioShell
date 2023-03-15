@@ -78,7 +78,7 @@ impl fmt::Display for Sequence {
     /// // create a Sequence object
     /// let seq_id = String::from("2gb1");
     /// let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
-    /// let seq = Sequence::from_attrs(seq_id, sequence.to_vec());
+    /// let seq = Sequence::from_attrs(seq_id, sequence.as_bytes().to_vec());
     ///
     /// let mut actual = String::new();
     /// // populate `actual` with a string representation of the sequence
@@ -225,29 +225,6 @@ impl<S> Iterator for StockholmIterator<S> where S: BufRead {
     }
 }
 
-
-
-/*
-/// Reads sequences from a file in a format known to BioShell
-///
-/// This function opens a given file, creates a buffered reader and passes it to a format-specific
-/// reader function, such as [`from_stockholm_reader()`](from_stockholm_reader()) or
-/// [`from_fasta_reader()`](from_fasta_reader())
-pub fn from_file(filename: &str, reader_func: fn(&mut BufReader<File>) -> Vec<Sequence>) -> Vec<Sequence> {
-
-    // Open the file in read-only mode (ignoring errors).
-    let file = match File::open(filename) {
-        Ok(file) => file,
-        Err(_) => {
-            eprintln!("\nCan't open an input  file: {}\n", filename);
-            std::process::exit(1);
-        }
-    };
-    let mut reader = BufReader::new(file);
-    return reader_func(&mut reader);
-}
-*/
-
 /// Defines how A3M data will be processed
 pub enum A3mConversionMode {
     /// insertions marked with lowercase characters will be removed
@@ -280,12 +257,13 @@ pub enum A3mConversionMode {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_core::sequence::{Sequence, a3m_to_fasta, A3mConversionMode};
+/// use bioshell_core::sequence::{Sequence, a3m_to_fasta};
+/// use bioshell_core::sequence::A3mConversionMode::RemoveSmallCaps;
 /// // create two Sequence objects
-/// let mut sequences = vec![Sequence::from_attrs(String::from("seq1"), "MTYKLILNGKTLKgeTTTEAVDAAT".to_vec()),
-///         Sequence::new(String::from_attrs("seq2"), "HQYKLALNGKTLKaqTTTEAVDAAT".to_vec())];
+/// let mut sequences = vec![Sequence::from_attrs(String::from("seq1"), "MTYKLILNGKTLKgeTTTEAVDAAT".as_bytes().to_vec()),
+///         Sequence::from_attrs(String::from("seq2"), "HQYKLALNGKTLKaqTTTEAVDAAT".as_bytes().to_vec())];
 ///
-/// a3m_to_fasta(&mut sequences, A3mConversionMode.RemoveSmallCaps);
+/// a3m_to_fasta(&mut sequences, &RemoveSmallCaps);
 /// assert_eq!(sequences[0].to_string(), "MTYKLILNGKTLKTTTEAVDAAT");
 /// ```
 pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
@@ -317,8 +295,10 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 ///
 /// # Example
 /// ```rust
-/// use bioshell_core::sequence::{Sequence, from_stockholm_reader, remove_gaps_by_sequence};
-/// let msa = "A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
+/// use bioshell_core::sequence::{Sequence, StockholmIterator, remove_gaps_by_sequence};
+/// use std::io::{BufReader};
+///
+/// let alignment = "A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
 /// A0A6G1KYC8/54-83                -------TK----AT---AW-EM--PK-QM---
 /// A0A2Z6MTB8/60-86                -------TR----QS---SW-EK--P-------
 /// A0A2Z6MTB8/102-129              -------TQ----QS---TW-TI--PEE-----
@@ -328,7 +308,7 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 /// UPI00057AF938/507-540           -------TR----TT---TW-KH--PC------
 /// UPI00138FB958/985-1021          -------TQ----QT---SW-LH--PVSQ----";
 /// let mut reader = BufReader::new(alignment.as_bytes());
-/// let mut sequences = from_stockholm_reader(&mut reader);
+/// let mut sequences = StockholmIterator::from_stockholm_reader(&mut reader);
 /// let ref_seq = sequences[8].clone();
 /// remove_gaps_by_sequence(&ref_seq, &mut sequences);
 /// assert_eq!("TKQTTWEKPA--", sequences[0].to_string());
@@ -365,8 +345,9 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
 ///
 /// # Examples
 /// ```rust
+/// use bioshell_core::sequence::{Sequence, count_residue_type};
 /// let seq_str = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQY";
-/// let sequence = Sequence::from_attrs(String::from("test_seq"), sequence.to_vec());
+/// let sequence = Sequence::from_attrs(String::from("test_seq"), seq_str.as_bytes().to_vec());
 /// assert_eq!(count_residue_type(&sequence,'T'),6);
 /// ```
 pub fn count_residue_type(sequence: &Sequence, res_type: char) -> usize {

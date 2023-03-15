@@ -2,7 +2,7 @@ use std::env;
 use clap::{Parser};
 use log::{info};
 
-use bioshell_core::sequence::{Sequence, FastaIterator, count_residue_type};
+use bioshell_core::sequence::{FastaIterator, count_residue_type};
 use bioshell_core::utils::open_file;
 
 #[derive(Parser, Debug)]
