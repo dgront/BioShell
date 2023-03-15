@@ -1,5 +1,4 @@
 use core::fmt::{Formatter, Display};
-use std::fs::File;
 
 use crate::sequence::{Sequence, ResidueTypeOrder};
 
@@ -64,11 +63,11 @@ impl Display for SequenceProfile {
     /// Prints a sequence profile as a nice table
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for (i, row) in self.data.iter().enumerate() {
-            write!(f, "{i:4} ");
+            write!(f, "{i:4} ").ok();
             for val in row {
-                write!(f, "{val:5.3} ");
+                write!(f, "{val:5.3} ").ok();
             }
-            writeln!(f, "");
+            writeln!(f, "").ok();
         }
         Ok(())
     }
