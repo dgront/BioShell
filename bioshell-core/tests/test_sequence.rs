@@ -1,6 +1,5 @@
 use std::fmt::Write;
-use bioshell_core::sequence::{Sequence, from_fasta_reader, a3m_to_fasta, A3mConversionMode,
-                              from_stockholm_reader, remove_gaps_by_sequence};
+use bioshell_core::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, StockholmIterator};
 use std::io::BufReader;
 
 #[test]
@@ -29,23 +28,21 @@ fn create_sequence() {
     }
 }
 
-#[test]
-fn read_fasta() {
-    let fasta = "> 2gb1
-    MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+#[allow(non_upper_case_globals)]
+static fasta: &'static str = "> 2gb1
+    MTYKLILNGKTLKGETTTEAVDAATAEKVF
+    KQYANDNGVDGEWTYDDATKTFTVTE
+
     > 2azaA
-AQCEATIESNDAMQYDLKEMVVDKSCKQFTVHLKHVGKMAKSAMGHNWVLTKEADKEGVATDGMNAGLAQDYVKAGDT
-RVIAHTKVIGGGESDSVTFDVSKLTPGEAYAYFCSFPGHWAMMKGTLKLSN";
-    let mut reader = BufReader::new(fasta.as_bytes());
-    let records = from_fasta_reader(&mut reader);
-    assert_eq!(2, records.len());
-    assert_eq!(records[0].len(), 56);
-}
+AQCEATIESN DAMQYDLKEM VVDKSCKQFT VHLKHVGKMA
 
+KSAMGHNWVL TKEADKEGVA TDGMNAGLAQ DYVKAGDTRV
+IAHTKVIGGG ESDSVTFDVS KLTPGEAYAY FCSFPGHWAM
+MKGTLKLSN
+>";
 
-#[test]
-fn read_stockholm() {
-    let input = "#=GF PDB 2gb1
+#[allow(non_upper_case_globals)]
+static stockholm: &'static str ="#=GF PDB 2gb1
 #=GS DE 2gb1 protein
 2gb1A                   MTYKLILNGKTLKGETTTEAVDAAT
 UniRef100_UPI0000D834FD HQYKLALNGKTLKGETTTEAVDAAT
@@ -56,8 +53,26 @@ UniRef100_UPI0000D834FD AEKVFKQYANDNGVDGEWTYDDATK
 2gb1A                   TFTVTE
 UniRef100_UPI0000D834FD TFTVTE
 ";
-    let mut reader = BufReader::new(input.as_bytes());
-    let records = from_stockholm_reader(&mut reader);
+
+#[test]
+fn iterate_fasta() {
+
+    let reader = BufReader::new(fasta.as_bytes());
+    let iter_fasta = FastaIterator::new(reader);
+
+    let records: Vec<Sequence> = iter_fasta.into_iter().collect();
+
+    assert_eq!(2, records.len());
+    assert_eq!(records[0].len(), 56);
+    assert_eq!(records[1].to_string(), "AQCEATIESNDAMQYDLKEMVVDKSCKQFTVHLKHVGKMAKSAMGHNWVLTKEADKEGVATDGMNAGLAQDYVKAGDTRVIAHTKVIGGGESDSVTFDVSKLTPGEAYAYFCSFPGHWAMMKGTLKLSN");
+}
+
+#[test]
+fn read_stockholm() {
+
+    let mut reader = BufReader::new(stockholm.as_bytes());
+    let iter_sto = StockholmIterator::new(&mut reader);
+    let records: Vec<Sequence> = iter_sto.into_iter().collect();
     assert_eq!(2, records.len());
 
     assert_eq!(records[0].len(), 56);
@@ -102,7 +117,7 @@ UniRef90_UPI0010A0DD51/389-447           -------TL----ES---TW-EK--PQE-----
 UniRef90_UPI000F744328/122-163           -------TR----ES---AW-TK--PD------
 UniRef90_UPI000F744328/389-447           -------TL----ES---TW-EK--PQE-----";
     let mut reader = BufReader::new(alignment.as_bytes());
-    let mut sequences = from_stockholm_reader(&mut reader);
+    let mut sequences: Vec<Sequence> = StockholmIterator::new(&mut reader).into_iter().collect();
     assert_eq!(19, sequences.len());
 
     assert_eq!("-------TQ----QT---SW-LH--PVSQ----", sequences[8].to_string());

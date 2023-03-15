@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
+use std::marker::PhantomData;
 
 #[derive(Default, Clone, Debug)]
 /// Amino acid / nucleic sequence.
@@ -30,7 +30,7 @@ impl Sequence {
     pub fn new(id: &String, seq: &String) -> Self {
         Sequence {
             id: id.to_owned(),
-            seq: seq.chars().map(|c| c as u8).collect()
+            seq: seq.replace(" ", "").chars().map(|c| c as u8).collect()
         }
     }
 
@@ -93,92 +93,141 @@ impl fmt::Display for Sequence {
     }
 }
 
-/// Read sequences in FASTA format from a buffer
+/// Iterator that provides sequences from a FASTA-formatted buffer.
 ///
-/// To read a text file, use the [`from_file()`](from_file()) function
-pub fn from_fasta_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufRead {
-
-    let mut out:Vec<Sequence> = Vec::new();
-    let mut lines:Vec<String> = Vec::new();
-    let mut buffer = String::new();
-
-    loop {
-        buffer.clear();
-        let cnt = reader.read_line(&mut buffer);
-        match cnt {
-            Ok(cnt) => { if cnt == 0 { break; } },
-            Err(e) => panic!("Cannot read from a FASTA buffer, error occurred:  {:?}", e),
-        };
-        lines.push(buffer.to_owned());
-    }
-
-    let mut header: String = String::new();
-    let mut seq: String = String::new();
-    for l in lines {
-        let line: String = l.trim().to_owned();
-        if line.len() == 0 { continue }
-        if line.as_bytes()[0] as char == '>' {                  // --- It's a header!
-            if seq.len() > 0 {                                  // --- create a new sequence entry and clear the string buffers
-                out.push(Sequence::new(&header, &seq));
-            }
-            header = line[1..].to_owned();
-            seq = String::new();
-        } else {                                                // --- It's sequence
-            seq = format!("{}{}",seq, line);
-        }
-    }
-    if seq.len() > 0 {
-        out.push(Sequence::new(&header, &seq));   // --- create the last sequence
-    }
-
-    return out;
+/// This object iterates over a buffer without loading its whole content which allows processing
+/// very large FASTA files.
+pub struct FastaIterator<R> {
+    reader: BufReader<R>,
+    buffer: String,
+    header: String,
+    seq: String,
 }
 
-/// Read sequences in Stockholm format
-///
-/// For the detailed description of the format, see: https://sonnhammer.sbc.su.se/Stockholm.html
-pub fn from_stockholm_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufRead {
-
-    let mut out:Vec<Sequence> = Vec::new();
-    let mut lines:Vec<String> = Vec::new();
-    let mut buffer = String::new();
-    let mut data: HashMap<String, String> = HashMap::new();
-    let mut keys: Vec<String> = vec![];
-
-    loop {
-        buffer.clear();
-        let cnt = reader.read_line(&mut buffer);
-        match cnt {
-            Ok(cnt) => { if cnt == 0 { break; } },
-            Err(e) => panic!("Cannot read from a Stockholm buffer, error occurred:  {:?}", e),
-        };
-        if ! buffer.starts_with('#') {
-            let tokens: Vec<&str> = buffer.split_ascii_whitespace().collect::<Vec<&str>>();
-            if tokens.len() != 2 { continue;}
-            else {
-                let seq_id: String = tokens[0].to_owned();
-                let seq: String = tokens[1].to_owned();
-                match data.get_mut(&seq_id) {
-                    None => {
-                        data.insert(seq_id.clone(), seq);
-                        keys.push(seq_id);
-                    }
-                    Some(subseq) => {
-                        subseq.push_str(&seq);
-                    }
-                };
-            }
-            lines.push(buffer.to_owned());
+impl<R: BufRead> FastaIterator<R> {
+    pub fn new(stream: R) -> Self {
+        FastaIterator {
+            reader: BufReader::new(stream),
+            buffer: String::new(),
+            header: String::new(),
+            seq: String::new(),
         }
     }
-    for key in keys {
-        let seq: &String = data.get(&key).unwrap();
-        out.push(Sequence::new(&key, seq));
-    }
-
-    return out;
 }
 
+impl<R: BufRead> Iterator for FastaIterator<R> {
+
+    type Item = Sequence;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            self.buffer.clear();
+            match self.reader.read_line(&mut self.buffer) {
+                Ok(0) => {
+                    if self.seq.len() > 0 {
+                        let ret = Some(Sequence::new(&self.header, &self.seq));
+                        self.seq.clear();
+                        return ret;
+                    }
+                    return None;
+                },
+                Ok(_) => {
+                    let line = self.buffer.trim();
+                    if line.starts_with('>') {                  // --- It's a header!
+                        if self.seq.len() > 0 {                      // --- we already have a sequence to return
+                            let ret = Some(Sequence::new(&self.header, &self.seq));
+                            self.header = self.buffer[1..].to_owned();
+                            self.seq.clear();
+                            return ret;
+                        } else {
+                            self.header = self.buffer[1..].to_owned();
+                        }
+                    } else {                                         // --- It's sequence
+                        if line.len() > 0 { self.seq.push_str(line); }
+                    }
+                }
+                Err(_) => return None,
+            }
+        }
+    }
+}
+
+
+/// Iterator that provides sequences from a Stockholm-formatted buffer.
+///
+pub struct StockholmIterator<R> {
+    data: Vec<Sequence>,
+    idx: usize,
+    phantom: PhantomData<R>,
+}
+
+impl<R: BufRead> StockholmIterator<R> {
+    pub fn new(stream: &mut R) -> Self {
+        let data = StockholmIterator::from_stockholm_reader(stream);
+        StockholmIterator { data: data, idx: 0, phantom: PhantomData, }
+    }
+
+    /// Read sequences in Stockholm format
+    ///
+    /// For the detailed description of the format, see: https://sonnhammer.sbc.su.se/Stockholm.html
+    pub fn from_stockholm_reader(reader: &mut R) -> Vec<Sequence> {
+
+        let mut out:Vec<Sequence> = Vec::new();
+        let mut lines:Vec<String> = Vec::new();
+        let mut buffer = String::new();
+        let mut data: HashMap<String, String> = HashMap::new();
+        let mut keys: Vec<String> = vec![];
+
+        loop {
+            buffer.clear();
+            let cnt = reader.read_line(&mut buffer);
+            match cnt {
+                Ok(cnt) => { if cnt == 0 { break; } },
+                Err(e) => panic!("Cannot read from a Stockholm buffer, error occurred:  {:?}", e),
+            };
+            if ! buffer.starts_with('#') {
+                let tokens: Vec<&str> = buffer.split_ascii_whitespace().collect::<Vec<&str>>();
+                if tokens.len() != 2 { continue;}
+                else {
+                    let seq_id: String = tokens[0].to_owned();
+                    let seq: String = tokens[1].to_owned();
+                    match data.get_mut(&seq_id) {
+                        None => {
+                            data.insert(seq_id.clone(), seq);
+                            keys.push(seq_id);
+                        }
+                        Some(subseq) => {
+                            subseq.push_str(&seq);
+                        }
+                    };
+                }
+                lines.push(buffer.to_owned());
+            }
+        }
+        for key in keys {
+            let seq: &String = data.get(&key).unwrap();
+            out.push(Sequence::new(&key, seq));
+        }
+
+        return out;
+    }
+}
+
+impl<S> Iterator for StockholmIterator<S> where S: BufRead {
+
+    type Item = Sequence;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx < self.data.len() {
+            self.idx += 1;
+            return Some(self.data[self.idx-1].clone());
+        } else { return None; }
+    }
+}
+
+
+
+/*
 /// Reads sequences from a file in a format known to BioShell
 ///
 /// This function opens a given file, creates a buffered reader and passes it to a format-specific
@@ -197,6 +246,7 @@ pub fn from_file(filename: &str, reader_func: fn(&mut BufReader<File>) -> Vec<Se
     let mut reader = BufReader::new(file);
     return reader_func(&mut reader);
 }
+*/
 
 /// Defines how A3M data will be processed
 pub enum A3mConversionMode {

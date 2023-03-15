@@ -2,7 +2,8 @@ use std::env;
 use clap::{Parser};
 use log::{info};
 
-use bioshell_core::sequence::{from_stockholm_reader, from_file, Sequence, remove_gaps_by_sequence};
+use bioshell_core::sequence::{Sequence, remove_gaps_by_sequence, StockholmIterator};
+use bioshell_core::utils::open_file;
 
 #[derive(Parser, Debug)]
 #[clap(name = "stockholm2fasta")]
@@ -10,6 +11,7 @@ use bioshell_core::sequence::{from_stockholm_reader, from_file, Sequence, remove
 struct Args {
     /// input file in Stockholm format
     infile: String,
+    /// remove gaps according to a sequence given by its ID
     #[clap(short='r')]
     if_remove: Option<String>
 }
@@ -18,7 +20,12 @@ pub fn main() {
 
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     let args = Args::parse();
-    let mut seq: Vec<Sequence> = from_file(&args.infile, from_stockholm_reader);
+    let fname= args.infile;
+
+    let mut reader = open_file(&fname);
+
+    let mut seq = StockholmIterator::from_stockholm_reader(&mut reader);
+
     if let Some(seq_id) = args.if_remove {
         info!("removing gapped column according to {}",seq_id);
         let mut ref_seq: Option<Sequence> = None;
@@ -32,8 +39,6 @@ pub fn main() {
             }
         }
     }
-    for s in &seq {
-        println!("{}", s);
-    }
+    for s in &seq { println!("{}", s); }
     info!("{} sequences printed in FASTA format",seq.len());
 }
