@@ -1,5 +1,4 @@
-use bioshell_core::calc::structure::*;
-use bioshell_core::structure::Coordinates;
+use bioshell_cartesians::{cm, Coordinates, r_end_squared};
 
 #[test]
 fn test_cm_rg_rend() {
