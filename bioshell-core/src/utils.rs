@@ -1,9 +1,11 @@
-use std::io::stdout;
+use std::ffi::OsStr;
+use std::io::{BufRead, BufReader, stdout};
 use std::io::stderr;
 use std::io::Write;
 use std::path::Path;
 use std::fs::{File};
 use csv;
+use flate2::read;
 
 /// Check whether a `Writer` object created based on a given string would actually write to screen.
 ///
@@ -101,4 +103,25 @@ fn read_csv_tsv(fname:&str, delimiter:u8) -> Vec<Vec<f64>> {
     }
 
     return data;
+}
+
+/// Opens a file for reading.
+///
+/// This function can open a regular file or a gzipped one, as determined by the extension
+/// of the input file name. A boxed reader to the content is returned.
+pub fn open_file(filename: &str) -> Box<dyn BufRead> {
+    let path = Path::new(filename);
+    let file = match File::open(&path) {
+        Err(why) => panic!("couldn't open {}: {}", path.display(), why),
+        Ok(file) => file,
+    };
+
+    if path.extension() == Some(OsStr::new("gz")) {
+        Box::new(BufReader::with_capacity(
+            128 * 1024,
+            read::GzDecoder::new(file),
+        ))
+    } else {
+        Box::new(BufReader::with_capacity(128 * 1024, file))
+    }
 }
