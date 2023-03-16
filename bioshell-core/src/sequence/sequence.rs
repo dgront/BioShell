@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
+use std::hash::{Hash, Hasher};
 
 #[derive(Default, Clone, Debug)]
 /// Amino acid / nucleic sequence.
@@ -93,6 +94,18 @@ impl fmt::Display for Sequence {
     }
 }
 
+
+impl Hash for Sequence {
+    /// Computes a hash for a given sequence
+    ///
+    /// The hash depends only on the sequence itself, other data such as a header is irrelevant here.
+    /// This allows detection of identical sequences even if their headers differs, e.g in the case
+    /// of two identical chains of a PDB deposit
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.seq.hash(state);
+    }
+}
+
 /// Iterator that provides sequences from a FASTA-formatted buffer.
 ///
 /// This object iterates over a buffer without loading its whole content which allows processing
@@ -136,11 +149,11 @@ impl<R: BufRead> Iterator for FastaIterator<R> {
                     if line.starts_with('>') {                  // --- It's a header!
                         if self.seq.len() > 0 {                      // --- we already have a sequence to return
                             let ret = Some(Sequence::new(&self.header, &self.seq));
-                            self.header = self.buffer[1..].to_owned();
+                            self.header = self.buffer[1..].trim().to_owned();
                             self.seq.clear();
                             return ret;
                         } else {
-                            self.header = self.buffer[1..].to_owned();
+                            self.header = self.buffer[1..].trim().to_owned();
                         }
                     } else {                                         // --- It's sequence
                         if line.len() > 0 { self.seq.push_str(line); }
