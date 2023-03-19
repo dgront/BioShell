@@ -73,7 +73,7 @@ impl Rototranslation
         let rot_z_y = y * z * vt + x * sina;
         let rot_z_z = z2 * vt + cosa;
 
-        let mat: Matrix3x3 = Matrix3x3::from_column_values(rot_x_x, rot_x_y, rot_x_z,
+        let mat: Matrix3x3 = Matrix3x3::from_values(rot_x_x, rot_x_y, rot_x_z,
                                                            rot_y_x, rot_y_y, rot_y_z,
                                                            rot_z_x, rot_z_y, rot_z_z);
         return Self::new(mat, Vec3::new(center.x, center.y, center.z));

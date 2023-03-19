@@ -11,7 +11,7 @@ use crate::vec3::Vec3;
 /// use bioshell_numerical::Vec3;
 /// let vx = Vec3::new(1.0, 0.0, 0.0);
 /// let vy = Vec3::new(0.0, 1.0, 0.0);
-/// let vz = Vec3::new(1.0, 0.0, 1.0);
+/// let vz = Vec3::new(0.0, 0.0, 1.0);
 /// let unit_mtx = Matrix3x3::from_column_vectors(&vx, &vy, &vz);
 ///
 /// assert_eq!(unit_mtx[0], 1.0);

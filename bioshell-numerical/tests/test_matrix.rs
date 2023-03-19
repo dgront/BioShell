@@ -1,11 +1,11 @@
 extern crate bioshell_numerical;
 
-use bioshell_numerical::{Vec3};
-use bioshell_numerical::matrix::Matrix3x3;
-
 #[cfg(test)]
 mod matrix_test
 {
+    use bioshell_numerical::Vec3;
+    use bioshell_numerical::matrix::Matrix3x3;
+
     #[test]
     fn matrix_from_column_values()
     {
@@ -13,7 +13,7 @@ mod matrix_test
         let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
         let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
 
-        let mat: Matrix3x3 = Matrix3x3::from_column_values(cx.x, cx.y, cx.z,
+        let mat: Matrix3x3 = Matrix3x3::from_values(cx.x, cx.y, cx.z,
                                                            cy.x, cy.y, cy.z,
                                                            cz.x, cz.y, cz.z);
 
