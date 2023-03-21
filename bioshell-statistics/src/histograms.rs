@@ -16,8 +16,8 @@ use std::fmt;
 /// ```
 #[derive(Debug, Clone)]
 pub struct Histogram {
-    data: HashMap<i32,f64>,
-    bin_width: f64
+    data: HashMap<i32, f64>,
+    bin_width: f64,
 }
 
 impl Histogram {
@@ -25,8 +25,11 @@ impl Histogram {
     ///
     ///  # Arguments
     /// * `width` - width of each bin of this histogram
-    pub fn by_bin_width(width:f64) -> Histogram {
-        Histogram{data: HashMap::new(), bin_width:width}
+    pub fn by_bin_width(width: f64) -> Histogram {
+        Histogram {
+            data: HashMap::new(),
+            bin_width: width,
+        }
     }
 
     /// Inserts a value (observation) to this histogram
@@ -40,25 +43,39 @@ impl Histogram {
     }
 
     /// Says the index of a bin a given value felt into
-    pub fn which_bin(&self, val:f64) -> i32 { (val / self.bin_width).floor() as i32 }
+    pub fn which_bin(&self, val: f64) -> i32 {
+        (val / self.bin_width).floor() as i32
+    }
 
     /// Left-hand side range of a given bin
-    pub fn bin_min(&self, bin_id: i32) -> f64 { bin_id as f64 * self.bin_width }
+    pub fn bin_min(&self, bin_id: i32) -> f64 {
+        bin_id as f64 * self.bin_width
+    }
 
     /// Right-hand side range of a given bin (exclusive)
-    pub fn bin_max(&self, bin_id: i32) -> f64 { (bin_id + 1) as f64 * self.bin_width }
+    pub fn bin_max(&self, bin_id: i32) -> f64 {
+        (bin_id + 1) as f64 * self.bin_width
+    }
 
     /// Returns the count for a given bin
-    pub fn get(&self, bin_id: i32) -> f64 { self.data[&bin_id] }
+    pub fn get(&self, bin_id: i32) -> f64 {
+        self.data[&bin_id]
+    }
 
     /// Returns the count for a bin that holds a given value
-    pub fn get_by_value(&self, val: f64) -> f64 { self.get(self.which_bin(val)) }
+    pub fn get_by_value(&self, val: f64) -> f64 {
+        self.get(self.which_bin(val))
+    }
 
     /// Total number of counts in this histogram
-    pub fn sum(&self) -> f64 { self.data.values().sum() }
+    pub fn sum(&self) -> f64 {
+        self.data.values().sum()
+    }
 
     /// Returns the bin width
-    pub fn bin_width(&self) -> f64 { self.bin_width }
+    pub fn bin_width(&self) -> f64 {
+        self.bin_width
+    }
 
     /// returns the mode of this histogram
     pub fn mode(&self) -> (f64, f64, f64) {
@@ -75,14 +92,19 @@ impl Histogram {
     }
 }
 
-
 impl fmt::Display for Histogram {
     /// Creates a `String` representation of a given `Histogram`
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let mut out: String = String::new();
         for (i, val) in self.data.iter() {
-            out = format!("{} {:5}..{:5} [{:4}] {}\n",
-                          out, self.bin_min(*i), self.bin_max(*i), i, val);
+            out = format!(
+                "{} {:5}..{:5} [{:4}] {}\n",
+                out,
+                self.bin_min(*i),
+                self.bin_max(*i),
+                i,
+                val
+            );
         }
         write!(f, "{}", out)
     }

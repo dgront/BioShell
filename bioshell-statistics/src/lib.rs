@@ -1,8 +1,8 @@
-mod histograms;
-mod distributions;
 mod descriptive;
+mod distributions;
+mod histograms;
 
-pub use descriptive::{OnlineMultivariateStatistics};
+pub use descriptive::OnlineMultivariateStatistics;
 
-pub use histograms::{Histogram};
-pub use distributions::{NormalDistribution, MultiNormalDistribution, Estimable, Distribution};
+pub use distributions::{Distribution, Estimable, MultiNormalDistribution, NormalDistribution};
+pub use histograms::Histogram;

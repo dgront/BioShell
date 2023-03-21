@@ -1,7 +1,7 @@
-use clap::{Parser};
+use clap::Parser;
 
+use bioshell_core::utils::read_tsv;
 use bioshell_statistics::{Estimable, MultiNormalDistribution};
-use bioshell_core::utils::{read_tsv};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -10,12 +10,11 @@ use bioshell_core::utils::{read_tsv};
 /// say estimate_multivariate_normal -h to see options
 struct Args {
     /// file with N-dimensional input observations: N columns of real values
-    #[clap(short, long, short='i', required = true)]
+    #[clap(short, long, short = 'i', required = true)]
     infile: String,
 }
 
 fn main() {
-
     let args = Args::parse();
 
     let fname = args.infile;

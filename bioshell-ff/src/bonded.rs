@@ -1,17 +1,17 @@
 use std::ops::Range;
 
-use bioshell_sim::{System, Energy};
-use bioshell_cartesians::{CartesianSystem};
+use bioshell_cartesians::CartesianSystem;
+use bioshell_sim::{Energy, System};
 
 pub struct SimpleHarmonic {
     /// equilibrium distance
     d0: f64,
     /// force constant
-    k: f64
+    k: f64,
 }
 impl SimpleHarmonic {
     pub fn new(d0: f64, k: f64) -> SimpleHarmonic {
-        SimpleHarmonic { d0, k}
+        SimpleHarmonic { d0, k }
     }
 }
 
@@ -23,11 +23,10 @@ macro_rules! spring_kernel {
 }
 
 impl Energy<CartesianSystem> for SimpleHarmonic {
-
     fn energy(&self, system: &CartesianSystem) -> f64 {
-        let mut en:f64 = 0.0;
+        let mut en: f64 = 0.0;
         for i in 1..system.size() {
-            if system.coordinates()[i].chain_id == system.coordinates()[i-1].chain_id {
+            if system.coordinates()[i].chain_id == system.coordinates()[i - 1].chain_id {
                 spring_kernel!(system.coordinates(),i, i-1, self.d0, en, +=);
             }
         }
@@ -40,20 +39,31 @@ impl Energy<CartesianSystem> for SimpleHarmonic {
         if pos > 0 && system.coordinates()[pos].chain_id == system.coordinates()[pos - 1].chain_id {
             spring_kernel!(system.coordinates(),pos, pos-1, self.d0, en, +=);
         }
-        if pos < system.size() - 1 && system.coordinates()[pos].chain_id == system.coordinates()[pos + 1].chain_id {
+        if pos < system.size() - 1
+            && system.coordinates()[pos].chain_id == system.coordinates()[pos + 1].chain_id
+        {
             spring_kernel!(system.coordinates(),pos, pos+1, self.d0, en, +=);
         }
 
         return en * self.k as f64;
     }
 
-    fn name(&self) -> String { String::from("SimpleHarmonic") }
+    fn name(&self) -> String {
+        String::from("SimpleHarmonic")
+    }
 
     fn energy_by_range(&self, system: &CartesianSystem, range: &Range<usize>) -> f64 {
-
         let mut total_en: f64 = 0.0;
-        let start: usize = if range.start > 0 { range.start - 1 } else { range.start };
-        let end: usize = if range.end >= system.size() - 1 { system.size() - 1 } else { range.end + 1 };
+        let start: usize = if range.start > 0 {
+            range.start - 1
+        } else {
+            range.start
+        };
+        let end: usize = if range.end >= system.size() - 1 {
+            system.size() - 1
+        } else {
+            range.end + 1
+        };
         for ipos in start..end {
             if system.coordinates()[ipos].chain_id == system.coordinates()[ipos + 1].chain_id {
                 spring_kernel!(system.coordinates(), ipos, ipos+1, self.d0, total_en, +=);

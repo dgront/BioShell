@@ -15,4 +15,6 @@
 //!
 mod residue_types;
 
-pub use residue_types::{ResidueType, ResidueTypeProperties, ResidueTypeManager, MonomerType, StandardResidueType};
+pub use residue_types::{
+    MonomerType, ResidueType, ResidueTypeManager, ResidueTypeProperties, StandardResidueType,
+};

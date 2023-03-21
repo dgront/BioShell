@@ -1,14 +1,17 @@
-use bioshell_core::chemical::{ResidueType, ResidueTypeManager, MonomerType, StandardResidueType, ResidueTypeProperties};
+use bioshell_core::chemical::{
+    MonomerType, ResidueType, ResidueTypeManager, ResidueTypeProperties, StandardResidueType,
+};
 
 #[test]
 fn test_residue_types() {
-
     // ---------- Iterate over standard amino acid enum types
     let mut n_aa: i8 = 0;
     for srt in StandardResidueType::TYPES {
-        if srt.chem_compound_type() == MonomerType::PeptideLinking { n_aa += 1; }
+        if srt.chem_compound_type() == MonomerType::PeptideLinking {
+            n_aa += 1;
+        }
     }
-    assert_eq!(n_aa, 21);       // 20 standard amino acids + UNK
+    assert_eq!(n_aa, 21); // 20 standard amino acids + UNK
 
     // ---------- Fetch a few standard amino acid types
     let cys: StandardResidueType = StandardResidueType::CYS;
@@ -16,11 +19,11 @@ fn test_residue_types() {
 
     // ---------- Check their properties
     assert_eq!(cys, StandardResidueType::CYS);
-    assert_eq!(cys.code1(),'C');
-    assert_eq!(cys.code3(),"CYS");
-    assert_eq!(trp.code3(),"TRP");
-    assert_eq!(cys.chem_compound_type(),MonomerType::PeptideLinking);
-    assert_eq!(trp.chem_compound_type(),cys.chem_compound_type());
+    assert_eq!(cys.code1(), 'C');
+    assert_eq!(cys.code3(), "CYS");
+    assert_eq!(trp.code3(), "TRP");
+    assert_eq!(cys.chem_compound_type(), MonomerType::PeptideLinking);
+    assert_eq!(trp.chem_compound_type(), cys.chem_compound_type());
 
     // ---------- Check conversion 'C' -> StandardResidueType::CYS
     assert_eq!(StandardResidueType::try_from('C').unwrap(), cys);
@@ -29,7 +32,11 @@ fn test_residue_types() {
     assert!(result.is_err());
 
     // ---------- Create a new residue type
-    let alm = ResidueType{parent_type: StandardResidueType::ALA, code3:String::from("ALM"), chem_compound_type: MonomerType::PeptideLinking};
+    let alm = ResidueType {
+        parent_type: StandardResidueType::ALA,
+        code3: String::from("ALM"),
+        chem_compound_type: MonomerType::PeptideLinking,
+    };
 
     // ---------- Create a new RT manager, it should preload all the 29 standard residue types
     let mut mgr = ResidueTypeManager::new();

@@ -19,7 +19,12 @@ fn coordinates_pbc() {
     let mut xyz = Coordinates::new(1);
     xyz.set_box_len(L);
     let l: f64 = xyz.box_len();
-    xyz.set(0, rng.gen_range(0.0..l), rng.gen_range(0.0..l), rng.gen_range(0.0..l));
+    xyz.set(
+        0,
+        rng.gen_range(0.0..l),
+        rng.gen_range(0.0..l),
+        rng.gen_range(0.0..l),
+    );
 
     assert!(xyz.x(0) != xyz.y(0));
     assert!(xyz.x(0) != xyz.z(0));
@@ -47,17 +52,24 @@ fn closest_distance() {
     let l: f64 = xyz.box_len();
 
     for i in 0..N {
-        xyz.set(i, rng.gen_range(0.0..l), rng.gen_range(0.0..l), rng.gen_range(0.0..l));
+        xyz.set(
+            i,
+            rng.gen_range(0.0..l),
+            rng.gen_range(0.0..l),
+            rng.gen_range(0.0..l),
+        );
         for j in 0..i {
             assert!(xyz.closest_distance_square(i, j) <= MAX_D);
             assert!(xyz.closest_distance_square(i, j) > 0.0);
         }
     }
 
-    xyz.set_box_len(10000000.0);    // --- make all the points well inside the box so closest distance equals to the true distance
+    xyz.set_box_len(10000000.0); // --- make all the points well inside the box so closest distance equals to the true distance
     for i in 0..N {
         for j in 0..i {
-            assert!((xyz.closest_distance_square(i, j) - xyz.distance_square(i, j)).abs() < 0.0000001);
+            assert!(
+                (xyz.closest_distance_square(i, j) - xyz.distance_square(i, j)).abs() < 0.0000001
+            );
         }
     }
 }

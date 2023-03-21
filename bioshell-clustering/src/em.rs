@@ -2,13 +2,15 @@ use std::fmt::Display;
 
 // use pyo3::prelude::*;
 
-use bioshell_statistics::{Estimable, Distribution};
-
+use bioshell_statistics::{Distribution, Estimable};
 
 // ========== Expectation - Maximization ==========
-pub fn expectation_maximization<D: Estimable+Distribution+Display>(distributions:&mut Vec<D>,
-        data: &Vec<Vec<f64>>, assignment: &mut Vec<Vec<bool>>, epsilon: f64) -> f64 {
-
+pub fn expectation_maximization<D: Estimable + Distribution + Display>(
+    distributions: &mut Vec<D>,
+    data: &Vec<Vec<f64>>,
+    assignment: &mut Vec<Vec<bool>>,
+    epsilon: f64,
+) -> f64 {
     // --- check whether the input vectors have the right size
     assert_eq!(data.len(), assignment[0].len());
     assert_eq!(distributions.len(), assignment.len());
@@ -31,7 +33,7 @@ pub fn expectation_maximization<D: Estimable+Distribution+Display>(distributions
             assignment[best_idx][i] = true;
             log_liklhd += best_val.ln();
         }
-        progress = ((log_liklhd - last_log_liklhd)/log_liklhd).abs();
+        progress = ((log_liklhd - last_log_liklhd) / log_liklhd).abs();
         last_log_liklhd = log_liklhd;
         // println!("{} {}",last_log_liklhd, progress);
     }
@@ -39,8 +41,10 @@ pub fn expectation_maximization<D: Estimable+Distribution+Display>(distributions
     return last_log_liklhd;
 }
 
-fn which_distribution<D: Estimable+Distribution>(distributions: &Vec<D>, p: &Vec<f64>)  -> (usize, f64) {
-
+fn which_distribution<D: Estimable + Distribution>(
+    distributions: &Vec<D>,
+    p: &Vec<f64>,
+) -> (usize, f64) {
     let mut best_idx: usize = 0;
     let mut best_val: f64 = distributions[0].pdf(p);
     for i in 1..distributions.len() {
@@ -52,8 +56,6 @@ fn which_distribution<D: Estimable+Distribution>(distributions: &Vec<D>, p: &Vec
     }
     return (best_idx, best_val);
 }
-
-
 
 // #[pymodule]
 // fn bioshell_numerical(_: Python, m: &PyModule) -> PyResult<()> {

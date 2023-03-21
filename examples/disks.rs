@@ -1,19 +1,23 @@
-use std::env;
-use std::time::Instant;
-use std::ops::Range;
 use rand::Rng;
+use std::env;
+use std::ops::Range;
+use std::time::Instant;
 
-use log::{info};
+use log::info;
 
-use clap::{Parser};
+use clap::Parser;
 
-use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, square_grid_atoms,
-                          NbList, ArgonRules, pdb_to_coordinates};
 use bioshell_cartesians::observers::PdbTrajectory;
+use bioshell_cartesians::{
+    coordinates_to_pdb, pdb_to_coordinates, square_grid_atoms, ArgonRules, CartesianSystem,
+    Coordinates, NbList,
+};
 use bioshell_sim::{Energy, Observer, ObserversSet, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbonded, PairwiseNonbondedEvaluator, SimpleContact};
-use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, IsothermalMC, AdaptiveMCProtocol, AcceptanceCriterion};
+use bioshell_montecarlo::{
+    AcceptanceCriterion, AcceptanceStatistics, AdaptiveMCProtocol, IsothermalMC, Mover, Sampler,
+};
 
 #[derive(Parser, Debug)]
 #[clap(name = "disks")]
@@ -22,16 +26,16 @@ use bioshell_montecarlo::{Sampler, AcceptanceStatistics, Mover, IsothermalMC, Ad
 #[clap(after_help = "Example:\n\tdisks -d 0.4 -n 400 -i 1000 -o 1000 -t 0.42")]
 struct Args {
     /// staring conformation in the PDB format
-    #[clap(short, long, default_value = "", short='f')]
+    #[clap(short, long, default_value = "", short = 'f')]
     infile: String,
     /// temperature of the simulation
-    #[clap(short, long, default_value_t = 1.0, short='t')]
+    #[clap(short, long, default_value_t = 1.0, short = 't')]
     temperature: f64,
     /// density of the simulated system
-    #[clap(short, long, default_value_t = 0.4, short='d')]
+    #[clap(short, long, default_value_t = 0.4, short = 'd')]
     density: f64,
     /// Number of disks in a box to simulate
-    #[clap(short, long, default_value_t = 400, short='n')]
+    #[clap(short, long, default_value_t = 400, short = 'n')]
     ndisks: usize,
     /// the number of inner MC cycles
     #[clap(short, long, default_value_t = 100)]
@@ -51,28 +55,32 @@ struct Args {
 }
 
 fn box_width(disc_radius: f64, n_discs: usize, density: f64) -> f64 {
-
     let v: f64 = std::f64::consts::PI * disc_radius.powi(2);
-    (n_discs as f64 * v/density).powf(0.5)
+    (n_discs as f64 * v / density).powf(0.5)
 }
 
 /// Moves a random disc
 struct DiskMover {
     max_step: f64,
-    succ_rate: AcceptanceStatistics
+    succ_rate: AcceptanceStatistics,
 }
 
 impl DiskMover {
     pub fn new(max_range: f64) -> DiskMover {
-        DiskMover{ max_step: max_range, succ_rate: Default::default() }
+        DiskMover {
+            max_step: max_range,
+            succ_rate: Default::default(),
+        }
     }
 }
 
 impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> for DiskMover {
-
-    fn perturb(&mut self, system: &mut CartesianSystem,
-               energy: &PairwiseNonbondedEvaluator<SimpleContact>, acc: &mut dyn AcceptanceCriterion) -> Option<Range<usize>> {
-
+    fn perturb(
+        &mut self,
+        system: &mut CartesianSystem,
+        energy: &PairwiseNonbondedEvaluator<SimpleContact>,
+        acc: &mut dyn AcceptanceCriterion,
+    ) -> Option<Range<usize>> {
         let mut rng = rand::thread_rng();
         // ---------- index of a disk we move
         let i_moved = rng.gen_range(0..system.size());
@@ -83,11 +91,15 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> for DiskM
 
         // ---------- test the energy consistency - in debug build only
         #[cfg(debug_assertions)]
-            let total_en_before: f64 = energy.energy(system);
+        let total_en_before: f64 = energy.energy(system);
 
         // ---------- actually make the move and update the NBL (mandatory!!)
-        system.add(i_moved,rng.gen_range(-self.max_step..self.max_step),
-                   rng.gen_range(-self.max_step..self.max_step), 0.0);
+        system.add(
+            i_moved,
+            rng.gen_range(-self.max_step..self.max_step),
+            rng.gen_range(-self.max_step..self.max_step),
+            0.0,
+        );
         system.update_nbl(i_moved);
 
         // ---------- calculate the new energy
@@ -98,15 +110,18 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> for DiskM
             system.update_nbl(i_moved);
 
             // ---------- energy consistency test - part two
-            #[cfg(debug_assertions)] {
+            #[cfg(debug_assertions)]
+            {
                 let total_en_after: f64 = energy.energy(system);
                 let total_delta: f64 = total_en_after - total_en_before;
                 let local_delta = new_en - old_en;
                 if f64::abs(total_delta - local_delta) > 0.01 {
-
-                    let str = format!("Inconsistent energy! Total {total_en_before} -> \
+                    let str = format!(
+                        "Inconsistent energy! Total {total_en_before} -> \
                         {total_en_after} with delta = {total_delta}, local delta: {local_delta} \
-                        after moving disk {}", i_moved);
+                        after moving disk {}",
+                        i_moved
+                    );
                     panic!("{}", str);
                 }
             }
@@ -122,11 +137,17 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> for DiskM
         }
     }
 
-    fn acceptance_statistics(&self) -> AcceptanceStatistics { self.succ_rate.clone() }
+    fn acceptance_statistics(&self) -> AcceptanceStatistics {
+        self.succ_rate.clone()
+    }
 
-    fn max_range(&self) -> f64 { return self.max_step; }
+    fn max_range(&self) -> f64 {
+        return self.max_step;
+    }
 
-    fn set_max_range(&mut self, new_val: f64) { self.max_step = new_val; }
+    fn set_max_range(&mut self, new_val: f64) {
+        self.max_step = new_val;
+    }
 }
 
 fn rescore(conformation: &CartesianSystem, energy: &PairwiseNonbondedEvaluator<SimpleContact>) {
@@ -136,7 +157,11 @@ fn rescore(conformation: &CartesianSystem, energy: &PairwiseNonbondedEvaluator<S
         total += en;
         println!("{} {}", pos, en);
     }
-    println!("total, by-pos: {} {}", energy.energy(conformation), total/2.0);
+    println!(
+        "total, by-pos: {} {}",
+        energy.energy(conformation),
+        total / 2.0
+    );
 }
 
 pub fn main() {
@@ -144,7 +169,9 @@ pub fn main() {
     const W: f64 = 1.0;
     const MAX_MOVE_RANGE: f64 = 1.0;
 
-    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    if env::var("RUST_LOG").is_err() {
+        env::set_var("RUST_LOG", "info")
+    }
     env_logger::init();
 
     let args = Args::parse();
@@ -169,30 +196,35 @@ pub fn main() {
     } else {
         let res = pdb_to_coordinates(&args.infile).ok();
         match res {
-            Some(x) => { coords = x; },
-            _ => panic!("Can't read from file >{}<", args.infile)
+            Some(x) => {
+                coords = x;
+            }
+            _ => panic!("Can't read from file >{}<", args.infile),
         };
         n_atoms = coords.size();
         box_length = box_width(R, n_atoms, density);
         coords.set_box_len(box_length);
     }
 
-    info!("Simulation settings:
+    info!(
+        "Simulation settings:
         temperature: {:.3}
         density:     {}
         no. disks:   {}
         box length:  {:.3}
-        NBL buffer:  {:.3}", temperature, density, n_atoms, box_length, buffer_thickness);
+        NBL buffer:  {:.3}",
+        temperature, density, n_atoms, box_length, buffer_thickness
+    );
 
     // ---------- Create system's list of neighbors
-    let nbl:NbList = NbList::new(R+W as f64,buffer_thickness,Box::new(ArgonRules{}));
+    let nbl: NbList = NbList::new(R + W as f64, buffer_thickness, Box::new(ArgonRules {}));
 
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
 
     // ---------- Create energy function
-    let kernel = SimpleContact::new(R,R,R+W,100000.0,-1.0);
-    let pairwise = PairwiseNonbondedEvaluator::new(R+W,kernel);
+    let kernel = SimpleContact::new(R, R, R + W, 100000.0, -1.0);
+    let pairwise = PairwiseNonbondedEvaluator::new(R + W, kernel);
 
     // ---------- Just rescore, no simulation this time
     if args.rescore {
@@ -201,8 +233,10 @@ pub fn main() {
     }
 
     // ---------- Create a sampler and add a mover into it
-    let mut simple_sampler: IsothermalMC<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> =
-            IsothermalMC::new(temperature);
+    let mut simple_sampler: IsothermalMC<
+        CartesianSystem,
+        PairwiseNonbondedEvaluator<SimpleContact>,
+    > = IsothermalMC::new(temperature);
     simple_sampler.add_mover(Box::new(DiskMover::new(MAX_MOVE_RANGE)));
 
     // ---------- Decorate the sampler into an adaptive MC protocol
@@ -215,7 +249,13 @@ pub fn main() {
     tra.observe(&system);
     tra.if_append = true;
     observers.add_observer(tra, 1);
-    sampler.run_simulation(args.outer, args.inner, &mut system, &pairwise, &mut observers);
+    sampler.run_simulation(
+        args.outer,
+        args.inner,
+        &mut system,
+        &pairwise,
+        &mut observers,
+    );
 
-    coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
+    coordinates_to_pdb(&system.coordinates(), 1, final_fname.as_str(), false);
 }

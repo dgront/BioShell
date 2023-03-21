@@ -1,7 +1,7 @@
-use core::fmt::{Formatter, Display};
+use core::fmt::{Display, Formatter};
 use std::fs::File;
 
-use crate::sequence::{Sequence, ResidueTypeOrder};
+use crate::sequence::{ResidueTypeOrder, Sequence};
 
 #[derive(Clone, Debug)]
 /// Represents a sequence profile.
@@ -23,7 +23,6 @@ pub struct SequenceProfile {
 impl SequenceProfile {
     /// Creates a sequence profile from a given pool of aligned sequences
     pub fn new(mapping: ResidueTypeOrder, msa: &Vec<Sequence>) -> SequenceProfile {
-
         let n = msa[0].len();
         let k = mapping.size();
         let mut data: Vec<Vec<f32>> = vec![vec![0.0; k]; n];
@@ -47,17 +46,23 @@ impl SequenceProfile {
             }
         }
 
-        SequenceProfile{mapping, data}
+        SequenceProfile { mapping, data }
     }
 
     /// Returns a probability for a given sequence position and a residue type.
-    pub fn fraction(&self, pos: usize, aa: usize) -> f32 { self.data[pos][aa] }
+    pub fn fraction(&self, pos: usize, aa: usize) -> f32 {
+        self.data[pos][aa]
+    }
 
     /// Provides immutable access to the residue ordering used by this sequence profile
-    pub fn column_order(&self) -> &ResidueTypeOrder { &self.mapping }
+    pub fn column_order(&self) -> &ResidueTypeOrder {
+        &self.mapping
+    }
 
     /// Returns the number of sequence positions in this sequence profile
-    pub fn len(&self) -> usize { self.data.len() }
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
 }
 
 impl Display for SequenceProfile {

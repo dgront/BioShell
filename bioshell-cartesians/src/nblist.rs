@@ -1,7 +1,6 @@
-use bioshell_numerical::{Vec3};
-use bioshell_sim::System;
 use crate::{Coordinates, CoordinatesView};
-
+use bioshell_numerical::Vec3;
+use bioshell_sim::System;
 
 /// Rules that define which atoms and which atom pairs will be excluded from hashing
 ///
@@ -15,19 +14,20 @@ use crate::{Coordinates, CoordinatesView};
 /// ``true`` in such cases. To exclude a given atom `i` from any energy evaluation,
 /// ``NbListRules::if_atom_excluded(i)`` can be used.
 pub trait NbListRules {
-
     /// Says if an atom is excluded from any interactions
-    fn if_atom_excluded(&self, coordinates: &Coordinates, i_atom:usize) -> bool;
+    fn if_atom_excluded(&self, coordinates: &Coordinates, i_atom: usize) -> bool;
 
     /// Says if a given pair of atoms is excluded from any interactions
-    fn if_pair_excluded(&self, coordinates: &Coordinates, i_atom:usize, j_atom:usize) -> bool;
+    fn if_pair_excluded(&self, coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool;
 
     /// Each NbListRules must provide a way to clone its boxed instance
     fn box_clone(&self) -> Box<dyn NbListRules>;
 }
 
-impl Clone for Box<dyn NbListRules>  {
-    fn clone(&self) -> Box<dyn NbListRules> { self.box_clone() }
+impl Clone for Box<dyn NbListRules> {
+    fn clone(&self) -> Box<dyn NbListRules> {
+        self.box_clone()
+    }
 }
 
 #[derive(Clone)]
@@ -39,10 +39,11 @@ impl Clone for Box<dyn NbListRules>  {
 pub struct ArgonRules;
 
 impl NbListRules for ArgonRules {
-
     /// Always returns ``false``, because all atoms interact.
     /// All arguments of this method are therefore ignored
-    fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool { false }
+    fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool {
+        false
+    }
 
     /// Returns ``false``, because all atom pairs are included in pairwise interactions.
     ///
@@ -69,10 +70,11 @@ impl NbListRules for ArgonRules {
 pub struct PolymerRules;
 
 impl NbListRules for PolymerRules {
-
     /// Always returns ``false``, because all atoms of a polymer interact
     /// All arguments of this method are therefore ignored
-    fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool { false }
+    fn if_atom_excluded(&self, _coordinates: &Coordinates, _i_atom: usize) -> bool {
+        false
+    }
 
     /// Excludes direct neighbors in a chain.
     ///
@@ -80,12 +82,13 @@ impl NbListRules for PolymerRules {
     /// this prevents contact (non-bonded) interaction between atoms (beads) that are connected
     /// with bonds (e.g. harmonic springs). For any other pair of atoms this method returns `true`
     fn if_pair_excluded(&self, coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool {
-
         // ---------- atoms of different chains always interact
-        if coordinates[i_atom].chain_id != coordinates[j_atom].chain_id { return false; }
+        if coordinates[i_atom].chain_id != coordinates[j_atom].chain_id {
+            return false;
+        }
 
         // ---------- exclude direct neighbors in a chain
-        if i_atom >  j_atom {
+        if i_atom > j_atom {
             return i_atom - j_atom < 2;
         } else {
             return j_atom - i_atom < 2;
@@ -98,50 +101,60 @@ impl NbListRules for PolymerRules {
 }
 
 pub struct NbList {
-    cutoff: f64,                        // distance cutoff for this list
-    buffer_width: f64,                  // safety buffer thickness
-    total_cutoff_sq: f64,               // total cutoff = cutoff + safety buffer
-    max_moved_sq: f64,                  // how far atom can travel to trigger update
-    nb_rules: Box<dyn NbListRules>,     // encodes rules for this NBL
-    recent_pos: Vec<Vec3>,              // positions from the previous update() method call to compute displacement vector
-    travelled: Vec<Vec3>,               // vector of accumulative displacement of i-th atom since the last NBL update
-    nb_lists: Vec<Vec<usize>>,          // the NBL itself
+    cutoff: f64,                    // distance cutoff for this list
+    buffer_width: f64,              // safety buffer thickness
+    total_cutoff_sq: f64,           // total cutoff = cutoff + safety buffer
+    max_moved_sq: f64,              // how far atom can travel to trigger update
+    nb_rules: Box<dyn NbListRules>, // encodes rules for this NBL
+    recent_pos: Vec<Vec3>, // positions from the previous update() method call to compute displacement vector
+    travelled: Vec<Vec3>, // vector of accumulative displacement of i-th atom since the last NBL update
+    nb_lists: Vec<Vec<usize>>, // the NBL itself
 }
 
 macro_rules! insert_nb_pair {
     ($i:expr, $j:expr, $system:expr, $self:expr) => {
-        if ! $self.nb_rules.if_pair_excluded(&$system, $i, $j) {
-            if $system.closest_distance_square($j,$i) < $self.total_cutoff_sq {
+        if !$self.nb_rules.if_pair_excluded(&$system, $i, $j) {
+            if $system.closest_distance_square($j, $i) < $self.total_cutoff_sq {
                 $self.nb_lists[$j].push($i);
                 $self.nb_lists[$i].push($j);
             }
         }
-    }
+    };
 }
 
 impl NbList {
-
-    pub fn new(cutoff:f64, buffer_thickness: f64, nb_rules: Box<dyn NbListRules>) -> NbList {
-        let neighbors:Vec<Vec<usize>> = Vec::new();
+    pub fn new(cutoff: f64, buffer_thickness: f64, nb_rules: Box<dyn NbListRules>) -> NbList {
+        let neighbors: Vec<Vec<usize>> = Vec::new();
         let total = buffer_thickness + cutoff;
         let max_moved = buffer_thickness / 2.0;
-        NbList { cutoff, buffer_width: buffer_thickness, total_cutoff_sq: total*total,
-            max_moved_sq:max_moved*max_moved, nb_rules,
-            recent_pos: Vec::new(), travelled: Vec::new(), nb_lists: neighbors }
+        NbList {
+            cutoff,
+            buffer_width: buffer_thickness,
+            total_cutoff_sq: total * total,
+            max_moved_sq: max_moved * max_moved,
+            nb_rules,
+            recent_pos: Vec::new(),
+            travelled: Vec::new(),
+            nb_lists: neighbors,
+        }
     }
 
     /// Provides the interaction cutoff radius
-    pub fn cutoff(&self) -> f64 { self.cutoff }
+    pub fn cutoff(&self) -> f64 {
+        self.cutoff
+    }
 
     /// Modifies the interaction cutoff radius
     pub fn set_cutoff(&mut self, d0: f64) {
         self.cutoff = d0;
         let total = self.buffer_width + self.cutoff;
-        self.total_cutoff_sq = total*total;
+        self.total_cutoff_sq = total * total;
     }
 
     /// Provides the width of the buffer zone
-    pub fn buffer_width(&self) -> f64 { self.buffer_width }
+    pub fn buffer_width(&self) -> f64 {
+        self.buffer_width
+    }
 
     /// Modifies the width of the buffer zone
     pub fn set_buffer_width(&mut self, width: f64) {
@@ -160,9 +173,10 @@ impl NbList {
 
     /// Updates the list of neighbors after a given atom was moved.
     pub fn update(&mut self, system: &Coordinates, which_atom: usize) {
-
         // ---------- Is the atom relevant for this list?
-        if self.nb_rules.if_atom_excluded(system, which_atom) { return;}
+        if self.nb_rules.if_atom_excluded(system, which_atom) {
+            return;
+        }
 
         // ---------- Extend the data structure if needed
         self.extend(&system);
@@ -181,7 +195,9 @@ impl NbList {
         self.recent_pos[which_atom].z = z;
 
         // --- check if it moved far enough; if not - skip it
-        if self.travelled[which_atom].length_squared() < self.max_moved_sq {return;}
+        if self.travelled[which_atom].length_squared() < self.max_moved_sq {
+            return;
+        }
 
         // --- reset the displacement because we are updating the NBL for that atom
         self.travelled[which_atom].x = 0.0;
@@ -189,20 +205,27 @@ impl NbList {
         self.travelled[which_atom].z = 0.0;
 
         // --- First clear information about which_atom in its partners
-        for i_nb in  0..self.nb_lists[which_atom].len() {       // --- i_nb is the index of a neighbor
-            let j:usize = self.nb_lists[which_atom][i_nb];             // --- for each j neighbor of i, find i on its list and remove
-            if let Some(index) = self.nb_lists[j].iter().position(|value| *value == which_atom) {
+        for i_nb in 0..self.nb_lists[which_atom].len() {
+            // --- i_nb is the index of a neighbor
+            let j: usize = self.nb_lists[which_atom][i_nb]; // --- for each j neighbor of i, find i on its list and remove
+            if let Some(index) = self.nb_lists[j]
+                .iter()
+                .position(|value| *value == which_atom)
+            {
                 self.nb_lists[j].swap_remove(index);
-            } else { println!("INCONSISTENT NBL!") }
+            } else {
+                println!("INCONSISTENT NBL!")
+            }
         }
         // --- ... then clear neighbors of which_atom
         self.nb_lists[which_atom].clear();
 
         // --- detect neighbors
-        for i in 0..which_atom { // --- check distance, update list of neighbors
+        for i in 0..which_atom {
+            // --- check distance, update list of neighbors
             insert_nb_pair!(which_atom, i, system, self);
         }
-        for i in which_atom+1..system.size() {
+        for i in which_atom + 1..system.size() {
             insert_nb_pair!(which_atom, i, system, self);
         }
     }
@@ -212,10 +235,14 @@ impl NbList {
         // --- extend the list if needed
         self.extend(&system);
         // --- clear all neighbors
-        for vi in 0..self.nb_lists.len() { self.nb_lists[vi].clear() }
+        for vi in 0..self.nb_lists.len() {
+            self.nb_lists[vi].clear()
+        }
         // --- copy coordinates
-        for  i in 0..system.size() {
-            if self.nb_rules.if_atom_excluded(system, i) { continue }
+        for i in 0..system.size() {
+            if self.nb_rules.if_atom_excluded(system, i) {
+                continue;
+            }
             self.recent_pos[i].x = system.x(i);
             self.recent_pos[i].y = system.y(i);
             self.recent_pos[i].z = system.z(i);
@@ -240,15 +267,17 @@ impl NbList {
     }
 
     /// Provide a read-only access to neighbors of a given atom
-    pub fn neighbors(&self, pos:usize) -> &Vec<usize> { &self.nb_lists[pos] }
+    pub fn neighbors(&self, pos: usize) -> &Vec<usize> {
+        &self.nb_lists[pos]
+    }
 
     /// Add inner vectors to this non-bonded list so it has at least as many rows as the number of atoms in the given structure
     fn extend(&mut self, system: &Coordinates) {
         if system.size() > self.nb_lists.len() {
             for _ in self.nb_lists.len()..system.size() {
                 self.nb_lists.push(Vec::new());
-                self.recent_pos.push(Vec3::new(0.0,0.0,0.0));
-                self.travelled.push(Vec3::new(0.0,0.0,0.0));
+                self.recent_pos.push(Vec3::new(0.0, 0.0, 0.0));
+                self.travelled.push(Vec3::new(0.0, 0.0, 0.0));
             }
         }
     }

@@ -1,22 +1,17 @@
-
 #[cfg(test)]
-mod rototranslation_test
-{
+mod rototranslation_test {
     use bioshell_numerical::matrix::Matrix3x3;
-    use bioshell_numerical::vec3::Vec3;
     use bioshell_numerical::rototranslation::*;
+    use bioshell_numerical::vec3::Vec3;
 
     #[test]
-    fn rototranslation_struct()
-    {
+    fn rototranslation_struct() {
         let vx = Vec3::new(1.0, 0.0, 0.0);
         let vy = Vec3::new(0.0, 1.0, 0.0);
         let vz = Vec3::new(1.0, 0.0, 1.0);
         let unit_vec = Vec3::new(1.0, 1.0, 1.0);
         let another_vec = Vec3::new(10.0, 0.0, 10.0);
-        let unit_mtx = Matrix3x3::from_values(1.0, 0.0, 0.0,
-                                              0.0, 1.0, 0.0,
-                                              1.0, 0.0, 1.0);
+        let unit_mtx = Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 
         let rototran = Rototranslation::new(unit_mtx, unit_vec);
 
@@ -28,14 +23,10 @@ mod rototranslation_test
     }
 
     #[test]
-    fn rototranslation_around_axis()
-    {
-        let rotation_mat = matrix_lib::matrix::Matrix3x3::from_values(
-            1.0,0.0,0.0,
-            0.0,1.0,0.0,
-            0.0,0.0,1.0
-        );
-        let translation_vec = matrix_lib::vec3::Vec3::new(1.0,1.0,1.0);
+    fn rototranslation_around_axis() {
+        let rotation_mat =
+            matrix_lib::matrix::Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+        let translation_vec = matrix_lib::vec3::Vec3::new(1.0, 1.0, 1.0);
         let mut another_vec = Vec3::new(10.0, 1.0, 10.0);
         let rot = Rototranslation::new(rotation_mat, translation_vec);
 
@@ -51,14 +42,10 @@ mod rototranslation_test
     }
 
     #[test]
-    fn rototranslation_apply_mut()
-    {
-        let rotation_mat = matrix_lib::matrix::Matrix3x3::from_values(
-            1.0,0.0,0.0,
-            0.0,1.0,0.0,
-            0.0,0.0,1.0
-        );
-        let translation_vec = matrix_lib::vec3::Vec3::new(1.0,1.0,1.0);
+    fn rototranslation_apply_mut() {
+        let rotation_mat =
+            matrix_lib::matrix::Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+        let translation_vec = matrix_lib::vec3::Vec3::new(1.0, 1.0, 1.0);
         let mut another_vec = Vec3::new(10.0, 1.0, 10.0);
 
         let rot = Rototranslation::new(rotation_mat, translation_vec);
@@ -71,12 +58,8 @@ mod rototranslation_test
     }
 
     #[test]
-    fn rototranslation_apply()
-    {
-        let unit_matrix =
-            Matrix3x3::from_values(1.0, 0.0, 0.0,
-                                   0.0, 1.0, 0.0,
-                                   0.0, 0.0, 1.0);
+    fn rototranslation_apply() {
+        let unit_matrix = Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
         let vector = Vec3::new(10.0, 0.0, 10.0);
 
         let rot = Rototranslation::new(unit_matrix, vector);
@@ -88,11 +71,8 @@ mod rototranslation_test
     }
 
     #[test]
-    fn rototranslation_apply_inverse_mut()
-    {
-        let unit_matrix = Matrix3x3::from_values(  1.0, 0.0, 0.0,
-                                                   0.0, 1.0, 0.0,
-                                                   0.0, 0.0, 1.0);
+    fn rototranslation_apply_inverse_mut() {
+        let unit_matrix = Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
         let trans_vec = Vec3::new(1.0, 1.0, 1.0);
         let rt = Rototranslation::new(unit_matrix, trans_vec);
         let mut another_vec = Vec3::new(1.0, 2.0, 3.0);
@@ -103,11 +83,8 @@ mod rototranslation_test
     }
 
     #[test]
-    fn rototranslation_apply_inverse()
-    {
-        let unit_matrix = Matrix3x3::from_values(  1.0, 0.0, 0.0,
-                                                   0.0, 1.0, 0.0,
-                                                   0.0, 0.0, 1.0);
+    fn rototranslation_apply_inverse() {
+        let unit_matrix = Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
         let trans_vec = Vec3::new(1.0, 1.0, 1.0);
         let rt = Rototranslation::new(unit_matrix, trans_vec);
         let another_vec = Vec3::new(1.0, 2.0, 3.0);

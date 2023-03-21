@@ -1,9 +1,9 @@
-use std::ops::Range;
 use rand::Rng;
+use std::ops::Range;
 
-use crate::{CartesianSystem};
-use bioshell_sim::{Energy, System};
+use crate::CartesianSystem;
 use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
+use bioshell_sim::{Energy, System};
 
 /// A mover that moves a single, randomly selected atom by a small random vector.
 ///
@@ -12,20 +12,28 @@ use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 /// struct defined in the **bioshell** library.
 pub struct SingleAtomMove {
     max_step: f64,
-    succ_rate: AcceptanceStatistics
+    succ_rate: AcceptanceStatistics,
 }
 
 impl SingleAtomMove {
     /// Create a new mover that shifts a single atom.
     ///
     /// Each coordinate of  a randomly selected atom will be changed by at most `max_range`
-    pub fn new(max_range: f64) -> SingleAtomMove { SingleAtomMove{ max_step: max_range, succ_rate: Default::default() } }
+    pub fn new(max_range: f64) -> SingleAtomMove {
+        SingleAtomMove {
+            max_step: max_range,
+            succ_rate: Default::default(),
+        }
+    }
 }
 
 impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for SingleAtomMove {
-
-    fn perturb(&mut self, system: &mut CartesianSystem, energy: &E, acc: &mut dyn AcceptanceCriterion) -> Option<Range<usize>> {
-
+    fn perturb(
+        &mut self,
+        system: &mut CartesianSystem,
+        energy: &E,
+        acc: &mut dyn AcceptanceCriterion,
+    ) -> Option<Range<usize>> {
         let mut rng = rand::thread_rng();
         let i_moved = rng.gen_range(0..system.size());
 
@@ -34,8 +42,12 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for SingleAtomMove {
         let old_z: f64 = system.coordinates()[i_moved].z;
         let old_en: f64 = energy.energy_by_pos(system, i_moved);
 
-        system.add(i_moved,rng.gen_range(-self.max_step..self.max_step),
-                   rng.gen_range(-self.max_step..self.max_step),rng.gen_range(-self.max_step..self.max_step));
+        system.add(
+            i_moved,
+            rng.gen_range(-self.max_step..self.max_step),
+            rng.gen_range(-self.max_step..self.max_step),
+            rng.gen_range(-self.max_step..self.max_step),
+        );
 
         let new_en: f64 = energy.energy_by_pos(system, i_moved);
         if acc.check(old_en, new_en) {
@@ -49,13 +61,18 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for SingleAtomMove {
         }
     }
 
-    fn acceptance_statistics(&self) -> AcceptanceStatistics { self.succ_rate.clone() }
+    fn acceptance_statistics(&self) -> AcceptanceStatistics {
+        self.succ_rate.clone()
+    }
 
-    fn max_range(&self) -> f64 { self.max_step }
+    fn max_range(&self) -> f64 {
+        self.max_step
+    }
 
-    fn set_max_range(&mut self, new_val: f64) { self.max_step = new_val; }
+    fn set_max_range(&mut self, new_val: f64) {
+        self.max_step = new_val;
+    }
 }
-
 
 /// A mover that changes a volume of a Cartesian system.
 ///
@@ -72,25 +89,31 @@ pub struct ChangeVolume {
     pub pressure: f64,
     pub temperature: f64,
     max_step: f64,
-    succ_rate: AcceptanceStatistics
+    succ_rate: AcceptanceStatistics,
 }
 
 #[allow(non_upper_case_globals)]
 const pV_to_Kelvins: f64 = 1.0E-30 / 1.380649E-23; // 10^-30 divided by the Boltzmann constant
 
 impl ChangeVolume {
-
     pub fn new(pressure: f64, temperature: f64) -> ChangeVolume {
-        ChangeVolume {pressure, temperature, max_step: 0.01, succ_rate: Default::default()}
+        ChangeVolume {
+            pressure,
+            temperature,
+            max_step: 0.01,
+            succ_rate: Default::default(),
+        }
     }
 }
 
-
 impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for ChangeVolume {
-
     #[allow(non_snake_case)]
-    fn perturb(&mut self, system: &mut CartesianSystem, energy: &E, _acc: &mut dyn AcceptanceCriterion) -> Option<Range<usize>> {
-
+    fn perturb(
+        &mut self,
+        system: &mut CartesianSystem,
+        energy: &E,
+        _acc: &mut dyn AcceptanceCriterion,
+    ) -> Option<Range<usize>> {
         // ---------- attempt the volume change
         let en_before = energy.energy(system);
         let mut rng = rand::thread_rng();
@@ -109,10 +132,12 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for ChangeVolume {
         }
         system.set_box_len(new_len);
         let en_after = energy.energy(system);
-        let weight = ((en_after - en_before) + self.pressure*(new_V - v0) * pV_to_Kelvins) / self.temperature -
-            (system.size() + 1) as f64  * (new_V / v0).ln();
+        let weight = ((en_after - en_before) + self.pressure * (new_V - v0) * pV_to_Kelvins)
+            / self.temperature
+            - (system.size() + 1) as f64 * (new_V / v0).ln();
 
-        if rng.gen_range(0.0..1.0) > (-weight/self.temperature).exp() { // --- move rejected
+        if rng.gen_range(0.0..1.0) > (-weight / self.temperature).exp() {
+            // --- move rejected
             for i in 0..system.size() {
                 let x = system.coordinates().x(i) / f;
                 let y = system.coordinates().y(i) / f;
@@ -128,13 +153,18 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for ChangeVolume {
         }
     }
 
-    fn acceptance_statistics(&self) -> AcceptanceStatistics { self.succ_rate.clone() }
+    fn acceptance_statistics(&self) -> AcceptanceStatistics {
+        self.succ_rate.clone()
+    }
 
-    fn max_range(&self) -> f64 { self.max_step }
+    fn max_range(&self) -> f64 {
+        self.max_step
+    }
 
-    fn set_max_range(&mut self, new_val: f64) { self.max_step = new_val; }
+    fn set_max_range(&mut self, new_val: f64) {
+        self.max_step = new_val;
+    }
 }
-
 
 /*
 pub struct PerturbChainFragment {
@@ -191,4 +221,3 @@ impl Mover<CartesianSystem> for PerturbChainFragment {
 }
 
 */
-

@@ -30,7 +30,7 @@ impl Sequence {
     pub fn new(id: &String, seq: &String) -> Self {
         Sequence {
             id: id.to_owned(),
-            seq: seq.chars().map(|c| c as u8).collect()
+            seq: seq.chars().map(|c| c as u8).collect(),
         }
     }
 
@@ -47,23 +47,33 @@ impl Sequence {
     /// assert_eq!(expected, seq.to_string());
     /// ```
     pub fn from_attrs(id: String, seq: Vec<u8>) -> Self {
-        Sequence {id, seq}
+        Sequence { id, seq }
     }
 
     /// Return the reference of the id of this Sequence.
-    pub fn id(&self) -> &str { self.id.as_ref() }
+    pub fn id(&self) -> &str {
+        self.id.as_ref()
+    }
 
     /// Return the reference of the sequence itself
-    pub fn seq(&self) -> &Vec<u8> { &self.seq }
+    pub fn seq(&self) -> &Vec<u8> {
+        &self.seq
+    }
 
     /// Return the length of this sequence
-    pub fn len(&self) -> usize { self.seq.len() }
+    pub fn len(&self) -> usize {
+        self.seq.len()
+    }
 
     /// Returns an amino acid character at a given position in this `Sequence`
-    pub fn char(&self, pos:usize) -> char { self.seq[pos] as char }
+    pub fn char(&self, pos: usize) -> char {
+        self.seq[pos] as char
+    }
 
     /// Creates a string representing this sequence
-    pub fn to_string(&self) -> String { String::from_utf8(self.seq.clone()).unwrap() }
+    pub fn to_string(&self) -> String {
+        String::from_utf8(self.seq.clone()).unwrap()
+    }
 }
 
 impl fmt::Display for Sequence {
@@ -96,17 +106,23 @@ impl fmt::Display for Sequence {
 /// Read sequences in FASTA format from a buffer
 ///
 /// To read a text file, use the [`from_file()`](from_file()) function
-pub fn from_fasta_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufRead {
-
-    let mut out:Vec<Sequence> = Vec::new();
-    let mut lines:Vec<String> = Vec::new();
+pub fn from_fasta_reader<R: Read>(reader: &mut R) -> Vec<Sequence>
+where
+    R: BufRead,
+{
+    let mut out: Vec<Sequence> = Vec::new();
+    let mut lines: Vec<String> = Vec::new();
     let mut buffer = String::new();
 
     loop {
         buffer.clear();
         let cnt = reader.read_line(&mut buffer);
         match cnt {
-            Ok(cnt) => { if cnt == 0 { break; } },
+            Ok(cnt) => {
+                if cnt == 0 {
+                    break;
+                }
+            }
             Err(e) => panic!("Cannot read from a FASTA buffer, error occurred:  {:?}", e),
         };
         lines.push(buffer.to_owned());
@@ -116,19 +132,24 @@ pub fn from_fasta_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufR
     let mut seq: String = String::new();
     for l in lines {
         let line: String = l.trim().to_owned();
-        if line.len() == 0 { continue }
-        if line.as_bytes()[0] as char == '>' {                  // --- It's a header!
-            if seq.len() > 0 {                                  // --- create a new sequence entry and clear the string buffers
+        if line.len() == 0 {
+            continue;
+        }
+        if line.as_bytes()[0] as char == '>' {
+            // --- It's a header!
+            if seq.len() > 0 {
+                // --- create a new sequence entry and clear the string buffers
                 out.push(Sequence::new(&header, &seq));
             }
             header = line[1..].to_owned();
             seq = String::new();
-        } else {                                                // --- It's sequence
-            seq = format!("{}{}",seq, line);
+        } else {
+            // --- It's sequence
+            seq = format!("{}{}", seq, line);
         }
     }
     if seq.len() > 0 {
-        out.push(Sequence::new(&header, &seq));   // --- create the last sequence
+        out.push(Sequence::new(&header, &seq)); // --- create the last sequence
     }
 
     return out;
@@ -137,10 +158,12 @@ pub fn from_fasta_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufR
 /// Read sequences in Stockholm format
 ///
 /// For the detailed description of the format, see: https://sonnhammer.sbc.su.se/Stockholm.html
-pub fn from_stockholm_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: BufRead {
-
-    let mut out:Vec<Sequence> = Vec::new();
-    let mut lines:Vec<String> = Vec::new();
+pub fn from_stockholm_reader<R: Read>(reader: &mut R) -> Vec<Sequence>
+where
+    R: BufRead,
+{
+    let mut out: Vec<Sequence> = Vec::new();
+    let mut lines: Vec<String> = Vec::new();
     let mut buffer = String::new();
     let mut data: HashMap<String, String> = HashMap::new();
     let mut keys: Vec<String> = vec![];
@@ -149,13 +172,21 @@ pub fn from_stockholm_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: 
         buffer.clear();
         let cnt = reader.read_line(&mut buffer);
         match cnt {
-            Ok(cnt) => { if cnt == 0 { break; } },
-            Err(e) => panic!("Cannot read from a Stockholm buffer, error occurred:  {:?}", e),
+            Ok(cnt) => {
+                if cnt == 0 {
+                    break;
+                }
+            }
+            Err(e) => panic!(
+                "Cannot read from a Stockholm buffer, error occurred:  {:?}",
+                e
+            ),
         };
-        if ! buffer.starts_with('#') {
+        if !buffer.starts_with('#') {
             let tokens: Vec<&str> = buffer.split_ascii_whitespace().collect::<Vec<&str>>();
-            if tokens.len() != 2 { continue;}
-            else {
+            if tokens.len() != 2 {
+                continue;
+            } else {
                 let seq_id: String = tokens[0].to_owned();
                 let seq: String = tokens[1].to_owned();
                 match data.get_mut(&seq_id) {
@@ -184,8 +215,10 @@ pub fn from_stockholm_reader<R: Read>(reader: &mut R) -> Vec<Sequence> where R: 
 /// This function opens a given file, creates a buffered reader and passes it to a format-specific
 /// reader function, such as [`from_stockholm_reader()`](from_stockholm_reader()) or
 /// [`from_fasta_reader()`](from_fasta_reader())
-pub fn from_file(filename: &str, reader_func: fn(&mut BufReader<File>) -> Vec<Sequence>) -> Vec<Sequence> {
-
+pub fn from_file(
+    filename: &str,
+    reader_func: fn(&mut BufReader<File>) -> Vec<Sequence>,
+) -> Vec<Sequence> {
     // Open the file in read-only mode (ignoring errors).
     let file = match File::open(filename) {
         Ok(file) => file,
@@ -253,7 +286,9 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
                 sequences[i] = Sequence::from_attrs(seq.id.clone(), seq_data);
             }
         }
-        A3mConversionMode::ExpandWithGaps => { todo!() }
+        A3mConversionMode::ExpandWithGaps => {
+            todo!()
+        }
     }
 }
 
@@ -285,19 +320,23 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 /// assert_eq!("TQQTSWLHPVSQ", sequences[8].to_string());
 /// ```
 pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequence>) {
-
     let n_seq: usize = sequences.len();
     // --- check if all the sequences are of the same length
     for i in 0..n_seq {
         if sequences[i].len() != reference.len() {
-            panic!("The following sequence has different length that the reference: {}", sequences[i].to_string());
+            panic!(
+                "The following sequence has different length that the reference: {}",
+                sequences[i].to_string()
+            );
         }
     }
     // --- create the list of indexes of elements to be copied
     let mut pos: Vec<usize> = vec![];
     for i in 0..reference.len() {
         let c = reference.seq[i] as char;
-        if c != '-' && c != '_' { pos.push(i); }
+        if c != '-' && c != '_' {
+            pos.push(i);
+        }
     }
     // --- copy
     for j in 0..n_seq {

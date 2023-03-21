@@ -1,6 +1,6 @@
 use std::cmp::*;
 use std::fmt;
-use std::ops::{Range};
+use std::ops::Range;
 
 /// Holds information about a neighbor: its index and the distance to it.
 /// Objects of this class are created by the
@@ -11,7 +11,7 @@ pub struct Neighbor {
     /// index of a neighbor point
     pub idx: usize,
     /// distance to that neighbor
-    pub d:f64
+    pub d: f64,
 }
 
 /// Prints information about a neighbor nicely
@@ -25,13 +25,12 @@ impl fmt::Display for Neighbor {
 /// A structure that implement this class typically may contain the points themselves, but these
 /// are not explicitly accessed by the [`optics`](Optics) struct.
 pub trait PointsWithDistance {
-
     /// Returns the distance between two given points.
     ///
     /// # Arguments
     /// * `i` - index of the first point
     /// * `j` - index of the second point
-    fn distance(&self, i:usize, j:usize) -> f64;
+    fn distance(&self, i: usize, j: usize) -> f64;
 
     /// Returns a vector of neighbors located close enough to a given point
     ///
@@ -49,7 +48,7 @@ pub trait PointsWithDistance {
 
 /// A container for N-dimensional points of `Vec<f64>` type and Euclidean distance
 pub struct EuclideanPoints {
-    datapoints: Vec<Vec<f64>>
+    datapoints: Vec<Vec<f64>>,
 }
 
 impl EuclideanPoints {
@@ -67,16 +66,16 @@ impl EuclideanPoints {
     /// assert!((1.118-d.distance(0, 1)).abs() < 0.001);
     /// ```
     pub fn new(data: Vec<Vec<f64>>) -> EuclideanPoints {
-        EuclideanPoints {datapoints: data}
+        EuclideanPoints { datapoints: data }
     }
 }
 
-
 impl PointsWithDistance for EuclideanPoints {
+    fn count_points(&self) -> usize {
+        self.datapoints.len()
+    }
 
-    fn count_points(&self) -> usize { self.datapoints.len() }
-
-    fn distance(&self, i:usize, j:usize) -> f64 {
+    fn distance(&self, i: usize, j: usize) -> f64 {
         let mut d: f64 = 0.0;
         let pi: &Vec<f64> = &self.datapoints[i];
         let pj: &Vec<f64> = &self.datapoints[j];
@@ -87,7 +86,7 @@ impl PointsWithDistance for EuclideanPoints {
         d.sqrt()
     }
 
-    fn neighbors_of(&self, idx:usize, cutoff: f64) -> Vec<Neighbor> {
+    fn neighbors_of(&self, idx: usize, cutoff: f64) -> Vec<Neighbor> {
         let mut out: Vec<Neighbor> = vec![];
         for i in 0..self.datapoints.len() {
             let d = self.distance(idx, i);
@@ -126,16 +125,24 @@ pub struct Optics {
     /// vector that serves as lazy priority queue of points to be processed
     seeds: Vec<usize>,
     /// Each cluster is defined as a range of the [`clustering_order`](Optics::clustering_order) vector
-    clusters: Vec<Range<usize>>
+    clusters: Vec<Range<usize>>,
 }
 
 impl Optics {
-
     /// Create clustering for a given set of parameters and an input data set.
     pub fn new(eps: f64, min_samples: usize, neighbors: Box<dyn PointsWithDistance>) -> Self {
-        let mut o = Self { eps, min_points: min_samples, neighbors, n:0, undefined: eps*10.0,
-            reacheability: vec![], clustering_order: vec![],
-            processed: vec![], seeds: vec![], clusters: vec![] };
+        let mut o = Self {
+            eps,
+            min_points: min_samples,
+            neighbors,
+            n: 0,
+            undefined: eps * 10.0,
+            reacheability: vec![],
+            clustering_order: vec![],
+            processed: vec![],
+            seeds: vec![],
+            clusters: vec![],
+        };
         o.run_clustering();
 
         return o;
@@ -143,12 +150,16 @@ impl Optics {
 
     /// Read-only access to the reacheability distance for each point; listed in the order defined
     /// by the [`clustering_order()`](Optics::clustering_order) method
-    pub fn reacheability_distance(&self) -> &Vec<f64> { &self.reacheability }
+    pub fn reacheability_distance(&self) -> &Vec<f64> {
+        &self.reacheability
+    }
 
     /// Read-only access to the order in which points were clustered.
     /// The clustering order together with [`reacheability_distance()`](Optics::reacheability_distance) array
     /// provide so called *reacheability graph* of a OPTICS clustering process
-    pub fn clustering_order(&self) -> &Vec<usize> { &self.clustering_order }
+    pub fn clustering_order(&self) -> &Vec<usize> {
+        &self.clustering_order
+    }
 
     /// Copy of clusters created by the clustering process.
     /// Each cluster is represented as a ``Vec<usize>`` vector if indexes pointing to the actuall data
@@ -170,15 +181,19 @@ impl Optics {
 
         // --- loop over all points in the dataset
         for i in 0..self.n {
-            if self.processed[i] { continue }      // --- skip already processed points
-            // --- mark the point as processed, add it to the clustering order
+            if self.processed[i] {
+                continue;
+            } // --- skip already processed points
+              // --- mark the point as processed, add it to the clustering order
             self.clustering_order.push(i);
             // --- find its neighbors
             let nb = self.neighbors.neighbors_of(i, self.eps);
             self.processed[i] = true;
 
             // --- skip the point if it's not a core point
-            if nb.len() < self.min_points {continue}
+            if nb.len() < self.min_points {
+                continue;
+            }
 
             // --- ensure the list of seeds is empty (it should be actually)
             self.seeds.clear();
@@ -189,13 +204,19 @@ impl Optics {
                 let pi = self.seeds[0];
                 self.seeds[0] = self.seeds[self.seeds.len() - 1];
                 self.seeds.truncate(self.seeds.len() - 1);
-                self.seeds.sort_by(|lhs, rhs| self.reacheability[*lhs].partial_cmp(&self.reacheability[*rhs]).unwrap());
+                self.seeds.sort_by(|lhs, rhs| {
+                    self.reacheability[*lhs]
+                        .partial_cmp(&self.reacheability[*rhs])
+                        .unwrap()
+                });
                 // --- visit it
                 self.clustering_order.push(pi);
                 // --- find its neighbors
                 let neighbrs = self.neighbors.neighbors_of(pi, self.eps);
                 self.processed[pi] = true;
-                if neighbrs.len() < self.min_points { continue; }     // --- the pi point is not a core point
+                if neighbrs.len() < self.min_points {
+                    continue;
+                } // --- the pi point is not a core point
 
                 // --- update the neighbors
                 self.update_neighbors(&neighbrs);
@@ -216,31 +237,35 @@ impl Optics {
     }
 
     fn update_neighbors(&mut self, neighbrs: &Vec<Neighbor>) {
-
         let core_dist = neighbrs[self.min_points - 1].d;
         for n in neighbrs {
-            if self.processed[n.idx] {continue}
+            if self.processed[n.idx] {
+                continue;
+            }
             let new_reach_dist = n.d.max(core_dist);
-            if self.reacheability[n.idx] == self.undefined { // n.idx was not inserted to seed yet
+            if self.reacheability[n.idx] == self.undefined {
+                // n.idx was not inserted to seed yet
                 self.seeds.push(n.idx);
             }
             if self.reacheability[n.idx] > new_reach_dist {
                 self.reacheability[n.idx] = new_reach_dist; // set or update its reacheability distance
             }
         }
-        self.seeds.sort_by(|lhs, rhs| self.reacheability[*lhs].partial_cmp(&self.reacheability[*rhs]).unwrap());
+        self.seeds.sort_by(|lhs, rhs| {
+            self.reacheability[*lhs]
+                .partial_cmp(&self.reacheability[*rhs])
+                .unwrap()
+        });
     }
 
     /// Allocate internal buffers for a given number of points subjected to clustering
     fn allocate(&mut self) {
-        self.reacheability = vec![self.undefined; self.n];   // epsilon * 10 is already the "infinite" distance that defines points that can't be reached
+        self.reacheability = vec![self.undefined; self.n]; // epsilon * 10 is already the "infinite" distance that defines points that can't be reached
         self.processed = vec![false; self.n];
     }
 }
 
-
 struct NeighborList(Vec<Neighbor>);
-
 
 impl fmt::Display for NeighborList {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

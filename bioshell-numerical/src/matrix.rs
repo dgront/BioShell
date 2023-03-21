@@ -1,6 +1,6 @@
+use crate::vec3::Vec3;
 use std::fmt;
 use std::ops::{Index, IndexMut};
-use crate::vec3::Vec3;
 
 //region pub struct Matrix3x3
 /// Represents a 3x3 matrix, e.g. for linear transformations.
@@ -22,54 +22,52 @@ use crate::vec3::Vec3;
 /// assert_eq!(unit_mtx[8], 1.0);
 /// ```
 
-
 #[derive(Clone, Default)]
-pub struct Matrix3x3
-{
+pub struct Matrix3x3 {
     _array: [f64; 9],
 }
 //endregion
 
 //region Indexing facility implementation.
-impl Index<usize> for Matrix3x3
-{
+impl Index<usize> for Matrix3x3 {
     type Output = f64;
-    fn index<'a>(&'a self, i: usize) -> &'a f64
-    {
+    fn index<'a>(&'a self, i: usize) -> &'a f64 {
         &self._array[i]
     }
 }
 
-impl IndexMut<usize> for Matrix3x3
-{
-    fn index_mut<'a>(&'a mut self, i: usize) -> &'a mut f64
-    {
+impl IndexMut<usize> for Matrix3x3 {
+    fn index_mut<'a>(&'a mut self, i: usize) -> &'a mut f64 {
         &mut self._array[i]
     }
 }
 //endregion
 
-
 //region Debug trait implementation.
 impl fmt::Debug for Matrix3x3 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
-    {
-        write!(f, "[ [{:.2}, {:.2}, {:.2}], [{:.2}, {:.2}, {:.2}], [{:.2}, {:.2}, {:.2}] ]",
-               self._array[0], self._array[1], self._array[2],
-               self._array[3], self._array[4], self._array[5],
-               self._array[6], self._array[7], self._array[8])
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "[ [{:.2}, {:.2}, {:.2}], [{:.2}, {:.2}, {:.2}], [{:.2}, {:.2}, {:.2}] ]",
+            self._array[0],
+            self._array[1],
+            self._array[2],
+            self._array[3],
+            self._array[4],
+            self._array[5],
+            self._array[6],
+            self._array[7],
+            self._array[8]
+        )
     }
 }
 //endregion
 
-impl PartialEq for Matrix3x3
-{
-    fn eq(&self, other: &Self) -> bool
-    {
-        let mut returns:bool = true;
+impl PartialEq for Matrix3x3 {
+    fn eq(&self, other: &Self) -> bool {
+        let mut returns: bool = true;
 
-        for i in 1..9
-        {
+        for i in 1..9 {
             returns = returns && (self[i] == other[i]);
         }
 
@@ -77,8 +75,7 @@ impl PartialEq for Matrix3x3
     }
 }
 
-impl Matrix3x3
-{
+impl Matrix3x3 {
     //region pub fn new() -> Self
     /// Implements the new() method for the Matrix3x3 struct, which creates and returns a new
     /// Matrix3x3 instance with all elements initialized to 0.
@@ -95,8 +92,7 @@ impl Matrix3x3
     ///
     /// assert_eq!(0.0, mat)
     /// ```
-    pub fn new() -> Self
-    {
+    pub fn new() -> Self {
         Self::default()
     }
     //endregion
@@ -119,8 +115,7 @@ impl Matrix3x3
     /// assert_eq!(mtx[4], 5.0);
     /// assert_eq!(mtx[8], 9.0);
     /// ```
-    pub fn from_array(m: [f64; 9]) -> Self
-    {
+    pub fn from_array(m: [f64; 9]) -> Self {
         Matrix3x3 { _array: m }
     }
     //endregion
@@ -151,11 +146,9 @@ impl Matrix3x3
     ///         assert_eq!(16.0, lhs[7]);
     ///         assert_eq!(18.0, lhs[8]);
     /// ```
-    pub fn add(&mut self, rhs: &Matrix3x3)
-    {
+    pub fn add(&mut self, rhs: &Matrix3x3) {
         let lhs = self;
-        for i in 0..9
-        {
+        for i in 0..9 {
             lhs[i] = lhs[i] + rhs[i];
         }
     }
@@ -189,11 +182,9 @@ impl Matrix3x3
     ///         assert_eq!(0.0, lhs[7]);
     ///         assert_eq!(0.0, lhs[8]);
     ///```
-    pub fn sub(&mut self, rhs: &Matrix3x3)
-    {
+    pub fn sub(&mut self, rhs: &Matrix3x3) {
         let lhs = self;
-        for i in 0..9
-        {
+        for i in 0..9 {
             lhs[i] = lhs[i] - rhs[i];
         }
     }
@@ -225,12 +216,10 @@ impl Matrix3x3
     ///         assert_eq!(16.0, lhs[7]);
     ///         assert_eq!(18.0, lhs[8]);
     ///```
-    pub fn mul_scalar(&mut self, rhs:f64)
-    {
+    pub fn mul_scalar(&mut self, rhs: f64) {
         let lhs = self;
 
-        for i in 0..9
-        {
+        for i in 0..9 {
             lhs[i] = lhs[i] * rhs;
         }
     }
@@ -263,12 +252,10 @@ impl Matrix3x3
     ///         assert_eq!(9.0, lhs[8]);
     ///
     /// ```
-    pub fn div_scalar(&mut self, rhs:f64)
-    {
+    pub fn div_scalar(&mut self, rhs: f64) {
         let lhs = self;
 
-        for i in 0..9
-        {
+        for i in 0..9 {
             lhs[i] = lhs[i] / rhs;
         }
     }
@@ -299,8 +286,7 @@ impl Matrix3x3
     ///         assert_eq!(30.0, rhs[1]);
     ///         assert_eq!(48.0, rhs[2]);
     ///```
-    pub fn mul_vec_mut(&self, rhs: &mut Vec3)
-    {
+    pub fn mul_vec_mut(&self, rhs: &mut Vec3) {
         let lhs = self;
         let x = lhs[0] * rhs.x + lhs[1] * rhs.y + lhs[2] * rhs.z;
         let y = lhs[3] * rhs.x + lhs[4] * rhs.y + lhs[5] * rhs.z;
@@ -347,23 +333,21 @@ impl Matrix3x3
     ///         assert_eq!(126.0, lhs[7]);
     ///         assert_eq!(150.0, lhs[8]);
     /// ```
-    pub fn mul_mat_mut(&mut self, rhs: &Matrix3x3)
-    {
+    pub fn mul_mat_mut(&mut self, rhs: &Matrix3x3) {
         let lhs = self;
         let temp = [
-            lhs[0] * rhs[0] + lhs[1] * rhs[3] + lhs[2] * rhs[6],  // row 1, column 1
-            lhs[0] * rhs[1] + lhs[1] * rhs[4] + lhs[2] * rhs[7],  // row 1, column 2
-            lhs[0] * rhs[2] + lhs[1] * rhs[5] + lhs[2] * rhs[8],  // row 1, column 3
-            lhs[3] * rhs[0] + lhs[4] * rhs[3] + lhs[5] * rhs[6],  // row 2, column 1
-            lhs[3] * rhs[1] + lhs[4] * rhs[4] + lhs[5] * rhs[7],  // row 2, column 2
-            lhs[3] * rhs[2] + lhs[4] * rhs[5] + lhs[5] * rhs[8],  // row 2, column 3
-            lhs[6] * rhs[0] + lhs[7] * rhs[3] + lhs[8] * rhs[6],  // row 3, column 1
-            lhs[6] * rhs[1] + lhs[7] * rhs[4] + lhs[8] * rhs[7],  // row 3, column 2
-            lhs[6] * rhs[2] + lhs[7] * rhs[5] + lhs[8] * rhs[8],  // row 3, column 3
+            lhs[0] * rhs[0] + lhs[1] * rhs[3] + lhs[2] * rhs[6], // row 1, column 1
+            lhs[0] * rhs[1] + lhs[1] * rhs[4] + lhs[2] * rhs[7], // row 1, column 2
+            lhs[0] * rhs[2] + lhs[1] * rhs[5] + lhs[2] * rhs[8], // row 1, column 3
+            lhs[3] * rhs[0] + lhs[4] * rhs[3] + lhs[5] * rhs[6], // row 2, column 1
+            lhs[3] * rhs[1] + lhs[4] * rhs[4] + lhs[5] * rhs[7], // row 2, column 2
+            lhs[3] * rhs[2] + lhs[4] * rhs[5] + lhs[5] * rhs[8], // row 2, column 3
+            lhs[6] * rhs[0] + lhs[7] * rhs[3] + lhs[8] * rhs[6], // row 3, column 1
+            lhs[6] * rhs[1] + lhs[7] * rhs[4] + lhs[8] * rhs[7], // row 3, column 2
+            lhs[6] * rhs[2] + lhs[7] * rhs[5] + lhs[8] * rhs[8], // row 3, column 3
         ];
 
-        for i in 0..9
-        {
+        for i in 0..9 {
             lhs[i] = temp[i];
         }
     }
@@ -388,8 +372,7 @@ impl Matrix3x3
     ///
     ///         assert_eq!(0.0, _det);
     ///```
-    pub fn det(&self) -> f64
-    {
+    pub fn det(&self) -> f64 {
         let lhs = self;
         let a = lhs[0] * (lhs[4] * lhs[8] - lhs[5] * lhs[7]);
         let b = lhs[1] * (lhs[3] * lhs[8] - lhs[5] * lhs[6]);
@@ -446,12 +429,10 @@ impl Matrix3x3
     /// println!("Error: {}", e);
     /// }
     ///
-    pub fn inverse(&mut self)
-    {
+    pub fn inverse(&mut self) {
         let _det = self.det();
         let lhs = self;
-        if _det != 0.0
-        {
+        if _det != 0.0 {
             let inv_det = 1.0 / _det;
             let temp = [
                 lhs[4] * lhs[8] - lhs[5] * lhs[7],
@@ -465,8 +446,7 @@ impl Matrix3x3
                 lhs[0] * lhs[4] - lhs[1] * lhs[3],
             ];
 
-            for i in 0..9
-            {
+            for i in 0..9 {
                 lhs[i] = temp[i] * inv_det;
             }
         }
@@ -513,15 +493,18 @@ impl Matrix3x3
     ///         assert_eq!(cz.y, mat[7]);
     ///         assert_eq!(cz.z, mat[8]);
     ///```
-    pub fn from_values(cx_x:f64, cx_y:f64, cx_z:f64,
-                       cy_x:f64, cy_y:f64, cy_z:f64,
-                       cz_x:f64, cz_y:f64, cz_z:f64) ->Self
-    {
-        Self::from_array([
-            cx_x, cx_y, cx_z,
-            cy_x, cy_y, cy_z,
-            cz_x, cz_y, cz_z,
-        ])
+    pub fn from_values(
+        cx_x: f64,
+        cx_y: f64,
+        cx_z: f64,
+        cy_x: f64,
+        cy_y: f64,
+        cy_z: f64,
+        cz_x: f64,
+        cz_y: f64,
+        cz_z: f64,
+    ) -> Self {
+        Self::from_array([cx_x, cx_y, cx_z, cy_x, cy_y, cy_z, cz_x, cz_y, cz_z])
     }
     //endregion
 
@@ -557,17 +540,12 @@ impl Matrix3x3
     ///         assert_eq!(cz.y, mat[7]);
     ///         assert_eq!(cz.z, mat[8]);
     ///```
-    pub fn from_column_vectors(cx: &Vec3, cy: &Vec3, cz: &Vec3) -> Self
-    {
+    pub fn from_column_vectors(cx: &Vec3, cy: &Vec3, cz: &Vec3) -> Self {
         //let cx1 = cx.normalized();
         //let cy1 = cy.normalized();
         //let cz1 = cz.normalized();
 
-        Self::from_array([
-            cx.x, cx.y, cx.z,
-            cy.x, cy.y, cy.z,
-            cz.x, cz.y, cz.z,
-        ])
+        Self::from_array([cx.x, cx.y, cx.z, cy.x, cy.y, cy.z, cz.x, cz.y, cz.z])
     }
     //endregion
 
@@ -603,13 +581,8 @@ impl Matrix3x3
     ///         assert_eq!(cy.z, mat[7]);
     ///         assert_eq!(cz.z, mat[8]);
     ///```
-    pub fn from_row_vectors(rx: &Vec3, ry: &Vec3, rz: &Vec3) -> Self
-    {
-        Self::from_array([
-            rx.x, ry.x, rz.x,
-            rx.y, ry.y, rz.y,
-            rx.z, ry.z, rz.z,
-        ])
+    pub fn from_row_vectors(rx: &Vec3, ry: &Vec3, rz: &Vec3) -> Self {
+        Self::from_array([rx.x, ry.x, rz.x, rx.y, ry.y, rz.y, rx.z, ry.z, rz.z])
     }
     //endregion
 
@@ -636,10 +609,18 @@ impl Matrix3x3
     /// assert_eq!(result[8], 10.0);
     /// ```
     ///
-    pub fn add_s(lhs : Matrix3x3, rhs: Matrix3x3) -> Matrix3x3
-    {
-        return Matrix3x3::from_array([lhs[0] + rhs[0], lhs[1] + rhs[1], lhs[2] + rhs[2], lhs[3] + rhs[3],
-            lhs[4] + rhs[4], lhs[5] + rhs[5], lhs[6] + rhs[6], lhs[7] + rhs[7], lhs[8] + rhs[8]])
+    pub fn add_s(lhs: Matrix3x3, rhs: Matrix3x3) -> Matrix3x3 {
+        return Matrix3x3::from_array([
+            lhs[0] + rhs[0],
+            lhs[1] + rhs[1],
+            lhs[2] + rhs[2],
+            lhs[3] + rhs[3],
+            lhs[4] + rhs[4],
+            lhs[5] + rhs[5],
+            lhs[6] + rhs[6],
+            lhs[7] + rhs[7],
+            lhs[8] + rhs[8],
+        ]);
     }
     //endregion
 
@@ -662,9 +643,9 @@ impl Matrix3x3
     /// let sub = Matrix3x3::sub_s(lhs, rhs);
     /// assert_eq!(sub, Matrix3x3::from_array([-8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0]));
     ///```
-    pub fn sub_s(lhs : Matrix3x3, rhs: Matrix3x3) -> Matrix3x3
-    {
-        return Matrix3x3::from_array([lhs[0] - rhs[0],
+    pub fn sub_s(lhs: Matrix3x3, rhs: Matrix3x3) -> Matrix3x3 {
+        return Matrix3x3::from_array([
+            lhs[0] - rhs[0],
             lhs[1] - rhs[1],
             lhs[2] - rhs[2],
             lhs[3] - rhs[3],
@@ -672,7 +653,17 @@ impl Matrix3x3
             lhs[5] - rhs[5],
             lhs[6] - rhs[6],
             lhs[7] - rhs[7],
-            lhs[8] - rhs[8]])
+            lhs[8] - rhs[8],
+        ]);
+    }
+    //endregion
+
+    //region pub fn identity() -> Self
+    pub fn identity() -> Self
+    {
+        return Matrix3x3::from_values(  1.0, 0.0, 0.0,
+                                        0.0, 1.0, 0.0,
+                                        0.0, 0.0, 1.0);
     }
     //endregion
 
@@ -707,8 +698,7 @@ impl Matrix3x3
     /// assert_eq!(inv_a[7], -1.0);
     /// assert_eq!(inv_a[8], 0.0);
     ///```
-    pub fn inverse_s(mat: Matrix3x3)->Matrix3x3
-    {
+    pub fn inverse_s(mat: Matrix3x3) -> Matrix3x3 {
         let mut mat_copy = mat.clone();
         mat_copy.inverse();
         return mat_copy;
@@ -735,8 +725,7 @@ impl Matrix3x3
     ///
     /// assert_eq!(result, Vec3::new(14.0, 32.0, 50.0));
     ///```
-    pub fn mul_vec_s(mat: &Matrix3x3, vec: &Vec3)-> Vec3
-    {
+    pub fn mul_vec_s(mat: &Matrix3x3, vec: &Vec3) -> Vec3 {
         let mut vec_copy = vec.clone();
         mat.mul_vec_mut(&mut vec_copy);
         return vec_copy;
@@ -776,12 +765,10 @@ impl Matrix3x3
     /// assert_eq!(c[7], 114.0);
     /// assert_eq!(c[8], 90.0);
     ///```
-    pub fn mul_mat_s(lhs: &Matrix3x3, rhs:&Matrix3x3) -> Matrix3x3
-    {
+    pub fn mul_mat_s(lhs: &Matrix3x3, rhs: &Matrix3x3) -> Matrix3x3 {
         let mut lhs_copy = lhs.clone();
         lhs_copy.mul_mat_mut(&rhs);
         return lhs_copy;
     }
     //endregion
 }
-

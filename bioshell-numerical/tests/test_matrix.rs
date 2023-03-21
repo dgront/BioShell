@@ -1,15 +1,13 @@
 //extern crate bioshell_numerical;
 
 #[cfg(test)]
-mod matrix_test
-{
+mod matrix_test {
     use bioshell_numerical::matrix::Matrix3x3;
     use bioshell_numerical::vec3::Vec3;
 
     //region fn matrix_unit_matrix()
     #[test]
-    fn matrix_unit_matrix()
-    {
+    fn matrix_unit_matrix() {
         let vx = Vec3::new(1.0, 0.0, 0.0);
         let vy = Vec3::new(0.0, 1.0, 0.0);
         let vz = Vec3::new(1.0, 0.0, 1.0);
@@ -21,11 +19,24 @@ mod matrix_test
     }
     //endregion
 
+    //region Equality test
+    #[test]
+    fn matrix_equality()
+    {
+        let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 0.0]);
+
+        assert_ne!(lhs, rhs);
+        assert_eq!(lhs, lhs);
+        assert_eq!(rhs, rhs);
+    }
+    //endregion
+
     //region fn matrix_add()
     #[test]
-    fn matrix_add()
-    {
-        let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    fn matrix_add() {
+        let mut lhs: Matrix3x3 =
+            Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
         let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
 
         lhs.add(&rhs);
@@ -44,9 +55,9 @@ mod matrix_test
 
     //region fn matrix_sub()
     #[test]
-    fn matrix_sub()
-    {
-        let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    fn matrix_sub() {
+        let mut lhs: Matrix3x3 =
+            Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
         let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
 
         lhs.sub(&rhs);
@@ -65,9 +76,9 @@ mod matrix_test
 
     //region fn matrix_mul_scalar()
     #[test]
-    fn matrix_mul_scalar()
-    {
-        let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    fn matrix_mul_scalar() {
+        let mut lhs: Matrix3x3 =
+            Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
         let rhs = 2.0;
 
         lhs.mul_scalar(rhs);
@@ -86,9 +97,9 @@ mod matrix_test
 
     //region fn matrix_div_scalar()
     #[test]
-    fn matrix_div_scalar()
-    {
-        let mut lhs: Matrix3x3 = Matrix3x3::from_array([2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
+    fn matrix_div_scalar() {
+        let mut lhs: Matrix3x3 =
+            Matrix3x3::from_array([2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
         let rhs = 2.0;
 
         lhs.div_scalar(rhs);
@@ -107,12 +118,9 @@ mod matrix_test
 
     //region fn matrix_mul_vec_mut()
     #[test]
-    fn matrix_mul_vec_mut()
-    {
-        let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
-            4.0, 5.0, 6.0,
-            7.0, 8.0, 9.0]);
-        let mut rhs = Vec3::new(2.0,2.0,2.0);
+    fn matrix_mul_vec_mut() {
+        let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let mut rhs = Vec3::new(2.0, 2.0, 2.0);
         lhs.mul_vec_mut(&mut rhs);
         assert_eq!(12.0, rhs[0]);
         assert_eq!(30.0, rhs[1]);
@@ -122,14 +130,10 @@ mod matrix_test
 
     //region fn matrix_mul_mat_mut()
     #[test]
-    fn matrix_mul_mat_mut()
-    {
-        let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
-            4.0, 5.0, 6.0,
-            7.0, 8.0, 9.0]);
-        let rhs = Matrix3x3::from_array([1.0, 2.0, 3.0,
-            4.0, 5.0, 6.0,
-            7.0, 8.0, 9.0]);
+    fn matrix_mul_mat_mut() {
+        let mut lhs: Matrix3x3 =
+            Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let rhs = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
         lhs.mul_mat_mut(&rhs);
 
         assert_eq!(30.0, lhs[0]);
@@ -146,11 +150,8 @@ mod matrix_test
 
     //region matrix_det()
     #[test]
-    fn matrix_det()
-    {
-        let mat: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
-            4.0, 5.0, 6.0,
-            7.0, 8.0, 9.0]);
+    fn matrix_det() {
+        let mat: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
 
         let _det: f64 = mat.det();
 
@@ -158,13 +159,24 @@ mod matrix_test
     }
     //endregion
 
+    //region Identity matrix
+    #[test]
+    fn matrix_identity()
+    {
+        let lhs = Matrix3x3::identity();
+        let rhs = Matrix3x3::from_values(  1.0, 0.0, 0.0,
+                                                    0.0, 1.0, 0.0,
+                                                    0.0, 0.0, 1.0);
+
+        assert_eq!(lhs, rhs);
+    }
+    //endregion
+
     //region matrix_inverse()
     #[test]
-    fn matrix_inverse()
-    {
-        let mut lhs: Matrix3x3 = Matrix3x3::from_array([0.0, 1.0, 0.0,
-            0.0, 0.0, 1.0,
-            1.0, 0.0, 0.0]);
+    fn matrix_inverse() {
+        let mut lhs: Matrix3x3 =
+            Matrix3x3::from_array([0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0]);
 
         lhs.inverse();
 
@@ -182,15 +194,13 @@ mod matrix_test
 
     //region fn matrix_from_column_values()
     #[test]
-    fn matrix_from_values()
-    {
+    fn matrix_from_values() {
         let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
         let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
         let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
 
-        let mat: Matrix3x3 = Matrix3x3::from_values(cx.x, cx.y, cx.z,
-                                                    cy.x, cy.y, cy.z,
-                                                    cz.x, cz.y, cz.z);
+        let mat: Matrix3x3 =
+            Matrix3x3::from_values(cx.x, cx.y, cx.z, cy.x, cy.y, cy.z, cz.x, cz.y, cz.z);
 
         assert_eq!(cx.x, mat[0]);
         assert_eq!(cx.y, mat[1]);
@@ -208,8 +218,7 @@ mod matrix_test
 
     //region fn matrix_from_column_vectors()
     #[test]
-    fn matrix_from_column_vectors()
-    {
+    fn matrix_from_column_vectors() {
         let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
         let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
         let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
@@ -232,8 +241,7 @@ mod matrix_test
 
     //region fn matrix_from_row_vectors()
     #[test]
-    fn matrix_from_row_vectors()
-    {
+    fn matrix_from_row_vectors() {
         let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
         let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
         let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
@@ -256,11 +264,10 @@ mod matrix_test
 
     //region fn matrix_add_s()
     #[test]
-    fn matrix_add_s()
-    {
+    fn matrix_add_s() {
         let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
         let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-        let out= Matrix3x3::add_s(lhs, rhs);
+        let out = Matrix3x3::add_s(lhs, rhs);
 
         assert_eq!(2.0, out[0]);
         assert_eq!(4.0, out[1]);
@@ -276,11 +283,10 @@ mod matrix_test
 
     //region fn matrix_sub_s()
     #[test]
-    fn matrix_sub_s()
-    {
+    fn matrix_sub_s() {
         let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
         let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-        let out= Matrix3x3::sub_s(lhs, rhs);
+        let out = Matrix3x3::sub_s(lhs, rhs);
 
         assert_eq!(0.0, out[0]);
         assert_eq!(0.0, out[1]);

@@ -1,14 +1,16 @@
 use std::time::Instant;
 
-use clap::{Parser};
+use clap::Parser;
 
-use bioshell_cartesians::{Coordinates, CartesianSystem, coordinates_to_pdb, cubic_grid_atoms, NbList, ArgonRules, box_width};
-use bioshell_sim::{Observer, ObserversSet};
 use bioshell_cartesians::movers::{ChangeVolume, SingleAtomMove};
 use bioshell_cartesians::observers::PdbTrajectory;
-use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, LennardJonesHomogenic};
-use bioshell_montecarlo::{Sampler, IsothermalMC, AdaptiveMCProtocol};
-
+use bioshell_cartesians::{
+    box_width, coordinates_to_pdb, cubic_grid_atoms, ArgonRules, CartesianSystem, Coordinates,
+    NbList,
+};
+use bioshell_ff::nonbonded::{LennardJonesHomogenic, PairwiseNonbondedEvaluator};
+use bioshell_montecarlo::{AdaptiveMCProtocol, IsothermalMC, Sampler};
+use bioshell_sim::{Observer, ObserversSet};
 
 #[derive(Parser, Debug)]
 #[clap(name = "argon")]
@@ -16,7 +18,7 @@ use bioshell_montecarlo::{Sampler, IsothermalMC, AdaptiveMCProtocol};
 #[clap(about = "NVT or NPT simulation of argon fluid", long_about = None)]
 struct Args {
     /// staring conformation in the PDB format
-    #[clap(short, long, default_value = "", short='f')]
+    #[clap(short, long, default_value = "", short = 'f')]
     infile: String,
     /// density of the system - starts NVT simulation
     #[clap(short, long, default_value_t = 0.4)]
@@ -42,7 +44,6 @@ struct Args {
 }
 
 pub fn main() {
-
     // ---------- Parameters from:
     // L. A. Rowley, D. Nicholson and N. G. Parsonage
     // "Monte Carlo grand canonical ensemble calculation in a gas-liquid transition region for 12-6 Argon",
@@ -53,14 +54,14 @@ pub fn main() {
     // ---------- Parameters from:
     // John A. White "Lennard-Jones as a model for argon and test of extended renormalization group calculations",
     // Journal of Chemical Physics 111 pp. 9352-9356 (1999)
-    const EPSILON: f64 = 1.7355E-21;	                // [J] per molecule
-    const EPSILON_BY_K: f64 = EPSILON / 1.380649E-23; 	// = 125.7 in Kelvins
-    const SIGMA: f64 = 3.3345;		                    // in Angstroms
+    const EPSILON: f64 = 1.7355E-21; // [J] per molecule
+    const EPSILON_BY_K: f64 = EPSILON / 1.380649E-23; // = 125.7 in Kelvins
+    const SIGMA: f64 = 3.3345; // in Angstroms
 
     const CUTOFF: f64 = 10.0;
 
     let args = Args::parse();
-    let temperature: f64 = args.temperature;    // --- Temperature of the isothermal simulation (in the energy units)
+    let temperature: f64 = args.temperature; // --- Temperature of the isothermal simulation (in the energy units)
     let n_atoms: usize = args.natoms;
     let density: f64 = args.density;
     let prefix = args.prefix;
@@ -69,23 +70,25 @@ pub fn main() {
 
     // ---------- Create system's coordinates
     let mut coords = Coordinates::new(n_atoms);
-    coords.set_box_len(box_width(SIGMA as f64,n_atoms, density));
+    coords.set_box_len(box_width(SIGMA as f64, n_atoms, density));
     cubic_grid_atoms(&mut coords);
-    coordinates_to_pdb(&coords,1,tra_fname.as_str(), false);
+    coordinates_to_pdb(&coords, 1, tra_fname.as_str(), false);
 
     // ---------- Create system's list of neighbors
-    let nbl:NbList = NbList::new(CUTOFF as f64,4.0,Box::new(ArgonRules{}));
+    let nbl: NbList = NbList::new(CUTOFF as f64, 4.0, Box::new(ArgonRules {}));
 
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
 
     // ---------- Create energy function - just the LJ term
     let lj = LennardJonesHomogenic::new(EPSILON_BY_K, SIGMA, CUTOFF);
-    let pairwise_lj = PairwiseNonbondedEvaluator::new(CUTOFF as f64,lj);
+    let pairwise_lj = PairwiseNonbondedEvaluator::new(CUTOFF as f64, lj);
 
     // ---------- Create a sampler and add a mover into it
-    let mut simple_sampler: IsothermalMC<CartesianSystem, PairwiseNonbondedEvaluator<LennardJonesHomogenic>> =
-        IsothermalMC::new(temperature);
+    let mut simple_sampler: IsothermalMC<
+        CartesianSystem,
+        PairwiseNonbondedEvaluator<LennardJonesHomogenic>,
+    > = IsothermalMC::new(temperature);
     simple_sampler.add_mover(Box::new(SingleAtomMove::new(1.0)));
 
     // ---------- Decorate the sampler into an adaptive MC protocol
@@ -103,7 +106,13 @@ pub fn main() {
     pdb_tra.observe(&system);
     pdb_tra.if_append = true;
     observers.add_observer(Box::new(pdb_tra), 1);
-    sampler.run_simulation(args.inner, args.outer, &mut system, &pairwise_lj, &mut observers);
+    sampler.run_simulation(
+        args.inner,
+        args.outer,
+        &mut system,
+        &pairwise_lj,
+        &mut observers,
+    );
 
-    coordinates_to_pdb(&system.coordinates(),1,final_fname.as_str(), false);
+    coordinates_to_pdb(&system.coordinates(), 1, final_fname.as_str(), false);
 }

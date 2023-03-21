@@ -1,19 +1,23 @@
-use rand_distr::{Normal, Distribution as RndDistribution};
+use nalgebra::{DMatrix, DVector};
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
-use nalgebra::{DMatrix, DVector};
-use std::string::String;
+use rand_distr::{Distribution as RndDistribution, Normal};
 use std::fmt::Write;
+use std::string::String;
 
-use bioshell_statistics::{Distribution, Estimable, Histogram, MultiNormalDistribution,
-        NormalDistribution, OnlineMultivariateStatistics};
+use bioshell_statistics::{
+    Distribution, Estimable, Histogram, MultiNormalDistribution, NormalDistribution,
+    OnlineMultivariateStatistics,
+};
 
 /// Create a histogram and fill it with deterministic observations
 #[test]
 fn create_histogram() {
-    let test_data = vec!(1.0, 1.1, 1.3, 1.6, 1.7, 2.0);
+    let test_data = vec![1.0, 1.1, 1.3, 1.6, 1.7, 2.0];
     let mut h: Histogram = Histogram::by_bin_width(0.5);
-    for x in test_data { h.insert(x); }
+    for x in test_data {
+        h.insert(x);
+    }
     assert_eq!(h.which_bin(1.11), 2);
     assert_eq!(h.which_bin(1.49), 2);
     assert_eq!(h.which_bin(1.51), 3);
@@ -36,10 +40,11 @@ fn test_MultiNormalDistribution() {
 #[allow(non_snake_case)]
 #[test]
 fn sample_MultiNormalDistribution() {
-
     let mut n: MultiNormalDistribution = MultiNormalDistribution::new(2);
-    n.set_parameters(&DVector::from_vec(vec![1.0, 2.0]),
-                     &DMatrix::from_vec(2,2, vec![1.0, 0.5, 0.5, 1.0]));
+    n.set_parameters(
+        &DVector::from_vec(vec![1.0, 2.0]),
+        &DMatrix::from_vec(2, 2, vec![1.0, 0.5, 0.5, 1.0]),
+    );
     let n_samples = 100000;
 
     let mut stats = OnlineMultivariateStatistics::new(2);
@@ -52,8 +57,8 @@ fn sample_MultiNormalDistribution() {
     }
     assert!((stats.avg(0) - 1.0).abs() < 0.01);
     assert!((stats.avg(1) - 2.0).abs() < 0.01);
-    assert!((stats.covar(0,1) - 0.5).abs() < 0.01);
-    assert!((stats.covar(1,0) - 0.5).abs() < 0.01);
+    assert!((stats.covar(0, 1) - 0.5).abs() < 0.01);
+    assert!((stats.covar(1, 0) - 0.5).abs() < 0.01);
     assert!((stats.var(0).sqrt() - 1.0).abs() < 0.01);
     assert!((stats.var(1).sqrt() - 1.0).abs() < 0.01);
 }
@@ -63,8 +68,10 @@ fn sample_MultiNormalDistribution() {
 #[test]
 fn format_MultiNormalDistribution() {
     let mut n: MultiNormalDistribution = MultiNormalDistribution::new(2);
-    n.set_parameters(&DVector::from_vec(vec![1.0, 2.0]),
-                     &DMatrix::from_vec(2,2, vec![1.0, 0.5, 0.5, 1.0]));
+    n.set_parameters(
+        &DVector::from_vec(vec![1.0, 2.0]),
+        &DMatrix::from_vec(2, 2, vec![1.0, 0.5, 0.5, 1.0]),
+    );
 
     let expected = "mu =  [ 1.0000,  2.0000], sigma = [ [ 1.0000,  0.5000], [ 0.5000,  1.0000]]";
     let mut actual = String::new();
@@ -91,9 +98,11 @@ fn test_NormalDistribution() {
 
     // --- estimate the distribution from a sample
     let n_samples = 1000000;
-    let mut sample: Vec<Vec<f64>> = vec!(vec!(0.0; 1); n_samples);
+    let mut sample: Vec<Vec<f64>> = vec![vec!(0.0; 1); n_samples];
     let mut rng = SmallRng::seed_from_u64(0);
-    for v in sample.iter_mut() { n.sample(&mut rng,v); }
+    for v in sample.iter_mut() {
+        n.sample(&mut rng, v);
+    }
     n.estimate(&sample);
     assert!((n.mean()).abs() < 0.1);
     assert!((n.sdev() - 3.0).abs() < 0.1);
@@ -105,9 +114,9 @@ fn test_OnlineMultivariateStatistics() {
     let n_samples = 100000;
     let n_dim: usize = 4;
 
-    let normal = Normal::new(2.0, 3.0).unwrap();         // --- mean 2, standard deviation 3
+    let normal = Normal::new(2.0, 3.0).unwrap(); // --- mean 2, standard deviation 3
     let mut stats = OnlineMultivariateStatistics::new(n_dim);
-    let mut row = vec!(0.0; n_dim);
+    let mut row = vec![0.0; n_dim];
     for _ in 0..n_samples {
         for i in 0..row.len() {
             row[i] = normal.sample(&mut rand::thread_rng());
@@ -115,8 +124,7 @@ fn test_OnlineMultivariateStatistics() {
         stats.accumulate(&row);
     }
     for i in 0..n_dim {
-        assert!((stats.avg(i)-2.0).abs() < 0.1);
-        assert!((stats.var(i).sqrt()-3.0).abs() < 0.1);
+        assert!((stats.avg(i) - 2.0).abs() < 0.1);
+        assert!((stats.var(i).sqrt() - 3.0).abs() < 0.1);
     }
 }
-

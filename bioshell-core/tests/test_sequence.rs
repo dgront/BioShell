@@ -1,6 +1,8 @@
+use bioshell_core::sequence::{
+    a3m_to_fasta, from_fasta_reader, from_stockholm_reader, remove_gaps_by_sequence,
+    A3mConversionMode, Sequence,
+};
 use std::fmt::Write;
-use bioshell_core::sequence::{Sequence, from_fasta_reader, a3m_to_fasta, A3mConversionMode,
-                              from_stockholm_reader, remove_gaps_by_sequence};
 use std::io::BufReader;
 
 #[test]
@@ -8,14 +10,20 @@ fn create_sequence() {
     // ---------- Create a simple amino acid sequence by calling new()
     {
         let read_id: String = String::from("2gb1");
-        let sequence: String = String::from("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
+        let sequence: String =
+            String::from("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
         let seq = Sequence::new(&read_id, &sequence);
 
-        assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string())
+        assert_eq!(
+            "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE",
+            seq.to_string()
+        )
     }
     {
         let read_id = String::from("2gb1");
-        let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE".as_bytes().to_vec();
+        let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+            .as_bytes()
+            .to_vec();
         let seq = Sequence::from_attrs(read_id, sequence);
 
         let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
@@ -42,7 +50,6 @@ RVIAHTKVIGGGESDSVTFDVSKLTPGEAYAYFCSFPGHWAMMKGTLKLSN";
     assert_eq!(records[0].len(), 56);
 }
 
-
 #[test]
 fn read_stockholm() {
     let input = "#=GF PDB 2gb1
@@ -65,14 +72,19 @@ UniRef100_UPI0000D834FD TFTVTE
     assert_eq!(records[0].id(), "2gb1A");
     assert_eq!(records[1].id(), "UniRef100_UPI0000D834FD");
     let ss: String = records[1].to_string();
-    assert_eq!(ss, "HQYKLALNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
+    assert_eq!(
+        ss,
+        "HQYKLALNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+    );
 }
 
 #[test]
 fn convert_a3m() {
-    let mut seqs = vec![Sequence::from_attrs(String::from("s1"), "ABC".as_bytes().to_vec()),
-                    Sequence::from_attrs(String::from("s2"), "AaBC".as_bytes().to_vec()),
-                    Sequence::from_attrs(String::from("s3"), "ABbC".as_bytes().to_vec())];
+    let mut seqs = vec![
+        Sequence::from_attrs(String::from("s1"), "ABC".as_bytes().to_vec()),
+        Sequence::from_attrs(String::from("s2"), "AaBC".as_bytes().to_vec()),
+        Sequence::from_attrs(String::from("s3"), "ABbC".as_bytes().to_vec()),
+    ];
     a3m_to_fasta(&mut seqs, &A3mConversionMode::RemoveSmallCaps);
     let expected = "ABC";
     for s in seqs {
@@ -105,7 +117,10 @@ UniRef90_UPI000F744328/389-447           -------TL----ES---TW-EK--PQE-----";
     let mut sequences = from_stockholm_reader(&mut reader);
     assert_eq!(19, sequences.len());
 
-    assert_eq!("-------TQ----QT---SW-LH--PVSQ----", sequences[8].to_string());
+    assert_eq!(
+        "-------TQ----QT---SW-LH--PVSQ----",
+        sequences[8].to_string()
+    );
     let ref_seq = sequences[8].clone();
     remove_gaps_by_sequence(&ref_seq, &mut sequences);
 

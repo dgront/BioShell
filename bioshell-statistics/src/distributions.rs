@@ -1,7 +1,7 @@
-use std::fmt;
 use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 use rand_distr::Distribution as OtherDistribution;
+use std::fmt;
 
 // use pyo3::prelude::*;
 
@@ -26,7 +26,6 @@ pub trait Distribution {
     fn dim(&self) -> usize;
 }
 
-
 // ========== Normal probability distribution structure and implementation ==========
 /// Normal probability distribution
 ///
@@ -45,7 +44,7 @@ pub struct NormalDistribution {
     mean: f64,
     sigma: f64,
     const_1: f64,
-    normal_generator: rand_distr::Normal<f64>            // for rnd sampling
+    normal_generator: rand_distr::Normal<f64>, // for rnd sampling
 }
 
 // #[pymethods]
@@ -53,17 +52,23 @@ impl NormalDistribution {
     /// Creates a new normal probability distribution N(mu, sigma)
     // #[new]
     pub fn new(mu: f64, sigma: f64) -> NormalDistribution {
-        NormalDistribution { mean: mu, sigma,
+        NormalDistribution {
+            mean: mu,
+            sigma,
             const_1: (1.0 / (sigma * (std::f64::consts::PI * 2.0).sqrt())),
-            normal_generator: rand_distr::Normal::new(mu, sigma).unwrap()
+            normal_generator: rand_distr::Normal::new(mu, sigma).unwrap(),
         }
     }
 
     /// Returns the mean (expected) value of this distribution
-    pub fn mean(&self) -> f64 { self.mean }
+    pub fn mean(&self) -> f64 {
+        self.mean
+    }
 
     /// Returns the standard deviation of this distribution
-    pub fn sdev(&self) -> f64 { self.sigma }
+    pub fn sdev(&self) -> f64 {
+        self.sigma
+    }
 
     /// Sets parameters of this normal probability distribution to mu and sigma
     pub fn set_parameters(&mut self, mu: f64, sigma: f64) {
@@ -84,7 +89,9 @@ impl Distribution for NormalDistribution {
         out[0] = self.normal_generator.sample(rand);
     }
 
-    fn dim(&self) -> usize { return 1;  }
+    fn dim(&self) -> usize {
+        return 1;
+    }
 }
 
 // ========== Multivariate Normal probability distribution structure and implementation ==========
@@ -116,37 +123,47 @@ pub struct MultiNormalDistribution {
     mean: DVector<f64>,
     sigma: DMatrix<f64>,
     u: DMatrix<f64>,
-    cku: DMatrix<f64>,                                  // Cholesky decomposition to random sampling from the distribution
-    tmp: DVector<f64>,                                  // for rnd sampling
-    normal_generator: rand_distr::Normal<f64>           // for rnd sampling
+    cku: DMatrix<f64>, // Cholesky decomposition to random sampling from the distribution
+    tmp: DVector<f64>, // for rnd sampling
+    normal_generator: rand_distr::Normal<f64>, // for rnd sampling
 }
 
 impl MultiNormalDistribution {
-
     /// Creates a new multivariate normal distribution
     /// Parameters are set to a vector of zeros and a unity matrix (expected and covariance, respectively)
     pub fn new(dim: usize) -> MultiNormalDistribution {
-
         let mu = DVector::<f64>::zeros(dim);
         let sig = DMatrix::<f64>::identity(dim, dim);
         let u = DMatrix::<f64>::identity(dim, dim);
         let cku = DMatrix::<f64>::identity(dim, dim);
         let tmp = DVector::<f64>::zeros(dim);
-        let mut out = MultiNormalDistribution { dim, logdet:0.0 , mean: mu, sigma: sig, u, cku, tmp,
-            normal_generator: rand_distr::Normal::new(0.0, 1.0).unwrap()};
+        let mut out = MultiNormalDistribution {
+            dim,
+            logdet: 0.0,
+            mean: mu,
+            sigma: sig,
+            u,
+            cku,
+            tmp,
+            normal_generator: rand_distr::Normal::new(0.0, 1.0).unwrap(),
+        };
         out.setup();
 
         return out;
     }
 
     /// Returns the immutable reference to the mean (expected) vector of this distribution
-    pub fn mean(&self) -> &DVector<f64> { &self.mean }
+    pub fn mean(&self) -> &DVector<f64> {
+        &self.mean
+    }
 
     /// Returns the immutable reference to the standard deviation matrix of this distribution
-    pub fn sigma(&self) -> &DMatrix<f64> { &self.sigma }
+    pub fn sigma(&self) -> &DMatrix<f64> {
+        &self.sigma
+    }
 
     /// Sets parameters of this multinomial normal distribution
-    pub fn set_parameters(&mut self, mu:&DVector::<f64>, sigma: &DMatrix::<f64>) {
+    pub fn set_parameters(&mut self, mu: &DVector<f64>, sigma: &DMatrix<f64>) {
         self.mean = mu.clone();
         self.sigma = sigma.clone();
         self.setup();
@@ -161,13 +178,12 @@ impl MultiNormalDistribution {
         for i in 0..n {
             dp[i] = xm.dot(&self.u.column(i));
         }
-        let log2pi     = (2.0*std::f64::consts::PI).ln();
-        let maha_dist: f64 = dp.iter().map(|x| x*x).sum();
+        let log2pi = (2.0 * std::f64::consts::PI).ln();
+        let maha_dist: f64 = dp.iter().map(|x| x * x).sum();
         let val = -0.5 * (self.dim as f64 * log2pi + maha_dist + self.logdet);
 
         return val;
     }
-
 
     /// Sets up internal data ready for PDF evaluation
     /// see https://gregorygundersen.com/blog/2019/10/30/scipy-multivariate/
@@ -185,7 +201,7 @@ impl MultiNormalDistribution {
         self.u = eigen.eigenvectors.clone();
         for i in 0..self.dim {
             for j in 0..self.dim {
-                self.u[(i,j)] = self.u[(i,j)] * valsinv_sqrt[j];
+                self.u[(i, j)] = self.u[(i, j)] * valsinv_sqrt[j];
             }
         }
 
@@ -195,7 +211,6 @@ impl MultiNormalDistribution {
     /// Sets mean and sigma parameters from observations gathered
     ///in a given  OnlineMultivariateStatistics object
     fn set_from_statistics(&mut self, stats: &OnlineMultivariateStatistics) {
-
         assert_eq!(stats.dim(), self.dim);
 
         for i in 0..self.dim {
@@ -210,7 +225,6 @@ impl MultiNormalDistribution {
 }
 
 impl Distribution for MultiNormalDistribution {
-
     fn pdf(&self, x: &Vec<f64>) -> f64 {
         self.logpdf(x).exp()
     }
@@ -225,7 +239,9 @@ impl Distribution for MultiNormalDistribution {
         }
     }
 
-    fn dim(&self) -> usize { return self.dim;  }
+    fn dim(&self) -> usize {
+        return self.dim;
+    }
 }
 
 // ========== Estimable trait and its implementation for distributions ==========
@@ -254,7 +270,6 @@ pub trait Estimable {
 }
 
 impl Estimable for NormalDistribution {
-
     /// Estimate parameters of this [`NormalDistribution`](NormalDistribution) from a given sample
     ///
     /// # Example
@@ -281,14 +296,15 @@ impl Estimable for NormalDistribution {
 
         let mut stats = OnlineMultivariateStatistics::new(1);
         for i in 0..sample.len() {
-            if selection[i] { stats.accumulate(&sample[i]);  }
+            if selection[i] {
+                stats.accumulate(&sample[i]);
+            }
         }
         self.set_parameters(stats.avg(0), stats.var(0).sqrt());
     }
 }
 
 impl Estimable for MultiNormalDistribution {
-
     fn estimate(&mut self, sample: &Vec<Vec<f64>>) {
         assert_eq!(sample[0].len(), self.dim);
 
@@ -303,7 +319,9 @@ impl Estimable for MultiNormalDistribution {
 
         let mut stats = OnlineMultivariateStatistics::new(self.dim);
         for i in 0..sample.len() {
-            if selection[i] { stats.accumulate(&sample[i]);  }
+            if selection[i] {
+                stats.accumulate(&sample[i]);
+            }
         }
 
         self.set_from_statistics(&stats);
@@ -335,12 +353,14 @@ impl fmt::Display for NormalDistribution {
     }
 }
 
-macro_rules!  print_vector {
+macro_rules! print_vector {
     ($vec:expr, $out_str:expr) => {
         $out_str = format!("{} [{:7.4}", $out_str, $vec[0]);
-        for i in 1..$vec.len() { $out_str = format!("{}, {:7.4}", $out_str, $vec[i]);}
+        for i in 1..$vec.len() {
+            $out_str = format!("{}, {:7.4}", $out_str, $vec[i]);
+        }
         $out_str.push_str("]");
-    }
+    };
 }
 
 impl fmt::Display for MultiNormalDistribution {
@@ -377,5 +397,3 @@ impl fmt::Display for MultiNormalDistribution {
         write!(f, "{}", out)
     }
 }
-
-

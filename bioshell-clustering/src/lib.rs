@@ -1,6 +1,5 @@
-mod optics;
 mod em;
+mod optics;
 
-pub use optics::{Optics, PointsWithDistance, EuclideanPoints, Neighbor};
-pub use em::{expectation_maximization};
-
+pub use em::expectation_maximization;
+pub use optics::{EuclideanPoints, Neighbor, Optics, PointsWithDistance};

@@ -1,9 +1,9 @@
-use std::io::stdout;
+use csv;
+use std::fs::File;
 use std::io::stderr;
+use std::io::stdout;
 use std::io::Write;
 use std::path::Path;
-use std::fs::{File};
-use csv;
 
 /// Check whether a `Writer` object created based on a given string would actually write to screen.
 ///
@@ -24,10 +24,10 @@ use csv;
 /// ```
 pub fn writes_to_screen(out_fname: &str) -> bool {
     match out_fname {
-        "" =>true,
+        "" => true,
         "stdout" => true,
         "stderr" => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -49,7 +49,7 @@ pub fn writes_to_screen(out_fname: &str) -> bool {
 /// to_stream = out_writer("stdout", true);
 /// let mut to_file = out_writer("file.out", false);
 /// ```
-pub fn out_writer(out_fname: &str, if_append: bool) -> Box<dyn Write>{
+pub fn out_writer(out_fname: &str, if_append: bool) -> Box<dyn Write> {
     match out_fname {
         "" => Box::new(stdout()) as Box<dyn Write>,
         "stdout" => Box::new(stdout()) as Box<dyn Write>,
@@ -58,10 +58,15 @@ pub fn out_writer(out_fname: &str, if_append: bool) -> Box<dyn Write>{
             let path = Path::new(out_fname);
 
             if if_append {
-                let file = match File::options().append(true).write(true).create(true).open(&path) {
+                let file = match File::options()
+                    .append(true)
+                    .write(true)
+                    .create(true)
+                    .open(&path)
+                {
                     Ok(file) => file,
                     Err(e) => panic!("can't open >{:?}<, error is: {:?}", &path, e),
-                } ;
+                };
                 return Box::new(file) as Box<dyn Write>;
             } else {
                 let file = match File::create(&path) {
@@ -75,27 +80,34 @@ pub fn out_writer(out_fname: &str, if_append: bool) -> Box<dyn Write>{
 }
 
 /// Reads real values from a file in the tab-separated format
-pub fn read_tsv(fname: &str) -> Vec<Vec<f64>> { read_csv_tsv(fname, b'\t') }
+pub fn read_tsv(fname: &str) -> Vec<Vec<f64>> {
+    read_csv_tsv(fname, b'\t')
+}
 
 /// Reads real values from a file in the coma-separated format
-pub fn read_csv(fname: &str) -> Vec<Vec<f64>> { read_csv_tsv(fname, b',') }
+pub fn read_csv(fname: &str) -> Vec<Vec<f64>> {
+    read_csv_tsv(fname, b',')
+}
 
-fn read_csv_tsv(fname:&str, delimiter:u8) -> Vec<Vec<f64>> {
-
+fn read_csv_tsv(fname: &str, delimiter: u8) -> Vec<Vec<f64>> {
     let file = File::open(fname).unwrap();
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
         .delimiter(delimiter)
         .from_reader(file);
-    let mut data : Vec<Vec<f64>> = Vec::new();
+    let mut data: Vec<Vec<f64>> = Vec::new();
     for record in rdr.records() {
         if let Ok(r) = &record {
-            let row : Vec<f64> = r.iter().map(|e| {
-                match e.parse::<f64>(){
+            let row: Vec<f64> = r
+                .iter()
+                .map(|e| match e.parse::<f64>() {
                     Ok(v) => v,
-                    Err(_err) => panic!("Problem while parsing a float value: {}\nThe last record was: {:?}", e, &record),
-                }
-            }).collect();
+                    Err(_err) => panic!(
+                        "Problem while parsing a float value: {}\nThe last record was: {:?}",
+                        e, &record
+                    ),
+                })
+                .collect();
             data.push(row);
         }
     }

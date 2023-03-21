@@ -20,7 +20,7 @@ pub enum MonomerType {
     /// most likely a ligand, single-character code: ``'N'``
     NonPolymer,
     /// anything else, single-character code: ``'O'``
-    OTHER
+    OTHER,
 }
 
 impl TryFrom<char> for MonomerType {
@@ -41,14 +41,16 @@ impl TryFrom<char> for MonomerType {
             'S' => Ok(MonomerType::Sacharide),
             'N' => Ok(MonomerType::NonPolymer),
             'O' => Ok(MonomerType::OTHER),
-            _ => {Err(format!("Can't find a MonomerType for the one-letter code: {}!", value))}
+            _ => Err(format!(
+                "Can't find a MonomerType for the one-letter code: {}!",
+                value
+            )),
         }
     }
 }
 
 /// Provides basic information for a given residue type found in a biomolecule
 pub trait ResidueTypeProperties {
-
     /// single-letter code of this monomer
     fn code1(&self) -> char;
 
@@ -111,7 +113,11 @@ impl TryFrom<String> for ResidueType {
         let type1: char = tokens.next().unwrap().chars().next().unwrap();
         let parent_type = StandardResidueType::try_from(code1).unwrap();
         let chem_compound_type = MonomerType::try_from(type1).unwrap();
-        return Ok(ResidueType { code3, parent_type, chem_compound_type });
+        return Ok(ResidueType {
+            code3,
+            parent_type,
+            chem_compound_type,
+        });
     }
 }
 
@@ -140,7 +146,7 @@ impl TryFrom<String> for ResidueType {
 /// ```
 pub struct ResidueTypeManager {
     registered_types: Vec<ResidueType>,
-    by_code_3: HashMap<String, usize>
+    by_code_3: HashMap<String, usize>,
 }
 
 impl ResidueTypeManager {
@@ -148,20 +154,29 @@ impl ResidueTypeManager {
     ///
     /// ``ResidueType`` objects corresponding to standard StandardResidueType enum values are
     /// automatically created and registered in this manager
-    pub fn new() ->  ResidueTypeManager{
-        let mut out = ResidueTypeManager{registered_types: vec![], by_code_3: HashMap::new()};
+    pub fn new() -> ResidueTypeManager {
+        let mut out = ResidueTypeManager {
+            registered_types: vec![],
+            by_code_3: HashMap::new(),
+        };
 
         for srt in StandardResidueType::TYPES {
-            let rt = ResidueType{code3: srt.code3(), parent_type: srt,
-                chem_compound_type: srt.chem_compound_type()};
-            out.by_code_3.insert(srt.code3(), out.registered_types.len());
+            let rt = ResidueType {
+                code3: srt.code3(),
+                parent_type: srt,
+                chem_compound_type: srt.chem_compound_type(),
+            };
+            out.by_code_3
+                .insert(srt.code3(), out.registered_types.len());
             out.registered_types.push(rt);
         }
         return out;
     }
 
     /// Counts the residue types registered in this manager
-    pub fn count(&self) -> usize { self.registered_types.len() }
+    pub fn count(&self) -> usize {
+        self.registered_types.len()
+    }
 
     /// Register a new residue type in this manager.
     ///
@@ -169,8 +184,11 @@ impl ResidueTypeManager {
     /// it will not be inserted, i.e. this method does not replace an old monomer with a new one.
     pub fn register_residue_type(&mut self, res_type: ResidueType) -> bool {
         let key = &res_type.code3;
-        if self.by_code_3.contains_key(key) { return false; }
-        self.by_code_3.insert(key.clone(), self.registered_types.len());
+        if self.by_code_3.contains_key(key) {
+            return false;
+        }
+        self.by_code_3
+            .insert(key.clone(), self.registered_types.len());
         self.registered_types.push(res_type);
         return true;
     }
@@ -211,7 +229,6 @@ impl ResidueTypeManager {
         }
     }
 }
-
 
 macro_rules! define_res_types {
 
