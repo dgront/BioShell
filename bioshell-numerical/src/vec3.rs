@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops::{Index, IndexMut};
 use rand::distributions::Distribution;
 use rand::thread_rng;
 use rand_distr::Normal;
@@ -45,10 +46,43 @@ pub struct Vec3
     pub chain_id: u16
 }
 
+//region Indexing facility implementation.
+impl Index<usize> for Vec3 {
+    type Output = f64;
+
+    fn index(&self, index: usize) -> &f64 {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Index out of range for Vec3"),
+        }
+    }
+}
+
+impl IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, index: usize) -> &mut f64 {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Index out of range for Vec3"),
+        }
+    }
+}
+//endregion
+
 impl fmt::Debug for Vec3 {
     /// Prints nicely 3D coordinates of a vector
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{:.3} {:.3} {:.3}]", self.x, self.y, self.z)
+    }
+}
+
+impl PartialEq for Vec3 {
+    fn eq(&self, other: &Self) -> bool
+    {
+        return self.x == other.x && self.y == other.y && self.z == other.z;
     }
 }
 
@@ -106,8 +140,7 @@ impl Vec3 {
     /// Assigns new content to this vector
     pub fn set(&mut self, v: &Vec3) { vec_operation!(self,v,=); }
 
-    /// Turns self into the opposite vector.
-    ///
+    /// Turns self into the opposite vector
     /// Sum of a vector and its opposite should be zero:
     /// ```
     /// # use bioshell_numerical::Vec3;
@@ -165,6 +198,7 @@ impl Vec3 {
     /// Returns a normalized copy of this vector
     /// ```
     /// # use bioshell_numerical::Vec3;
+    ///
     /// let v = Vec3::new(3.0, 2.0, 1.0).normalized();
     /// assert!((v.length() - 1.0).abs() < 0.00001);
     /// ```
@@ -217,9 +251,7 @@ impl Vec3 {
     /// Calculate the distance to another point
     pub fn distance_to(&self, p: &Vec3) -> f64 { self.distance_square_to(p).sqrt() }
 
-    /// Calculate vector product.
-    ///
-    /// This method does not normalize the input vectors.
+    /// Calculate vector product
     /// ```
     /// # use bioshell_numerical::Vec3;
     /// // multiply X and Y versors to get Z
