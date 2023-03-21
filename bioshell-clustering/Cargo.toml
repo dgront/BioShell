@@ -19,4 +19,3 @@ clap = { version = "3.1.18", features = ["derive"] }
 
 bioshell-statistics = { path = "../bioshell-statistics" }
 bioshell-core = { path = "../bioshell-core" }
-
