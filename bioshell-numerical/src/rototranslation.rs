@@ -8,9 +8,10 @@ use crate::matrix::Matrix3x3;
 /// and the translation vector is stored as a Vec3 object
 ///
 /// # Example
-/// ```rust
-/// use bioshell_numerical::matrix::Matrix3x3;
+///```rust
 /// use bioshell_numerical::Vec3;
+/// use bioshell_numerical::Matrix3x3;
+/// use bioshell_numerical::Rototranslation;
 ///
 /// let vx = Vec3::new(1.0, 0.0, 0.0);
 ///         let vy = Vec3::new(0.0, 1.0, 0.0);
@@ -166,7 +167,6 @@ impl Rototranslation
     /// * v - A mutable reference to a Vec3 object representing the vector to be transformed.
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::Vec3;
     /// use bioshell_numerical::Rototranslation;
@@ -207,7 +207,6 @@ impl Rototranslation
     /// * v - A reference to the vector to apply the rototranslation to
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::Vec3;
     /// use bioshell_numerical::Rototranslation;
@@ -245,7 +244,6 @@ impl Rototranslation
     /// * v - a mutable reference to a Vec3 object that will be transformed in place
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::Vec3;
     /// use bioshell_numerical::matrix::Matrix3x3;
@@ -285,7 +283,6 @@ impl Rototranslation
     /// * v - The vector to which the inverse of the rototranslation is applied.
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::Vec3;
     /// use bioshell_numerical::matrix::Matrix3x3;

@@ -11,6 +11,7 @@ use crate::vec3::Vec3;
 /// ```rust
 /// use bioshell_numerical::matrix::Matrix3x3;
 /// use bioshell_numerical::Vec3;
+///
 /// let vx = Vec3::new(1.0, 0.0, 0.0);
 /// let vy = Vec3::new(0.0, 1.0, 0.0);
 /// let vz = Vec3::new(1.0, 0.0, 1.0);
@@ -51,7 +52,8 @@ impl IndexMut<usize> for Matrix3x3
 
 //region Debug trait implementation.
 impl fmt::Debug for Matrix3x3 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+    {
         write!(f, "[ [{:.2}, {:.2}, {:.2}], [{:.2}, {:.2}, {:.2}], [{:.2}, {:.2}, {:.2}] ]",
                self._array[0], self._array[1], self._array[2],
                self._array[3], self._array[4], self._array[5],
@@ -59,6 +61,21 @@ impl fmt::Debug for Matrix3x3 {
     }
 }
 //endregion
+
+impl PartialEq for Matrix3x3
+{
+    fn eq(&self, other: &Self) -> bool
+    {
+        let mut returns:bool = true;
+
+        for i in 1..9
+        {
+            returns = returns && (self[i] == other[i]);
+        }
+
+        return returns;
+    }
+}
 
 impl Matrix3x3
 {
@@ -71,17 +88,20 @@ impl Matrix3x3
     /// * self - the Matrix3x3 instance to create.
     ///
     /// # Example
-    ///
-    /// rust
+    /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
+    /// let mat = Matrix3x3::new();
+    ///
+    /// assert_eq!(0.0, mat)
+    /// ```
     pub fn new() -> Self
     {
         Self::default()
     }
     //endregion
 
-    //region pub fn new_arr(m: [f64; 9]) -> Self
+    //region pub fn from_array(m: [f64; 9]) -> Self
     /// Constructs a new Matrix3x3 object from an array of 9 f64 elements.
     ///
     /// # Arguments
@@ -91,16 +111,15 @@ impl Matrix3x3
     /// # Example
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
-    /// let m = [1.0, 2.0, 3.0,
-    /// 4.0, 5.0, 6.0,
-    /// 7.0, 8.0, 9.0];
-    /// let mtx = Matrix3x3::new_arr(m);
+    ///
+    /// let m = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
+    /// let mtx = Matrix3x3::from_array(m);
     ///
     /// assert_eq!(mtx[0], 1.0);
     /// assert_eq!(mtx[4], 5.0);
     /// assert_eq!(mtx[8], 9.0);
     /// ```
-    pub fn new_arr(m: [f64; 9]) -> Self
+    pub fn from_array(m: [f64; 9]) -> Self
     {
         Matrix3x3 { _array: m }
     }
@@ -117,8 +136,8 @@ impl Matrix3x3
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let mut lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    ///         let rhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    ///         let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     ///
     ///         lhs.add(&rhs);
     ///
@@ -153,8 +172,10 @@ impl Matrix3x3
     ///
     /// # Example
     /// ```rust
-    /// let mut lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    ///         let rhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// use bioshell_numerical::Matrix3x3;
+    ///
+    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    ///         let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     ///
     ///         lhs.sub(&rhs);
     ///
@@ -186,11 +207,10 @@ impl Matrix3x3
     /// * rhs - A scalar value to multiply the matrix with.
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let mut lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     ///         let rhs = 2.0;
     ///
     ///         lhs.mul_scalar(rhs);
@@ -224,11 +244,10 @@ impl Matrix3x3
     /// * rhs: The scalar value to divide with.
     ///
     /// # Examples
-    ///
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let mut lhs: Matrix3x3 = Matrix3x3::new_arr([2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
+    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
     ///         let rhs = 2.0;
     ///
     ///         lhs.div_scalar(rhs);
@@ -267,12 +286,11 @@ impl Matrix3x3
     /// * `rhs` - is a mutable reference to a Vec3 object that represents the vector to be multiplied with the matrix.
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     /// use bioshell_numerical::Vec3;
     ///
-    /// let lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0,
+    /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
     ///                                          4.0, 5.0, 6.0,
     ///                                          7.0, 8.0, 9.0]);
     ///         let mut rhs = Vec3::new(2.0,2.0,2.0);
@@ -308,14 +326,13 @@ impl Matrix3x3
     /// * rhs - a reference to the matrix object to be multiplied with the caller matrix object.
     ///
     /// # Example
-    ///
-    /// use bioshell_numerical::matrix::Matrix3x3;
-    ///
     /// ```rust
-    /// let mut lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0,
+    /// use bioshell_numerical::Matrix3x3;
+    ///
+    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
     ///             4.0, 5.0, 6.0,
     ///             7.0, 8.0, 9.0]);
-    ///         let rhs = Matrix3x3::new_arr([1.0, 2.0, 3.0,
+    ///         let rhs = Matrix3x3::from_array([1.0, 2.0, 3.0,
     ///             4.0, 5.0, 6.0,
     ///             7.0, 8.0, 9.0]);
     ///         lhs.mul_mat_mut(&rhs);
@@ -360,11 +377,10 @@ impl Matrix3x3
     /// * self - a reference to the calling Matrix3x3 object.
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let mat: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0,
+    /// let mat: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
     ///             4.0, 5.0, 6.0,
     ///             7.0, 8.0, 9.0]);
     ///
@@ -395,11 +411,10 @@ impl Matrix3x3
     /// This function may panic if the matrix is not invertible, i.e. has a determinant of zero.
     ///
     /// # Examples
-    ///
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let mut lhs: Matrix3x3 = Matrix3x3::new_arr([0.0, 1.0, 0.0,
+    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([0.0, 1.0, 0.0,
     ///                                               0.0, 0.0, 1.0,
     ///                                               1.0, 0.0, 0.0]);
     ///
@@ -474,8 +489,8 @@ impl Matrix3x3
     /// * cz_z - The element at row 2 and column 2 of the matrix.
     ///
     /// # Example
-    ///
     /// ```rust
+    /// use bioshell_numerical::vec3::Vec3;
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
     /// let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
@@ -502,7 +517,7 @@ impl Matrix3x3
                        cy_x:f64, cy_y:f64, cy_z:f64,
                        cz_x:f64, cz_y:f64, cz_z:f64) ->Self
     {
-        Self::new_arr([
+        Self::from_array([
             cx_x, cx_y, cx_z,
             cy_x, cy_y, cy_z,
             cz_x, cz_y, cz_z,
@@ -520,7 +535,6 @@ impl Matrix3x3
     /// * cz - A reference to a Vec3 object representing the z axis of the matrix.
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     /// use bioshell_numerical::Vec3;
@@ -549,7 +563,7 @@ impl Matrix3x3
         //let cy1 = cy.normalized();
         //let cz1 = cz.normalized();
 
-        Self::new_arr([
+        Self::from_array([
             cx.x, cx.y, cx.z,
             cy.x, cy.y, cy.z,
             cz.x, cz.y, cz.z,
@@ -567,7 +581,6 @@ impl Matrix3x3
     /// * rz - A reference to a Vec3 object representing the third column of the matrix.
     ///
     /// # Example
-    ///
     ///```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     /// use bioshell_numerical::Vec3;
@@ -592,11 +605,7 @@ impl Matrix3x3
     ///```
     pub fn from_row_vectors(rx: &Vec3, ry: &Vec3, rz: &Vec3) -> Self
     {
-        //let rx1 = rx.normalized();
-        //let ry1 = ry.normalized();
-        //let rz1 = rz.normalized();
-
-        Self::new_arr([
+        Self::from_array([
             rx.x, ry.x, rz.x,
             rx.y, ry.y, rz.y,
             rx.z, ry.z, rz.z,
@@ -617,8 +626,8 @@ impl Matrix3x3
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let lhs = Matrix3x3 { _array: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0] };
-    /// let rhs = Matrix3x3 { _array: [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0] };
+    /// let lhs = Matrix3x3::from_array( [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0] );
+    /// let rhs = Matrix3x3::from_array( [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0] );
     ///
     /// let result = Matrix3x3::add_s(lhs, rhs);
     ///
@@ -629,7 +638,7 @@ impl Matrix3x3
     ///
     pub fn add_s(lhs : Matrix3x3, rhs: Matrix3x3) -> Matrix3x3
     {
-        return Matrix3x3::new_arr([lhs[0] + rhs[0], lhs[1] + rhs[1], lhs[2] + rhs[2], lhs[3] + rhs[3],
+        return Matrix3x3::from_array([lhs[0] + rhs[0], lhs[1] + rhs[1], lhs[2] + rhs[2], lhs[3] + rhs[3],
             lhs[4] + rhs[4], lhs[5] + rhs[5], lhs[6] + rhs[6], lhs[7] + rhs[7], lhs[8] + rhs[8]])
     }
     //endregion
@@ -645,17 +654,17 @@ impl Matrix3x3
     /// * rhs - The matrix object which is to be subtracted from lhs.
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
-    /// let lhs = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    /// let rhs = Matrix3x3::new_arr([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0]);
+    ///
+    /// let lhs = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let rhs = Matrix3x3::from_array([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0]);
     /// let sub = Matrix3x3::sub_s(lhs, rhs);
-    /// assert_eq!(sub, Matrix3x3::new_arr([-8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0]));
+    /// assert_eq!(sub, Matrix3x3::from_array([-8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0]));
     ///```
     pub fn sub_s(lhs : Matrix3x3, rhs: Matrix3x3) -> Matrix3x3
     {
-        return Matrix3x3::new_arr([lhs[0] - rhs[0],
+        return Matrix3x3::from_array([lhs[0] - rhs[0],
             lhs[1] - rhs[1],
             lhs[2] - rhs[2],
             lhs[3] - rhs[3],
@@ -679,11 +688,10 @@ impl Matrix3x3
     /// * The inverse of the input matrix as a Matrix3x3.
     ///
     /// # Examples
-    ///
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let a = Matrix3x3::new_arr([3.0, 2.0, 1.0,
+    /// let a = Matrix3x3::from_array([3.0, 2.0, 1.0,
     /// 4.0, 3.0, 1.0,
     /// 2.0, 2.0, 2.0]);
     ///
@@ -716,12 +724,11 @@ impl Matrix3x3
     /// * vec - A reference to a Vec3 object.
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     /// use bioshell_numerical::Vec3;
     ///
-    /// let mat = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let mat = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let vec = Vec3::new(1.0, 2.0, 3.0);
     ///
     /// let result = mat.mul_vec_s(&vec);
@@ -752,12 +759,13 @@ impl Matrix3x3
     /// A new Matrix3x3 object which is the result of multiplying the lhs matrix with the rhs matrix.
     ///
     /// # Example
-    ///
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
-    /// let a = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    /// let b = Matrix3x3::new_arr([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0]);
+    ///
+    /// let a = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let b = Matrix3x3::from_array([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0]);
     /// let c = Matrix3x3::mul_mat_s(&a, &b);
+    ///
     /// assert_eq!(c[0], 30.0);
     /// assert_eq!(c[1], 24.0);
     /// assert_eq!(c[2], 18.0);

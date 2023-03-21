@@ -25,8 +25,8 @@ mod matrix_test
     #[test]
     fn matrix_add()
     {
-        let mut lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-        let rhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
 
         lhs.add(&rhs);
 
@@ -46,8 +46,8 @@ mod matrix_test
     #[test]
     fn matrix_sub()
     {
-        let mut lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-        let rhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
 
         lhs.sub(&rhs);
 
@@ -67,7 +67,7 @@ mod matrix_test
     #[test]
     fn matrix_mul_scalar()
     {
-        let mut lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
         let rhs = 2.0;
 
         lhs.mul_scalar(rhs);
@@ -88,7 +88,7 @@ mod matrix_test
     #[test]
     fn matrix_div_scalar()
     {
-        let mut lhs: Matrix3x3 = Matrix3x3::new_arr([2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
+        let mut lhs: Matrix3x3 = Matrix3x3::from_array([2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
         let rhs = 2.0;
 
         lhs.div_scalar(rhs);
@@ -109,7 +109,7 @@ mod matrix_test
     #[test]
     fn matrix_mul_vec_mut()
     {
-        let lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0,
+        let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
             4.0, 5.0, 6.0,
             7.0, 8.0, 9.0]);
         let mut rhs = Vec3::new(2.0,2.0,2.0);
@@ -124,10 +124,10 @@ mod matrix_test
     #[test]
     fn matrix_mul_mat_mut()
     {
-        let mut lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0,
+        let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
             4.0, 5.0, 6.0,
             7.0, 8.0, 9.0]);
-        let rhs = Matrix3x3::new_arr([1.0, 2.0, 3.0,
+        let rhs = Matrix3x3::from_array([1.0, 2.0, 3.0,
             4.0, 5.0, 6.0,
             7.0, 8.0, 9.0]);
         lhs.mul_mat_mut(&rhs);
@@ -148,7 +148,7 @@ mod matrix_test
     #[test]
     fn matrix_det()
     {
-        let mat: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0,
+        let mat: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
             4.0, 5.0, 6.0,
             7.0, 8.0, 9.0]);
 
@@ -162,7 +162,7 @@ mod matrix_test
     #[test]
     fn matrix_inverse()
     {
-        let mut lhs: Matrix3x3 = Matrix3x3::new_arr([0.0, 1.0, 0.0,
+        let mut lhs: Matrix3x3 = Matrix3x3::from_array([0.0, 1.0, 0.0,
             0.0, 0.0, 1.0,
             1.0, 0.0, 0.0]);
 
@@ -258,8 +258,8 @@ mod matrix_test
     #[test]
     fn matrix_add_s()
     {
-        let lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-        let rhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
         let out= Matrix3x3::add_s(lhs, rhs);
 
         assert_eq!(2.0, out[0]);
@@ -278,8 +278,8 @@ mod matrix_test
     #[test]
     fn matrix_sub_s()
     {
-        let lhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-        let rhs: Matrix3x3 = Matrix3x3::new_arr([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
         let out= Matrix3x3::sub_s(lhs, rhs);
 
         assert_eq!(0.0, out[0]);
