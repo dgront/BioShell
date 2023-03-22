@@ -2,6 +2,7 @@ use rand::distributions::Distribution;
 use rand::thread_rng;
 use rand_distr::Normal;
 use std::fmt;
+use std::fmt::{Display, Formatter};
 use std::ops::{Index, IndexMut};
 
 /// 3D vector used to represent an interaction center in a simulation
@@ -44,7 +45,7 @@ pub struct Vec3 {
     pub chain_id: u16,
 }
 
-//region Indexing facility implementation.
+/// Indexing operator provides access to X, Y, Z components of a vector
 impl Index<usize> for Vec3 {
     type Output = f64;
 
@@ -68,7 +69,12 @@ impl IndexMut<usize> for Vec3 {
         }
     }
 }
-//endregion
+
+impl Display for Vec3 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "[{:.3} {:.3} {:.3}] >{},{},{}<", self.x, self.y, self.z, self.atom_type, self.chain_id, self.res_type)
+    }
+}
 
 impl fmt::Debug for Vec3 {
     /// Prints nicely 3D coordinates of a vector
@@ -108,10 +114,7 @@ macro_rules! float3_operation {
 }
 
 impl Vec3 {
-    pub fn show(&self) {
-        println!("[{},{},{}]", self.x, self.y, self.z);
-        println!(">{},{},{}<", self.atom_type, self.chain_id, self.res_type);
-    }
+
     /// Creates a new vector from given coordinates.
     ///
     /// ``res_type``, ``atom_type`` and ``chain_id`` are by default set to ``0``

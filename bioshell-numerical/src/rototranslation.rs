@@ -95,8 +95,8 @@ impl Rototranslation {
     /// # Example
     ///
     /// ```rust
-    /// use bioshell_numerical::{Rototranslation, Vec3};
-    /// let rotation_mat = matrix_lib::matrix::Matrix3x3::from_values(
+    /// use bioshell_numerical::{Rototranslation, Vec3, Matrix3x3};
+    /// let rotation_mat = Matrix3x3::from_values(
     ///             1.0,0.0,0.0,
     ///             0.0,1.0,0.0,
     ///             0.0,0.0,1.0
@@ -159,10 +159,9 @@ impl Rototranslation {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_numerical::Vec3;
-    /// use bioshell_numerical::Rototranslation;
+    /// use bioshell_numerical::{Matrix3x3, Rototranslation, Vec3};
     ///
-    /// let rotation_mat = matrix_lib::matrix::Matrix3x3::from_values(
+    /// let rotation_mat = Matrix3x3::from_values(
     ///             1.0,0.0,0.0,
     ///             0.0,1.0,0.0,
     ///             0.0,0.0,1.0
@@ -193,9 +192,7 @@ impl Rototranslation {
         v.y = temp_y;
         v.z = temp_z;
     }
-    //endregion
 
-    //region pub fn apply(&self, v: &Vec3) -> Vec3
     /// Applies the rototranslation to a vector.
     ///
     /// # Arguments
@@ -204,8 +201,7 @@ impl Rototranslation {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_numerical::Vec3;
-    /// use bioshell_numerical::Rototranslation;
+    /// use bioshell_numerical::{Rototranslation, Matrix3x3, Vec3};
     ///
     /// let unit_matrix =
     ///             Matrix3x3::from_values(1.0, 0.0, 0.0,
@@ -225,9 +221,7 @@ impl Rototranslation {
         self.apply_mut(&mut v);
         return v;
     }
-    //endregion
 
-    //region pub fn apply_inverse_mut(&self, v: &mut Vec3)
     /// Applies the inverse of the Rototranslation object to a mutable reference to a Vec3 object.
     ///
     /// This function applies the inverse transformation to the input vector in place. It first translates
@@ -270,9 +264,7 @@ impl Rototranslation {
         v.y = temp_y;
         v.z = temp_z;
     }
-    //endregion
 
-    //region pub fn apply_inverse(&self, v: &Vec3) -> Vec3
     /// Applies the inverse of the rototranslation to a vector in place.
     ///
     /// The inverse of the rototranslation is obtained by inverting the rotation matrix and
@@ -304,5 +296,4 @@ impl Rototranslation {
         self.apply_inverse_mut(&mut v);
         return v;
     }
-    //endregion
 }

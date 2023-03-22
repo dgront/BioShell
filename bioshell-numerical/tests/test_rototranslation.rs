@@ -23,22 +23,48 @@ mod rototranslation_test {
     }
 
     #[test]
-    fn rototranslation_around_axis() {
-        let rotation_mat =
-            Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        let translation_vec = Vec3::new(1.0, 1.0, 1.0);
-        let another_vec = Vec3::new(10.0, 1.0, 10.0);
-        let rot = Rototranslation::new(rotation_mat, translation_vec);
+    fn rotate_cube_around_axis_111() {
+        let corner_1 = Vec3::new(0.0, 0.0, 0.0);
+        let corner_2 = Vec3::new(1.0, 1.0, 1.0);
+        let angle = 2.0 * std::f64::consts::PI / 3.0;
+        let rot = Rototranslation::around_axis(&corner_1, &corner_1, &corner_2, angle);
 
-        let center = Vec3::new(0.0, 0.0, 0.0);
-        let begin = Vec3::new(0.0, 0.0, 1.0);
-        let end = Vec3::new(0.0, 1.0, 0.0);
+        println!("{:?}", rot.rotation_matrix());
+        let mut another_vec = Vec3::new(1.0, 1.0, 0.0);
+        for i in 0..4 {
+            rot.apply_mut(&mut another_vec);
+            println!("{}", another_vec);
+        }
+
+
+        // assert_eq!(10.0, another_vec.x);
+        // assert_eq!(1.0, another_vec.y);
+        // assert_eq!(10.0, another_vec.z);
+    }
+
+    #[test]
+    fn rotate_cube_around_axis_001() {
+        let corner_1 = Vec3::new(0.0, 0.0, 0.0);
+        let corner_2 = Vec3::new(0.0, 0.0, 1.0);
         let angle = std::f64::consts::PI / 2.0;
-        let rot = Rototranslation::around_axis(&center, &begin, &end, angle);
+        let rot = Rototranslation::around_axis(&corner_1, &corner_1, &corner_2, angle);
 
-        assert_eq!(10.0, another_vec.x);
-        assert_eq!(1.0, another_vec.y);
-        assert_eq!(10.0, another_vec.z);
+        let mut another_vec = Vec3::new(1.0, 1.0, 0.0);
+        let  expected = vec![Vec3::new(-1.0, 1.0, 0.0), Vec3::new(-1.0, -1.0, 0.0),
+                                 Vec3::new(1.0, -1.0, 0.0), Vec3::new(1.0, 1.0, 0.0)];
+
+        for v in &expected {
+            rot.apply_mut(&mut another_vec);
+            assert!(v.distance_to(&another_vec).abs() < 0.0001);
+        }
+
+        let  expected_inv = vec![Vec3::new(1.0, -1.0, 0.0), Vec3::new(-1.0, -1.0, 0.0),
+                             Vec3::new(-1.0, 1.0, 0.0), Vec3::new(1.0, 1.0, 0.0)];
+
+        for v in &expected_inv {
+            rot.apply_inverse_mut(&mut another_vec);
+            assert!(v.distance_to(&another_vec).abs() < 0.0001);
+        }
     }
 
     #[test]
