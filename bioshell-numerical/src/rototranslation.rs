@@ -95,12 +95,13 @@ impl Rototranslation {
     /// # Example
     ///
     /// ```rust
+    /// use bioshell_numerical::{Rototranslation, Vec3};
     /// let rotation_mat = matrix_lib::matrix::Matrix3x3::from_values(
     ///             1.0,0.0,0.0,
     ///             0.0,1.0,0.0,
     ///             0.0,0.0,1.0
     ///         );
-    ///         let translation_vec = matrix_lib::vec3::Vec3::new(1.0,1.0,1.0);
+    ///         let translation_vec = Vec3::new(1.0,1.0,1.0);
     ///         let mut another_vec = Vec3::new(10.0, 1.0, 10.0);
     ///         let rot = Rototranslation::new(rotation_mat, translation_vec);
     ///
@@ -166,7 +167,7 @@ impl Rototranslation {
     ///             0.0,1.0,0.0,
     ///             0.0,0.0,1.0
     ///         );
-    ///         let translation_vec = matrix_lib::vec3::Vec3::new(1.0,1.0,1.0);
+    ///         let translation_vec = Vec3::new(1.0,1.0,1.0);
     ///         let mut another_vec = Vec3::new(10.0, 1.0, 10.0);
     ///
     ///         let rot = Rototranslation::new(rotation_mat, translation_vec);

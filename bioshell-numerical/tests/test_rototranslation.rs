@@ -25,9 +25,9 @@ mod rototranslation_test {
     #[test]
     fn rototranslation_around_axis() {
         let rotation_mat =
-            matrix_lib::matrix::Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        let translation_vec = matrix_lib::vec3::Vec3::new(1.0, 1.0, 1.0);
-        let mut another_vec = Vec3::new(10.0, 1.0, 10.0);
+            Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+        let translation_vec = Vec3::new(1.0, 1.0, 1.0);
+        let another_vec = Vec3::new(10.0, 1.0, 10.0);
         let rot = Rototranslation::new(rotation_mat, translation_vec);
 
         let center = Vec3::new(0.0, 0.0, 0.0);
@@ -44,8 +44,8 @@ mod rototranslation_test {
     #[test]
     fn rototranslation_apply_mut() {
         let rotation_mat =
-            matrix_lib::matrix::Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        let translation_vec = matrix_lib::vec3::Vec3::new(1.0, 1.0, 1.0);
+            Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+        let translation_vec = Vec3::new(1.0, 1.0, 1.0);
         let mut another_vec = Vec3::new(10.0, 1.0, 10.0);
 
         let rot = Rototranslation::new(rotation_mat, translation_vec);
