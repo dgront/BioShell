@@ -118,7 +118,7 @@ impl Rototranslation {
     pub fn around_axis(center: &Vec3, begin: &Vec3, end: &Vec3, angle: f64) -> Rototranslation {
         let cosa: f64 = angle.cos();
         let sina: f64 = angle.sin();
-        let axis = Vec3::sub_s(end, begin);
+        let axis = Vec3::sub_two(end, begin);
         let x: f64 = axis.x;
         let y: f64 = axis.y;
         let z: f64 = axis.z;

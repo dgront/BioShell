@@ -70,16 +70,33 @@ impl IndexMut<usize> for Vec3 {
     }
 }
 
-impl Display for Vec3 {
+impl fmt::Debug for Vec3 {
+    /// Debug formatting of a Vec3 prints all its fields, e.g.
+    /// ```rust
+    /// use bioshell_numerical::Vec3;
+    /// let mut v = Vec3::new(0.0, 1.0, 2.0);
+    /// v.res_type = 1;
+    /// v.atom_type = 6;
+    /// v.chain_id = 128;
+    /// assert_eq!(format!("{:?}",v), "[0.000 1.000 2.000] >6,128,1<");
+    /// ```
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "[{:.3} {:.3} {:.3}] >{},{},{}<", self.x, self.y, self.z, self.atom_type, self.chain_id, self.res_type)
     }
 }
 
-impl fmt::Debug for Vec3 {
-    /// Prints nicely 3D coordinates of a vector
+impl Display for Vec3 {
+    /// Prints X Y Z coordinates of a given 3D vector
+    /// ```rust
+    /// use bioshell_numerical::Vec3;
+    /// let mut v = Vec3::new(0.0, 1.0, 2.0);
+    /// v.res_type = 1;
+    /// v.atom_type = 6;
+    /// v.chain_id = 128;
+    /// assert_eq!(format!("{}",v), "0.000 1.000 2.000");
+    /// ```
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[{:.3} {:.3} {:.3}]", self.x, self.y, self.z)
+        write!(f, "{:.3} {:.3} {:.3}", self.x, self.y, self.z)
     }
 }
 
@@ -168,7 +185,9 @@ impl Vec3 {
     pub fn add(&mut self, v: &Vec3) {
         vec_operation!(self,v,+=);
     }
-    pub fn add_s(v1: &Vec3, v2: &Vec3) -> Vec3 {
+
+    /// Creates a new vector as a sum of two other vectors
+    pub fn add_two(v1: &Vec3, v2: &Vec3) -> Vec3 {
         return Vec3::new(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
     }
 
@@ -176,16 +195,18 @@ impl Vec3 {
     pub fn sub(&mut self, v: &Vec3) {
         vec_operation!(self,v,-=);
     }
-    pub fn sub_s(v1: &Vec3, v2: &Vec3) -> Vec3 {
+
+    /// Creates a new vector as a subtraction of two other vectors
+    pub fn sub_two(v1: &Vec3, v2: &Vec3) -> Vec3 {
         return Vec3::new(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
     }
 
-    /// Subtracts a vector from this vector
+    /// Subtracts a constant from this vector
     pub fn mul(&mut self, f: f64) {
         scalar_operation!(self,f,*=);
     }
 
-    /// Subtracts a vector from this vector
+    /// Divide this vector by a constant
     pub fn div(&mut self, f: f64) {
         scalar_operation!(self,f,/=);
     }
