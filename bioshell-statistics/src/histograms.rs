@@ -97,14 +97,7 @@ impl fmt::Display for Histogram {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let mut out: String = String::new();
         for (i, val) in self.data.iter() {
-            out = format!(
-                "{} {:5}..{:5} [{:4}] {}\n",
-                out,
-                self.bin_min(*i),
-                self.bin_max(*i),
-                i,
-                val
-            );
+            out = format!("{} {:5}..{:5} [{:4}] {}\n", out, self.bin_min(*i), self.bin_max(*i), i, val);
         }
         write!(f, "{}", out)
     }
