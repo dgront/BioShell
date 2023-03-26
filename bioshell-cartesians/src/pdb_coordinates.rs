@@ -27,9 +27,7 @@ const CHAINS_ORDER: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str, if_append: bool) {
     let mut out_writer = out_writer(&out_fname, if_append);
 
-    out_writer
-        .write(format!("MODEL    {i_model}\n").as_bytes())
-        .ok();
+    out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
     let mut i_res = 0;
     let mut prev_chain: char = ' ';
     for i in 0..chain.size() {
@@ -42,20 +40,9 @@ pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str, if
             i_res = 0;
         }
         out_writer
-            .write(
-                format!(
+            .write(format!(
                     "ATOM   {:4}{}  ALA {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
-                    i,
-                    " CA ",
-                    chain_id,
-                    i_res,
-                    chain.x(i),
-                    chain.y(i),
-                    chain.z(i)
-                )
-                .as_bytes(),
-            )
-            .ok();
+                    i, " CA ", chain_id, i_res, chain.x(i), chain.y(i), chain.z(i)).as_bytes(), ).ok();
         i_res += 1
     }
     out_writer.write(b"ENDMDL\n").ok();
