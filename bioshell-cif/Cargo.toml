@@ -1,0 +1,19 @@
+
+[package]
+name = "bioshell-cif"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Reads and writes files in the CIF format"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell"]
+
+[lib]
+crate-type =["rlib", "cdylib"]
+
+[dependencies]
+clap = { version = "3.1.18", features = ["derive"] }
+# ---------- Logging
+log = "0.4.0"
+env_logger = "0.9.0"
+
