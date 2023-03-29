@@ -16,6 +16,3 @@ rand = { version = "0.8.5", features = [ "small_rng" ] }
 clap = { version = "3.1.18", features = ["derive"] }
 rand_distr = {}   # for NormalDistribution
 
-[[bin]]
-name="bioshell_numerical_output"
-path="main.rs"
