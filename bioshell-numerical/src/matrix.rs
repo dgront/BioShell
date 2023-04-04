@@ -90,7 +90,7 @@ impl Matrix3x3 {
     ///
     /// let mat = Matrix3x3::new();
     ///
-    /// assert_eq!(0.0, mat)
+    /// assert_eq!(Matrix3x3::from_array([0.0, 0.0, 0.0,0.0, 0.0, 0.0,0.0, 0.0, 0.0,]), mat)
     /// ```
     pub fn new() -> Self {
         Self::default()
@@ -609,7 +609,8 @@ impl Matrix3x3 {
     /// assert_eq!(result[8], 10.0);
     /// ```
     ///
-    pub fn add_s(lhs: Matrix3x3, rhs: Matrix3x3) -> Matrix3x3 {
+    pub fn add_s(lhs: Matrix3x3, rhs: Matrix3x3) -> Matrix3x3
+    {
         return Matrix3x3::from_array([
             lhs[0] + rhs[0],
             lhs[1] + rhs[1],
@@ -682,21 +683,15 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let a = Matrix3x3::from_array([3.0, 2.0, 1.0,
-    /// 4.0, 3.0, 1.0,
-    /// 2.0, 2.0, 2.0]);
+    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([0.0, 1.0, 0.0,
+    ///                                                 0.0, 0.0, 1.0,
+    ///                                                 1.0, 0.0, 0.0]);
     ///
-    /// let inv_a = Matrix3x3::inverse_s(a);
+    /// lhs.inverse();
     ///
-    /// assert_eq!(inv_a[0], -1.0);
-    /// assert_eq!(inv_a[1], 1.0);
-    /// assert_eq!(inv_a[2], 0.0);
-    /// assert_eq!(inv_a[3], 2.0);
-    /// assert_eq!(inv_a[4], -3.0);
-    /// assert_eq!(inv_a[5], 1.0);
-    /// assert_eq!(inv_a[6], 1.0);
-    /// assert_eq!(inv_a[7], -1.0);
-    /// assert_eq!(inv_a[8], 0.0);
+    /// assert_eq!(0.0, lhs[0]); assert_eq!(0.0, lhs[1]); assert_eq!(1.0, lhs[2]);
+    /// assert_eq!(1.0, lhs[3]); assert_eq!(0.0, lhs[4]); assert_eq!(0.0, lhs[5]);
+    /// assert_eq!(0.0, lhs[6]); assert_eq!(1.0, lhs[7]); assert_eq!(0.0, lhs[8]);
     ///```
     pub fn inverse_s(mat: Matrix3x3) -> Matrix3x3 {
         let mut mat_copy = mat.clone();
@@ -721,7 +716,7 @@ impl Matrix3x3 {
     /// let mat = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let vec = Vec3::new(1.0, 2.0, 3.0);
     ///
-    /// let result = mat.mul_vec_s(&vec);
+    /// let result = Matrix3x3::mul_vec_s(&mat, &vec);
     ///
     /// assert_eq!(result, Vec3::new(14.0, 32.0, 50.0));
     ///```
