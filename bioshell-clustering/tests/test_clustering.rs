@@ -4,7 +4,7 @@ use rand::SeedableRng;
 use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 
-use bioshell_clustering::{expectation_maximization, Optics, EuclideanPoints};
+use bioshell_clustering::{expectation_maximization, Optics, EuclideanPoints, create_kd_tree};
 
 use bioshell_statistics::{Distribution, MultiNormalDistribution,
                                       NormalDistribution, OnlineMultivariateStatistics};
@@ -116,4 +116,10 @@ fn test_Optics() {
     let expected_order: Vec<usize> = vec![0, 1, 3, 4, 2, 5, 6, 7, 8, 9, 11, 10, 12];
     assert_eq!(expected_size, *cluster_size);
     assert_eq!(expected_order, *opt_clust.clustering_order());
+}
+
+#[test]
+fn test_kd_tree() {
+    let mut data = vec![vec![0.0, 0.5], vec![0.7, 0.5], vec![0.8, 1.1]];
+    create_kd_tree(&mut data, 0, 3);
 }

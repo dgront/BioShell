@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-// use pyo3::prelude::*;
-
 use bioshell_statistics::{Estimable, Distribution};
 
 
@@ -52,11 +50,3 @@ fn which_distribution<D: Estimable+Distribution>(distributions: &Vec<D>, p: &Vec
     }
     return (best_idx, best_val);
 }
-
-
-
-// #[pymodule]
-// fn bioshell_numerical(_: Python, m: &PyModule) -> PyResult<()> {
-//     m.add_class::<NormalDistribution>()?;
-//     Ok(())
-// }
