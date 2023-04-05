@@ -5,12 +5,16 @@ use std::io;
 use std::io::{BufRead, BufReader};
 use log::{debug, info};
 
+use bioshell_core::utils::split_into_strings;
+
+/// Represents a single `data_` block of a CIF file.
 pub struct CifData {
     name: String,
     entries: HashMap<String, String>,
     loops: Vec<CifLoop>
 }
 
+/// Represents a single `_loop` block of a CIF file.
 pub struct CifLoop {
     column_names: Vec<String>,
     data_rows: Vec<Vec<String>>
@@ -23,7 +27,7 @@ impl CifLoop {
     /// Adding columns is possible only before any data is inserted; once any data has been inserted,
     /// this method will panic.
     pub fn add_column(&mut self, column_name: String) {
-        if self.data_rows.len() > 0 { panic!("Addempted column insertion for a loop-block that already contains some data!"); }
+        if self.data_rows.len() > 0 { panic!("Attempted column insertion for a loop-block that already contains some data!"); }
         self.column_names.push(column_name);
     }
 
@@ -33,13 +37,14 @@ impl CifLoop {
     /// in this loop-block; otherwise this method will panic.
     pub fn add_data_row(&mut self, row: Vec<String>) {
         if self.column_names.len() != row.len() {
-            // panic!("Provided row of data doesn't match the number of columns!\nOffending input was:{:?}", &row);
+            panic!("Provided row of data doesn't match the number of columns!\nOffending input was:{:?}", &row);
         }
         self.data_rows.push(row);
     }
 }
 
 impl Display for CifLoop {
+    /// Writes a [`CifLoop`](CifLoop) block in the CIF format.
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "loop_").ok();
         for coln in &self.column_names {
@@ -61,6 +66,20 @@ impl CifData {
             name, entries: HashMap::new(), loops: vec![]
         };
     }
+
+    /// name of this data block
+    ///
+    /// # Examples
+    /// ```rust
+    /// use std::io::BufReader;
+    /// use bioshell_cif::read_cif_buffer;
+    /// let cif_block = "data_first_block";
+    /// let mut reader = BufReader::new(alignment.as_bytes());
+    /// let data_blocks = read_cif_buffer(&mut reader);
+    /// assert_eq!(data_blocks.len(), 1);
+    /// assert_eq!(data_blocks[0].name(),"first_block");
+    /// ```
+    pub fn name(&self) -> &String { &self.name }
 
     pub fn insert(&mut self, key: String, value: String) {
         self.entries.insert(key, value);
@@ -84,6 +103,8 @@ impl CifData {
 }
 
 impl Display for CifData {
+    /// Writes a [`CifData`](CifData) block in the CIF format.
+    /// All loop-blocks contained in this block will also be displayed.
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for (key, val) in &self.entries {
             writeln!(f, "{} {}", key, val).ok();
@@ -96,6 +117,9 @@ impl Display for CifData {
     }
 }
 
+/// Reads a CIF-formatted file.
+///
+/// Returns a vector of all data blocks found.
 pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
 
     let file = match File::open(input_fname) {
@@ -108,7 +132,6 @@ pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
 pub fn read_cif_buffer<R: BufRead>(buffer: &mut R) -> Vec<CifData> {
 
     let mut data_blocks: Vec<CifData> = vec![];
-    let mut current_block: Option<CifData> = None;
     let mut current_loop = CifLoop{ column_names: vec![], data_rows: vec![] };
     let mut is_loop_open: bool = false;
 
@@ -142,7 +165,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: &mut R) -> Vec<CifData> {
                 current_loop = CifLoop{ column_names: vec![], data_rows: vec![] };
                 is_loop_open = true;
             } else {
-                current_loop.add_data_row(ls.split_whitespace().map(|s| s.to_string()).collect());
+                current_loop.add_data_row(split_into_strings(ls));
             }
         }
     }
