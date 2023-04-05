@@ -74,8 +74,6 @@ impl EuclideanPoints {
 
 impl PointsWithDistance for EuclideanPoints {
 
-    fn count_points(&self) -> usize { self.datapoints.len() }
-
     fn distance(&self, i:usize, j:usize) -> f64 {
         let mut d: f64 = 0.0;
         let pi: &Vec<f64> = &self.datapoints[i];
@@ -88,6 +86,7 @@ impl PointsWithDistance for EuclideanPoints {
     }
 
     fn neighbors_of(&self, idx:usize, cutoff: f64) -> Vec<Neighbor> {
+
         let mut out: Vec<Neighbor> = vec![];
         for i in 0..self.datapoints.len() {
             let d = self.distance(idx, i);
@@ -99,6 +98,8 @@ impl PointsWithDistance for EuclideanPoints {
         out.sort_by(|k, l| k.d.partial_cmp(&l.d).unwrap());
         return out;
     }
+
+    fn count_points(&self) -> usize { self.datapoints.len() }
 }
 
 /// Provides the OPTICS (Ordering Points To Identify the Clustering Structure) clustering algorithm.

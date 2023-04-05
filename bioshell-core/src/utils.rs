@@ -5,6 +5,7 @@ use std::io::Write;
 use std::path::Path;
 use std::fs::{File};
 use csv;
+use csv::StringRecord;
 use flate2::read;
 
 /// Check whether a `Writer` object created based on a given string would actually write to screen.
@@ -82,6 +83,19 @@ pub fn read_tsv(fname: &str) -> Vec<Vec<f64>> { read_csv_tsv(fname, b'\t') }
 /// Reads real values from a file in the coma-separated format
 pub fn read_csv(fname: &str) -> Vec<Vec<f64>> { read_csv_tsv(fname, b',') }
 
+/// Check if all fields of the given record are not empty
+fn is_record_ok(rec: &StringRecord) -> bool {
+
+    let mut flag = true;
+    for e in rec {
+        if e.len() == 0 {
+            flag = false;
+            break;
+        }
+    }
+    return flag;
+}
+
 fn read_csv_tsv(fname:&str, delimiter:u8) -> Vec<Vec<f64>> {
 
     let file = File::open(fname).unwrap();
@@ -92,6 +106,7 @@ fn read_csv_tsv(fname:&str, delimiter:u8) -> Vec<Vec<f64>> {
     let mut data : Vec<Vec<f64>> = Vec::new();
     for record in rdr.records() {
         if let Ok(r) = &record {
+            if !is_record_ok(r) { continue; }
             let row : Vec<f64> = r.iter().map(|e| {
                 match e.parse::<f64>(){
                     Ok(v) => v,
@@ -124,4 +139,20 @@ pub fn open_file(filename: &str) -> Box<dyn BufRead> {
     } else {
         Box::new(BufReader::with_capacity(128 * 1024, file))
     }
+}
+
+/// Splits a string by a whitespace into strings that can contain a whitespace within
+pub fn split_into_strings(s: &str) -> Vec<String> {
+    let mut wrapped = false;
+
+    s.split(|c| {
+        if c == '"' {
+            wrapped = !wrapped;
+        }
+        c == ' ' && !wrapped
+    })
+        // .map(|s| s.replace("\"", "")) // remove the quotation marks from the sub-strings
+        .map(|s|s.to_string())
+        .filter(|s| s.len() > 0)
+        .collect()
 }

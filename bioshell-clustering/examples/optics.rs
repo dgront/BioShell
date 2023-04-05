@@ -27,7 +27,7 @@ fn main() {
 
     // ---------- input data
     let sample = read_tsv(&args.infile);
-    println!("{} rows loaded, data dimension is {}", sample[0].len(), sample.len());
+    println!("{} rows loaded, data dimension is {}", sample.len(), sample[0].len());
 
     // ---------- clustering parameters
     let min_points: usize = args.min_points;
