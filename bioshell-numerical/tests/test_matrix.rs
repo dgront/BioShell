@@ -40,20 +40,12 @@ mod matrix_test {
         let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
 
         lhs.add(&rhs);
-
-        assert_eq!(2.0, lhs[0]);
-        assert_eq!(4.0, lhs[1]);
-        assert_eq!(6.0, lhs[2]);
-        assert_eq!(8.0, lhs[3]);
-        assert_eq!(10.0, lhs[4]);
-        assert_eq!(12.0, lhs[5]);
-        assert_eq!(14.0, lhs[6]);
-        assert_eq!(16.0, lhs[7]);
-        assert_eq!(18.0, lhs[8]);
+        let expected = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0];
+        for (i, val) in expected.iter().enumerate() {
+            assert_eq!(lhs[i], *val);
+        }
     }
-    //endregion
 
-    //region fn matrix_sub()
     #[test]
     fn matrix_sub() {
         let mut lhs: Matrix3x3 =
@@ -61,20 +53,12 @@ mod matrix_test {
         let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
 
         lhs.sub(&rhs);
-
-        assert_eq!(0.0, lhs[0]);
-        assert_eq!(0.0, lhs[1]);
-        assert_eq!(0.0, lhs[2]);
-        assert_eq!(0.0, lhs[3]);
-        assert_eq!(0.0, lhs[4]);
-        assert_eq!(0.0, lhs[5]);
-        assert_eq!(0.0, lhs[6]);
-        assert_eq!(0.0, lhs[7]);
-        assert_eq!(0.0, lhs[8]);
+        let expected = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        for (i, val) in expected.iter().enumerate() {
+            assert_eq!(lhs[i], *val);
+        }
     }
-    //endregion
 
-    //region fn matrix_mul_scalar()
     #[test]
     fn matrix_mul_scalar() {
         let mut lhs: Matrix3x3 =
@@ -82,20 +66,12 @@ mod matrix_test {
         let rhs = 2.0;
 
         lhs.mul_scalar(rhs);
-
-        assert_eq!(2.0, lhs[0]);
-        assert_eq!(4.0, lhs[1]);
-        assert_eq!(6.0, lhs[2]);
-        assert_eq!(8.0, lhs[3]);
-        assert_eq!(10.0, lhs[4]);
-        assert_eq!(12.0, lhs[5]);
-        assert_eq!(14.0, lhs[6]);
-        assert_eq!(16.0, lhs[7]);
-        assert_eq!(18.0, lhs[8]);
+        let expected = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0];
+        for (i, val) in expected.iter().enumerate() {
+            assert_eq!(lhs[i], *val);
+        }
     }
-    //endregion
 
-    //region fn matrix_div_scalar()
     #[test]
     fn matrix_div_scalar() {
         let mut lhs: Matrix3x3 =
@@ -103,20 +79,12 @@ mod matrix_test {
         let rhs = 2.0;
 
         lhs.div_scalar(rhs);
-
-        assert_eq!(1.0, lhs[0]);
-        assert_eq!(2.0, lhs[1]);
-        assert_eq!(3.0, lhs[2]);
-        assert_eq!(4.0, lhs[3]);
-        assert_eq!(5.0, lhs[4]);
-        assert_eq!(6.0, lhs[5]);
-        assert_eq!(7.0, lhs[6]);
-        assert_eq!(8.0, lhs[7]);
-        assert_eq!(9.0, lhs[8]);
+        let expected = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
+        for (i, val) in expected.iter().enumerate() {
+            assert_eq!(lhs[i], *val);
+        }
     }
-    //endregion
 
-    //region fn matrix_mul_vec_mut()
     #[test]
     fn matrix_mul_vec_mut() {
         let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
@@ -126,9 +94,7 @@ mod matrix_test {
         assert_eq!(30.0, rhs[1]);
         assert_eq!(48.0, rhs[2]);
     }
-    //endregion
 
-    //region fn matrix_mul_mat_mut()
     #[test]
     fn matrix_mul_mat_mut() {
         let mut lhs: Matrix3x3 =
@@ -179,16 +145,10 @@ mod matrix_test {
             Matrix3x3::from_array([0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0]);
 
         lhs.inverse();
-
-        assert_eq!(0.0, lhs[0]);
-        assert_eq!(0.0, lhs[1]);
-        assert_eq!(1.0, lhs[2]);
-        assert_eq!(1.0, lhs[3]);
-        assert_eq!(0.0, lhs[4]);
-        assert_eq!(0.0, lhs[5]);
-        assert_eq!(0.0, lhs[6]);
-        assert_eq!(1.0, lhs[7]);
-        assert_eq!(0.0, lhs[8]);
+        let expected = [0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+        for (i, val) in expected.iter().enumerate() {
+            assert_eq!(lhs[i], *val);
+        }
     }
     //endregion
 
