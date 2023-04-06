@@ -4,7 +4,8 @@ use rand::SeedableRng;
 use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 
-use bioshell_clustering::{expectation_maximization, Optics, EuclideanPoints, create_kd_tree};
+use bioshell_clustering::{expectation_maximization, Optics, EuclideanPoints};
+use bioshell_clustering::kd_tree::{create_kd_tree};
 
 use bioshell_statistics::{Distribution, MultiNormalDistribution,
                                       NormalDistribution, OnlineMultivariateStatistics};
@@ -121,5 +122,13 @@ fn test_Optics() {
 #[test]
 fn test_kd_tree() {
     let mut data = vec![vec![0.0, 0.5], vec![0.7, 0.5], vec![0.8, 1.1]];
-    create_kd_tree(&mut data, 0, 3);
+    create_kd_tree(&mut data, 3);
+}
+
+#[test]
+fn test_k1_tree() {
+    let mut rng = SmallRng::seed_from_u64(0);
+    let mut data = vec![vec![0.0]; 128];
+    for i in 0..data.len() { data[i][0] = rng.gen(); }
+    create_kd_tree(&mut data, 1);
 }

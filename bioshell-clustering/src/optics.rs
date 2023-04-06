@@ -2,10 +2,13 @@ use std::cmp::*;
 use std::fmt;
 use std::ops::{Range};
 
+use crate::{PointsWithDistance, EuclideanPoints};
+
 /// Holds information about a neighbor: its index and the distance to it.
+///
 /// Objects of this class are created by the
-/// [`neighbors_of()`](PointsWithDistance::neighbors_of) method of the [`PointsWithDistance`](PointsWithDistance) trait
-/// and are used during the OPTICS clustering algorithm
+/// [`neighbors_of()`](NeighborsOf::neighbors_of) method of the [`NeighborsOf`](NeighborsOf) trait
+/// and are used during the OPTICS clustering algorithm.
 #[derive(Clone)]
 pub struct Neighbor {
     /// index of a neighbor point
@@ -21,18 +24,7 @@ impl fmt::Display for Neighbor {
     }
 }
 
-/// Provides distances between data points subjected to clustering.
-/// A structure that implement this class typically may contain the points themselves, but these
-/// are not explicitly accessed by the [`optics`](Optics) struct.
-pub trait PointsWithDistance {
-
-    /// Returns the distance between two given points.
-    ///
-    /// # Arguments
-    /// * `i` - index of the first point
-    /// * `j` - index of the second point
-    fn distance(&self, i:usize, j:usize) -> f64;
-
+pub trait NeighborsOf {
     /// Returns a vector of neighbors located close enough to a given point
     ///
     /// # Arguments
@@ -40,55 +32,16 @@ pub trait PointsWithDistance {
     /// * `cutoff` - distance cutoff
     /// # Returns
     /// A vector of [`Neighbor`](Neighbor) data structures that provides all points located
-    ///no further from `idx` than `cutoff`
+    ///no further from `idx` point than the given `cutoff` value
     fn neighbors_of(&self, idx: usize, cutoff: f64) -> Vec<Neighbor>;
-
-    /// Returns the total number of data points in this set
-    fn count_points(&self) -> usize;
 }
 
-/// A container for N-dimensional points of `Vec<f64>` type and Euclidean distance
-pub struct EuclideanPoints {
-    datapoints: Vec<Vec<f64>>
-}
-
-impl EuclideanPoints {
-    /// Creates a new [`EuclideanPoints`](EuclideanPoints) object from a given vector of points
-    /// The input data structure is consumed by this process (i.e. moved)
-    ///
-    /// # Arguments
-    /// * `data` - a 2D vector of f64 values, representing the input data
-    ///
-    /// # Examples
-    /// ```rust
-    /// use bioshell_numerical::clustering::{EuclideanPoints, PointsWithDistance};
-    /// let points: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![0.5, 1.0], vec![1.5, 0.8]];
-    /// let d = EuclideanPoints::new(points);
-    /// assert!((1.118-d.distance(0, 1)).abs() < 0.001);
-    /// ```
-    pub fn new(data: Vec<Vec<f64>>) -> EuclideanPoints {
-        EuclideanPoints {datapoints: data}
-    }
-}
-
-
-impl PointsWithDistance for EuclideanPoints {
-
-    fn distance(&self, i:usize, j:usize) -> f64 {
-        let mut d: f64 = 0.0;
-        let pi: &Vec<f64> = &self.datapoints[i];
-        let pj: &Vec<f64> = &self.datapoints[j];
-        for i in 0..pi.len() {
-            let t = pi[i] - pj[i];
-            d += t * t;
-        }
-        d.sqrt()
-    }
+impl NeighborsOf for EuclideanPoints {
 
     fn neighbors_of(&self, idx:usize, cutoff: f64) -> Vec<Neighbor> {
 
         let mut out: Vec<Neighbor> = vec![];
-        for i in 0..self.datapoints.len() {
+        for i in 0..self.count_points() {
             let d = self.distance(idx, i);
             if d <= cutoff {
                 out.push(Neighbor { idx: i, d });
@@ -98,9 +51,14 @@ impl PointsWithDistance for EuclideanPoints {
         out.sort_by(|k, l| k.d.partial_cmp(&l.d).unwrap());
         return out;
     }
-
-    fn count_points(&self) -> usize { self.datapoints.len() }
 }
+
+/// Defines the requirements for data points used in OPTICS clustering
+///
+/// Optics clustering accepts a points set that can compute distance between them and list its neighbors
+pub trait OpticsPoints: PointsWithDistance + NeighborsOf {}
+
+impl OpticsPoints for EuclideanPoints {}
 
 /// Provides the OPTICS (Ordering Points To Identify the Clustering Structure) clustering algorithm.
 /// OPTICS is an algorithm for density based clustering. It looks for a  neighbourhood
@@ -113,7 +71,7 @@ pub struct Optics {
     /// The minimum number of points required to form a dense region.
     pub min_points: usize,
     /// Data structure that holds the input points and can calculate the distance between them
-    neighbors: Box<dyn PointsWithDistance>,
+    neighbors: Box<dyn OpticsPoints>,
     /// The total number of points to be clustered
     n: usize,
     /// The distance value used to mark unreachable points ("infinite" distance)
@@ -133,7 +91,7 @@ pub struct Optics {
 impl Optics {
 
     /// Create clustering for a given set of parameters and an input data set.
-    pub fn new(eps: f64, min_samples: usize, neighbors: Box<dyn PointsWithDistance>) -> Self {
+    pub fn new(eps: f64, min_samples: usize, neighbors: Box<dyn OpticsPoints>) -> Self {
         let mut o = Self { eps, min_points: min_samples, neighbors, n:0, undefined: eps*10.0,
             reacheability: vec![], clustering_order: vec![],
             processed: vec![], seeds: vec![], clusters: vec![] };
@@ -183,10 +141,10 @@ impl Optics {
 
             // --- ensure the list of seeds is empty (it should be actually)
             self.seeds.clear();
-            // --- this will update reacheability distances and insert core points to the list of seeds
+            // --- this will update reachability distances and insert core points to the list of seeds
             self.update_neighbors(&nb);
             while !self.seeds.is_empty() {
-                // --- pop the point with currently lowest reacheability distance value from the priority queue
+                // --- pop the point with currently lowest reachability distance value from the priority queue
                 let pi = self.seeds[0];
                 self.seeds[0] = self.seeds[self.seeds.len() - 1];
                 self.seeds.truncate(self.seeds.len() - 1);
@@ -240,9 +198,10 @@ impl Optics {
 }
 
 
+// wrapped into a new type to be able to print it nicely
 struct NeighborList(Vec<Neighbor>);
 
-
+// prints the list of neighbors
 impl fmt::Display for NeighborList {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.iter().fold(Ok(()), |result, pt| {

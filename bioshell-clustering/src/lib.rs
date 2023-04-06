@@ -1,8 +1,11 @@
 mod optics;
 mod em;
-mod kd_tree;
+pub mod kd_tree;
+mod points_set;
 
-pub use optics::{Optics, PointsWithDistance, EuclideanPoints, Neighbor};
+pub use points_set::{PointsWithDistance, EuclideanPoints};
+
+pub use optics::{Optics, Neighbor, NeighborsOf, OpticsPoints};
 pub use em::{expectation_maximization};
-pub use kd_tree::{create_kd_tree, KdTreeNode};
+
 
