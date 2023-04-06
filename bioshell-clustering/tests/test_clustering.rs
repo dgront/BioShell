@@ -5,7 +5,7 @@ use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 
 use bioshell_clustering::{expectation_maximization, Optics, EuclideanPoints};
-use bioshell_clustering::kd_tree::{create_kd_tree};
+use bioshell_clustering::kd_tree::{count, create_kd_tree, find_nearest, find_within, euclidean_distance_squared};
 
 use bioshell_statistics::{Distribution, MultiNormalDistribution,
                                       NormalDistribution, OnlineMultivariateStatistics};
@@ -125,10 +125,32 @@ fn test_kd_tree() {
     create_kd_tree(&mut data, 3);
 }
 
+
 #[test]
 fn test_k1_tree() {
+
+    const N: usize = 128;
     let mut rng = SmallRng::seed_from_u64(0);
-    let mut data = vec![vec![0.0]; 128];
+    let mut data = vec![vec![0.0]; N];
     for i in 0..data.len() { data[i][0] = rng.gen(); }
-    create_kd_tree(&mut data, 1);
+
+    let query = vec![0.5];
+    // --- find nearest with brute force
+    let (mut min_d, mut min_e) = (euclidean_distance_squared(&query, &data[0], 1), &data[0]);
+    for e in data.iter() {
+        let d = euclidean_distance_squared(&query, e, 1);
+        if d < min_d { (min_d, min_e) = (d, e);}
+    }
+
+    let root = create_kd_tree(&mut data.clone(), 1).unwrap();
+    assert_eq!(N, count(&root));
+    // --- find nearest with KdTree
+    let (d, e) = find_nearest(&root, &query, 1,euclidean_distance_squared);
+    // --- check if we have the same element
+    assert!((d-min_d).abs()<0.000001);
+    assert!((e[0]-min_e[0]).abs()<0.000001);
+
+    let nbors = find_within(&root, &query, 1, 0.1*0.1, euclidean_distance_squared);
+    for e in nbors { assert!(euclidean_distance_squared(e, &query, 1) <= 0.1 * 0.1) }
+    // println!("{:?}",nbors);
 }
