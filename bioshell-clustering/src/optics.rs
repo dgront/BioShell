@@ -76,8 +76,8 @@ pub struct Optics {
     n: usize,
     /// The distance value used to mark unreachable points ("infinite" distance)
     undefined: f64,
-    /// the output of the OPTICS algorithm: reacheability distance for every point
-    reacheability: Vec<f64>,
+    /// the output of the OPTICS algorithm: reachability distance for every point
+    reachability: Vec<f64>,
     /// the output of the OPTICS algorithm: the order in which points were processed
     clustering_order: Vec<usize>,
     /// Flags saying whether a given point has been already processed or not
@@ -93,7 +93,7 @@ impl Optics {
     /// Create clustering for a given set of parameters and an input data set.
     pub fn new(eps: f64, min_samples: usize, neighbors: Box<dyn OpticsPoints>) -> Self {
         let mut o = Self { eps, min_points: min_samples, neighbors, n:0, undefined: eps*10.0,
-            reacheability: vec![], clustering_order: vec![],
+            reachability: vec![], clustering_order: vec![],
             processed: vec![], seeds: vec![], clusters: vec![] };
         o.run_clustering();
 
@@ -102,7 +102,7 @@ impl Optics {
 
     /// Read-only access to the reacheability distance for each point; listed in the order defined
     /// by the [`clustering_order()`](Optics::clustering_order) method
-    pub fn reacheability_distance(&self) -> &Vec<f64> { &self.reacheability }
+    pub fn reacheability_distance(&self) -> &Vec<f64> { &self.reachability }
 
     /// Read-only access to the order in which points were clustered.
     /// The clustering order together with [`reacheability_distance()`](Optics::reacheability_distance) array
@@ -148,7 +148,7 @@ impl Optics {
                 let pi = self.seeds[0];
                 self.seeds[0] = self.seeds[self.seeds.len() - 1];
                 self.seeds.truncate(self.seeds.len() - 1);
-                self.seeds.sort_by(|lhs, rhs| self.reacheability[*lhs].partial_cmp(&self.reacheability[*rhs]).unwrap());
+                self.seeds.sort_by(|lhs, rhs| self.reachability[*lhs].partial_cmp(&self.reachability[*rhs]).unwrap());
                 // --- visit it
                 self.clustering_order.push(pi);
                 // --- find its neighbors
@@ -166,7 +166,7 @@ impl Optics {
         let mut start: usize = 0;
         for i in 1..self.n {
             let ci = self.clustering_order[i];
-            if self.reacheability[ci] == self.undefined {
+            if self.reachability[ci] == self.undefined {
                 self.clusters.push(Range { start, end: i });
                 start = i;
             }
@@ -180,19 +180,19 @@ impl Optics {
         for n in neighbrs {
             if self.processed[n.idx] {continue}
             let new_reach_dist = n.d.max(core_dist);
-            if self.reacheability[n.idx] == self.undefined { // n.idx was not inserted to seed yet
+            if self.reachability[n.idx] == self.undefined { // n.idx was not inserted to seed yet
                 self.seeds.push(n.idx);
             }
-            if self.reacheability[n.idx] > new_reach_dist {
-                self.reacheability[n.idx] = new_reach_dist; // set or update its reacheability distance
+            if self.reachability[n.idx] > new_reach_dist {
+                self.reachability[n.idx] = new_reach_dist; // set or update its reacheability distance
             }
         }
-        self.seeds.sort_by(|lhs, rhs| self.reacheability[*lhs].partial_cmp(&self.reacheability[*rhs]).unwrap());
+        self.seeds.sort_by(|lhs, rhs| self.reachability[*lhs].partial_cmp(&self.reachability[*rhs]).unwrap());
     }
 
     /// Allocate internal buffers for a given number of points subjected to clustering
     fn allocate(&mut self) {
-        self.reacheability = vec![self.undefined; self.n];   // epsilon * 10 is already the "infinite" distance that defines points that can't be reached
+        self.reachability = vec![self.undefined; self.n];   // epsilon * 10 is already the "infinite" distance that defines points that can't be reached
         self.processed = vec![false; self.n];
     }
 }

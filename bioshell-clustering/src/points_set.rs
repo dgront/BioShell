@@ -23,7 +23,7 @@ impl EuclideanPoints {
     ///
     /// # Examples
     /// ```rust
-    /// use bioshell_numerical::clustering::{EuclideanPoints, PointsWithDistance};
+    /// use bioshell_clustering::{EuclideanPoints, PointsWithDistance};
     /// let points: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![0.5, 1.0], vec![1.5, 0.8]];
     /// let d = EuclideanPoints::new(points);
     /// assert!((1.118-d.distance(0, 1)).abs() < 0.001);
