@@ -1,8 +1,9 @@
-use std::fmt;
 use rand::distributions::Distribution;
 use rand::thread_rng;
 use rand_distr::Normal;
-
+use std::fmt;
+use std::fmt::{Display, Formatter};
+use std::ops::{Index, IndexMut};
 
 /// 3D vector used to represent an interaction center in a simulation
 ///
@@ -28,7 +29,7 @@ use rand_distr::Normal;
 /// assert!((planar_angle3(&cube_vec[3], &cube_vec[0], &cube_vec[1]).to_degrees() - 90.0).abs() < 0.0001);
 /// assert!((dihedral_angle4(&cube_vec[3], &cube_vec[0], &cube_vec[1], &cube_vec[5]).to_degrees() - 90.0).abs() < 0.0001);
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Vec3 {
     /// the ``x`` coordinate of this vector
     pub x: f64,
@@ -41,13 +42,67 @@ pub struct Vec3 {
     /// atom type assigned to this vector
     pub atom_type: u8,
     /// index of a chain this atom belongs to
-    pub chain_id: u16
+    pub chain_id: u16,
+}
+
+/// Indexing operator provides access to X, Y, Z components of a vector
+impl Index<usize> for Vec3 {
+    type Output = f64;
+
+    fn index(&self, index: usize) -> &f64 {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Index out of range for Vec3"),
+        }
+    }
+}
+
+impl IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, index: usize) -> &mut f64 {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Index out of range for Vec3"),
+        }
+    }
 }
 
 impl fmt::Debug for Vec3 {
-    /// Prints nicely 3D coordinates of a vector
+    /// Debug formatting of a Vec3 prints all its fields, e.g.
+    /// ```rust
+    /// use bioshell_numerical::Vec3;
+    /// let mut v = Vec3::new(0.0, 1.0, 2.0);
+    /// v.res_type = 1;
+    /// v.atom_type = 6;
+    /// v.chain_id = 128;
+    /// assert_eq!(format!("{:?}",v), "[0.000 1.000 2.000] >6,128,1<");
+    /// ```
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "[{:.3} {:.3} {:.3}] >{},{},{}<", self.x, self.y, self.z, self.atom_type, self.chain_id, self.res_type)
+    }
+}
+
+impl Display for Vec3 {
+    /// Prints X Y Z coordinates of a given 3D vector
+    /// ```rust
+    /// use bioshell_numerical::Vec3;
+    /// let mut v = Vec3::new(0.0, 1.0, 2.0);
+    /// v.res_type = 1;
+    /// v.atom_type = 6;
+    /// v.chain_id = 128;
+    /// assert_eq!(format!("{}",v), "0.000 1.000 2.000");
+    /// ```
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[{:.3} {:.3} {:.3}]", self.x, self.y, self.z)
+        write!(f, "{:.3} {:.3} {:.3}", self.x, self.y, self.z)
+    }
+}
+
+impl PartialEq for Vec3 {
+    fn eq(&self, other: &Self) -> bool {
+        return self.x == other.x && self.y == other.y && self.z == other.z;
     }
 }
 
@@ -76,11 +131,19 @@ macro_rules! float3_operation {
 }
 
 impl Vec3 {
+
     /// Creates a new vector from given coordinates.
     ///
     /// ``res_type``, ``atom_type`` and ``chain_id`` are by default set to ``0``
     pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3 { x: x, y: y, z: z, res_type:0, atom_type: 0, chain_id: 0}
+        Vec3 {
+            x: x,
+            y: y,
+            z: z,
+            res_type: 0,
+            atom_type: 0,
+            chain_id: 0,
+        }
     }
 
     /// Creates a new vector with all coordinates equal to a given value.
@@ -91,15 +154,18 @@ impl Vec3 {
             x: value,
             y: value,
             z: value,
-            res_type:0, atom_type: 0, chain_id: 0
+            res_type: 0,
+            atom_type: 0,
+            chain_id: 0,
         }
     }
 
     /// Assigns new content to this vector
-    pub fn set(&mut self, v: &Vec3) { vec_operation!(self,v,=); }
+    pub fn set(&mut self, v: &Vec3) {
+        vec_operation!(self,v,=);
+    }
 
-    /// Turns self into the opposite vector.
-    ///
+    /// Turns self into the opposite vector
     /// Sum of a vector and its opposite should be zero:
     /// ```
     /// # use bioshell_numerical::Vec3;
@@ -116,22 +182,44 @@ impl Vec3 {
     }
 
     /// Adds a vector to this vector
-    pub fn add(&mut self, v: &Vec3) { vec_operation!(self,v,+=); }
+    pub fn add(&mut self, v: &Vec3) {
+        vec_operation!(self,v,+=);
+    }
+
+    /// Creates a new vector as a sum of two other vectors
+    pub fn add_two(v1: &Vec3, v2: &Vec3) -> Vec3 {
+        return Vec3::new(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
+    }
 
     /// Subtracts a vector from this vector
-    pub fn sub(&mut self, v: &Vec3) { vec_operation!(self,v,-=); }
+    pub fn sub(&mut self, v: &Vec3) {
+        vec_operation!(self,v,-=);
+    }
 
-    /// Subtracts a vector from this vector
-    pub fn mul(&mut self, f: f64) { scalar_operation!(self,f,*=); }
+    /// Creates a new vector as a subtraction of two other vectors
+    pub fn sub_two(v1: &Vec3, v2: &Vec3) -> Vec3 {
+        return Vec3::new(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+    }
 
-    /// Subtracts a vector from this vector
-    pub fn div(&mut self, f: f64) { scalar_operation!(self,f,/=); }
+    /// Subtracts a constant from this vector
+    pub fn mul(&mut self, f: f64) {
+        scalar_operation!(self,f,*=);
+    }
+
+    /// Divide this vector by a constant
+    pub fn div(&mut self, f: f64) {
+        scalar_operation!(self,f,/=);
+    }
 
     /// Adds float x, y, x values to this vector
-    pub fn add3(&mut self, x:f64, y:f64, z:f64) { float3_operation!(self, +=, x, y, z); }
+    pub fn add3(&mut self, x: f64, y: f64, z: f64) {
+        float3_operation!(self, +=, x, y, z);
+    }
 
     /// Subtracts float x, y, x values from this vector
-    pub fn sub3(&mut self, x:f64, y:f64, z:f64) { float3_operation!(self, -=, x, y, z); }
+    pub fn sub3(&mut self, x: f64, y: f64, z: f64) {
+        float3_operation!(self, -=, x, y, z);
+    }
 
     /// Returns the squared length of this 3D vector
     pub fn length_squared(&self) -> f64 {
@@ -141,6 +229,7 @@ impl Vec3 {
     /// Returns a normalized copy of this vector
     /// ```
     /// # use bioshell_numerical::Vec3;
+    ///
     /// let v = Vec3::new(3.0, 2.0, 1.0).normalized();
     /// assert!((v.length() - 1.0).abs() < 0.00001);
     /// ```
@@ -182,19 +271,19 @@ impl Vec3 {
     /// ```
     pub fn distance_square_to(&self, p: &Vec3) -> f64 {
         let mut d = self.x - p.x;
-        let mut d2 = d*d;
+        let mut d2 = d * d;
         d = self.y - p.y;
-        d2 += d*d;
+        d2 += d * d;
         d = self.z - p.z;
-        d2 += d*d;
+        d2 += d * d;
         return d2;
     }
     /// Calculate the distance to another point
-    pub fn distance_to(&self, p: &Vec3) -> f64 { self.distance_square_to(p).sqrt() }
+    pub fn distance_to(&self, p: &Vec3) -> f64 {
+        self.distance_square_to(p).sqrt()
+    }
 
-    /// Calculate vector product.
-    ///
-    /// This method does not normalize the input vectors.
+    /// Calculate vector product
     /// ```
     /// # use bioshell_numerical::Vec3;
     /// // multiply X and Y versors to get Z
@@ -211,46 +300,42 @@ impl Vec3 {
             z: a.x * b.y - a.y * b.x,
             res_type: 0,
             atom_type: 0,
-            chain_id: a.chain_id
+            chain_id: a.chain_id,
         };
     }
 }
 
 /// Calculates a planar angle between two vectors in 3D
 pub fn planar_angle2(a: &Vec3, b: &Vec3) -> f64 {
-
     let v = Vec3::dot(a, b) as f64;
     return (v / (a.length() as f64 * b.length() as f64)).acos();
 }
 
 /// Calculates a planar angle of the a-b-c triangle in 3D
 pub fn planar_angle3(a: &Vec3, b: &Vec3, c: &Vec3) -> f64 {
-
     let mut v1: Vec3 = Vec3::clone(a);
     v1.sub(b);
     let mut v2: Vec3 = Vec3::clone(c);
     v2.sub(b);
-    return planar_angle2(&v1,&v2);
+    return planar_angle2(&v1, &v2);
 }
-
 
 /// Calculates a dihedral angle of the a-b-c-d points in 3D
 pub fn dihedral_angle4(a: &Vec3, b: &Vec3, c: &Vec3, d: &Vec3) -> f64 {
-
-    let mut b0 = b.clone();             // b0 = -1.0*(b - a)
+    let mut b0 = b.clone(); // b0 = -1.0*(b - a)
     b0.sub(a);
     b0.mul(-1.0);
-    let mut b1 = c.clone();             // b1 = c - b
+    let mut b1 = c.clone(); // b1 = c - b
     b1.sub(b);
-    b1.normalize();                            // normalize b1
-    let mut b2 = d.clone();             // b2 = d - c
+    b1.normalize(); // normalize b1
+    let mut b2 = d.clone(); // b2 = d - c
     b2.sub(c);
 
-    let mut v = b1.clone();              // v is the projection of b0 onto plane perpendicular to b1
+    let mut v = b1.clone(); // v is the projection of b0 onto plane perpendicular to b1
     v.mul(-Vec3::dot(&b0, &b1));
     v.add(&b0);
 
-    let mut w = b1.clone();              // v is the projection of of b2 onto plane perpendicular to b1
+    let mut w = b1.clone(); // v is the projection of of b2 onto plane perpendicular to b1
     w.mul(-Vec3::dot(&b2, &b1));
     w.add(&b2);
 
@@ -261,24 +346,25 @@ pub fn dihedral_angle4(a: &Vec3, b: &Vec3, c: &Vec3, d: &Vec3) -> f64 {
 }
 
 macro_rules! three_normal_rands {
-    ($rng:expr) => {
-        {
-            let mut rng = thread_rng();
-            let normal = Normal::new(0.0, 1.0).unwrap();
-            (normal.sample(&mut rng), normal.sample(&mut rng), normal.sample(&mut rng))
-        }
-    };
+    ($rng:expr) => {{
+        let mut rng = thread_rng();
+        let normal = Normal::new(0.0, 1.0).unwrap();
+        (
+            normal.sample(&mut rng),
+            normal.sample(&mut rng),
+            normal.sample(&mut rng),
+        )
+    }};
 }
 
 /// Generates a random point on a unit sphere.
 ///
 /// Coordinates of the newly generated point are returned as a tuple
 pub fn random_unit_versor() -> (f64, f64, f64) {
-
     let (x, y, z) = three_normal_rands!(rand::thread_rng());
     let mut l: f64 = x * x + y * y + z * z;
     l = l.sqrt();
-    return ((x/l) as f64, (y/l) as f64, (z/l) as f64);
+    return ((x / l) as f64, (y / l) as f64, (z / l) as f64);
 }
 
 /// Generates a random point nearby a given location.
@@ -286,12 +372,18 @@ pub fn random_unit_versor() -> (f64, f64, f64) {
 /// The newly generated point is randomly located on a sphere of a given `radius` and centered
 /// on a given `center`
 pub fn random_point_nearby(center: &Vec3, radius: f64) -> Vec3 {
-
     let (mut x, mut y, mut z) = three_normal_rands!(rand::thread_rng());
     let mut l: f64 = x * x + y * y + z * z;
     l = l.sqrt() / radius;
-    x = x/l + center.x;
-    y = y/l + center.y;
-    z = z/l + center.z;
-    return Vec3{x, y, z, res_type: center.res_type, atom_type: center.atom_type, chain_id: center.chain_id };
+    x = x / l + center.x;
+    y = y / l + center.y;
+    z = z / l + center.z;
+    return Vec3 {
+        x,
+        y,
+        z,
+        res_type: center.res_type,
+        atom_type: center.atom_type,
+        chain_id: center.chain_id,
+    };
 }
