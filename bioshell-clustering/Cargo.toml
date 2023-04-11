@@ -20,4 +20,5 @@ num-traits = "0.2"      # for Float trait
 
 bioshell-statistics = { path = "../bioshell-statistics" }
 bioshell-core = { path = "../bioshell-core" }
+bioshell-numerical = { path = "../bioshell-numerical" }
 

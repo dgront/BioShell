@@ -6,6 +6,7 @@ use rand::Rng;
 
 use bioshell_clustering::{expectation_maximization, Optics, EuclideanPoints};
 use bioshell_clustering::kd_tree::{count, create_kd_tree, find_nearest, find_within, euclidean_distance_squared};
+use bioshell_numerical::Vec3;
 
 use bioshell_statistics::{Distribution, MultiNormalDistribution,
                                       NormalDistribution, OnlineMultivariateStatistics};
@@ -153,4 +154,43 @@ fn test_k1_tree() {
     let nbors = find_within(&root, &query, 1, 0.1*0.1, euclidean_distance_squared);
     for e in nbors { assert!(euclidean_distance_squared(e, &query, 1) <= 0.1 * 0.1) }
     // println!("{:?}",nbors);
+}
+
+#[test]
+#[allow(non_snake_case)]
+fn test_kd_tree_Vec3_2D() {
+
+    const N: usize = 7;
+    let mut data = vec![Vec3::new(0.0,0.0,0.0); N*N];
+    for i in 0..N*N {
+        data[i].x = (i % N) as f64 * 0.1 + 0.1;
+        data[i].y = (i / N) as f64  * 0.1 + 0.1;
+    }
+    let root = create_kd_tree(&mut data.clone(), 2).unwrap();
+    let neighbors = find_within(&root, &Vec3::new(0.3, 0.3, 0.0),
+                                2, 0.021, euclidean_distance_squared);
+    assert_eq!(neighbors.len(),9);
+}
+
+#[test]
+#[allow(non_snake_case)]
+fn test_kd_tree_Vec3_3D() {
+
+    const N: usize = 10;
+    let mut data = vec![Vec3::new(0.0,0.0,0.0); N*N*N];
+    for k in 0..N {
+        for j in 0..N {
+            for i in 0..N {
+                let idx = N * N * k + N * j + i;
+                data[idx].x = i as f64 * 0.1 + 0.1;
+                data[idx].y = j as f64 * 0.1 + 0.1;
+                data[idx].z = k as f64 * 0.1 + 0.1;
+            }
+        }
+    }
+    let root = create_kd_tree(&mut data.clone(), 3).unwrap();
+    let neighbors = find_within(&root, &Vec3::new(0.3, 0.3, 0.3),
+                                3, 0.031, euclidean_distance_squared);
+
+    assert_eq!(neighbors.len(),27);
 }
