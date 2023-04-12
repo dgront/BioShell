@@ -6,6 +6,8 @@ use rand::Rng;
 
 use bioshell_clustering::{expectation_maximization, Optics, EuclideanPoints};
 use bioshell_clustering::kd_tree::{count, create_kd_tree, find_nearest, find_within, euclidean_distance_squared};
+
+#[cfg(feature = "vec3")]
 use bioshell_numerical::Vec3;
 
 use bioshell_statistics::{Distribution, MultiNormalDistribution,
@@ -156,8 +158,10 @@ fn test_k1_tree() {
     // println!("{:?}",nbors);
 }
 
+/// Use ``cargo test --features "vec3"`` command to run these two tests:
 #[test]
 #[allow(non_snake_case)]
+#[cfg(feature = "vec3")]
 fn test_kd_tree_Vec3_2D() {
 
     const N: usize = 7;
@@ -174,6 +178,7 @@ fn test_kd_tree_Vec3_2D() {
 
 #[test]
 #[allow(non_snake_case)]
+#[cfg(feature = "vec3")]
 fn test_kd_tree_Vec3_3D() {
 
     const N: usize = 10;
