@@ -1,28 +1,31 @@
 use std::time::Instant;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
-use bioshell_clustering::kd_tree::{count, create_kd_tree, euclidean_distance_squared};
+use bioshell_clustering::kd_tree::{create_kd_tree, euclidean_distance_squared, find_within};
 
 fn construct_k3_tree() {
 
-    const N: usize = (2_usize.pow(20) - 1) as usize;
-    let mut rng = SmallRng::seed_from_u64(0);
-    let mut data = vec![vec![0.0]; N];
-    for i in 0..data.len() { data[i][0] = rng.gen(); }
+    const N_PTS: usize = (2_usize.pow(20) - 1) as usize;
+    const N_DIM: usize = 3;
+    const N_SEARCH: usize = 10000;
 
-    let query = vec![0.5];
-    // --- find nearest with brute force
-    let (mut min_d, mut min_e) = (euclidean_distance_squared(&query, &data[0], 1), &data[0]);
-    for e in data.iter() {
-        let d = euclidean_distance_squared(&query, e, 1);
-        if d < min_d { (min_d, min_e) = (d, e);}
+    let mut rng = SmallRng::seed_from_u64(0);
+    let mut data = vec![vec![0.0; N_DIM]; N_PTS];
+    for i in 0..data.len() {
+        for j in 0..N_DIM { data[i][j] = rng.gen(); }
     }
 
     let start = Instant::now();
     let root = create_kd_tree(&mut data.clone(), 1).unwrap();
-    let end = start.elapsed();
+    println!("construct_k3_tree() of {} points: {:.2?}", N_PTS, start.elapsed());
 
-    println!("construct_k3_tree(): {:.2?}", end);
+    // --- check how quickly can we find neighbors; note that the search radius is the squared value of the euclidean distance
+    let start = Instant::now();
+    let radius = 0.01;
+    for i in 0..N_SEARCH {
+        find_within(&root, &data[i], N_DIM, radius * radius, euclidean_distance_squared);
+    }
+    println!("find_within() x {}: {:.2?}", N_SEARCH, start.elapsed());
 }
 
 fn main() {
