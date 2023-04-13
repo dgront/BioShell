@@ -1,5 +1,6 @@
 use clap::{Parser};
-use bioshell_clustering::{EuclideanPoints, Optics};
+use bioshell_clustering::{EuclideanPoints};
+use bioshell_clustering::optics::{Optics};
 use bioshell_core::utils::{read_tsv, out_writer};
 
 #[derive(Parser, Debug)]

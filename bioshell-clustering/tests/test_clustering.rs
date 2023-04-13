@@ -4,8 +4,10 @@ use rand::SeedableRng;
 use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 
-use bioshell_clustering::{expectation_maximization, Optics, EuclideanPoints};
-use bioshell_clustering::kd_tree::{count, create_kd_tree, find_nearest, find_within, euclidean_distance_squared};
+use bioshell_clustering::{euclidean_distance_squared, EuclideanPoints};
+use bioshell_clustering::optics::{Optics};
+use bioshell_clustering::em::{expectation_maximization};
+use bioshell_clustering::kd_tree::{count, create_kd_tree, find_nearest, find_within};
 
 #[cfg(feature = "vec3")]
 use bioshell_numerical::Vec3;

@@ -3,7 +3,7 @@ use clap::{Parser};
 use rand::Rng;
 
 use bioshell_statistics::{MultiNormalDistribution};
-use bioshell_clustering::{expectation_maximization};
+use bioshell_clustering::em::expectation_maximization;
 use bioshell_core::utils::{read_tsv};
 
 
