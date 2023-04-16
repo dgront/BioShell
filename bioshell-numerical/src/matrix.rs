@@ -2,7 +2,6 @@ use crate::vec3::Vec3;
 use std::fmt;
 use std::ops::{Index, IndexMut};
 
-//region pub struct Matrix3x3
 /// Represents a 3x3 matrix, e.g. for linear transformations.
 ///
 /// Internally the matrix elements are stored as an `[f64; 9]` array.
@@ -16,19 +15,14 @@ use std::ops::{Index, IndexMut};
 /// let vy = Vec3::new(0.0, 1.0, 0.0);
 /// let vz = Vec3::new(1.0, 0.0, 1.0);
 /// let unit_mtx = Matrix3x3::from_column_vectors(&vx, &vy, &vz);
-///
-/// assert_eq!(unit_mtx[0], 1.0);
-/// assert_eq!(unit_mtx[4], 1.0);
-/// assert_eq!(unit_mtx[8], 1.0);
+/// assert_eq!(unit_mtx[0], 1.0); assert_eq!(unit_mtx[4], 1.0); assert_eq!(unit_mtx[8], 1.0);
 /// ```
 
 #[derive(Clone, Default)]
 pub struct Matrix3x3 {
     _array: [f64; 9],
 }
-//endregion
 
-//region Indexing facility implementation.
 impl Index<usize> for Matrix3x3 {
     type Output = f64;
     fn index<'a>(&'a self, i: usize) -> &'a f64 {
@@ -41,9 +35,7 @@ impl IndexMut<usize> for Matrix3x3 {
         &mut self._array[i]
     }
 }
-//endregion
 
-//region Debug trait implementation.
 impl fmt::Debug for Matrix3x3 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -61,7 +53,6 @@ impl fmt::Debug for Matrix3x3 {
         )
     }
 }
-//endregion
 
 impl PartialEq for Matrix3x3 {
     fn eq(&self, other: &Self) -> bool {
@@ -76,7 +67,6 @@ impl PartialEq for Matrix3x3 {
 }
 
 impl Matrix3x3 {
-    //region pub fn new() -> Self
     /// Implements the new() method for the Matrix3x3 struct, which creates and returns a new
     /// Matrix3x3 instance with all elements initialized to 0.
     ///
@@ -95,9 +85,7 @@ impl Matrix3x3 {
     pub fn new() -> Self {
         Self::default()
     }
-    //endregion
 
-    //region pub fn from_array(m: [f64; 9]) -> Self
     /// Constructs a new Matrix3x3 object from an array of 9 f64 elements.
     ///
     /// # Arguments
@@ -118,9 +106,8 @@ impl Matrix3x3 {
     pub fn from_array(m: [f64; 9]) -> Self {
         Matrix3x3 { _array: m }
     }
-    //endregion
 
-    //region pub fn add(&self, rhs: Matrix3x3)
+
     //Add this matrix to another matrix.
     /// Add the values of the passed Matrix3x3 object rhs to the caller Matrix3x3 object self.
     ///
@@ -132,19 +119,12 @@ impl Matrix3x3 {
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
     /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    ///         let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    ///
-    ///         lhs.add(&rhs);
-    ///
-    ///         assert_eq!(2.0, lhs[0]);
-    ///         assert_eq!(4.0, lhs[1]);
-    ///         assert_eq!(6.0, lhs[2]);
-    ///         assert_eq!(8.0, lhs[3]);
-    ///         assert_eq!(10.0, lhs[4]);
-    ///         assert_eq!(12.0, lhs[5]);
-    ///         assert_eq!(14.0, lhs[6]);
-    ///         assert_eq!(16.0, lhs[7]);
-    ///         assert_eq!(18.0, lhs[8]);
+    /// let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// lhs.add(&rhs);
+    /// let expected = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0];
+    /// for (i, val) in expected.iter().enumerate() {
+    ///     assert_eq!(lhs[i], *val);
+    /// }
     /// ```
     pub fn add(&mut self, rhs: &Matrix3x3) {
         let lhs = self;
@@ -152,9 +132,7 @@ impl Matrix3x3 {
             lhs[i] = lhs[i] + rhs[i];
         }
     }
-    //endregion
 
-    //region pub fn sub(&self, rhs: Matrix3x3)
     /// Subtract the given rhs matrix from the caller matrix.
     ///
     /// This function subtracts each element of the rhs matrix from the corresponding
@@ -167,20 +145,14 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::Matrix3x3;
     ///
-    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    ///         let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    ///
-    ///         lhs.sub(&rhs);
-    ///
-    ///         assert_eq!(0.0, lhs[0]);
-    ///         assert_eq!(0.0, lhs[1]);
-    ///         assert_eq!(0.0, lhs[2]);
-    ///         assert_eq!(0.0, lhs[3]);
-    ///         assert_eq!(0.0, lhs[4]);
-    ///         assert_eq!(0.0, lhs[5]);
-    ///         assert_eq!(0.0, lhs[6]);
-    ///         assert_eq!(0.0, lhs[7]);
-    ///         assert_eq!(0.0, lhs[8]);
+    /// let mut lhs: Matrix3x3 =
+    ///     Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// lhs.sub(&rhs);
+    /// let expected = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    /// for (i, val) in expected.iter().enumerate() {
+    ///     assert_eq!(lhs[i], *val);
+    /// }
     ///```
     pub fn sub(&mut self, rhs: &Matrix3x3) {
         let lhs = self;
@@ -188,9 +160,7 @@ impl Matrix3x3 {
             lhs[i] = lhs[i] - rhs[i];
         }
     }
-    //endregion
 
-    //region pub fn mul_scalar(&self, rhs:f64)
     /// Multiplies each element of the caller matrix object by a scalar value.
     ///
     /// # Arguments
@@ -201,31 +171,22 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    ///         let rhs = 2.0;
-    ///
-    ///         lhs.mul_scalar(rhs);
-    ///
-    ///         assert_eq!(2.0, lhs[0]);
-    ///         assert_eq!(4.0, lhs[1]);
-    ///         assert_eq!(6.0, lhs[2]);
-    ///         assert_eq!(8.0, lhs[3]);
-    ///         assert_eq!(10.0, lhs[4]);
-    ///         assert_eq!(12.0, lhs[5]);
-    ///         assert_eq!(14.0, lhs[6]);
-    ///         assert_eq!(16.0, lhs[7]);
-    ///         assert_eq!(18.0, lhs[8]);
+    /// let mut lhs: Matrix3x3 =
+    ///     Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let rhs = 2.0;
+    /// lhs.mul_scalar(rhs);
+    /// let expected = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0];
+    /// for (i, val) in expected.iter().enumerate() {
+    ///     assert_eq!(lhs[i], *val);
+    /// }
     ///```
     pub fn mul_scalar(&mut self, rhs: f64) {
         let lhs = self;
-
         for i in 0..9 {
             lhs[i] = lhs[i] * rhs;
         }
     }
-    //endregion
 
-    //region pub fn div_scalar(&self, rhs:f64)
     /// Divide all elements of the caller matrix object with a scalar value rhs.
     ///
     /// # Arguments
@@ -236,21 +197,14 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
-    ///         let rhs = 2.0;
-    ///
-    ///         lhs.div_scalar(rhs);
-    ///
-    ///         assert_eq!(1.0, lhs[0]);
-    ///         assert_eq!(2.0, lhs[1]);
-    ///         assert_eq!(3.0, lhs[2]);
-    ///         assert_eq!(4.0, lhs[3]);
-    ///         assert_eq!(5.0, lhs[4]);
-    ///         assert_eq!(6.0, lhs[5]);
-    ///         assert_eq!(7.0, lhs[6]);
-    ///         assert_eq!(8.0, lhs[7]);
-    ///         assert_eq!(9.0, lhs[8]);
-    ///
+    /// let mut lhs: Matrix3x3 =
+    ///     Matrix3x3::from_array([2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
+    /// let rhs = 2.0;
+    /// lhs.div_scalar(rhs);
+    /// let expected = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
+    /// for (i, val) in expected.iter().enumerate() {
+    ///     assert_eq!(lhs[i], *val);
+    /// }
     /// ```
     pub fn div_scalar(&mut self, rhs: f64) {
         let lhs = self;
@@ -259,9 +213,7 @@ impl Matrix3x3 {
             lhs[i] = lhs[i] / rhs;
         }
     }
-    //endregion
 
-    //region pub fn mul_vec_mut(&mut self, v: &Vec3)
     /// Multiplies the caller matrix object with a Vec3 in place, i.e., modifies the matrix object itself.
     ///
     /// `rhs` - is a mutable reference to a Vec3 object that represents the vector to be multiplied with the matrix.
@@ -277,14 +229,12 @@ impl Matrix3x3 {
     /// use bioshell_numerical::matrix::Matrix3x3;
     /// use bioshell_numerical::Vec3;
     ///
-    /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
-    ///                                          4.0, 5.0, 6.0,
-    ///                                          7.0, 8.0, 9.0]);
-    ///         let mut rhs = Vec3::new(2.0,2.0,2.0);
-    ///         lhs.mul_vec_mut(&mut rhs);
-    ///         assert_eq!(12.0, rhs[0]);
-    ///         assert_eq!(30.0, rhs[1]);
-    ///         assert_eq!(48.0, rhs[2]);
+    /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let mut rhs = Vec3::new(2.0, 2.0, 2.0);
+    /// lhs.mul_vec_mut(&mut rhs);
+    /// assert_eq!(12.0, rhs[0]);
+    /// assert_eq!(30.0, rhs[1]);
+    /// assert_eq!(48.0, rhs[2]);
     ///```
     pub fn mul_vec_mut(&self, rhs: &mut Vec3) {
         let lhs = self;
@@ -295,9 +245,7 @@ impl Matrix3x3 {
         rhs.y = y;
         rhs.z = z;
     }
-    //endregion
 
-    //region pub fn mul_mat_mut(&self, rhs: &mut Matrix3x3)
     /// Multiplies the caller matrix object with another matrix in-place.
     ///
     /// The multiplication operation takes the current matrix object (left-hand-side) and the given matrix (right-hand-side),
@@ -315,23 +263,14 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::Matrix3x3;
     ///
-    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
-    ///             4.0, 5.0, 6.0,
-    ///             7.0, 8.0, 9.0]);
-    ///         let rhs = Matrix3x3::from_array([1.0, 2.0, 3.0,
-    ///             4.0, 5.0, 6.0,
-    ///             7.0, 8.0, 9.0]);
-    ///         lhs.mul_mat_mut(&rhs);
-    ///
-    ///         assert_eq!(30.0, lhs[0]);
-    ///         assert_eq!(36.0, lhs[1]);
-    ///         assert_eq!(42.0, lhs[2]);
-    ///         assert_eq!(66.0, lhs[3]);
-    ///         assert_eq!(81.0, lhs[4]);
-    ///         assert_eq!(96.0, lhs[5]);
-    ///         assert_eq!(102.0, lhs[6]);
-    ///         assert_eq!(126.0, lhs[7]);
-    ///         assert_eq!(150.0, lhs[8]);
+    /// let mut lhs: Matrix3x3 =
+    ///     Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let rhs = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// lhs.mul_mat_mut(&rhs);
+    /// let expected = [30.0, 36.0, 42.0, 66.0, 81.0, 96.0, 102.0, 126.0, 150.0];
+    /// for (i, val) in expected.iter().enumerate() {
+    ///     assert_eq!(lhs[i], *val);
+    /// }
     /// ```
     pub fn mul_mat_mut(&mut self, rhs: &Matrix3x3) {
         let lhs = self;
@@ -351,9 +290,7 @@ impl Matrix3x3 {
             lhs[i] = temp[i];
         }
     }
-    //endregion
 
-    //region pub fn det(&self) -> f64
     /// Computes the determinant of the 3x3 matrix.
     ///
     /// # Arguments
@@ -364,13 +301,9 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let mat: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0,
-    ///             4.0, 5.0, 6.0,
-    ///             7.0, 8.0, 9.0]);
-    ///
-    ///         let _det: f64 = mat.det();
-    ///
-    ///         assert_eq!(0.0, _det);
+    /// let mat: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let _det: f64 = mat.det();
+    /// assert_eq!(0.0, _det);
     ///```
     pub fn det(&self) -> f64 {
         let lhs = self;
@@ -380,9 +313,7 @@ impl Matrix3x3 {
         let returns = a - b + c;
         return returns;
     }
-    //endregion
 
-    //region pub fn inverse(&self)
     /// Calculates the inverse of the matrix in-place.
     ///
     /// # Arguments
@@ -397,21 +328,13 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([0.0, 1.0, 0.0,
-    ///                                               0.0, 0.0, 1.0,
-    ///                                               1.0, 0.0, 0.0]);
-    ///
-    ///         lhs.inverse();
-    ///
-    ///         assert_eq!(0.0, lhs[0]);
-    ///         assert_eq!(0.0, lhs[1]);
-    ///         assert_eq!(1.0, lhs[2]);
-    ///         assert_eq!(1.0, lhs[3]);
-    ///         assert_eq!(0.0, lhs[4]);
-    ///         assert_eq!(0.0, lhs[5]);
-    ///         assert_eq!(0.0, lhs[6]);
-    ///         assert_eq!(1.0, lhs[7]);
-    ///         assert_eq!(0.0, lhs[8]);
+    /// let mut lhs: Matrix3x3 =
+    ///     Matrix3x3::from_array([0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0]);
+    /// lhs.inverse();
+    /// let expected = [0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+    /// for (i, val) in expected.iter().enumerate() {
+    ///     assert_eq!(lhs[i], *val);
+    /// }
     ///```
     ///
     /// # Errors
@@ -451,9 +374,7 @@ impl Matrix3x3 {
             }
         }
     }
-    //endregion
 
-    //region pub fn from_values()
     /// Constructs a 3x3 matrix from its individual elements cx_x, cx_y, cx_z, cy_x, cy_y, cy_z, cz_x, cz_y, cz_z.
     ///
     /// # Arguments
@@ -474,24 +395,13 @@ impl Matrix3x3 {
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
     /// let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    ///         let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    ///         let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    ///
-    ///         let mat: Matrix3x3 = Matrix3x3::from_values(cx.x, cx.y, cx.z,
-    ///                                                     cy.x, cy.y, cy.z,
-    ///                                                     cz.x, cz.y, cz.z);
-    ///
-    ///         assert_eq!(cx.x, mat[0]);
-    ///         assert_eq!(cx.y, mat[1]);
-    ///         assert_eq!(cx.z, mat[2]);
-    ///
-    ///         assert_eq!(cy.x, mat[3]);
-    ///         assert_eq!(cy.y, mat[4]);
-    ///         assert_eq!(cy.z, mat[5]);
-    ///
-    ///         assert_eq!(cz.x, mat[6]);
-    ///         assert_eq!(cz.y, mat[7]);
-    ///         assert_eq!(cz.z, mat[8]);
+    /// let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let mat: Matrix3x3 =
+    ///     Matrix3x3::from_values(cx.x, cx.y, cx.z, cy.x, cy.y, cy.z, cz.x, cz.y, cz.z);
+    /// assert_eq!(cx.x, mat[0]); assert_eq!(cx.y, mat[1]); assert_eq!(cx.z, mat[2]);
+    /// assert_eq!(cy.x, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cy.z, mat[5]);
+    /// assert_eq!(cz.x, mat[6]); assert_eq!(cz.y, mat[7]); assert_eq!(cz.z, mat[8]);
     ///```
     pub fn from_values(
         cx_x: f64,
@@ -506,9 +416,7 @@ impl Matrix3x3 {
     ) -> Self {
         Self::from_array([cx_x, cx_y, cx_z, cy_x, cy_y, cy_z, cz_x, cz_y, cz_z])
     }
-    //endregion
 
-    //region pub fn from_column_vectors(cx: &Vec3, cy: &Vec3, cz: &Vec3) -> Self
     /// Construct a Matrix3x3 from three column vectors, representing the x, y, and z axes of the matrix.
     ///
     /// # Arguments
@@ -523,33 +431,17 @@ impl Matrix3x3 {
     /// use bioshell_numerical::Vec3;
     ///
     /// let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    ///         let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    ///         let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    ///
-    ///         let mat: Matrix3x3 = Matrix3x3::from_column_vectors(&cx, &cy, &cx);
-    ///
-    ///         assert_eq!(cx.x, mat[0]);
-    ///         assert_eq!(cx.y, mat[1]);
-    ///         assert_eq!(cx.z, mat[2]);
-    ///
-    ///         assert_eq!(cy.x, mat[3]);
-    ///         assert_eq!(cy.y, mat[4]);
-    ///         assert_eq!(cy.z, mat[5]);
-    ///
-    ///         assert_eq!(cz.x, mat[6]);
-    ///         assert_eq!(cz.y, mat[7]);
-    ///         assert_eq!(cz.z, mat[8]);
+    /// let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let mat: Matrix3x3 = Matrix3x3::from_column_vectors(&cx, &cy, &cx);
+    /// assert_eq!(cx.x, mat[0]); assert_eq!(cx.y, mat[1]); assert_eq!(cx.z, mat[2]);
+    /// assert_eq!(cy.x, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cy.z, mat[5]);
+    /// assert_eq!(cz.x, mat[6]); assert_eq!(cz.y, mat[7]); assert_eq!(cz.z, mat[8]);
     ///```
     pub fn from_column_vectors(cx: &Vec3, cy: &Vec3, cz: &Vec3) -> Self {
-        //let cx1 = cx.normalized();
-        //let cy1 = cy.normalized();
-        //let cz1 = cz.normalized();
-
         Self::from_array([cx.x, cx.y, cx.z, cy.x, cy.y, cy.z, cz.x, cz.y, cz.z])
     }
-    //endregion
 
-    //region pub fn from_row_vectors(rx: &Vec3, ry: &Vec3, rz: &Vec3) -> Self
     /// This method creates a Matrix3x3 from three Vec3 objects representing the columns of the matrix.
     ///
     /// # Arguments
@@ -564,29 +456,17 @@ impl Matrix3x3 {
     /// use bioshell_numerical::Vec3;
     ///
     /// let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    ///         let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    ///         let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    ///
-    ///         let mat: Matrix3x3 = Matrix3x3::from_row_vectors(&cx, &cy, &cx);
-    ///
-    ///         assert_eq!(cx.x, mat[0]);
-    ///         assert_eq!(cy.x, mat[1]);
-    ///         assert_eq!(cz.x, mat[2]);
-    ///
-    ///         assert_eq!(cx.y, mat[3]);
-    ///         assert_eq!(cy.y, mat[4]);
-    ///         assert_eq!(cz.y, mat[5]);
-    ///
-    ///         assert_eq!(cx.z, mat[6]);
-    ///         assert_eq!(cy.z, mat[7]);
-    ///         assert_eq!(cz.z, mat[8]);
+    /// let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let mat: Matrix3x3 = Matrix3x3::from_row_vectors(&cx, &cy, &cx);
+    /// assert_eq!(cx.x, mat[0]); assert_eq!(cy.x, mat[1]); assert_eq!(cz.x, mat[2]);
+    /// assert_eq!(cx.y, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cz.y, mat[5]);
+    /// assert_eq!(cx.z, mat[6]); assert_eq!(cy.z, mat[7]); assert_eq!(cz.z, mat[8]);
     ///```
     pub fn from_row_vectors(rx: &Vec3, ry: &Vec3, rz: &Vec3) -> Self {
         Self::from_array([rx.x, ry.x, rz.x, rx.y, ry.y, rz.y, rx.z, ry.z, rz.z])
     }
-    //endregion
 
-    //region pub fn add_s(lhs : Matrix3x3, rhs: Matrix3x3)-> Matrix3x3
     /// Adds two Matrix3x3 matrices and returns the result.
     ///
     /// # Arguments
@@ -599,33 +479,23 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let lhs = Matrix3x3::from_array( [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0] );
-    /// let rhs = Matrix3x3::from_array( [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0] );
-    ///
-    /// let result = Matrix3x3::add_s(lhs, rhs);
-    ///
-    /// assert_eq!(result[0], 10.0);
-    /// assert_eq!(result[4], 10.0);
-    /// assert_eq!(result[8], 10.0);
+    /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let out = Matrix3x3::add_s(lhs, rhs);
+    /// let expected = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0];
+    /// for (i, val) in expected.iter().enumerate() {
+    ///     assert_eq!(out[i], *val);
+    /// }
     /// ```
-    ///
     pub fn add_s(lhs: Matrix3x3, rhs: Matrix3x3) -> Matrix3x3
     {
         return Matrix3x3::from_array([
-            lhs[0] + rhs[0],
-            lhs[1] + rhs[1],
-            lhs[2] + rhs[2],
-            lhs[3] + rhs[3],
-            lhs[4] + rhs[4],
-            lhs[5] + rhs[5],
-            lhs[6] + rhs[6],
-            lhs[7] + rhs[7],
-            lhs[8] + rhs[8],
+            lhs[0] + rhs[0], lhs[1] + rhs[1], lhs[2] + rhs[2],
+            lhs[3] + rhs[3], lhs[4] + rhs[4], lhs[5] + rhs[5],
+            lhs[6] + rhs[6], lhs[7] + rhs[7], lhs[8] + rhs[8],
         ]);
     }
-    //endregion
 
-    //region pub fn sub_s(lhs : Matrix3x3, rhs: Matrix3x3)
     /// Performs matrix subtraction of two Matrix3x3 objects.
     ///
     /// Subtracts the matrix rhs from the matrix lhs and returns the resulting Matrix3x3.
@@ -639,36 +509,39 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let lhs = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    /// let rhs = Matrix3x3::from_array([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0]);
-    /// let sub = Matrix3x3::sub_s(lhs, rhs);
-    /// assert_eq!(sub, Matrix3x3::from_array([-8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0]));
+    /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let out = Matrix3x3::sub_s(lhs, rhs);
+    /// let expected = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    /// for (i, val) in expected.iter().enumerate() {
+    ///     assert_eq!(out[i], *val);
+    /// }
     ///```
     pub fn sub_s(lhs: Matrix3x3, rhs: Matrix3x3) -> Matrix3x3 {
         return Matrix3x3::from_array([
-            lhs[0] - rhs[0],
-            lhs[1] - rhs[1],
-            lhs[2] - rhs[2],
-            lhs[3] - rhs[3],
-            lhs[4] - rhs[4],
-            lhs[5] - rhs[5],
-            lhs[6] - rhs[6],
-            lhs[7] - rhs[7],
-            lhs[8] - rhs[8],
+            lhs[0] - rhs[0], lhs[1] - rhs[1], lhs[2] - rhs[2],
+            lhs[3] - rhs[3], lhs[4] - rhs[4], lhs[5] - rhs[5],
+            lhs[6] - rhs[6], lhs[7] - rhs[7], lhs[8] - rhs[8],
         ]);
     }
-    //endregion
 
-    //region pub fn identity() -> Self
+    /// Returns a 3x3 identity matrix.
+    ///
+    /// # Example
+    /// ```rust
+    /// use bioshell_numerical::matrix::Matrix3x3;
+    ///
+    /// let lhs = Matrix3x3::identity();
+    /// let rhs = Matrix3x3::from_values(1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0);
+    /// assert_eq!(lhs, rhs);
+    /// ```
     pub fn identity() -> Self
     {
         return Matrix3x3::from_values(  1.0, 0.0, 0.0,
                                         0.0, 1.0, 0.0,
                                         0.0, 0.0, 1.0);
     }
-    //endregion
 
-    //region pub fn inverse_s(mat: Matrix3x3)->Matrix3x3
     /// Computes the inverse of a 3x3 matrix using the Gauss-Jordan elimination method.
     ///
     /// # Arguments
@@ -683,24 +556,21 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([0.0, 1.0, 0.0,
-    ///                                                 0.0, 0.0, 1.0,
-    ///                                                 1.0, 0.0, 0.0]);
-    ///
+    /// let mut lhs: Matrix3x3 =
+    ///     Matrix3x3::from_array([0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0]);
     /// lhs.inverse();
-    ///
-    /// assert_eq!(0.0, lhs[0]); assert_eq!(0.0, lhs[1]); assert_eq!(1.0, lhs[2]);
-    /// assert_eq!(1.0, lhs[3]); assert_eq!(0.0, lhs[4]); assert_eq!(0.0, lhs[5]);
-    /// assert_eq!(0.0, lhs[6]); assert_eq!(1.0, lhs[7]); assert_eq!(0.0, lhs[8]);
+    /// let expected = [0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+    /// for (i, val) in expected.iter().enumerate() {
+    ///     assert_eq!(lhs[i], *val);
+    /// }
     ///```
-    pub fn inverse_s(mat: Matrix3x3) -> Matrix3x3 {
+    pub fn inverse_s(mat: Matrix3x3) -> Matrix3x3
+    {
         let mut mat_copy = mat.clone();
         mat_copy.inverse();
         return mat_copy;
     }
-    //endregion
 
-    //region pub fn mul_vec_s(mat: &Matrix3x3, vec: &Vec3)-> Vec3
     /// Multiplies a 3x3 matrix with a 3D vector and returns the resulting 3D vector.
     ///
     /// # Arguments
@@ -715,9 +585,7 @@ impl Matrix3x3 {
     ///
     /// let mat = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let vec = Vec3::new(1.0, 2.0, 3.0);
-    ///
     /// let result = Matrix3x3::mul_vec_s(&mat, &vec);
-    ///
     /// assert_eq!(result, Vec3::new(14.0, 32.0, 50.0));
     ///```
     pub fn mul_vec_s(mat: &Matrix3x3, vec: &Vec3) -> Vec3 {
@@ -725,9 +593,7 @@ impl Matrix3x3 {
         mat.mul_vec_mut(&mut vec_copy);
         return vec_copy;
     }
-    //endregion
 
-    //region pub fn mul_mat_s(lhs: &Matrix3x3, rhs:&Matrix3x3) -> Matrix3x3
     /// Multiplies two Matrix3x3 objects and returns the result as a new Matrix3x3.
     ///
     /// This function does not modify the input matrices, but rather creates and returns a new Matrix3x3 object
@@ -746,24 +612,17 @@ impl Matrix3x3 {
     /// ```rust
     /// use bioshell_numerical::matrix::Matrix3x3;
     ///
-    /// let a = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
-    /// let b = Matrix3x3::from_array([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0]);
-    /// let c = Matrix3x3::mul_mat_s(&a, &b);
-    ///
-    /// assert_eq!(c[0], 30.0);
-    /// assert_eq!(c[1], 24.0);
-    /// assert_eq!(c[2], 18.0);
-    /// assert_eq!(c[3], 84.0);
-    /// assert_eq!(c[4], 69.0);
-    /// assert_eq!(c[5], 54.0);
-    /// assert_eq!(c[6], 138.0);
-    /// assert_eq!(c[7], 114.0);
-    /// assert_eq!(c[8], 90.0);
+    /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    /// let rhs: Matrix3x3 = Matrix3x3::from_array([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0]);
+    /// let out = Matrix3x3::mul_mat_s(&lhs, &rhs);
+    /// let expected = [30.0, 24.0, 18.0, 84.0, 69.0, 54.0, 138.0, 114.0, 90.0];
+    /// for (i, val) in expected.iter().enumerate() {
+    ///     assert_eq!(out[i], *val);
+    /// }
     ///```
     pub fn mul_mat_s(lhs: &Matrix3x3, rhs: &Matrix3x3) -> Matrix3x3 {
         let mut lhs_copy = lhs.clone();
         lhs_copy.mul_mat_mut(&rhs);
         return lhs_copy;
     }
-    //endregion
 }

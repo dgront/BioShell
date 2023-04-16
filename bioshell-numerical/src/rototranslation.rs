@@ -35,7 +35,6 @@ pub struct Rototranslation {
     translation_vec: Vec3,
 }
 
-//region Implementation of Debug trait
 impl fmt::Debug for Rototranslation {
     /// Formats the struct for printing using the `debug_struct` macro and prints the values of `rotation_matrix` and `translation_vec`.
     ///
@@ -54,7 +53,6 @@ impl fmt::Debug for Rototranslation {
             .finish()
     }
 }
-//endregion
 
 impl Rototranslation {
     pub fn new(m: Matrix3x3, v: Vec3) -> Self {
@@ -64,7 +62,6 @@ impl Rototranslation {
         }
     }
 
-    //region properties/accessors
     pub fn rotation_matrix(&self) -> &Matrix3x3 {
         return &self.rotation_matrix;
     }
@@ -77,9 +74,7 @@ impl Rototranslation {
     pub fn set_rotation_center(&mut self, center: Vec3) {
         self.translation_vec = center;
     }
-    //endregion
 
-    //region pub fn around_axis(center: &Vec3, begin: &Vec3, end: &Vec3, angle: f64)
     /// Creates a transformation that rotates a vector around an axis defined by two points.
     ///
     /// This function returns a `Rototranslation` object that applies a rotation around an axis
@@ -144,9 +139,7 @@ impl Rototranslation {
         );
         return Self::new(mat, Vec3::new(center.x, center.y, center.z));
     }
-    //endregion
 
-    //region pub fn apply_mut(&self, v: &mut Vec3)
     /// Applies the rototranslation operation to a mutable vector in place.
     ///
     /// This method applies the rotation matrix and the translation vector to the input vector
