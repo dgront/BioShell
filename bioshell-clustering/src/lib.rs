@@ -3,7 +3,7 @@ mod points_set;
 mod distance;
 
 // re-export symbols to the top-most level of the module's name space
-pub use points_set::{PointsWithDistance, EuclideanPoints};
+pub use points_set::{DistanceByIndex, EuclideanPoints};
 pub use distance::{euclidean_distance_squared};
 
 // each clustering method is placed in its own module

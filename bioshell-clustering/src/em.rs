@@ -3,7 +3,6 @@ use std::fmt::Display;
 use bioshell_statistics::{Estimable, Distribution};
 
 
-// ========== Expectation - Maximization ==========
 pub fn expectation_maximization<D: Estimable+Distribution+Display>(distributions:&mut Vec<D>,
         data: &Vec<Vec<f64>>, assignment: &mut Vec<Vec<bool>>, epsilon: f64) -> f64 {
 

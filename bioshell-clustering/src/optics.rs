@@ -1,64 +1,18 @@
 use std::cmp::*;
 use std::fmt;
-use std::ops::{Range};
+use std::ops::{Index, Range};
 
-use crate::{PointsWithDistance, EuclideanPoints};
+use crate::{DistanceByIndex, EuclideanPoints};
+use crate::points_set::{Neighbor, NeighborsOf};
 
-/// Holds information about a neighbor: its index and the distance to it.
-///
-/// Objects of this class are created by the
-/// [`neighbors_of()`](NeighborsOf::neighbors_of) method of the [`NeighborsOf`](NeighborsOf) trait
-/// and are used during the OPTICS clustering algorithm.
-#[derive(Clone)]
-pub struct Neighbor {
-    /// index of a neighbor point
-    pub idx: usize,
-    /// distance to that neighbor
-    pub d:f64
-}
-
-/// Prints information about a neighbor nicely
-impl fmt::Display for Neighbor {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "({}:{:4.3}) ", self.idx, self.d)
-    }
-}
-
-pub trait NeighborsOf {
-    /// Returns a vector of neighbors located close enough to a given point
-    ///
-    /// # Arguments
-    /// * `idx` - index of the center point
-    /// * `cutoff` - distance cutoff
-    /// # Returns
-    /// A vector of [`Neighbor`](Neighbor) data structures that provides all points located
-    ///no further from `idx` point than the given `cutoff` value
-    fn neighbors_of(&self, idx: usize, cutoff: f64) -> Vec<Neighbor>;
-}
-
-impl NeighborsOf for EuclideanPoints {
-
-    fn neighbors_of(&self, idx:usize, cutoff: f64) -> Vec<Neighbor> {
-
-        let mut out: Vec<Neighbor> = vec![];
-        for i in 0..self.count_points() {
-            let d = self.distance(idx, i);
-            if d <= cutoff {
-                out.push(Neighbor { idx: i, d });
-            }
-        }
-        // --- sort points by distance
-        out.sort_by(|k, l| k.d.partial_cmp(&l.d).unwrap());
-        return out;
-    }
-}
 
 /// Defines the requirements for data points used in OPTICS clustering
 ///
 /// Optics clustering accepts a points set that can compute distance between them and list its neighbors
-pub trait OpticsPoints: PointsWithDistance + NeighborsOf {}
+pub trait OpticsPoints: DistanceByIndex + NeighborsOf {}
 
-impl OpticsPoints for EuclideanPoints {}
+impl<T> OpticsPoints for EuclideanPoints<T>
+    where T: Index<usize, Output = f64> {}
 
 /// Provides the OPTICS (Ordering Points To Identify the Clustering Structure) clustering algorithm.
 /// OPTICS is an algorithm for density based clustering. It looks for a  neighbourhood

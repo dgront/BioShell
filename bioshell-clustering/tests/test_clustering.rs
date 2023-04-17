@@ -99,7 +99,7 @@ fn Optics_clustering_Gaussian_data() {
     }
 
     let opt_clust = Optics::new(0.5, 5,
-                    Box::new(EuclideanPoints::new(data.clone())));
+                    Box::new(EuclideanPoints::new(data.clone(), 2)));
 
     let cluster_size: Vec<usize> = opt_clust.clusters().iter().map(|r| r.len()).collect();
     println!("{:?}",cluster_size);
@@ -115,7 +115,7 @@ fn test_Optics() {
 
 
     let opt_clust = Optics::new(2.5, 4,
-                                    Box::new(EuclideanPoints::new(data.clone())));
+                                    Box::new(EuclideanPoints::new(data.clone(), 2)));
     let cluster_size: Vec<usize> = opt_clust.clusters().iter().map(|r| r.len()).collect();
     assert_eq!(data.len(), cluster_size.iter().sum());
     let expected_size: Vec<usize> = vec![8, 4, 1];

@@ -98,7 +98,7 @@ pub fn create_kd_tree<T>(data: &mut [T], dimensionality: usize) -> Option<Box<Kd
 /// assert!((d - 0.02).abs() < 0.000001);
 /// ```
 pub fn find_nearest<'a, T, F>(tree_root: &'a Box<KdTreeNode<T>>, query: &T, dimensionality: usize, distance:F) -> (f64, &'a T)
-    where T: Index<usize, Output = f64>, T:Clone, F: Fn(&T, &T, usize) -> f64 {
+    where T: Index<usize, Output = f64>, F: Fn(&T, &T, usize) -> f64 {
 
     let mut min_dist: f64 = distance(tree_root.element(), query, dimensionality);
     let mut min_elem: &T = tree_root.element();
@@ -147,7 +147,7 @@ pub fn find_nearest<'a, T, F>(tree_root: &'a Box<KdTreeNode<T>>, query: &T, dime
 /// assert_eq!(neighbors.len(), 2);
 /// ```
 pub fn find_within<'a, T, F>(tree_root: &'a Box<KdTreeNode<T>>, query: &T, dimensionality: usize, radius: f64, distance:F) -> Vec<&'a T>
-    where T: Index<usize, Output = f64>, T:Clone, F: Fn(&T, &T, usize) -> f64 {
+    where T: Index<usize, Output = f64>, F: Fn(&T, &T, usize) -> f64 {
 
     let mut ret: Vec<&T> = vec![];
 
