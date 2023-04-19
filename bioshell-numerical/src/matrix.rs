@@ -1,6 +1,7 @@
 use crate::vec3::Vec3;
 use std::fmt;
 use std::ops::{Index, IndexMut};
+use std::ops::Mul;
 
 /// Represents a 3x3 matrix, e.g. for linear transformations.
 ///
@@ -18,7 +19,7 @@ use std::ops::{Index, IndexMut};
 /// assert_eq!(unit_mtx[0], 1.0); assert_eq!(unit_mtx[4], 1.0); assert_eq!(unit_mtx[8], 1.0);
 /// ```
 
-#[derive(Clone, Default)]
+#[derive(Clone, Copy, Default)]
 pub struct Matrix3x3 {
     _array: [f64; 9],
 }
@@ -53,6 +54,91 @@ impl fmt::Debug for Matrix3x3 {
         )
     }
 }
+
+impl std::ops::Add<Matrix3x3> for Matrix3x3 {
+    type Output = Matrix3x3;
+    fn add(self, other: Matrix3x3) -> Matrix3x3
+    {
+        let mut result = Matrix3x3::new();
+        for i in 0..9 {
+            result[i] = self[i] + other[i];
+        }
+        result
+    }
+}
+
+impl std::ops::Add<&Matrix3x3> for &Matrix3x3 {
+    type Output = Matrix3x3;
+    fn add(self, other: &Matrix3x3) -> Matrix3x3 {
+        *self + *other
+    }
+}
+
+impl std::ops::Add<Matrix3x3> for &Matrix3x3 {
+    type Output = Matrix3x3;
+    fn add(self, other: Matrix3x3) -> Matrix3x3 {
+        *self + other
+    }
+}
+
+impl std::ops::Add<&Matrix3x3> for Matrix3x3 {
+    type Output = Matrix3x3;
+    fn add(self, other: &Matrix3x3) -> Matrix3x3 {
+        self + *other
+    }
+}
+
+impl std::ops::Sub<Matrix3x3> for Matrix3x3 {
+    type Output = Matrix3x3;
+    fn sub(self, other: Matrix3x3) -> Matrix3x3 {
+
+        let mut result = Matrix3x3::new();
+        for i in 0..9 {
+            result[i] = self[i] - other[i];
+        }
+        return result
+    }
+}
+
+impl std::ops::Sub<&Matrix3x3> for &Matrix3x3 {
+    type Output = Matrix3x3;
+    fn sub(self, other: &Matrix3x3) -> Matrix3x3 {
+        *self - *other
+    }
+}
+
+impl std::ops::Sub<Matrix3x3> for &Matrix3x3 {
+    type Output = Matrix3x3;
+    fn sub(self, other: Matrix3x3) -> Matrix3x3 {
+        *self - other
+    }
+}
+
+impl std::ops::Sub<&Matrix3x3> for Matrix3x3 {
+    type Output = Matrix3x3;
+    fn sub(self, other: &Matrix3x3) -> Matrix3x3 {
+        self - *other
+    }
+}
+
+impl Mul<f64> for Matrix3x3 {
+    type Output = Matrix3x3;
+
+    fn mul(mut self, scalar: f64) -> Matrix3x3 {
+        self.mul_scalar(scalar);
+        self
+    }
+}
+
+impl Mul<Matrix3x3> for f64 {
+    type Output = Matrix3x3;
+
+    fn mul(self, mut matrix: Matrix3x3) -> Matrix3x3 {
+        matrix.mul_scalar(self);
+        matrix
+    }
+}
+
 
 impl PartialEq for Matrix3x3 {
     fn eq(&self, other: &Self) -> bool {
@@ -624,5 +710,17 @@ impl Matrix3x3 {
         let mut lhs_copy = lhs.clone();
         lhs_copy.mul_mat_mut(&rhs);
         return lhs_copy;
+    }
+
+    pub fn outer_product_mat(a: &Matrix3x3, b: &Matrix3x3) -> Matrix3x3 {
+        let mut result = Matrix3x3::default();
+        let rows = 3;
+        let cols =3;
+        for i in 0..rows {
+            for j in 0..cols {
+                result[i * cols + j] = a[i] * b[j];
+            }
+        }
+        return result;
     }
 }

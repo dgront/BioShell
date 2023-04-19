@@ -4,6 +4,7 @@ use rand_distr::Normal;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::ops::{Index, IndexMut};
+use crate::matrix::Matrix3x3;
 
 /// 3D vector used to represent an interaction center in a simulation
 ///
@@ -66,6 +67,63 @@ impl IndexMut<usize> for Vec3 {
             1 => &mut self.y,
             2 => &mut self.z,
             _ => panic!("Index out of range for Vec3"),
+        }
+    }
+}
+
+impl std::ops::Add<Vec3> for Vec3 {
+    // This block of code defines the implementation of the Add trait for Vec3.
+    type Output = Vec3; // This specifies the output type of the add function.
+    fn add(self, other: Vec3) -> Vec3 {
+        // This defines the add function for Vec3 instances.
+        Vec3 {
+            // This creates and returns a new Vec3 instance.
+            x: self.x + other.x, // This adds the x coordinates of the two Vec3 instances.
+            y: self.y + other.y, // This adds the y coordinates of the two Vec3 instances.
+            z: self.z + other.z, // This adds the z coordinates of the two Vec3 instances.
+            res_type: 0,
+            atom_type: 0,
+            chain_id: 0,
+        }
+    }
+}
+
+impl std::ops::Add<&Vec3> for &Vec3 {
+    // This block of code defines the implementation of the Add trait for a reference to a Vec3.
+    type Output = Vec3; // This specifies the output type of the add function.
+    fn add(self, other: &Vec3) -> Vec3 {
+        // This defines the add function for references to Vec3 instances.
+        *self + *other // This dereferences self and other, and adds them as Vec3 instances.
+    }
+}
+
+impl std::ops::Add<Vec3> for &Vec3 {
+    // This block of code defines the implementation of the Add trait for a reference to a Vec3 and a Vec3 instance.
+    type Output = Vec3; // This specifies the output type of the add function.
+    fn add(self, other: Vec3) -> Vec3 {
+        // This defines the add function for a reference to a Vec3 and a Vec3 instance.
+        *self + other // This dereferences self and adds it to the Vec3 instance other.
+    }
+}
+
+impl std::ops::Add<&Vec3> for Vec3 {
+    type Output = Vec3; // This specifies the output type of the add function.
+    fn add(self, other: &Vec3) -> Vec3 { // This defines the add function for a Vec3 instance and a reference to a Vec3.
+        self + *other // This adds self and the dereferenced other as Vec3 instances.
+    }
+}
+
+impl std::ops::Sub for Vec3 {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
+            res_type: 0,
+            atom_type: 0,
+            chain_id: 0,
         }
     }
 }
@@ -303,8 +361,43 @@ impl Vec3 {
             chain_id: a.chain_id,
         };
     }
+    pub fn outer_product(a: Vec3, b: Vec3) -> Vec3 {
+        let x = a.y * b.z - a.z * b.y;
+        let y = a.z * b.x - a.x * b.z;
+        let z = a.x * b.y - a.y * b.x;
+        Vec3::new(x, y, z)
+    }
+
+    pub fn outer_product_mat(lhs: Vec3, rhs: Vec3) -> Matrix3x3 {
+        let mut data = [[0.0; 3]; 3];
+        data[0][0] = lhs.x * rhs.x;
+        data[0][1] = lhs.x * rhs.y;
+        data[0][2] = lhs.x * rhs.z;
+
+        data[1][0] = lhs.y * rhs.x;
+        data[1][1] = lhs.y * rhs.y;
+        data[1][2] = lhs.y * rhs.z;
+
+        data[2][0] = lhs.z * rhs.x;
+        data[2][1] = lhs.z * rhs.y;
+        data[2][2] = lhs.z * rhs.z;
+
+        Matrix3x3::from_values(
+            data[0][0], data[0][1], data[0][2],
+            data[1][0], data[1][1], data[1][2],
+            data[2][0], data[2][1], data[2][2],
+        )
+    }
+
+    pub fn transform(v: Vec3, m: Matrix3x3) -> Vec3 {
+        let x = m[0] * v.x + m[1] * v.y + m[2] * v.z;
+        let y = m[3] * v.x + m[4] * v.y + m[5] * v.z;
+        let z = m[6] * v.x + m[7] * v.y + m[8] * v.z;
+        return Vec3::new( x, y, z);
+    }
 }
 
+///independent functions
 /// Calculates a planar angle between two vectors in 3D
 pub fn planar_angle2(a: &Vec3, b: &Vec3) -> f64 {
     let v = Vec3::dot(a, b) as f64;
@@ -314,9 +407,9 @@ pub fn planar_angle2(a: &Vec3, b: &Vec3) -> f64 {
 /// Calculates a planar angle of the a-b-c triangle in 3D
 pub fn planar_angle3(a: &Vec3, b: &Vec3, c: &Vec3) -> f64 {
     let mut v1: Vec3 = Vec3::clone(a);
-    v1.sub(b);
+    v1.sub(&b);
     let mut v2: Vec3 = Vec3::clone(c);
-    v2.sub(b);
+    v2.sub(&b);
     return planar_angle2(&v1, &v2);
 }
 

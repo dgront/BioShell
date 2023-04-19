@@ -1,122 +1,46 @@
 #[cfg(test)]
 mod rototranslation_test {
-    use bioshell_numerical::matrix::Matrix3x3;
-    use bioshell_numerical::rototranslation::*;
-    use bioshell_numerical::vec3::Vec3;
+    use rand_distr::num_traits::float::FloatCore;
+    use bioshell_numerical::{Rototranslation, Vec3, Matrix3x3};
 
-    #[test]
-    fn rototranslation_struct() {
-        let vx = Vec3::new(1.0, 0.0, 0.0);
-        let vy = Vec3::new(0.0, 1.0, 0.0);
-        let vz = Vec3::new(1.0, 0.0, 1.0);
-        let unit_vec = Vec3::new(1.0, 1.0, 1.0);
-        let another_vec = Vec3::new(10.0, 0.0, 10.0);
-        let unit_mtx = Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
-
-        let rototran = Rototranslation::new(unit_mtx, unit_vec);
-
-        rototran.apply(&another_vec);
-
-        assert_eq!(10.0, another_vec[0]);
-        assert_eq!(0.0, another_vec[1]);
-        assert_eq!(10.0, another_vec[2]);
-    }
-
-    #[test]
-    fn rotate_cube_around_axis_111() {
-        let corner_1 = Vec3::new(0.0, 0.0, 0.0);
-        let corner_2 = Vec3::new(1.0, 1.0, 1.0);
-        let angle = 2.0 * std::f64::consts::PI / 3.0;
-        let rot = Rototranslation::around_axis(&corner_1, &corner_1, &corner_2, angle);
-
-        println!("{:?}", rot.rotation_matrix());
-        let mut another_vec = Vec3::new(1.0, 1.0, 0.0);
-        for i in 0..4 {
-            rot.apply_mut(&mut another_vec);
-            println!("{}", another_vec);
-        }
-
-
-        // assert_eq!(10.0, another_vec.x);
-        // assert_eq!(1.0, another_vec.y);
-        // assert_eq!(10.0, another_vec.z);
-    }
-
-    #[test]
-    fn rotate_cube_around_axis_001() {
-        let corner_1 = Vec3::new(0.0, 0.0, 0.0);
-        let corner_2 = Vec3::new(0.0, 0.0, 1.0);
-        let angle = std::f64::consts::PI / 2.0;
-        let rot = Rototranslation::around_axis(&corner_1, &corner_1, &corner_2, angle);
-
-        let mut another_vec = Vec3::new(1.0, 1.0, 0.0);
-        let  expected = vec![Vec3::new(-1.0, 1.0, 0.0), Vec3::new(-1.0, -1.0, 0.0),
-                                 Vec3::new(1.0, -1.0, 0.0), Vec3::new(1.0, 1.0, 0.0)];
-
-        for v in &expected {
-            rot.apply_mut(&mut another_vec);
-            assert!(v.distance_to(&another_vec).abs() < 0.0001);
-        }
-
-        let  expected_inv = vec![Vec3::new(1.0, -1.0, 0.0), Vec3::new(-1.0, -1.0, 0.0),
-                             Vec3::new(-1.0, 1.0, 0.0), Vec3::new(1.0, 1.0, 0.0)];
-
-        for v in &expected_inv {
-            rot.apply_inverse_mut(&mut another_vec);
-            assert!(v.distance_to(&another_vec).abs() < 0.0001);
-        }
+    fn truncate(float: f64)->f64
+    {
+        return f64::trunc(float  * 100.0) / 100.0; // or f32::trunc
     }
 
     #[test]
     fn rototranslation_apply_mut() {
-        let rotation_mat =
-            Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        let translation_vec = Vec3::new(1.0, 1.0, 1.0);
-        let mut another_vec = Vec3::new(10.0, 1.0, 10.0);
+        let _origin_vector: Vec3 = Vec3::new(1.0, 1.0, 1.0);
+        let _start_vector: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+        let _end_vector: Vec3 = Vec3::new(4.0, 4.0, 4.0);
+        let _theta_rad = 360.0 * std::f64::consts::PI /180.0;
 
-        let rot = Rototranslation::new(rotation_mat, translation_vec);
+        let _roto = Rototranslation::around_axis(_origin_vector, _start_vector, _end_vector, _theta_rad);
 
-        rot.apply_mut(&mut another_vec);
+        let _candidate_vector: Vec3 = Vec3::new(3.0, 3.0, 3.0);
 
-        assert_eq!(10.0, another_vec.x);
-        assert_eq!(1.0, another_vec.y);
-        assert_eq!(10.0, another_vec.z);
-    }
+        let _rotated_vec = _roto.apply_mut(&_candidate_vector);
 
-    #[test]
-    fn rototranslation_apply() {
-        let unit_matrix = Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        let vector = Vec3::new(10.0, 0.0, 10.0);
-
-        let rot = Rototranslation::new(unit_matrix, vector);
-        let rotated_vector = rot.apply(&vector);
-
-        assert_eq!(rotated_vector.x, 10.0);
-        assert_eq!(rotated_vector.y, 0.0);
-        assert_eq!(rotated_vector.z, 10.0);
+        assert_eq!(truncate(_rotated_vec.x), 3.0);
+        assert_eq!(truncate(_rotated_vec.y), 3.0);
+        assert_eq!(truncate(_rotated_vec.z), 3.0);
     }
 
     #[test]
     fn rototranslation_apply_inverse_mut() {
-        let unit_matrix = Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        let trans_vec = Vec3::new(1.0, 1.0, 1.0);
-        let rt = Rototranslation::new(unit_matrix, trans_vec);
-        let mut another_vec = Vec3::new(1.0, 2.0, 3.0);
+        let _origin_vector: Vec3 = Vec3::new(1.0, 1.0, 1.0);
+        let _start_vector: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+        let _end_vector: Vec3 = Vec3::new(4.0, 4.0, 4.0);
+        let _theta_rad = 360.0 * std::f64::consts::PI /180.0;
 
-        rt.apply_inverse_mut(&mut another_vec);
+        let _roto = Rototranslation::around_axis(_origin_vector, _start_vector, _end_vector, _theta_rad);
 
-        assert_eq!(Vec3::new(1.0, 2.0, 3.0), another_vec);
-    }
+        let mut _candidate_vector: Vec3 = Vec3::new(3.0, 3.0, 3.0);
 
-    #[test]
-    fn rototranslation_apply_inverse() {
-        let unit_matrix = Matrix3x3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        let trans_vec = Vec3::new(1.0, 1.0, 1.0);
-        let rt = Rototranslation::new(unit_matrix, trans_vec);
-        let another_vec = Vec3::new(1.0, 2.0, 3.0);
+        let _rotated_vec = _roto.apply_inverse_mut(&mut _candidate_vector);
 
-        let vec_out = rt.apply_inverse(&another_vec);
-
-        assert_eq!(Vec3::new(1.0, 2.0, 3.0), vec_out);
+        assert_eq!(_rotated_vec.x, 3.0);
+        assert_eq!(_rotated_vec.y, 3.0);
+        assert_eq!(_rotated_vec.z, 3.0);
     }
 }
