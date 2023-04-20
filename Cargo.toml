@@ -18,6 +18,7 @@ members = [
     "bioshell-montecarlo",
     "bioshell-cartesians",
     "bioshell-cif",
+    "bioshell-datastructures",
 ]
 
 [dependencies]
@@ -29,6 +30,7 @@ bioshell-clustering = { path = "./bioshell-clustering" }
 bioshell-statistics = { path = "./bioshell-statistics" }
 bioshell-montecarlo = { path = "./bioshell-montecarlo" }
 bioshell-cartesians = { path = "./bioshell-cartesians" }
+bioshell-datastructures = { path = "./bioshell-datastructures"}
 bioshell-cif = { path = "./bioshell-cif" }
 
 clap = { version = "3.1.18", features = ["derive"] }
