@@ -2,7 +2,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::ops::Index;
 use crate::euclidean_distance_squared;
-use crate::kd_tree::{create_kd_tree, find_within, KdTreeNode};
+use bioshell_datastructures::kd_tree::{create_kd_tree, find_within, KdTreeNode};
 
 /// Holds information about a neighbor: its index and the distance to it.
 ///

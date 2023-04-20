@@ -21,7 +21,4 @@ rand_distr="0.4.3"
 clap = { version = "3.1.18", features = ["derive"] }
 
 bioshell-core = { path = "../bioshell-core" }
-bioshell-numerical = { path = "../bioshell-numerical", optional = true }
-
-[features]
-vec3 = ["bioshell-numerical"]
+bioshell-numerical = { path = "../bioshell-numerical"}
