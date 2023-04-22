@@ -1,19 +1,14 @@
-use rand_distr::{Normal, Distribution as RndDistribution};
+use std::iter::zip;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 
-use bioshell_clustering::{euclidean_distance_squared, EuclideanPoints};
+use bioshell_numerical::distance::euclidean_distance_squared;
+use bioshell_clustering::{NeighborsOf, CartesianPoints};
 use bioshell_clustering::optics::{Optics};
 use bioshell_clustering::em::{expectation_maximization};
-use bioshell_clustering::kd_tree::{count, create_kd_tree, find_nearest, find_within};
-
-#[cfg(feature = "vec3")]
-use bioshell_numerical::Vec3;
-
-use bioshell_statistics::{Distribution, MultiNormalDistribution,
-                                      NormalDistribution, OnlineMultivariateStatistics};
+use bioshell_statistics::{Distribution, MultiNormalDistribution, NormalDistribution};
 
 
 #[test]
@@ -52,23 +47,22 @@ fn test_expectation_maximization() {
 
 #[allow(non_snake_case)]
 #[test]
-fn test_OnlineMultivariateStatistics() {
-    let n_samples = 100000;
-    let n_dim: usize = 4;
+fn create_CartesianPoints() {
 
-    let normal = Normal::new(2.0, 3.0).unwrap();         // --- mean 2, standard deviation 3
-    let mut stats = OnlineMultivariateStatistics::new(n_dim);
-    let mut row = vec!(0.0; n_dim);
-    for _ in 0..n_samples {
-        for i in 0..row.len() {
-            row[i] = normal.sample(&mut rand::thread_rng());
-        }
-        stats.accumulate(&row);
+    const N: usize = 100;
+    let mut points: Vec<[f64; 1]> = vec![[0.0]; N];
+    for i in 0..N { points[i][0] = i as f64 * 0.1; }
+    let ep = CartesianPoints::new(euclidean_distance_squared, points, 1);
+    let nb = ep.neighbors_of(4,0.041);
+    assert_eq!(nb.len(), 5);
+
+    let mut nb_ids: Vec<usize> = nb.iter().map(|n| {n.idx}).collect();
+    nb_ids.sort();
+    let expected = vec![2, 3, 4, 5];
+    for (actual, expcted) in zip(&nb_ids, &expected) {
+        assert_eq!(actual, expcted);
     }
-    for i in 0..n_dim {
-        assert!((stats.avg(i)-2.0).abs() < 0.1);
-        assert!((stats.var(i).sqrt()-3.0).abs() < 0.1);
-    }
+    for ni in nb_ids { println!("{}",ni)}
 }
 
 #[allow(non_snake_case)]
@@ -99,10 +93,11 @@ fn Optics_clustering_Gaussian_data() {
     }
 
     let opt_clust = Optics::new(0.5, 5,
-                    Box::new(EuclideanPoints::new(data.clone(), 2)));
+                    Box::new(CartesianPoints::new(euclidean_distance_squared, data.clone(), 2)));
 
     let cluster_size: Vec<usize> = opt_clust.clusters().iter().map(|r| r.len()).collect();
-    println!("{:?}",cluster_size);
+    assert_eq!(cluster_size[0], 20);
+    assert_eq!(cluster_size[1], 20);
 }
 
 #[allow(non_snake_case)]
@@ -115,89 +110,11 @@ fn test_Optics() {
 
 
     let opt_clust = Optics::new(2.5, 4,
-                                    Box::new(EuclideanPoints::new(data.clone(), 2)));
+        Box::new(CartesianPoints::new(euclidean_distance_squared, data.clone(), 2)));
     let cluster_size: Vec<usize> = opt_clust.clusters().iter().map(|r| r.len()).collect();
     assert_eq!(data.len(), cluster_size.iter().sum());
     let expected_size: Vec<usize> = vec![8, 4, 1];
     let expected_order: Vec<usize> = vec![0, 1, 3, 4, 2, 5, 6, 7, 8, 9, 11, 10, 12];
     assert_eq!(expected_size, *cluster_size);
     assert_eq!(expected_order, *opt_clust.clustering_order());
-}
-
-#[test]
-fn test_kd_tree() {
-    let mut data = vec![vec![0.0, 0.5], vec![0.7, 0.5], vec![0.8, 1.1]];
-    create_kd_tree(&mut data, 3);
-}
-
-
-#[test]
-fn test_k1_tree() {
-
-    const N: usize = 128;
-    let mut rng = SmallRng::seed_from_u64(0);
-    let mut data = vec![vec![0.0]; N];
-    for i in 0..data.len() { data[i][0] = rng.gen(); }
-
-    let query = vec![0.5];
-    // --- find nearest with brute force
-    let (mut min_d, mut min_e) = (euclidean_distance_squared(&query, &data[0], 1), &data[0]);
-    for e in data.iter() {
-        let d = euclidean_distance_squared(&query, e, 1);
-        if d < min_d { (min_d, min_e) = (d, e);}
-    }
-
-    let root = create_kd_tree(&mut data.clone(), 1).unwrap();
-    assert_eq!(N, count(&root));
-    // --- find nearest with KdTree
-    let (d, e) = find_nearest(&root, &query, 1,euclidean_distance_squared);
-    // --- check if we have the same element
-    assert!((d-min_d).abs()<0.000001);
-    assert!((e[0]-min_e[0]).abs()<0.000001);
-
-    let nbors = find_within(&root, &query, 1, 0.1*0.1, euclidean_distance_squared);
-    for e in nbors { assert!(euclidean_distance_squared(e, &query, 1) <= 0.1 * 0.1) }
-    // println!("{:?}",nbors);
-}
-
-/// Use ``cargo test --features "vec3"`` command to run these two tests:
-#[test]
-#[allow(non_snake_case)]
-#[cfg(feature = "vec3")]
-fn test_kd_tree_Vec3_2D() {
-
-    const N: usize = 7;
-    let mut data = vec![Vec3::new(0.0,0.0,0.0); N*N];
-    for i in 0..N*N {
-        data[i].x = (i % N) as f64 * 0.1 + 0.1;
-        data[i].y = (i / N) as f64  * 0.1 + 0.1;
-    }
-    let root = create_kd_tree(&mut data.clone(), 2).unwrap();
-    let neighbors = find_within(&root, &Vec3::new(0.3, 0.3, 0.0),
-                                2, 0.021, euclidean_distance_squared);
-    assert_eq!(neighbors.len(),9);
-}
-
-#[test]
-#[allow(non_snake_case)]
-#[cfg(feature = "vec3")]
-fn test_kd_tree_Vec3_3D() {
-
-    const N: usize = 10;
-    let mut data = vec![Vec3::new(0.0,0.0,0.0); N*N*N];
-    for k in 0..N {
-        for j in 0..N {
-            for i in 0..N {
-                let idx = N * N * k + N * j + i;
-                data[idx].x = i as f64 * 0.1 + 0.1;
-                data[idx].y = j as f64 * 0.1 + 0.1;
-                data[idx].z = k as f64 * 0.1 + 0.1;
-            }
-        }
-    }
-    let root = create_kd_tree(&mut data.clone(), 3).unwrap();
-    let neighbors = find_within(&root, &Vec3::new(0.3, 0.3, 0.3),
-                                3, 0.031, euclidean_distance_squared);
-
-    assert_eq!(neighbors.len(),27);
 }

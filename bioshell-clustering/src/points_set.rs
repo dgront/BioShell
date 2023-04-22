@@ -1,8 +1,9 @@
 use std::fmt;
 use std::fmt::Debug;
 use std::ops::Index;
-use crate::euclidean_distance_squared;
-use bioshell_datastructures::kd_tree::{create_kd_tree, find_within, KdTreeNode};
+use bioshell_datastructures::BinaryTreeNode;
+
+use bioshell_datastructures::kd_tree::{create_kd_tree, find_within, KdTreeData};
 
 /// Holds information about a neighbor: its index and the distance to it.
 ///
@@ -59,58 +60,106 @@ pub trait DistanceByIndex {
     fn count_points(&self) -> usize;
 }
 
-
-pub struct EuclideanPoints<T> {
-    dimensionality: usize,
-    points: Vec<T>,
-    kdtree: Box<KdTreeNode<T>>
+#[derive(Clone, Debug)]
+struct IndexedPoint<T> {
+    index: usize,
+    point: T
 }
 
-impl <T>  EuclideanPoints<T> where T: Index<usize, Output = f64> {
-    /// Creates a new [`EuclideanPoints`](EuclideanPoints) object from a given vector of points
+/// Indexing operator delegates to the operator of the inner object of a generic type T
+impl<T> Index<usize> for IndexedPoint<T> where T: Index<usize, Output = f64> {
+    type Output = f64;
+
+    fn index(&self, index: usize) -> &f64 { &self.point[index] }
+}
+
+
+/// Creates a set of points that will be subjected to clustering analysis.
+///
+/// [`CartesianPoints`](CartesianPoints) struct holds objects of generic type `T`, which must
+/// be indexable (i.e. must implement `Index<usize, Output = f64>` trait. Examples of the type `T`
+/// are `[f64;3]`, `Vec<f64>` and `bioshell-numerical::Vec3`. The second generic argument `D`
+/// defines the distance function between points `T`, which must be restricted to `Fn(&T, &T, usize) -> f64`
+///
+/// The [`CartesianPoints`](CartesianPoints) struct implements [`NeighborsOf`](NeighborsOf)
+/// and [`DistanceByIndex`](DistanceByIndex) traits which is required for the [`Optics`](Optics) clustering method.
+/// [`bioshell-datastructures::kd_tree`](bioshell_datastructures::kd_tree) module is used to
+/// efficiently compile a list of  neighbors for each query point
+pub struct CartesianPoints<T, D> {
+    distance_function: D,
+    dimensionality: usize,
+    points: Vec<IndexedPoint<T>>,
+    kdtree: Box<BinaryTreeNode<KdTreeData<IndexedPoint<T>>>>,
+}
+
+impl <T, D>  CartesianPoints<T, D> where T: Index<usize, Output = f64> {
+    /// Creates a new [`CartesianPoints`](CartesianPoints) object from a given vector of points
     /// The input data structure is consumed by this process (i.e. moved)
     ///
     /// # Arguments
-    /// * `data` - a 2D vector of f64 values, representing the input data
+    /// * `dist_func` - a callable object of type `D` that can be used to compute the distance between two
+    ///     objects of type `T`
+    /// * `data` - a vector of  objects of type `T`, representing the input data
+    /// * `dimensionality` - number of elements (or dimensions) of each object of type `T`
+    ///
+    /// # Generic types
+    /// * `T` - the type of data subjected to clustering; it must be indexable, i.e. it must be possible to
+    ///     reach i-th element of `T` with an indexing operator `T[i]` which must return `f64`
+    /// * `D` - the type of a distance function, which must be compatible with `Fn(&T, &T, usize) -> f64`;
+    ///     it accepts three arguments: two points of type `T` and the number of dimension for the `T` objects
+    ///
     ///
     /// # Examples
     /// ```rust
-    /// use bioshell_clustering::{EuclideanPoints, DistanceByIndex};
+    /// use bioshell_numerical::distance::euclidean_distance_squared;
+    /// use bioshell_clustering::{CartesianPoints, DistanceByIndex};
     /// let vecs: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![0.5, 1.0], vec![1.5, 0.8]];
-    /// let pts = EuclideanPoints::new(vecs, 2);
+    /// let pts = CartesianPoints::new(euclidean_distance_squared, vecs, 2);
     /// assert!((1.118-pts.distance(0, 1)).abs() < 0.001);
     ///
     /// let arrays: Vec<[f64; 2]> = vec![[0.0, 0.0], [0.5, 1.0], [1.5, 0.8]];
-    /// let pts = EuclideanPoints::new(arrays, 2);
+    /// let pts = CartesianPoints::new(euclidean_distance_squared, arrays, 2);
     /// assert!((1.118-d.distance(0, 1)).abs() < 0.001);
     /// ```
-    pub fn new(data: Vec<T>, dimensionality: usize) -> EuclideanPoints<T> where T: Clone+Debug {
-        let mut data_copy = data.clone();
-        let root = create_kd_tree(&mut data_copy, dimensionality);
-        EuclideanPoints {dimensionality, points: data, kdtree: root.unwrap() }
+    pub fn new(dist_func: D, data: Vec<T>, dimensionality: usize) -> CartesianPoints<T, D> where T: Clone+Debug {
+        let mut ipoints: Vec<IndexedPoint<T>> = vec![];
+        for (i, d) in data.iter().enumerate() { ipoints.push(IndexedPoint{ index: i, point: d.clone() }); }
+        let mut ipoints_copy = ipoints.clone();
+        let root = create_kd_tree(&mut ipoints_copy, dimensionality);
+        CartesianPoints {distance_function: dist_func, dimensionality, points: ipoints, kdtree: root.unwrap() }
     }
+
+    /// Returns the dimensionality of points
+    pub fn dimensionality(&self) -> usize { self.dimensionality }
 }
 
-impl <T> DistanceByIndex for EuclideanPoints<T> where T: Index<usize, Output = f64> {
+impl <T, D> DistanceByIndex for CartesianPoints<T, D>
+    where T: Index<usize, Output = f64>, D: Fn(&T, &T, usize) -> f64  {
 
     fn distance(&self, i: usize, j: usize) -> f64 {
-        euclidean_distance_squared(&self.points[i], &self.points[j], self.dimensionality)
+        (self.distance_function)(&self.points[i].point, &self.points[j].point, self.dimensionality)
     }
 
     fn count_points(&self) -> usize { self.points.len() }
 }
 
-impl<T> NeighborsOf for EuclideanPoints<T> where T: Index<usize, Output = f64> {
+impl<T, D> NeighborsOf for CartesianPoints<T, D>
+    where T: Index<usize, Output = f64>, D: Fn(&T, &T, usize) -> f64  {
 
     fn neighbors_of(&self, idx:usize, cutoff: f64) -> Vec<Neighbor> {
 
-        let res = find_within(&self.kdtree, &self.points[idx], self.dimensionality,
-                    cutoff*cutoff, euclidean_distance_squared);
+
         let mut out: Vec<Neighbor> = vec![];
-        for i in 0..self.count_points() {
-            let d = self.distance(idx, i);
+        let df = |a: &IndexedPoint<T>, b: &IndexedPoint<T>, dim: usize| {
+            (self.distance_function)(&a.point, &b.point, dim)
+        };
+        let nb = find_within(&self.kdtree, &self.points[idx], self.dimensionality,
+                             cutoff, &df);
+
+        for pi in nb {
+            let d = self.distance(idx, pi.index);
             if d <= cutoff {
-                out.push(Neighbor { idx: i, d });
+                out.push(Neighbor { idx: pi.index, d });
             }
         }
         // --- sort points by distance
@@ -118,47 +167,3 @@ impl<T> NeighborsOf for EuclideanPoints<T> where T: Index<usize, Output = f64> {
         return out;
     }
 }
-
-/*
-impl EuclideanPoints {
-    /// Creates a new [`EuclideanPoints`](EuclideanPoints) object from a given vector of points
-    /// The input data structure is consumed by this process (i.e. moved)
-    ///
-    /// # Arguments
-    /// * `data` - a 2D vector of f64 values, representing the input data
-    ///
-    /// # Examples
-    /// ```rust
-    /// use bioshell_clustering::{EuclideanPoints, DistanceByIndex};
-    /// let points: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![0.5, 1.0], vec![1.5, 0.8]];
-    /// let d = EuclideanPoints::new(points);
-    /// assert!((1.118-d.distance(0, 1)).abs() < 0.001);
-    /// ```
-    pub fn new(data: Vec<Vec<f64>>) -> EuclideanPoints {
-        EuclideanPoints {datapoints: data}
-    }
-}
-
-
-/// A container for N-dimensional points of `Vec<f64>` type and Euclidean distance
-pub struct EuclideanPoints {
-    datapoints: Vec<Vec<f64>>
-}
-
-impl DistanceByIndex for EuclideanPoints {
-
-    fn distance(&self, i:usize, j:usize) -> f64 {
-        let mut d: f64 = 0.0;
-        let pi: &Vec<f64> = &self.datapoints[i];
-        let pj: &Vec<f64> = &self.datapoints[j];
-        for i in 0..pi.len() {
-            let t = pi[i] - pj[i];
-            d += t * t;
-        }
-        d.sqrt()
-    }
-
-    fn count_points(&self) -> usize { self.datapoints.len() }
-}
-
- */

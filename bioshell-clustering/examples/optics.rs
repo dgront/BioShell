@@ -1,5 +1,5 @@
 use clap::{Parser};
-use bioshell_clustering::{EuclideanPoints};
+use bioshell_clustering::{CartesianPoints};
 use bioshell_clustering::optics::{Optics};
 use bioshell_core::utils::{read_tsv, out_writer};
 
@@ -36,7 +36,7 @@ fn main() {
     let epsilon: f64 = args.epsilon;
 
     let opt_clust = Optics::new(epsilon, min_points,
-                                    Box::new(EuclideanPoints::new(sample.clone(), sample[0].len())));
+                                    Box::new(CartesianPoints::new(sample.clone(), sample[0].len())));
 
     let mut clusters = opt_clust.clusters();
     clusters.sort_by(|c1, c2| c2.len().partial_cmp(&c1.len()).unwrap());

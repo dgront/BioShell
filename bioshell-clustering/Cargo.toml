@@ -26,7 +26,4 @@ bioshell-statistics = { path = "../bioshell-statistics" }
 bioshell-core = { path = "../bioshell-core" }
 bioshell-datastructures = { path = "../bioshell-datastructures" }
 
-bioshell-numerical = { path = "../bioshell-numerical", optional = true }
-
-[features]
-vec3 = ["bioshell-numerical"]
+bioshell-numerical = { path = "../bioshell-numerical"}

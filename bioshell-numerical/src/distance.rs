@@ -1,4 +1,10 @@
-//!Provides distance functions
+//! Provides distance functions
+//!
+//! A distance function computes a distance between two points of generic type `T`,
+//! which must be indexable, i.e. must be bounded by `Index<usize, Output = f64>` trait.
+//! The signature of each distance function is `Fn(&T, &T, usize) -> f64` i.e. it accepts
+//! two arguments of type `&T` and `usize` the number of dimensions. The latter tells
+//! what is the maximum value of an index used to reach coordinates of `T` points
 
 use std::ops::Index;
 

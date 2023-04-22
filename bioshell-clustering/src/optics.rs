@@ -2,7 +2,7 @@ use std::cmp::*;
 use std::fmt;
 use std::ops::{Index, Range};
 
-use crate::{DistanceByIndex, EuclideanPoints};
+use crate::{DistanceByIndex, CartesianPoints};
 use crate::points_set::{Neighbor, NeighborsOf};
 
 
@@ -11,8 +11,8 @@ use crate::points_set::{Neighbor, NeighborsOf};
 /// Optics clustering accepts a points set that can compute distance between them and list its neighbors
 pub trait OpticsPoints: DistanceByIndex + NeighborsOf {}
 
-impl<T> OpticsPoints for EuclideanPoints<T>
-    where T: Index<usize, Output = f64> {}
+impl<T, D> OpticsPoints for CartesianPoints<T, D>
+    where T: Index<usize, Output = f64>, D: Fn(&T, &T, usize) -> f64 {}
 
 /// Provides the OPTICS (Ordering Points To Identify the Clustering Structure) clustering algorithm.
 /// OPTICS is an algorithm for density based clustering. It looks for a  neighbourhood

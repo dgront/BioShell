@@ -1,7 +1,10 @@
 //! Simple yet efficient implementation of a k-d tree.
 //!
 //! A k-d tree is a binary search tree where data in each node is a k-dimensional point in space.
-//!
+//! Once a tree has been constructed by the [`create_kd_tree()`](create_kd_tree())) function,
+//! it allows to quickly find a nearest neighbor of a k-dimensional query
+//! (performed by [`find_nearest()`](find_nearest())) as well as to locate all neighbors
+//! within a given distance from a query. For the latter use (performed by [`find_within()`](find_within())).
 //!
 //! ```rust
 //! use bioshell_numerical::distance::euclidean_distance_squared;
@@ -18,7 +21,6 @@
 use std::ops::Index;
 
 use crate::BinaryTreeNode;
-
 
 
 pub struct KdTreeData<T> {
@@ -39,14 +41,17 @@ pub fn create_kd_tree<T>(data: &mut [T], dimensionality: usize) -> Option<Box<Bi
 
         if data.len()==0 { return None; }
         if data.len() == 1 {
-            let n = KdTreeData{value: data[0].clone(), level: tree_depth+1, split_coordinate: 0 };
-            return Some(Box::new(BinaryTreeNode::new(n)));
+            let kdpoint = KdTreeData{value: data[0].clone(), level: tree_depth+1, split_coordinate: 0 };
+            let mut node = BinaryTreeNode::new(kdpoint);
+            node.id = next_id;
+            return Some(Box::new(node));
         }
 
         sort_along_dimension(data, tree_depth % dimensionality);
         let median = data.len() / 2;
         let root_data = KdTreeData{ value: data[median].clone(), level: tree_depth+1, split_coordinate: tree_depth % dimensionality };
         let mut root = BinaryTreeNode::new(root_data);
+        root.id = next_id;
         let (left_data, mut right_data) = data.split_at_mut(median);
         right_data = &mut right_data[1..];
         root.left = create_kd_tree_rec(left_data, tree_depth + 1, dimensionality, next_id * 2);

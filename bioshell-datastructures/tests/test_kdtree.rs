@@ -1,12 +1,7 @@
 
-#[cfg(feature = "vec3")]
-use bioshell_numerical::Vec3;
-
-
-
-
 #[cfg(test)]
 mod test_kdtree {
+    use bioshell_numerical::Vec3;
     use bioshell_numerical::distance::euclidean_distance_squared;
     use bioshell_datastructures::{depth_first_inorder, BinaryTreeNode, collect_values};
     use bioshell_datastructures::kd_tree::{create_kd_tree, find_nearest, find_within, KdTreeData};
@@ -52,10 +47,8 @@ mod test_kdtree {
         for e in nbors { assert!(euclidean_distance_squared(e, &query, 1) <= 0.1 * 0.1) }
     }
 
-    /// Use ``cargo test --features "vec3"`` command to run these two tests:
     #[test]
     #[allow(non_snake_case)]
-    #[cfg(feature = "vec3")]
     fn test_kd_tree_Vec3_2D() {
         const N: usize = 7;
         let mut data = vec![Vec3::new(0.0, 0.0, 0.0); N * N];
@@ -71,7 +64,6 @@ mod test_kdtree {
 
     #[test]
     #[allow(non_snake_case)]
-    #[cfg(feature = "vec3")]
     fn test_kd_tree_Vec3_3D() {
         const N: usize = 10;
         let mut data = vec![Vec3::new(0.0, 0.0, 0.0); N * N * N];
@@ -124,6 +116,9 @@ mod test_kdtree {
             min_v[n.level][1] = f64::min(min_v[n.level][1], n.value[1]);
             max_v[n.level][0] = f64::max(max_v[n.level][0], n.value[0]);
             max_v[n.level][1] = f64::max(max_v[n.level][1], n.value[1]);
+        }
+        for i in 0..3 {
+            println!("{} {:?} {:?}", i, min_v[i], max_v[i]);
         }
         assert!(min_v[7][1] > max_v[6][1]);
         assert!(min_v[5][1] > max_v[4][1]);
