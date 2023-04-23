@@ -11,9 +11,9 @@ keywords = ["bioshell"]
 [lib]
 crate-type =["rlib", "cdylib"]
 
-[[bench]]
-name = "bench_clustering"
-harness = false
+#[[bench]]
+#name = "bench_clustering"
+#harness = false
 
 [dependencies]
 rand = {version = "0.8.5", features = [ "small_rng" ]}
