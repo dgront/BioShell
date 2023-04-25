@@ -15,6 +15,7 @@ impl<T, D> OpticsPoints for CartesianPoints<T, D>
     where T: Index<usize, Output = f64>, D: Fn(&T, &T, usize) -> f64 {}
 
 /// Provides the OPTICS (Ordering Points To Identify the Clustering Structure) clustering algorithm.
+///
 /// OPTICS is an algorithm for density based clustering. It looks for a  neighbourhood
 /// of a certain radius `eps` must contain at least a minimal number of objects `min_points`.
 /// OPTICS arranges input data in order, storing the core distance and a reasonable reachability

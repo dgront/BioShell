@@ -8,6 +8,7 @@ use bioshell_numerical::distance::euclidean_distance_squared;
 use bioshell_clustering::{NeighborsOf, CartesianPoints};
 use bioshell_clustering::optics::{Optics};
 use bioshell_clustering::em::{expectation_maximization};
+use bioshell_clustering::kmeans::KMeans;
 use bioshell_statistics::{Distribution, MultiNormalDistribution, NormalDistribution};
 
 
@@ -117,4 +118,17 @@ fn test_Optics() {
     let expected_order: Vec<usize> = vec![0, 1, 3, 4, 2, 5, 6, 7, 8, 9, 11, 10, 12];
     assert_eq!(expected_size, *cluster_size);
     assert_eq!(expected_order, *opt_clust.clustering_order());
+}
+
+#[test]
+fn test_kmeans() {
+    let data: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![1.0, 0.0], vec![0.0, 1.0], vec![1.0, 1.0],
+                                   vec![2.0, 0.0], vec![3.0, 0.0], vec![4.0, 0.0], vec![6.0, 0.0],
+                                   vec![8.0, 0.5], vec![10.0, 0.0], vec![10.0, 1.0], vec![10.0, -1.0],
+                                   vec![11.0, 0.0]];
+    let mut k2means = KMeans::new(2, data, 2, euclidean_distance_squared);
+    k2means.cluster(0.1);
+    let out = k2means.assignments();
+    for i in 0..7 { assert_eq!(out[i], 1); }
+    for i in 7..out.len() { assert_eq!(out[i], 0); }
 }
