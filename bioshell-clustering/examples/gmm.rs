@@ -1,10 +1,14 @@
+use std::env;
+use std::iter::zip;
 use nalgebra::{DMatrix, DVector};
 use clap::{Parser};
-use rand::Rng;
+use log::{info};
 
-use bioshell_statistics::{MultiNormalDistribution};
+use bioshell_statistics::{MultiNormalDistribution, OnlineMultivariateStatistics};
 use bioshell_clustering::em::expectation_maximization;
+use bioshell_clustering::kmeans::KMeans;
 use bioshell_core::utils::{read_tsv};
+use bioshell_numerical::distance::euclidean_distance_squared;
 
 
 #[derive(Parser, Debug)]
@@ -16,12 +20,15 @@ struct Args {
     #[clap(short, long, default_value = "", short='i')]
     infile: String,
     /// number of N-dimensional normal distributions to be inferred
-    #[clap(short, long, default_value = "3", short='n')]
+    #[clap(short, long, default_value = "3", short='k')]
     n_distr: usize,
 }
 
 
 fn main() {
+
+    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    env_logger::init();
 
     let args = Args::parse();
 
@@ -29,36 +36,43 @@ fn main() {
     let sample = read_tsv(&fname);
     let n_dim: usize = sample[0].len();
     let n_data = sample.len();
-    println!("{} rows loaded, data dimension is {}", n_data, n_dim);
+    info!("{} rows loaded, data dimension is {}", n_data, n_dim);
 
     let n_dist: usize = args.n_distr;
 
-    // ---------- Distributions to be inferred
+    let mut kmeans = KMeans::new(n_dist, sample.clone(), n_dim, euclidean_distance_squared);
+    let err = kmeans.cluster_n(0.01, 100);
+    info!("k-means error: {}", err);
+
+    let mut stats: Vec<OnlineMultivariateStatistics> = vec![OnlineMultivariateStatistics::new(n_dim); n_dist];
+    for (v, c) in zip(&sample, kmeans.assignments()) {
+        stats[*c].accumulate(v);
+    }
+
+    // ---------- Initial multivariate normal distributions
     let mut normals = vec!(MultiNormalDistribution::new(n_dim); n_dist);
-    // ---------- starting parameters
-    let mean: Vec<Vec<f64>> = vec![vec![1.0, 2.0, 0.0, 0.0],
-                                   vec![1.35, 1.8, 0.0, 0.0],
-                                   vec![1.35, 2.5, 0.0, 0.0]];
-    let sdev_diag: Vec<Vec<f64>> = vec![vec![0.2, 0.2, 1.0, 1.0],
-                                   vec![0.2, 0.2, 1.0, 1.0],
-                                   vec![0.2, 0.2, 1.0, 1.0]];
-
     for i in 0..n_dist {
-        normals[i].set_parameters(&DVector::from_vec(mean[i].clone()),
-            &DMatrix::from_diagonal(&DVector::from_vec(sdev_diag[i].clone())));
+        let mean = stats[i].avg();
+        // let cov = stats[i].covar();
+        let mut cov_val: Vec<f64> = vec![];
+        for v in stats[i].cov() {
+            for vi in v { cov_val.push(vi); }
+        }
+        normals[i].set_parameters(&DVector::from_vec(mean.clone()),
+            &DMatrix::from_vec(n_dim, n_dim, cov_val));
     }
 
-    // ---------- Randomly assign data points to distributions
+    // ---------- Assign data points to distributions according to the k-means results
     let mut assignment: Vec<Vec<bool>> = vec!(vec!(false; n_data); n_dist);
-    for i in 0..n_data {
-        let i_dist = rand::thread_rng().gen_range(0..n_dist);
-        assignment[i_dist][i] = true;
+    for (i, c) in kmeans.assignments().iter().enumerate() {
+        assignment[*c][i] = true;
     }
 
-    expectation_maximization(&mut normals, &sample, &mut assignment, 0.000001);
+    let log_likelihood = expectation_maximization(&mut normals, &sample, &mut assignment, 0.000001);
+    info!("Log-likelihood: {}",log_likelihood);
     let mut totals: Vec<i32> = vec!(0; n_dist);
     for i in 0..n_dist {
         totals[i] = (&assignment[i]).into_iter().map(|v| *v as i32).sum();
-        println!("{} {}",totals[i], &normals[i]);
+        println!("n ={:5}; {}",totals[i], &normals[i]);
     }
 }

@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use log::{debug, info};
 
 use bioshell_statistics::{Estimable, Distribution};
 
@@ -15,7 +16,9 @@ pub fn expectation_maximization<D: Estimable+Distribution+Display>(distributions
     let mut progress: f64 = 1.0;
     let mut last_log_liklhd = 0.0;
 
+    let mut istep = 0;
     while progress > epsilon {
+        istep += 1;
         // ---  The "expectation" step: assignment of points to the best distributions
         for i in 0..n_dist {
             distributions[i].estimate_from_selected(&data, &assignment[i]);
@@ -30,7 +33,7 @@ pub fn expectation_maximization<D: Estimable+Distribution+Display>(distributions
         }
         progress = ((log_liklhd - last_log_liklhd)/log_liklhd).abs();
         last_log_liklhd = log_liklhd;
-        // println!("{} {}",last_log_liklhd, progress);
+        debug!("log-likelihood after {} iteration: {}; change: {:.4}", istep, last_log_liklhd, progress);
     }
 
     return last_log_liklhd;
