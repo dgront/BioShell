@@ -71,8 +71,10 @@ fn main() {
     let log_likelihood = expectation_maximization(&mut normals, &sample, &mut assignment, 0.000001);
     info!("Log-likelihood: {}",log_likelihood);
     let mut totals: Vec<i32> = vec!(0; n_dist);
+    println!("[");
     for i in 0..n_dist {
         totals[i] = (&assignment[i]).into_iter().map(|v| *v as i32).sum();
-        println!("n ={:5}; {}",totals[i], &normals[i]);
+        println!("\t{{'n': {:5}, {} }},",totals[i], &normals[i]);
     }
+    println!("]");
 }
