@@ -3,7 +3,7 @@ use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 use rand_distr::Distribution as OtherDistribution;
 
-use crate::OnlineMultivariateStatistics;
+use crate::{OnlineMultivariateStatistics};
 
 // ========== Distribution trait ==========
 
@@ -355,16 +355,16 @@ impl fmt::Display for MultiNormalDistribution {
     /// n.set_parameters(&DVector::from_vec(vec![1.0, 2.0]),
     /// &DMatrix::from_vec(2,2, vec![1.0, 0.5, 0.5, 1.0]));
     ///
-    /// let expected = "mu =  [ 1.0000,  2.0000]; sigma = [ [ 1.0000,  0.5000], [ 0.5000,  1.0000]]";
+    /// let expected = "'mu': [ 1.0000,  2.0000], 'sigma': [ [ 1.0000,  0.5000], [ 0.5000,  1.0000]]";
     /// let mut actual = String::new();
     /// write!(actual, "{}", n).unwrap();
     /// assert_eq!(actual, expected);
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        let mut out: String = String::from("mu = ");
+        let mut out: String = String::from("'mu':");
         print_vector!(&self.mean(), out);
         // print_vector!(&self.sigma()[i], out);
-        out.push_str(", sigma = [");
+        out.push_str(", 'sigma': [");
         print_vector!(&self.sigma().row(0), out);
         for i in 1..self.dim() {
             out.push_str(",");
