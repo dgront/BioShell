@@ -3,8 +3,6 @@ use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 use rand_distr::Distribution as OtherDistribution;
 
-// use pyo3::prelude::*;
-
 use crate::OnlineMultivariateStatistics;
 
 // ========== Distribution trait ==========
@@ -40,7 +38,6 @@ pub trait Distribution {
 /// assert!((prob - 0.21297).abs() < 0.0001);   // 0.21297 is the value from statistical tables
 /// ```
 #[derive(Clone)]
-// #[pyclass]
 pub struct NormalDistribution {
     mean: f64,
     sigma: f64,
@@ -199,11 +196,12 @@ impl MultiNormalDistribution {
         assert_eq!(stats.dim(), self.dim);
 
         for i in 0..self.dim {
-            self.mean[i] = stats.avg(i);
+            self.mean[i] = stats.avg()[i];
+            let covar = stats.cov();
             for j in 0..self.dim {
-                self.sigma[(i, j)] = stats.covar(i, j);
+                self.sigma[(i, j)] = covar[i][j];
             }
-            self.sigma[(i, i)] = stats.var(i);
+            self.sigma[(i, i)] = stats.var()[i];
         }
         self.setup();
     }
@@ -273,7 +271,7 @@ impl Estimable for NormalDistribution {
 
         let mut stats = OnlineMultivariateStatistics::new(1);
         sample.iter().for_each(|x| stats.accumulate(x));
-        self.set_parameters(stats.avg(0), stats.var(0).sqrt());
+        self.set_parameters(stats.avg()[0], stats.var()[0].sqrt());
     }
 
     fn estimate_from_selected(&mut self, sample: &Vec<Vec<f64>>, selection: &Vec<bool>) {
@@ -283,7 +281,7 @@ impl Estimable for NormalDistribution {
         for i in 0..sample.len() {
             if selection[i] { stats.accumulate(&sample[i]);  }
         }
-        self.set_parameters(stats.avg(0), stats.var(0).sqrt());
+        self.set_parameters(stats.avg()[0], stats.var()[0].sqrt());
     }
 }
 
@@ -357,7 +355,7 @@ impl fmt::Display for MultiNormalDistribution {
     /// n.set_parameters(&DVector::from_vec(vec![1.0, 2.0]),
     /// &DMatrix::from_vec(2,2, vec![1.0, 0.5, 0.5, 1.0]));
     ///
-    /// let expected = "mu =  [ 1.0000,  2.0000], sigma = [ [ 1.0000,  0.5000], [ 0.5000,  1.0000]]";
+    /// let expected = "mu =  [ 1.0000,  2.0000]; sigma = [ [ 1.0000,  0.5000], [ 0.5000,  1.0000]]";
     /// let mut actual = String::new();
     /// write!(actual, "{}", n).unwrap();
     /// assert_eq!(actual, expected);

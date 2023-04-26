@@ -50,12 +50,12 @@ fn sample_MultiNormalDistribution() {
         n.sample(&mut rng, &mut row);
         stats.accumulate(&row);
     }
-    assert!((stats.avg(0) - 1.0).abs() < 0.01);
-    assert!((stats.avg(1) - 2.0).abs() < 0.01);
-    assert!((stats.covar(0,1) - 0.5).abs() < 0.01);
-    assert!((stats.covar(1,0) - 0.5).abs() < 0.01);
-    assert!((stats.var(0).sqrt() - 1.0).abs() < 0.01);
-    assert!((stats.var(1).sqrt() - 1.0).abs() < 0.01);
+    assert!((stats.avg()[0] - 1.0).abs() < 0.01);
+    assert!((stats.avg()[1] - 2.0).abs() < 0.01);
+    assert!((stats.cov()[0][1] - 0.5).abs() < 0.01);
+    assert!((stats.cov()[1][0] - 0.5).abs() < 0.01);
+    assert!((stats.var()[0].sqrt() - 1.0).abs() < 0.01);
+    assert!((stats.var()[1].sqrt() - 1.0).abs() < 0.01);
 }
 
 /// Print a MultiNormalDistribution object using fmt::Display
@@ -115,8 +115,8 @@ fn test_OnlineMultivariateStatistics() {
         stats.accumulate(&row);
     }
     for i in 0..n_dim {
-        assert!((stats.avg(i)-2.0).abs() < 0.1);
-        assert!((stats.var(i).sqrt()-3.0).abs() < 0.1);
+        assert!((stats.avg()[i]-2.0).abs() < 0.1);
+        assert!((stats.var()[i].sqrt()-3.0).abs() < 0.1);
     }
 }
 
