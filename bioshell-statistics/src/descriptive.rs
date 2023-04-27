@@ -324,7 +324,7 @@ impl OnlineMultivariateWeighted {
 
             for j in i+1..self.dim {             // --- here we update the covariance terms
                 let delta_y: f64 = d[j] - self.m1[j];
-                self.cov[i][j] += delta_y * (d[i] - self.m1[i]);
+                self.cov[i][j] += weight * delta_y * (d[i] - self.m1[i]);
                 self.cov[j][i] = self.cov[i][j];
             }
 
