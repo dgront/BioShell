@@ -43,4 +43,36 @@ mod rototranslation_test {
         assert_eq!(truncate(_rotated_vec.y), 2.0);
         assert_eq!(truncate(_rotated_vec.z), 1.0);
     }
+
+
+    #[test]
+    fn rotate_cube_around_axis_111() {
+        let corner_1 = Vec3::new(0.0, 0.0, 0.0);
+        let corner_2 = Vec3::new(1.0, 1.0, 1.0);
+        let angle = 2.0 * std::f64::consts::PI / 3.0;
+        let rot = Rototranslation::around_axis(corner_1, corner_1, corner_2, angle);
+
+        // println!("{:?}", rot.rotation_matrix());
+        let mut another_vec = Vec3::new(1.0, 0.0, 0.0);
+        rot.apply_mut(&mut another_vec);
+        println!("{}", another_vec);
+        assert_eq!(truncate(another_vec.x), 0.0);
+        assert_eq!(truncate(another_vec.y), 1.0);
+        assert_eq!(truncate(another_vec.z), 1.0);
+    }
+
+    #[test]
+    fn rotate_cube_around_axis_100() {
+        let corner_1 = Vec3::new(0.0, 0.0, 0.0);
+        let corner_2 = Vec3::new(0.0, 0.0, 1.0);
+        let angle = 2.0 * std::f64::consts::PI / 3.0;
+        let rot = Rototranslation::around_axis(corner_1, corner_1, corner_2, angle);
+
+        let mut another_vec = Vec3::new(1.0, 0.0, 0.0);
+        rot.apply_mut(&mut another_vec);
+        println!("{}", another_vec);
+        assert_eq!(truncate(another_vec.x), 0.0);
+        assert_eq!(truncate(another_vec.y), 1.0);
+        assert_eq!(truncate(another_vec.z), 0.0);
+    }
 }
