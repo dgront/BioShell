@@ -1,3 +1,6 @@
+//! Expectation-Maximization algorithm fits a mixture of  generic distributions
+//!
+//!
 use std::fmt::Display;
 use std::iter::zip;
 use log::{debug};

@@ -1,3 +1,5 @@
+//! K-means clustering algorithm splits observations into separate K groups.
+//!
 use std::ops::{IndexMut};
 use rand::{Rng, SeedableRng};
 use rand::rngs::SmallRng;

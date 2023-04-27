@@ -1,3 +1,5 @@
+//! OPTICS clustering algorithm.
+//!
 use std::cmp::*;
 use std::fmt;
 use std::ops::{Index, Range};

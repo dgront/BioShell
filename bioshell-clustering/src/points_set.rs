@@ -25,6 +25,7 @@ impl fmt::Display for Neighbor {
     }
 }
 
+/// Lists neighbors of a given point within a set.
 pub trait NeighborsOf {
     /// Returns a vector of neighbors located close enough to a given point
     ///

@@ -110,7 +110,7 @@ pub fn cov_weighted(x: &[f64], y: &[f64], weights: &[f64]) -> f64 {
 /// - withdraws 50000 observations from the distribution and accumulates them
 /// - checks the convergence of expectations vector
 ///
-/// Refer to [`MultiNormalDistribution`](MultiNormalDistribution) struct documentation to see
+/// Refer to [`MultiNormalDistribution`](bioshell_statistics::MultiNormalDistribution) struct documentation to see
 /// how to initialize parameters of the distribution.
 /// ```
 /// use bioshell_statistics::{OnlineMultivariateStatistics, MultiNormalDistribution, Distribution};

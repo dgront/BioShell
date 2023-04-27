@@ -234,10 +234,11 @@ impl Distribution for MultiNormalDistribution {
 
 /// Provides an ability to estimate parameters of a probability [`Distribution`](Distribution)
 ///
-/// Any [`Distribution`](Distribution) that is [`Estimable`](Estimable), must implement
-/// [`estimate()`](estimate) method, which estimates parameters of this distribution from
+/// Any [`Distribution`](Distribution), to become [`Estimable`](Estimable), must implement
+/// [`estimate()`](Estimable::estimate()) method, which estimates parameters of this distribution from
 /// a provided data sample. Resulting parameters are stored within `self` i.e. the
-///  `Distribution` object estimates itself from the sample
+///  `Distribution` object estimates itself from the sample. Moreover, that distribution
+/// must also be able to estimate its parameters from a weighted sample.
 pub trait Estimable {
     /// Estimate parameters of a probability distribution from a given sample
     ///
