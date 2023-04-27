@@ -3,7 +3,7 @@ use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 use rand_distr::Distribution as OtherDistribution;
 
-use crate::{OnlineMultivariateStatistics};
+use crate::{OnlineMultivariateStatistics, OnlineMultivariateWeighted};
 
 // ========== Distribution trait ==========
 
@@ -190,18 +190,18 @@ impl MultiNormalDistribution {
     }
 
     /// Sets mean and sigma parameters from observations gathered
-    ///in a given  OnlineMultivariateStatistics object
-    fn set_from_statistics(&mut self, stats: &OnlineMultivariateStatistics) {
+    /// in a given  OnlineMultivariateStatistics object
+    fn set_from_statistics(&mut self, avg: &Vec<f64>, cov: &Vec<Vec<f64>>) {
 
-        assert_eq!(stats.dim(), self.dim);
+        assert_eq!(avg.len(), self.dim);
+        assert_eq!(cov.len(), self.dim);
 
         for i in 0..self.dim {
-            self.mean[i] = stats.avg()[i];
-            let covar = stats.cov();
+            self.mean[i] = avg[i];
             for j in 0..self.dim {
-                self.sigma[(i, j)] = covar[i][j];
+                self.sigma[(i, j)] = cov[i][j];
             }
-            self.sigma[(i, i)] = stats.var()[i];
+            self.sigma[(i, i)] = cov[i][i];
         }
         self.setup();
     }
@@ -242,13 +242,12 @@ pub trait Estimable {
     /// dimensionality of the data must match this `Distribution` object
     fn estimate(&mut self, sample: &Vec<Vec<f64>>);
 
-    /// Estimate parameters of a probability distribution from a given sample fraction
+    /// Estimate parameters of a probability distribution from a given weighted observations
     ///
     /// # Arguments
     /// * `sample` - observations used to infer the distribution parameters
-    /// * `selection` - boolean flags pointing to which data rows of a given sample should actually be used
-    ///     for estimation
-    fn estimate_from_selected(&mut self, sample: &Vec<Vec<f64>>, selection: &Vec<bool>);
+    /// * `weights` - statistical weights
+    fn estimate_weighted(&mut self, sample: &Vec<Vec<f64>>, weights: &Vec<f64>);
 }
 
 impl Estimable for NormalDistribution {
@@ -274,13 +273,11 @@ impl Estimable for NormalDistribution {
         self.set_parameters(stats.avg()[0], stats.var()[0].sqrt());
     }
 
-    fn estimate_from_selected(&mut self, sample: &Vec<Vec<f64>>, selection: &Vec<bool>) {
+    fn estimate_weighted(&mut self, sample: &Vec<Vec<f64>>, weights: &Vec<f64>) {
         assert_eq!(sample[0].len(), 1);
 
-        let mut stats = OnlineMultivariateStatistics::new(1);
-        for i in 0..sample.len() {
-            if selection[i] { stats.accumulate(&sample[i]);  }
-        }
+        let mut stats = OnlineMultivariateWeighted::new(1);
+        for i in 0..sample.len() { stats.accumulate(&sample[i], weights[i]);  }
         self.set_parameters(stats.avg()[0], stats.var()[0].sqrt());
     }
 }
@@ -293,18 +290,15 @@ impl Estimable for MultiNormalDistribution {
         let mut stats = OnlineMultivariateStatistics::new(self.dim);
         sample.iter().for_each(|x| stats.accumulate(x));
 
-        self.set_from_statistics(&stats);
+        self.set_from_statistics(&stats.avg(), &stats.cov());
     }
 
-    fn estimate_from_selected(&mut self, sample: &Vec<Vec<f64>>, selection: &Vec<bool>) {
+    fn estimate_weighted(&mut self, sample: &Vec<Vec<f64>>, weights: &Vec<f64>) {
         assert_eq!(sample[0].len(), self.dim);
 
-        let mut stats = OnlineMultivariateStatistics::new(self.dim);
-        for i in 0..sample.len() {
-            if selection[i] { stats.accumulate(&sample[i]);  }
-        }
-
-        self.set_from_statistics(&stats);
+        let mut stats = OnlineMultivariateWeighted::new(self.dim);
+        for i in 0..sample.len() { stats.accumulate(&sample[i], weights[i]);  }
+        self.set_from_statistics(&stats.avg(), &stats.cov());
     }
 }
 
