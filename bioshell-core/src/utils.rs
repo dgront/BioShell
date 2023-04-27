@@ -98,11 +98,13 @@ fn is_record_ok(rec: &StringRecord) -> bool {
 
 fn read_csv_tsv(fname:&str, delimiter:u8) -> Vec<Vec<f64>> {
 
-    let file = File::open(fname).unwrap();
+    // --- this BioShell utility handles all I/O expceptions
+    let reader = open_file(fname);
+
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
         .delimiter(delimiter)
-        .from_reader(file);
+        .from_reader(reader);
     let mut data : Vec<Vec<f64>> = Vec::new();
     for record in rdr.records() {
         if let Ok(r) = &record {
@@ -125,9 +127,12 @@ fn read_csv_tsv(fname:&str, delimiter:u8) -> Vec<Vec<f64>> {
 /// This function can open a regular file or a gzipped one, as determined by the extension
 /// of the input file name. A boxed reader to the content is returned.
 pub fn open_file(filename: &str) -> Box<dyn BufRead> {
+    if filename.len() == 0 {
+        panic!("\nCouldn't open file - file name is an empty string!");
+    }
     let path = Path::new(filename);
     let file = match File::open(&path) {
-        Err(why) => panic!("couldn't open {}: {}", path.display(), why),
+        Err(why) => panic!("\nCouldn't open file '{}': {}", path.display(), why),
         Ok(file) => file,
     };
 
