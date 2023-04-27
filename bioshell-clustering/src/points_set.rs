@@ -115,11 +115,11 @@ impl <T, D>  CartesianPoints<T, D> where T: Index<usize, Output = f64> {
     /// use bioshell_clustering::{CartesianPoints, DistanceByIndex};
     /// let vecs: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![0.5, 1.0], vec![1.5, 0.8]];
     /// let pts = CartesianPoints::new(euclidean_distance_squared, vecs, 2);
-    /// assert!((1.118-pts.distance(0, 1)).abs() < 0.001);
+    /// assert!((1.25-pts.distance(0, 1)).abs() < 0.001);
     ///
     /// let arrays: Vec<[f64; 2]> = vec![[0.0, 0.0], [0.5, 1.0], [1.5, 0.8]];
     /// let pts = CartesianPoints::new(euclidean_distance_squared, arrays, 2);
-    /// assert!((1.118-d.distance(0, 1)).abs() < 0.001);
+    /// assert!((1.25-pts.distance(0, 1)).abs() < 0.001);
     /// ```
     pub fn new(dist_func: D, data: Vec<T>, dimensionality: usize) -> CartesianPoints<T, D> where T: Clone+Debug {
         let mut ipoints: Vec<IndexedPoint<T>> = vec![];

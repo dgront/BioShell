@@ -1,5 +1,7 @@
+use std::env;
 use std::iter::zip;
 use clap::{Parser};
+use log::{info};
 
 use bioshell_clustering::kmeans::KMeans;
 use bioshell_core::utils::{read_tsv};
@@ -28,13 +30,16 @@ struct Args {
 
 fn main() {
 
+    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    env_logger::init();
+
     let args = Args::parse();
 
     let fname = args.infile;
     let sample = read_tsv(&fname);
     let n_dim: usize = sample[0].len();
     let n_data = sample.len();
-    println!("{} rows loaded, data dimension is {}", n_data, n_dim);
+    info!("{} rows loaded, data dimension is {}", n_data, n_dim);
 
     let k: usize = args.k;
     let mut kmeans = KMeans::new(k, sample.clone(), n_dim, euclidean_distance_squared);
@@ -42,5 +47,5 @@ fn main() {
     for (v, c) in zip(&sample, kmeans.assignments()) {
         println!("{:?} {}", v, c)
     }
-    println!("# Error: {err}");
+    info!("# Error: {err}");
 }

@@ -52,10 +52,11 @@ impl<T, D> KMeans<T, D> where T: IndexMut<usize, Output = f64> + Clone, D: Fn(&T
     ///
     /// # Arguments
     /// * `epsilon` - convergence criterion: a clustering stops when the relative change in error function
-    ///     is smaller that `epsilon`
+    ///     is smaller that `epsilon`. The error function is defined as the sum of distances from each
+    ///     point to its respective cluster center.
     ///
     /// # Returns
-    /// error value reached in the last iteration
+    ///     error value reached in the last iteration
     pub fn cluster(&mut self, epsilon: f64) -> f64 {
         // --- initialize by assigning k initial clusters
         self.init_random();
@@ -110,6 +111,17 @@ impl<T, D> KMeans<T, D> where T: IndexMut<usize, Output = f64> + Clone, D: Fn(&T
     ///
     /// Returned vector of size `N` provides
     pub fn assignments(&self) -> &Vec<usize> { &self.closest_center }
+
+    /// Provides centers of the `k` clusters found in the most recent clustering run.
+    ///
+    /// Each cluster center is represented by a variable of type `T` - the same as the input points
+    pub fn centers(&self) -> &Vec<T> { &self.centers }
+
+    pub fn sizes(&self) -> Vec<usize> {
+        let mut ret: Vec<usize> = vec![0; self.k];
+        for a in &self.closest_center { ret[*a] += 1; }
+        return ret;
+    }
 
     fn init_random(&mut self) {
         let mut rng = SmallRng::from_entropy();

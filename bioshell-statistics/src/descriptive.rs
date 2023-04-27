@@ -309,7 +309,7 @@ impl OnlineMultivariateWeighted {
     pub fn accumulate(&mut self, d:&[f64], weight: f64) {
 
         assert_eq!(d.len(), self.dim);                  // --- incoming vector must be of the same size at the statistics
-
+        if weight < 1.0e-10 { return;}
         if self.total < 0.000000000001 {                // --- if this is the very first observation...
             for i in 0..self.dim {
                 self.min[i] = d[i];                     // --- copy it as min and max
@@ -321,6 +321,10 @@ impl OnlineMultivariateWeighted {
             let delta_x: f64 = d[i] - self.m1[i];
             self.m1[i] += delta_x * weight / self.total;  // --- M1[i] is now the new average for i-th dimension
             self.m2[i] += weight * delta_x * (d[i] -self.m1[i]);
+
+            if self.m1[i].is_nan() {
+                println!("{} {}   {} {:?} {:?}", &d[i], weight, self.total, &self.m1, &self.m2);
+            }
 
             for j in i+1..self.dim {             // --- here we update the covariance terms
                 let delta_y: f64 = d[j] - self.m1[j];

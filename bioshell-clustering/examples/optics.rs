@@ -1,8 +1,11 @@
+use std::env;
 use clap::{Parser};
 use bioshell_clustering::{CartesianPoints};
 use bioshell_clustering::optics::{Optics};
 use bioshell_core::utils::{read_tsv, out_writer};
 use bioshell_numerical::distance::euclidean_distance_squared;
+
+use log::{error, info};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -24,12 +27,14 @@ struct Args {
 /// USAGE:
 ///     optics -h
 fn main() {
+    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    env_logger::init();
 
     let args = Args::parse();
 
     // ---------- input data
     let sample = read_tsv(&args.infile);
-    println!("{} rows loaded, data dimension is {}", sample.len(), sample[0].len());
+    info!("{} rows loaded, data dimension is {}", sample.len(), sample[0].len());
 
     // ---------- clustering parameters
     let min_points: usize = args.min_points;
@@ -49,12 +54,12 @@ fn main() {
         let mut out = out_writer(fname.as_str(), false);
         for iel in ci {
             match write!(out, "{}", sample[*iel][0]) {
-                Err(e) => println!("Error while writing to {} file: {:?}", fname, e),
+                Err(e) => error!("Error while writing to {} file: {:?}", fname, e),
                 _ => ()
             }
             for ival in 1..sample[*iel].len() {
                 match write!(out, "\t{}", sample[*iel][ival]) {
-                    Err(e) => println!("Error while writing to {} file: {:?}", fname, e),
+                    Err(e) => error!("Error while writing to {} file: {:?}", fname, e),
                     _ => ()
                 }
             }

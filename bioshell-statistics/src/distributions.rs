@@ -186,7 +186,11 @@ impl MultiNormalDistribution {
             }
         }
 
-        self.cku = self.sigma.clone().cholesky().unwrap().l();
+        if let Some(chol) = self.sigma.clone().cholesky() {
+            self.cku =chol.l();
+        } else {
+            panic!("\n\nError during Cholesky decomposition for the following matrix:\n{}", self.sigma);
+        }
     }
 
     /// Sets mean and sigma parameters from observations gathered

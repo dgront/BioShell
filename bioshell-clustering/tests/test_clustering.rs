@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::iter::zip;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
@@ -7,43 +9,70 @@ use rand::Rng;
 use bioshell_numerical::distance::euclidean_distance_squared;
 use bioshell_clustering::{NeighborsOf, CartesianPoints};
 use bioshell_clustering::optics::{Optics};
-use bioshell_clustering::em::{expectation_maximization};
+use bioshell_clustering::em::{expectation_maximization, log_likelihood};
 use bioshell_clustering::kmeans::KMeans;
 use bioshell_statistics::{Distribution, MultiNormalDistribution, NormalDistribution};
 
+#[test]
+fn small_test_expectation_maximization() {
+
+    let true_normals = vec![NormalDistribution::new(0.0, 1.0),
+                           NormalDistribution::new(2.0, 0.5)];
+    let true_weights = vec![1.0/3.0, 2.0/3.0];
+    // --- data from true_normals
+    let pts=[-0.538, 1.983, 1.305,-0.209, 2.139, 0.249,-0.896, 0.243,-1.240, 0.054, 1.750,
+        2.402, 1.900, 1.247, 2.893, 2.239, 2.521, 2.379, 2.289, 1.696, 1.885, 1.775, 1.445, 2.605,
+        2.519, 2.190, 0.987, 1.486, 2.233, 1.571];
+    let mut data = vec![vec![0.0]; pts.len()];
+    let true_loglikhd = log_likelihood(&true_normals, &true_weights, &data);
+
+    for (i, p) in pts.iter().enumerate() { data[i][0] = *p; }
+
+    // ---------- Distributions we will recover
+    let mut normals = vec![NormalDistribution::new(0.5, 0.5),
+                           NormalDistribution::new(1.8, 1.0)];
+
+    // --- the true weight are: [1/3, 2/3]
+    let mut weights = vec![0.5, 0.5];
+    let loglikhd = expectation_maximization(&mut normals, &data, &mut weights, 1.0e-8);
+    // println!("{} {}",loglikhd, true_loglikhd);
+}
 
 #[test]
-fn test_expectation_maximization() {
+fn large_test_expectation_maximization() {
 
     let n_dist: usize = 3;
-    let n_data_1: usize = 1000;
-    let n_data: usize = n_data_1 * n_dist;
+    const N: usize = 1000;
+    let n_data = [N*2, N*3, N*5];
 
     // ---------- Allocate space for training data
-    let mut sample: Vec<Vec<f64>> = vec!(vec!(0.0; 1); n_data);
+    let mut sample: Vec<Vec<f64>> = vec![vec!(0.0; 1); n_data[0] + n_data[1] + n_data[2]];
     // ---------- Distributions we will recover
-    let mut normals = vec![NormalDistribution::new(0.0, 0.5),
-                           NormalDistribution::new(2.0, 0.5),
-                           NormalDistribution::new(5.0, 0.5)];
+    let mu = vec![0.0, 2.0, 5.0];
+    let sigma = vec![0.5, 0.5, 0.5];
+    let mut normals = vec![NormalDistribution::new(mu[0], sigma[0]),
+                           NormalDistribution::new(mu[1], sigma[1]),
+                           NormalDistribution::new(mu[2], sigma[2])];
     // ---------- Prepare training data
     let mut rng = SmallRng::seed_from_u64(0);
+    let mut last: usize = 0;
     for i in 0..n_dist {
-        for j in 0..n_data_1 { normals[i].sample(&mut rng, &mut sample[i * n_data_1 + j]); }
-        normals[i].set_parameters(2.5, 3.0);    // --- change the distribution to make it harder
+        for _j in 0..n_data[i] {
+            normals[i].sample(&mut rng, &mut sample[last]);
+            last += 1;
+        }
     }
-    // ---------- Randomly assign data points to distributions
-    let mut assignment: Vec<Vec<bool>> = vec!(vec!(false; n_data); n_dist);
-    for i in 0..n_data {
-        let i_dist = rand::thread_rng().gen_range(0..n_dist);
-        assignment[i_dist][i] = true;
-    }
+    let ref_likhd = log_likelihood(&normals, &vec![0.2, 0.3, 0.5], &sample);
 
-    expectation_maximization(&mut normals, &sample, &mut assignment, 0.000001);
-    let mut totals: Vec<i32> = vec!(0; n_dist);
+    // --- change the distribution to make it harder
     for i in 0..n_dist {
-        totals[i] = (&assignment[i]).into_iter().map(|v| *v as i32).sum();
+        normals[i].set_parameters(mu[i] + 0.5, sigma[i]);
     }
-    println!("{:?}",&totals);
+    let mut weights = vec![0.0;n_dist];
+    let log_lkhd = expectation_maximization(&mut normals, &sample, &mut weights, 1.0e-5);
+    assert!(((log_lkhd-ref_likhd)/ref_likhd) < 0.01);
+    // for (w,d) in zip(&weights, &normals) { println!("{} {}", w, d); }
+
 }
 
 #[allow(non_snake_case)]
@@ -122,13 +151,13 @@ fn test_Optics() {
 
 #[test]
 fn test_kmeans() {
-    let data: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![1.0, 0.0], vec![0.0, 1.0], vec![1.0, 1.0],
-                                   vec![2.0, 0.0], vec![3.0, 0.0], vec![4.0, 0.0], vec![6.0, 0.0],
-                                   vec![8.0, 0.5], vec![10.0, 0.0], vec![10.0, 1.0], vec![10.0, -1.0],
-                                   vec![11.0, 0.0]];
-    let mut k2means = KMeans::new(2, data, 2, euclidean_distance_squared);
-    k2means.cluster(0.1);
-    let out = k2means.assignments();
-    for i in 0..7 { assert_eq!(out[i], 1); }
+    let data: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![0.0, 1.0], vec![1.0, 0.0], vec![1.0, 1.0], vec![1.0, 2.0],
+                                   vec![2.0, 1.0], vec![3.0, 3.0], vec![4.0, 2.0], vec![4.0, 3.0],
+                                   vec![4.0, 3.5], vec![4.0, 5.0], vec![5.0, 4.0], vec![5.0, 5.0],];
+    let mut kmeans = KMeans::new(2, data, 2, euclidean_distance_squared);
+    kmeans.cluster_n(0.01, 100);
+    let mut out = kmeans.assignments().clone();
+    if out[0] == 0 { out.reverse();}
+    for i in 0..6 { assert_eq!(out[i], 1); }
     for i in 7..out.len() { assert_eq!(out[i], 0); }
 }
