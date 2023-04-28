@@ -65,7 +65,7 @@ mod rototranslation_test {
     fn rotate_cube_around_axis_100() {
         let corner_1 = Vec3::new(0.0, 0.0, 0.0);
         let corner_2 = Vec3::new(0.0, 0.0, 1.0);
-        let angle = 2.0 * std::f64::consts::PI / 3.0;
+        let angle = std::f64::consts::PI / 2.0;
         let rot = Rototranslation::around_axis(corner_1, corner_1, corner_2, angle);
 
         let mut another_vec = Vec3::new(1.0, 0.0, 0.0);
