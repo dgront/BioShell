@@ -25,8 +25,9 @@ impl fmt::Debug for Rototranslation {
 
 impl Rototranslation {
     //region pub fn around_axis(origin: Vec3, start: Vec3, end: Vec3, angle_rad: f64) -> Rototranslation
-    pub fn around_axis(origin: Vec3, start: Vec3, end: Vec3, angle_rad: f64) -> Rototranslation {
-        let mut axis = end - start;
+    pub fn around_axis(start: &Vec3, end: &Vec3, angle_rad: f64) -> Rototranslation {
+        let mut axis = end.clone();
+        axis.sub(start);
         axis.normalize();
         let cos_theta = angle_rad.cos();
         let sin_theta = angle_rad.sin();
@@ -49,7 +50,7 @@ impl Rototranslation {
             + (1.0 - cos_theta) * u_dot.clone();
 
         return Rototranslation {
-            _origin:origin,
+            _origin: start.clone(),
             _cos_theta:cos_theta,
             _sin_theta:sin_theta,
             _axis:axis,
