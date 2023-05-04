@@ -23,14 +23,25 @@ fn create_histogram() {
 /// Check if MultiNormalDistribution correctly evaluates its probability
 #[test]
 #[allow(non_snake_case)]
-fn test_MultiNormalDistribution() {
+fn evaluate_MultiNormalDistribution_pdf() {
+    // --- test 1 - in 2D
     let mut n: MultiNormalDistribution = MultiNormalDistribution::new(2);
     let mu = DVector::<f64>::from_vec(vec![0.1, 0.1]);
     let sig = DMatrix::<f64>::from_iterator(2, 2, vec![0.2, 0.1, 0.1, 2.0].into_iter());
     n.set_parameters(&mu, &sig);
     let logprob = n.logpdf(&vec![1.0, 0.0]);
     assert!((logprob + 3.469636899044226).abs() < 0.0001);
+
+    // --- test 2 - in 4D
+    let sig = DMatrix::<f64>::from_iterator(4, 4,
+            vec![2.3, 0.0, 0.0, 0.0, 0.0, 1.5, 0.0, 0.0, 0.0, 0.0, 1.7, 0.0, 0.0, 0.0, 0.0, 2.0].into_iter());
+    let mu = DVector::<f64>::from_iterator(4,[2.0, 3.0, 8.0, 10.0].into_iter());
+    let mut n: MultiNormalDistribution = MultiNormalDistribution::new(4);
+    n.set_parameters(&mu, &sig);
+    let prob = n.pdf(&vec![2.1, 3.5, 8.0, 9.5]);
+    assert!((prob - 0.006378411393413104).abs() < 0.00001);
 }
+
 
 /// sample from MultiNormalDistribution, check is it correctly estimates its parameters
 #[allow(non_snake_case)]

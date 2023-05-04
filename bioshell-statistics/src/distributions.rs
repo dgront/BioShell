@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::fmt;
 use nalgebra::{DMatrix, DVector};
 use rand::Rng;
@@ -112,6 +113,8 @@ pub struct MultiNormalDistribution {
     logdet: f64,
     mean: DVector<f64>,
     sigma: DMatrix<f64>,
+    tmp_x: RefCell<DVector<f64>>,                       // scratch memory for pdf evaluation
+    tmp_s: RefCell<DMatrix<f64>>,                       // scratch memory for pdf evaluation
     u: DMatrix<f64>,
     cku: DMatrix<f64>,                                  // Cholesky decomposition to random sampling from the distribution
     tmp: DVector<f64>,                                  // for rnd sampling
@@ -129,7 +132,10 @@ impl MultiNormalDistribution {
         let u = DMatrix::<f64>::identity(dim, dim);
         let cku = DMatrix::<f64>::identity(dim, dim);
         let tmp = DVector::<f64>::zeros(dim);
-        let mut out = MultiNormalDistribution { dim, logdet:0.0 , mean: mu, sigma: sig, u, cku, tmp,
+        let tmp_x = DVector::<f64>::zeros(dim);
+        let tmp_s = DMatrix::<f64>::zeros(dim, dim);
+        let mut out = MultiNormalDistribution { dim, logdet:0.0 , mean: mu, sigma: sig,
+            tmp_x: RefCell::new(tmp_x), tmp_s: RefCell::new(tmp_s), u, cku, tmp,
             normal_generator: rand_distr::Normal::new(0.0, 1.0).unwrap()};
         out.setup();
 
@@ -152,14 +158,13 @@ impl MultiNormalDistribution {
     /// Returns log-probability for a given pdf vector
     pub fn logpdf(&self, x: &Vec<f64>) -> f64 {
         let n: usize = x.len();
-        let mut xm = DVector::from_vec(x.clone());
-        xm -= &self.mean;
-        let mut dp = DVector::<f64>::zeros(n);
+        for i in 0..n { (self.tmp_x.borrow_mut())[i] = x[i] - self.mean[i]; }
+        self.tmp_s.borrow_mut().fill(0.0);
         for i in 0..n {
-            dp[i] = xm.dot(&self.u.column(i));
+            (self.tmp_s.borrow_mut())[i] = self.tmp_x.borrow_mut().dot(&self.u.column(i));
         }
         let log2pi     = (2.0*std::f64::consts::PI).ln();
-        let maha_dist: f64 = dp.iter().map(|x| x*x).sum();
+        let maha_dist: f64 = self.tmp_s.borrow_mut().iter().map(|x| x*x).sum();
         let val = -0.5 * (self.dim as f64 * log2pi + maha_dist + self.logdet);
 
         return val;
