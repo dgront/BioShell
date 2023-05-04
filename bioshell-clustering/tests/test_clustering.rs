@@ -4,7 +4,6 @@ use std::iter::zip;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use nalgebra::{DMatrix, DVector};
-use rand::Rng;
 
 use bioshell_numerical::distance::euclidean_distance_squared;
 use bioshell_clustering::{NeighborsOf, CartesianPoints};
@@ -34,8 +33,9 @@ fn small_test_expectation_maximization() {
 
     // --- the true weight are: [1/3, 2/3]
     let mut weights = vec![0.5, 0.5];
-    let loglikhd = expectation_maximization(&mut normals, &data, &mut weights, 1.0e-8);
-    // println!("{} {}",loglikhd, true_loglikhd);
+    let loglikhd = expectation_maximization(&mut normals, &data, &mut weights, 1.0e-6);
+    assert!(loglikhd >=true_loglikhd);
+    // println!("{} {} {:?}", loglikhd, true_loglikhd, weights);
 }
 
 #[test]
@@ -72,7 +72,6 @@ fn large_test_expectation_maximization() {
     let log_lkhd = expectation_maximization(&mut normals, &sample, &mut weights, 1.0e-5);
     assert!(((log_lkhd-ref_likhd)/ref_likhd) < 0.01);
     // for (w,d) in zip(&weights, &normals) { println!("{} {}", w, d); }
-
 }
 
 #[allow(non_snake_case)]

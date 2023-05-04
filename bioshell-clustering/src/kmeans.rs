@@ -1,6 +1,7 @@
 //! K-means clustering algorithm splits observations into separate K groups.
 //!
 use std::ops::{IndexMut};
+use log::debug;
 use rand::{Rng, SeedableRng};
 use rand::rngs::SmallRng;
 
@@ -61,7 +62,9 @@ impl<T, D> KMeans<T, D> where T: IndexMut<usize, Output = f64> + Clone, D: Fn(&T
     ///     error value reached in the last iteration
     pub fn cluster(&mut self, epsilon: f64) -> f64 {
         // --- initialize by assigning k initial clusters
-        self.init_random();
+        // self.init_random();
+        // --- initialize according to the kmeans++ method
+        self.init_plus_plus();
         // --- initial assignment points to clusters
         let mut new_err = self.assign();
         let mut prev_err: f64 = new_err * 2.0;
@@ -95,8 +98,9 @@ impl<T, D> KMeans<T, D> where T: IndexMut<usize, Output = f64> + Clone, D: Fn(&T
         let mut err = self.cluster(epsilon);
         let mut assignmnt = self.assignments().clone();
         let mut centers = self.centers.clone();
-        for _i in 1..n_repeats {
+        for i in 1..n_repeats {
             let new_err = self.cluster(epsilon);
+            debug!("min-distance after {} iteration: {}", i, err);
             if new_err < err {
                 err = new_err;
                 assignmnt = self.assignments().clone();
@@ -132,13 +136,44 @@ impl<T, D> KMeans<T, D> where T: IndexMut<usize, Output = f64> + Clone, D: Fn(&T
         let mut selected_pts = vec![];
         let mut which = rng.gen_range(0..self.n);
         selected_pts.push(which);
-        for i in 0..self.k {
+        for i in 1..self.k {
             which = rng.gen_range(0..self.n);
             while selected_pts.contains(&which) {
                 which = rng.gen_range(0..self.n);
             }
             selected_pts.push(which);
             self.centers[i] = self.points[which].clone();
+        }
+    }
+
+    fn init_plus_plus(&mut self) {
+        let mut rng = SmallRng::from_entropy();
+
+        // ------ select the first cluster center randomly and push it to the list
+        let which = rng.gen_range(0..self.n);
+        self.centers[0] = self.points[which].clone();
+
+        let mut distances: Vec<f64> = vec![0.0; self.n];
+        for k in 1..self.k {                // --- find k-1 additional cluster centers
+            let mut sum_d = 0.0;
+            for i in 0..self.n {            // --- minimum distance between i-th point and any center
+                let mut min_d = (self.distance)(&self.centers[0], &self.points[i], self.dimensionality);
+                for j in 1..k {
+                    min_d = (self.distance)(&self.centers[j], &self.points[i], self.dimensionality).min(min_d);
+                }
+                distances[i] = min_d * min_d;
+                sum_d += min_d * min_d;
+            }
+            // ------ select the next cluster by the kmeans++ rule, i.e. proportional to D(x)^2
+            let w = rng.gen_range(0.0..sum_d);
+            let mut k_which = 0;
+            let mut k_sum = distances[0];
+            while k_sum < w {
+                k_which += 1;
+                k_sum += distances[k_which];
+            }
+            if k_which==self.k { k_which -= 1; }
+            self.centers[k] = self.points[k_which].clone();
         }
     }
 
