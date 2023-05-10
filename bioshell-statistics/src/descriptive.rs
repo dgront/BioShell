@@ -76,6 +76,7 @@ pub fn avg_var_weighted(sample: &[f64], weights: &[f64]) -> (f64,f64) {
     return (avg,var / weights.iter().sum::<f64>());
 }
 
+/// Calculate covariance from two columns of data
 pub fn cov(x: &[f64], y: &[f64]) -> f64 {
 
     let avg_x: f64 = avg(x);
@@ -85,6 +86,7 @@ pub fn cov(x: &[f64], y: &[f64]) -> f64 {
     return ret / x.len() as f64;
 }
 
+/// Calculate weighted covariance from two columns of data of a column of weights
 pub fn cov_weighted(x: &[f64], y: &[f64], weights: &[f64]) -> f64 {
 
     let avg_x: f64 = avg_weighted(x, weights);

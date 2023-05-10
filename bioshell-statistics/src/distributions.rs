@@ -10,7 +10,7 @@ use crate::{OnlineMultivariateStatistics, OnlineMultivariateWeighted};
 
 /// Defines what any probability distribution must offer.
 ///
-/// A probability distribution function (pdf) trait primarily requires that a derived type will be able to:
+/// A probability distribution function (pdf) trait requires that a derived type will be able to:
 ///   - evaluate the pdf(x) at any given ``x``
 ///   - draw a random sample from the distribution
 /// Since this trait covers also multivariate distributions, the ``x`` is a vector, i.e. ``Vec<f64>``
@@ -31,12 +31,14 @@ pub trait Distribution {
 ///
 /// ```
 /// use bioshell_statistics::{Distribution, NormalDistribution};
-/// // --- create a N(2.0, 1.5) distribution
-/// let mut n: NormalDistribution = NormalDistribution::new(2.0, 1.5);
-///
+/// // --- create a N(0.0, 0.5) distribution
+/// let mut n: NormalDistribution = NormalDistribution::new(0.0, 0.5);
 /// // --- evaluate pdf at x = 1.0
 /// let prob = n.pdf(&vec![1.0]);
-/// assert!((prob - 0.21297).abs() < 0.0001);   // 0.21297 is the value from statistical tables
+/// assert!((prob - 0.10798193).abs() < 0.0001);   // 0.10798193 is the value from statistical tables
+/// n.set_parameters(2.0, 1.0);
+/// let prob = n.pdf(&vec![1.0]);
+/// assert!((prob - 0.2419707).abs() < 0.0001);   // 0.2419707 is the value from statistical tables
 /// ```
 #[derive(Clone)]
 pub struct NormalDistribution {
@@ -46,10 +48,8 @@ pub struct NormalDistribution {
     normal_generator: rand_distr::Normal<f64>            // for rnd sampling
 }
 
-// #[pymethods]
 impl NormalDistribution {
     /// Creates a new normal probability distribution N(mu, sigma)
-    // #[new]
     pub fn new(mu: f64, sigma: f64) -> NormalDistribution {
         NormalDistribution { mean: mu, sigma,
             const_1: (1.0 / (sigma * (std::f64::consts::PI * 2.0).sqrt())),
@@ -123,7 +123,8 @@ pub struct MultiNormalDistribution {
 
 impl MultiNormalDistribution {
 
-    /// Creates a new multivariate normal distribution
+    /// Creates a new multivariate normal distribution.
+    ///
     /// Parameters are set to a vector of zeros and a unity matrix (expected and covariance, respectively)
     pub fn new(dim: usize) -> MultiNormalDistribution {
 
