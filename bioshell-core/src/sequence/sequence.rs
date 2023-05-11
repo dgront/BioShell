@@ -31,7 +31,7 @@ impl Sequence {
     pub fn new(id: &String, seq: &String) -> Self {
         Sequence {
             id: id.to_owned(),
-            seq: seq.replace(" ", "").chars().map(|c| c as u8).collect()
+            seq: Self::filter_to_u8(seq)
         }
     }
 
@@ -65,6 +65,10 @@ impl Sequence {
 
     /// Creates a string representing this sequence
     pub fn to_string(&self) -> String { String::from_utf8(self.seq.clone()).unwrap() }
+
+    fn filter_to_u8(seq: &String) -> Vec<u8> {
+        seq.chars().filter(|c| c != &' ' && c != &'*').map(|c| c as u8).collect()
+    }
 }
 
 impl fmt::Display for Sequence {
