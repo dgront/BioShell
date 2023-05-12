@@ -388,3 +388,110 @@ impl OnlineMultivariateWeighted {
         return ret;
     }
 }
+
+/// Calculates a given quantile of an arbitrary large sample of data.
+///
+/// The QuantileP2 struct uses the [,,P-Square Algorithm for Dynamic Calculation of Quantiles and Histograms without Storing Observations''](https://www.cs.wustl.edu/~jain/papers/ftp/psqr.pdf)
+/// statistical algorithm to compute a desired quantile of data without actually storing them.
+///
+/// ```rust
+///     let n_samples = 100000;
+///
+///     let normal = Normal::new(2.0, 3.0).unwrap();         // --- mean 2.0, standard deviation 3.0
+///     let mut q2 = QuantileP2::new(0.5);
+///     let mut q3 = QuantileP2::new(0.75);
+///
+///     for _ in 0..n_samples {
+///         let x = normal.sample(&mut rand::thread_rng());
+///         q2.accumulate(x);
+///         q3.accumulate(x);
+///     }
+///     assert!((q2.quantile() - 2.0).abs() < 0.1);
+///     assert!((q3.quantile() - 4.02347).abs() < 0.1);
+///```
+pub struct QuantileP2 {
+    dn: [f64;5],        // Precalculated   marker increments
+    npos: [f64;5],      // desired marker positions
+    pos: [f64;5],       // Marker positions
+    q: Vec<f64>,        // Marker heights
+}
+
+impl QuantileP2 {
+    /// Start calculations of a desired p-quantile.
+    ///
+    /// At every [`accumulate()`](accumulate()) call, the object will improve it's estimate for the
+    /// p-quantile, i.e. such a value `$x_p$` that `$P_X((-\infty, x_p]) \geqslant p$` and `$P_X([x_p,\infty)) \leqslant 1-p$`
+    /// where `$P_X$` is a given (empirical) probability distribution.
+    /// For example, `$x_{0.5}$` is the mean of the distribution.
+    pub fn new(p: f64) -> QuantileP2 {
+        return QuantileP2 {
+            dn: [0.0, p/2.0, p, (1.0 + p)/2.0, 1.0],
+            npos: [1.0, 1.0 + 2.0*p, 1.0 + 4.0*p, 3.0 + 2.0*p, 5.0],
+            pos: [1.0, 2.0, 3.0, 4.0, 5.0],
+            q: vec![],
+        };
+    }
+
+    /// Accumulates the next point from a distribution and updates the current estimate of the quantile
+    pub fn accumulate(&mut self, x: f64) {
+        if self.q.len() <= 5 {
+            self.q.push(x);
+            self.q.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            if self.q.len() < 5 { return; }
+        }
+
+        let mut k: usize;
+        if x < self.q[0] { // Update minimum value
+            self.q[0] = x;
+            k = 0;
+        } else if self.q[0] <= x && x < self.q[1] { k = 0; }
+        else if self.q[1] <= x && x < self.q[2] { k = 1; }
+        else if self.q[2] <= x && x < self.q[3] { k = 2; }
+        else if self.q[3] <= x && x <= self.q[4] { k = 3; }
+        else { // Update maximum value
+            self.q[4] = x;
+            k = 3;
+        }
+
+        // Increment all positions starting at marker k+1
+        for i in k + 1..5 { self.pos[i] += 1.0; }
+
+        // Update desired marker positions
+        for i in 0..5 { self.npos[i] += self.dn[i]; }
+
+        // Adjust marker heights 2-4 if necessary
+        for i in 1..4 {
+            let d: f64 = self.npos[i] - self.pos[i];
+
+            if (d >= 1.0 && (self.pos[i + 1] - self.pos[i]) > 1.0) || (d <= -1.0 && (self.pos[i - 1] - self.pos[i]) < -1.0) {
+                let ds = d.signum();
+
+                // Try adjusting q using P-squared formula
+                let tmp: f64 = self.parabolic(ds, i);
+                if self.q[i - 1] < tmp && tmp < self.q[i + 1] {
+                    self.q[i] = tmp;
+                } else {
+                    self.q[i] = self.linear(ds, i);
+                }
+                self.pos[i] += ds;
+            }
+        }
+    }
+
+    /// Returns the current estimate of the quantile
+    pub fn quantile(&self) -> f64 { self.q[2] }
+
+    fn linear(&self, d: f64, i: usize) -> f64 {
+        return self.q[i] + d * (self.q[i + d as usize] - self.q[i]) / (self.pos[i + d as usize] - self.pos[i]);
+    }
+
+    fn parabolic(&self, d: f64, i: usize) -> f64 {
+        let a: f64 = d / (self.pos[i + 1] - self.pos[i - 1]);
+
+        let b: f64 = (self.pos[i] - self.pos[i - 1] + d) * (self.q[i + 1] - self.q[i]) / (self.pos[i + 1] - self.pos[i])
+            + (self.pos[i + 1] - self.pos[i] - d) * (self.q[i] - self.q[i - 1]) / (self.pos[i] - self.pos[i - 1]);
+
+        return self.q[i] + a * b;
+    }
+}
+

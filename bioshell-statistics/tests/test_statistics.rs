@@ -5,8 +5,7 @@ use nalgebra::{DMatrix, DVector};
 use std::string::String;
 use std::fmt::Write;
 
-use bioshell_statistics::{Distribution, Estimable, Histogram, MultiNormalDistribution,
-        NormalDistribution, OnlineMultivariateStatistics};
+use bioshell_statistics::{Distribution, Estimable, Histogram, MultiNormalDistribution, NormalDistribution, OnlineMultivariateStatistics, QuantileP2};
 
 /// Create a histogram and fill it with deterministic observations
 #[test]
@@ -131,3 +130,21 @@ fn test_OnlineMultivariateStatistics() {
     }
 }
 
+
+#[allow(non_snake_case)]
+#[test]
+fn test_QuantileP2() {
+    let n_samples = 100000;
+
+    let normal = Normal::new(2.0, 3.0).unwrap();         // --- mean 2, standard deviation 3
+    let mut q2 = QuantileP2::new(0.5);
+    let mut q3 = QuantileP2::new(0.75);
+
+    for _ in 0..n_samples {
+        let x = normal.sample(&mut rand::thread_rng());
+        q2.accumulate(x);
+        q3.accumulate(x);
+    }
+    assert!((q2.quantile() - 2.0).abs() < 0.1);
+    assert!((q3.quantile() - 4.02347).abs() < 0.1);
+}
