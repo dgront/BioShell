@@ -16,7 +16,7 @@ pub struct Coordinates {
     box_len: f64,
     box_len_half: f64,
     current_size: usize,
-    v: Vec<Vec3>,
+    coords_vec: Vec<Vec3>,
     chains: Vec<Range<usize>>,
 }
 
@@ -60,14 +60,19 @@ pub fn box_width(atom_radius: f64, n_atoms: usize, density: f64) -> f64 {
 }
 
 impl Coordinates {
-    pub fn new(n: usize) -> Coordinates {
-        let mut v = if n > 0 {
+    pub fn new(n: usize) -> Coordinates
+    {
+        let mut v = if n > 0
+        {
             Vec::with_capacity(n)
-        } else {
+        }
+        else
+        {
             Vec::new()
         };
 
-        if n > 0 {
+        if n > 0
+        {
             let zero = Vec3::from_float(0.0);
             v.resize(n, zero);
         }
@@ -77,7 +82,7 @@ impl Coordinates {
             current_size: 0,
             box_len: l,
             box_len_half: l / 2.0,
-            v,
+            coords_vec: v,
             chains,
         };
     }
@@ -107,33 +112,33 @@ impl Coordinates {
     }
 
     pub fn distance_square(&self, i: usize, j: usize) -> f64 {
-        let mut d = self.v[i].x - self.v[j].x;
+        let mut d = self.coords_vec[i].x - self.coords_vec[j].x;
         let mut d2 = d * d;
-        d = self.v[i].y - self.v[j].y;
+        d = self.coords_vec[i].y - self.coords_vec[j].y;
         d2 += d * d;
-        d = self.v[i].z - self.v[j].z;
+        d = self.coords_vec[i].z - self.coords_vec[j].z;
         d2 += d * d;
         return d2;
     }
 
     pub fn closest_distance_square(&self, i: usize, j: usize) -> f64 {
         let mut d: f64;
-        closest_image!(self.v[i].x, self.v[j].x, self.box_len, self.box_len_half, d);
+        closest_image!(self.coords_vec[i].x, self.coords_vec[j].x, self.box_len, self.box_len_half, d);
         let mut d2 = d * d;
-        closest_image!(self.v[i].y, self.v[j].y, self.box_len, self.box_len_half, d);
+        closest_image!(self.coords_vec[i].y, self.coords_vec[j].y, self.box_len, self.box_len_half, d);
         d2 += d * d;
-        closest_image!(self.v[i].z, self.v[j].z, self.box_len, self.box_len_half, d);
+        closest_image!(self.coords_vec[i].z, self.coords_vec[j].z, self.box_len, self.box_len_half, d);
 
         return d2 + d * d;
     }
 
     pub fn closest_distance_square_to_vec(&self, i: usize, v: &Vec3) -> f64 {
         let mut d: f64;
-        closest_image!(self.v[i].x, v.x, self.box_len, self.box_len_half, d);
+        closest_image!(self.coords_vec[i].x, v.x, self.box_len, self.box_len_half, d);
         let mut d2 = d * d;
-        closest_image!(self.v[i].y, v.y, self.box_len, self.box_len_half, d);
+        closest_image!(self.coords_vec[i].y, v.y, self.box_len, self.box_len_half, d);
         d2 += d * d;
-        closest_image!(self.v[i].z, v.z, self.box_len, self.box_len_half, d);
+        closest_image!(self.coords_vec[i].z, v.z, self.box_len, self.box_len_half, d);
 
         return d2 + d * d;
     }
@@ -143,7 +148,7 @@ impl Coordinates {
     /// image of the  position ``i``
     pub fn delta_x(&self, i: usize, x: f64) -> f64 {
         let mut d: f64;
-        closest_image!(self.v[i].x, x, self.box_len, self.box_len_half, d);
+        closest_image!(self.coords_vec[i].x, x, self.box_len, self.box_len_half, d);
         d
     }
 
@@ -152,7 +157,7 @@ impl Coordinates {
     /// image of the  position ``i``
     pub fn delta_y(&self, i: usize, y: f64) -> f64 {
         let mut d: f64;
-        closest_image!(self.v[i].y, y, self.box_len, self.box_len_half, d);
+        closest_image!(self.coords_vec[i].y, y, self.box_len, self.box_len_half, d);
         d
     }
 
@@ -161,23 +166,23 @@ impl Coordinates {
     /// image of the  position ``i``
     pub fn delta_z(&self, i: usize, z: f64) -> f64 {
         let mut d: f64;
-        closest_image!(self.v[i].z, z, self.box_len, self.box_len_half, d);
+        closest_image!(self.coords_vec[i].z, z, self.box_len, self.box_len_half, d);
         d
     }
 
     /// Provides the chain index type of the `i`-th atom of this system
     pub fn chain_id(&self, i: usize) -> u16 {
-        self.v[i].chain_id
+        self.coords_vec[i].chain_id
     }
 
     /// Provides the residue type of the `i`-th **atom** of this system
     pub fn res_type(&self, i: usize) -> u8 {
-        self.v[i].res_type
+        self.coords_vec[i].res_type
     }
 
     /// Provides the type of the `i`-th atom of this system
     pub fn atom_type(&self, i: usize) -> u8 {
-        self.v[i].atom_type
+        self.coords_vec[i].atom_type
     }
 
     /// Assign each atom of this system to a chain
@@ -195,9 +200,10 @@ impl Coordinates {
             "chain ranges do not mach the size of the coordinates"
         );
         let mut id: u16 = 0;
-        for r in chain_ranges {
+        for r in chain_ranges
+        {
             for i in r.0..r.1 {
-                self.v[i].chain_id = id;
+                self.coords_vec[i].chain_id = id;
             }
             id += 1;
         }
@@ -205,51 +211,51 @@ impl Coordinates {
 
     /// Assigns the residue type for the **atom** `i` to `t`
     pub fn set_res_type(&mut self, i: usize, t: u8) {
-        self.v[i].res_type = t;
+        self.coords_vec[i].res_type = t;
     }
 
     /// Assigns the type of the atom `i` to `t`
     pub fn set_atom_type(&mut self, i: usize, t: u8) {
-        self.v[i].atom_type = t;
+        self.coords_vec[i].atom_type = t;
     }
 
     /// 'x' coordinate of `i`-th atom of this system
     pub fn x(&self, i: usize) -> f64 {
-        self.v[i].x
+        self.coords_vec[i].x
     }
 
     /// 'y' coordinate of `i`-th atom of this system
     pub fn y(&self, i: usize) -> f64 {
-        self.v[i].y
+        self.coords_vec[i].y
     }
 
     /// 'z' coordinate of `i`-th atom of this system
     pub fn z(&self, i: usize) -> f64 {
-        self.v[i].z
+        self.coords_vec[i].z
     }
 
     pub fn set_x(&mut self, i: usize, x: f64) {
-        wrap_coordinate_to_box!(x, self.box_len, self.v[i].x);
+        wrap_coordinate_to_box!(x, self.box_len, self.coords_vec[i].x);
     }
 
     pub fn set_y(&mut self, i: usize, y: f64) {
-        wrap_coordinate_to_box!(y, self.box_len, self.v[i].y);
+        wrap_coordinate_to_box!(y, self.box_len, self.coords_vec[i].y);
     }
 
     pub fn set_z(&mut self, i: usize, z: f64) {
-        wrap_coordinate_to_box!(z, self.box_len, self.v[i].z);
+        wrap_coordinate_to_box!(z, self.box_len, self.coords_vec[i].z);
     }
 
     pub fn set(&mut self, i: usize, x: f64, y: f64, z: f64) {
-        wrap_coordinate_to_box!(x, self.box_len, self.v[i].x);
-        wrap_coordinate_to_box!(y, self.box_len, self.v[i].y);
-        wrap_coordinate_to_box!(z, self.box_len, self.v[i].z);
+        wrap_coordinate_to_box!(x, self.box_len, self.coords_vec[i].x);
+        wrap_coordinate_to_box!(y, self.box_len, self.coords_vec[i].y);
+        wrap_coordinate_to_box!(z, self.box_len, self.coords_vec[i].z);
     }
 
     pub fn add(&mut self, i: usize, x: f64, y: f64, z: f64) {
-        wrap_coordinate_to_box!(self.v[i].x + x, self.box_len, self.v[i].x);
-        wrap_coordinate_to_box!(self.v[i].y + y, self.box_len, self.v[i].y);
-        wrap_coordinate_to_box!(self.v[i].z + z, self.box_len, self.v[i].z);
+        wrap_coordinate_to_box!(self.coords_vec[i].x + x, self.box_len, self.coords_vec[i].x);
+        wrap_coordinate_to_box!(self.coords_vec[i].y + y, self.box_len, self.coords_vec[i].y);
+        wrap_coordinate_to_box!(self.coords_vec[i].z + z, self.box_len, self.coords_vec[i].z);
     }
 
     /// Copy coordinates of i-th atom from a given vector.
@@ -257,22 +263,22 @@ impl Coordinates {
     /// This method (unlike the [`set()`](set) method) does not apply PBC. To the contrary,
     /// it assumes the two systems: `self` and `rhs` have exactly the same simulation box geometry
     pub fn copy_from_vec(&mut self, i: usize, rhs: &Vec3) {
-        self.v[i].x = rhs.x;
-        self.v[i].y = rhs.y;
-        self.v[i].z = rhs.z;
+        self.coords_vec[i].x = rhs.x;
+        self.coords_vec[i].y = rhs.y;
+        self.coords_vec[i].z = rhs.z;
     }
 }
 
 impl Index<usize> for Coordinates {
     type Output = Vec3;
     fn index(&self, i: usize) -> &Vec3 {
-        &self.v[i]
+        &self.coords_vec[i]
     }
 }
 
 impl IndexMut<usize> for Coordinates {
     fn index_mut(&mut self, i: usize) -> &mut Vec3 {
-        &mut self.v[i]
+        &mut self.coords_vec[i]
     }
 }
 
@@ -287,9 +293,9 @@ impl System for Coordinates {
     /// This method (unlike the [`set()`](set) method) does not apply PBC. To the contrary,
     /// it assumes the two systems: `self` and `rhs` have exactly the same simulation box geometry
     fn copy_from(&mut self, i: usize, rhs: &Self) {
-        self.v[i].x = rhs.v[i].x;
-        self.v[i].y = rhs.v[i].y;
-        self.v[i].z = rhs.v[i].z;
+        self.coords_vec[i].x = rhs.coords_vec[i].x;
+        self.coords_vec[i].y = rhs.coords_vec[i].y;
+        self.coords_vec[i].z = rhs.coords_vec[i].z;
     }
 }
 
@@ -301,6 +307,6 @@ impl ResizableSystem for Coordinates {
 
     /// Returns the maximum number of atoms of this system
     fn capacity(&self) -> usize {
-        return self.v.len();
+        return self.coords_vec.len();
     }
 }

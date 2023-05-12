@@ -1,15 +1,10 @@
 use rand::Rng;
 use std::ops::Range;
-
 use crate::CartesianSystem;
 use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 use bioshell_sim::{Energy, System};
 
 /// A mover that moves a single, randomly selected atom by a small random vector.
-///
-/// Each move randomly selects an atom that is moved by `$\delta x,\delta y,\delta z$`.
-/// The move is accepted or rejected according to any  [`AcceptanceCriterion`](AcceptanceCriterion)
-/// struct defined in the **bioshell** library.
 pub struct SingleAtomMove {
     max_step: f64,
     succ_rate: AcceptanceStatistics,
@@ -17,8 +12,6 @@ pub struct SingleAtomMove {
 
 impl SingleAtomMove {
     /// Create a new mover that shifts a single atom.
-    ///
-    /// Each coordinate of  a randomly selected atom will be changed by at most `max_range`
     pub fn new(max_range: f64) -> SingleAtomMove {
         SingleAtomMove {
             max_step: max_range,
@@ -75,15 +68,6 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for SingleAtomMove {
 }
 
 /// A mover that changes a volume of a Cartesian system.
-///
-/// Each move changes volume of the simulation box by making a linear step in `$\ln(V)$` by `$\pm \delta$`.
-/// A successful move changes the length of a cubic box and rescales accordingly atomic positions.
-/// A move is accepted with probability `$\min(1, e^\omega)$`, where
-///
-/// ```math
-/// \omega = \frac{\Delta E + p \Delta V}{kT} + (N+1)\ln(\frac{V_n}{V_n})
-/// ```.
-/// Such an implementation of the move leads to larger steps at larger volumes and smaller steps at smaller volumes
 pub struct ChangeVolume {
     /// pressure of the system `$p$`
     pub pressure: f64,
@@ -166,58 +150,88 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for ChangeVolume {
     }
 }
 
-/*
-pub struct PerturbChainFragment {
-    max_step: f64,
-    succ_rate: AcceptanceStatistics
+use bioshell_numerical::matrix::Matrix3x3;
+use bioshell_numerical::vec3::Vec3;
+use bioshell_numerical::Rototranslation;
+
+/// A mover that applies a crankshaft move to a molecule.
+pub struct CrankshaftMove {
+    max_angle: f64,
+    frag_size: usize,
+    succ_rate: AcceptanceStatistics,
 }
 
-impl PerturbChainFragment {
-    pub fn new() -> PerturbChainFragment { PerturbChainFragment{ max_step: 2.0, succ_rate: Default::default() } }
-}
-
-impl Mover<CartesianSystem> for PerturbChainFragment {
-
-    fn perturb(&mut self, system: &mut CartesianSystem) -> Range<usize> {
-
-        const N: usize = 3;
-        const F: f64 = 2.0 / (1.0 + N as f64);
-
-        let mut rng = rand::thread_rng();
-        let mut moved_from = rng.gen_range(0..system.size()-N);
-        let mut moved_to = moved_from + N - 1;
-        while system.coordinates()[moved_from].chain_id != system.coordinates()[moved_to].chain_id {
-            moved_from = rng.gen_range(0..system.size() - N);
-            moved_to = moved_from + N;
+impl CrankshaftMove {
+    /// Create a new mover that applies a crankshaft move.
+    pub fn new(max_angle: f64, max_displacement: f64) -> CrankshaftMove {
+        CrankshaftMove {
+            max_angle,
+            frag_size:5,
+            succ_rate: Default::default(),
         }
-
-        let dx: f64 = rng.gen_range(-self.max_step..self.max_step) * F;
-        let dy: f64 = rng.gen_range(-self.max_step..self.max_step) * F;
-        let dz: f64 = rng.gen_range(-self.max_step..self.max_step) * F;
-
-        for i in 0..N/2 {
-            let fi: f64 = (i + 1) as f64;
-            system.add(moved_from + i, dx * fi, dy * fi, dz * fi);
-            system.add(moved_to - i, dx * fi, dy * fi, dz * fi);
-        }
-
-        if N % 2 == 1 {
-            let mid = (moved_from + moved_to) / 2;
-            system.add(mid,dx / F, dy / F, dz / F);
-        }
-
-        moved_from..moved_to
     }
 
-    fn acceptance_statistics(&self) -> AcceptanceStatistics { self.succ_rate.clone() }
+    fn apply(&self, system: &mut CartesianSystem, i1: usize, i2: usize, angle: f64) {
+        let mut center = Vec3::zero();
+        let mut end = Vec3::zero();
+        center.add(&system.coordinates()[i1]);
+        center.add(&system.coordinates()[i2]);
+        center.mul(0.5);
 
-    fn add_success(&mut self) { self.succ_rate.n_succ += 1; }
+        let v1 = system.coordinates()[i1].clone();
+        let v2 = system.coordinates()[i2].clone();
+        end.add(&v2);
+        end.sub(&v1);
 
-    fn add_failure(&mut self) { self.succ_rate.n_failed += 1; }
+        let rt = Rototranslation::around_axis(&v1, &v2, angle);
 
-    fn max_range(&self) -> f64 { self.max_step }
+        let mut v3 = rt.apply(&end);
+        v3.sub(&end);
+        v3.mul(self.max_displacement);
 
-    fn set_max_range(&mut self, new_val: f64) { self.max_step = new_val; }
+        let coords = system.coordinates();
+        for i in i1+1..i2 {
+                rt.apply_mut(&coords[i]);
+        }
+    }
 }
 
-*/
+impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
+    fn perturb(
+        &mut self,
+        system: &mut CartesianSystem,
+        energy: &E,
+        acc: &mut dyn AcceptanceCriterion,
+    ) -> Option<Range<usize>> {
+        let mut rng = rand::thread_rng();
+        let size = system.size();
+
+        let i1 = rng.gen_range(0..size-&self.frag_size-1);
+        let mut i2 = i1 + &self.frag_size+1;
+
+        let old_en = energy.energy(system);
+        let angle = rng.gen_range(-&self.max_angle..&self.max_angle);
+        self.apply(system, i1, i2, angle);
+        let new_en = energy.energy(system);
+
+        if acc.check(old_en, new_en) {
+            self.succ_rate.n_succ += 1;
+            return Option::from(i1..i2 + 1);
+        } else {
+            self.apply(system, i1, i2, -angle);
+            return None;
+        }
+    }
+
+    fn acceptance_statistics(&self) -> AcceptanceStatistics {
+        self.succ_rate.clone()
+    }
+
+    fn max_range(&self) -> f64 {
+        self.max_angle
+    }
+
+    fn set_max_range(&mut self, new_val: f64) {
+        self.max_angle = new_val;
+    }
+}

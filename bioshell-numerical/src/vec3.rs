@@ -204,6 +204,17 @@ impl Vec3 {
         }
     }
 
+    pub fn zero() -> Vec3{
+        Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+            res_type: 0,
+            atom_type: 0,
+            chain_id: 0,
+        }
+    }
+
     /// Creates a new vector with all coordinates equal to a given value.
     ///
     /// ``res_type``, ``atom_type`` and ``chain_id`` are by default set to ``0``
@@ -259,7 +270,7 @@ impl Vec3 {
         return Vec3::new(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
     }
 
-    /// Subtracts a constant from this vector
+    /// Multiplies this vector by a constant
     pub fn mul(&mut self, f: f64) {
         scalar_operation!(self,f,*=);
     }
