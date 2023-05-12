@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use std::fmt;
 
-/// Provides one-dimensional histogram with real data counts
+/// Provides one-dimensional histogram with real data counts.
+///
+/// In this implementation both observed values and their counts are represented as double-precision
+/// floating point values. This allows to associate an observation with an arbitrary weight.
 ///
 ///  # Examples
 ///
@@ -39,6 +42,16 @@ impl Histogram {
         }
     }
 
+    /// Inserts a value (observation) to this histogram
+    pub fn insert_weighted(&mut self, x: f64, w: f64) {
+        let bin_id: i32 = (x / self.bin_width).floor() as i32;
+        if let Some(x) = self.data.get_mut(&bin_id) {
+            *x += w;
+        } else {
+            self.data.insert(bin_id, w);
+        }
+    }
+
     /// Says the index of a bin a given value felt into
     pub fn which_bin(&self, val:f64) -> i32 { (val / self.bin_width).floor() as i32 }
 
@@ -54,7 +67,7 @@ impl Histogram {
     /// Returns the count for a bin that holds a given value
     pub fn get_by_value(&self, val: f64) -> f64 { self.get(self.which_bin(val)) }
 
-    /// Total number of counts in this histogram
+    /// Total number of counts (weights) in this histogram
     pub fn sum(&self) -> f64 { self.data.values().sum() }
 
     /// Returns the bin width
