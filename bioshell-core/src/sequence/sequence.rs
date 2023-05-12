@@ -1,3 +1,11 @@
+/*! # Common operations on biological sequences and their alignments
+This crate provides the [`Sequence`](Sequence) struct to store an amino acid or a nucleic sequence.
+This data can be loaded from the following file formats:
+
+  - [FASTA](https://en.wikipedia.org/wiki/FASTA_format), including the ``a3m`` variant
+  - [Stockholm](https://sonnhammer.sbc.su.se/Stockholm.html)
+*/
+
 use std::collections::HashMap;
 use std::fmt;
 use std::io::{BufRead, BufReader};
@@ -170,7 +178,17 @@ impl<R: BufRead> Iterator for FastaIterator<R> {
 }
 
 
-/// Iterator that provides sequences from a Stockholm-formatted buffer.
+/// Iterator that reads sequences from a Stockholm-formatted buffer.
+///
+/// The Stockholm format is typically used to store a multiple alignment, e.g. used by HMMER, Pfam, and Rfam.
+/// The first line of a Stockholm file (``.sto``, or ``.stk``) states the format and version identifier,
+/// currently ``# STOCKHOLM 1.0``. The header is followed by mark-up lines beginning with ``#``.
+/// These mark-up lines can annotate features of the alignment file (``#=GF``, generic per-file annotation),
+/// or features of the aligned sequences (``#=GS``, generic per-sequence annotation).
+/// The sequence alignment itself is a series of lines with sequence names (typically in the form name/start-end)
+/// followed by a space and the aligned sequence. A line with two forward slashes (``//``) indicates the end of the alignment.
+///
+/// For the detailed description and a list of allowed annotations, see [Stockholm specification](https://sonnhammer.sbc.su.se/Stockholm.html)
 ///
 pub struct StockholmIterator<R> {
     data: Vec<Sequence>,
@@ -184,7 +202,9 @@ impl<R: BufRead> StockholmIterator<R> {
         StockholmIterator { data: data, idx: 0, phantom: PhantomData, }
     }
 
-    /// Read sequences in Stockholm format
+    /// Read sequences in Stockholm format.
+    ///
+    /// Currently the function reads only the sequences; their annotations are not loaded
     ///
     /// For the detailed description of the format, see: https://sonnhammer.sbc.su.se/Stockholm.html
     pub fn from_stockholm_reader(reader: &mut R) -> Vec<Sequence> {
