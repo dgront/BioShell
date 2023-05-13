@@ -391,19 +391,24 @@ impl OnlineMultivariateWeighted {
 
 /// Calculates a given quantile of an arbitrary large sample of data.
 ///
+/// Formally, the p-quantile is such a value `$x_p$` that `$P_X((-\infty, x_p]) \geqslant p$` and `$P_X([x_p,\infty)) \leqslant 1-p$`
+/// where `$P_X$` is a given (empirical) probability distribution. For example, `$x_{0.5}$` is the mean of the distribution.
+///
 /// The QuantileP2 struct uses the [,,P-Square Algorithm for Dynamic Calculation of Quantiles and Histograms without Storing Observations''](https://www.cs.wustl.edu/~jain/papers/ftp/psqr.pdf)
 /// statistical algorithm to compute a desired quantile of data without actually storing them.
 ///
 /// ```rust
+/// use rand_distr::{Normal, Distribution as RndDistribution};
+/// use bioshell_statistics::QuantileP2;
 /// let n_samples = 100000;
 ///
-/// let normal = Normal::new(2.0, 3.0).unwrap();         // --- mean 2.0, standard deviation 3.0
-/// let mut q2 = QuantileP2::new(0.5);
-/// let mut q3 = QuantileP2::new(0.75);
-///
+/// let normal = Normal::new(2.0, 3.0).unwrap();        // --- mean 2.0, standard deviation 3.0
+/// // --- Create two Quantiles
+/// let mut q2 = QuantileP2::new(0.5);                  // --- second quartile i.e. the mean
+/// let mut q3 = QuantileP2::new(0.75);                 // --- third quartile
 /// for _ in 0..n_samples {
 ///     let x = normal.sample(&mut rand::thread_rng());
-///     q2.accumulate(x);
+///     q2.accumulate(x);                               // --- accumulate samples
 ///     q3.accumulate(x);
 /// }
 /// assert!((q2.quantile() - 2.0).abs() < 0.1);
@@ -419,10 +424,8 @@ pub struct QuantileP2 {
 impl QuantileP2 {
     /// Start calculations of a desired p-quantile.
     ///
-    /// At every [`accumulate()`](QuantileP2::accumulate()) call, the object will improve it's estimate for the
-    /// p-quantile, i.e. such a value `$x_p$` that `$P_X((-\infty, x_p]) \geqslant p$` and `$P_X([x_p,\infty)) \leqslant 1-p$`
-    /// where `$P_X$` is a given (empirical) probability distribution.
-    /// For example, `$x_{0.5}$` is the mean of the distribution.
+    /// # Arguments
+    /// * ``p`` - the quantile level, e.g. ``0.5`` for the median
     pub fn new(p: f64) -> QuantileP2 {
         return QuantileP2 {
             dn: [0.0, p/2.0, p, (1.0 + p)/2.0, 1.0],
@@ -433,6 +436,12 @@ impl QuantileP2 {
     }
 
     /// Accumulates the next point from a distribution and updates the current estimate of the quantile
+    ///
+    /// ```rust
+    /// use bioshell_statistics::QuantileP2;
+    /// let mut q2 = QuantileP2::new(0.5);
+    /// q2.accumulate(0.45);
+    /// ```
     pub fn accumulate(&mut self, x: f64) {
         if self.q.len() <= 5 {
             self.q.push(x);
@@ -440,7 +449,7 @@ impl QuantileP2 {
             if self.q.len() < 5 { return; }
         }
 
-        let mut k: usize;
+        let k: usize;
         if x < self.q[0] { // Update minimum value
             self.q[0] = x;
             k = 0;
