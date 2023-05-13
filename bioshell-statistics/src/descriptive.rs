@@ -108,11 +108,11 @@ pub fn cov_weighted(x: &[f64], y: &[f64], weights: &[f64]) -> f64 {
 /// # Examples
 /// The following example:
 /// - creates a 2-dimensional normal distribution
-/// - creates an `OnlineMultivariateStatistics` object
+/// - creates an [`OnlineMultivariateStatistics`] object
 /// - withdraws 50000 observations from the distribution and accumulates them
 /// - checks the convergence of expectations vector
 ///
-/// Refer to [`MultiNormalDistribution`](bioshell_statistics::MultiNormalDistribution) struct documentation to see
+/// Refer to [`crate::MultiNormalDistribution`] struct documentation to see
 /// how to initialize parameters of the distribution.
 /// ```
 /// use bioshell_statistics::{OnlineMultivariateStatistics, MultiNormalDistribution, Distribution};
@@ -248,7 +248,7 @@ impl OnlineMultivariateStatistics {
 /// This struct accumulates observations without actually storing them, and on the fly provides
 /// basic descriptive parameters of the accumulated weighted sample.
 ///
-/// See [`OnlineMultivariateStatistics`](OnlineMultivariateStatistics) for un-weighted statistics
+/// See [`OnlineMultivariateStatistics`] for un-weighted statistics.
 ///
 /// # Examples
 /// ```
@@ -395,19 +395,19 @@ impl OnlineMultivariateWeighted {
 /// statistical algorithm to compute a desired quantile of data without actually storing them.
 ///
 /// ```rust
-///     let n_samples = 100000;
+/// let n_samples = 100000;
 ///
-///     let normal = Normal::new(2.0, 3.0).unwrap();         // --- mean 2.0, standard deviation 3.0
-///     let mut q2 = QuantileP2::new(0.5);
-///     let mut q3 = QuantileP2::new(0.75);
+/// let normal = Normal::new(2.0, 3.0).unwrap();         // --- mean 2.0, standard deviation 3.0
+/// let mut q2 = QuantileP2::new(0.5);
+/// let mut q3 = QuantileP2::new(0.75);
 ///
-///     for _ in 0..n_samples {
-///         let x = normal.sample(&mut rand::thread_rng());
-///         q2.accumulate(x);
-///         q3.accumulate(x);
-///     }
-///     assert!((q2.quantile() - 2.0).abs() < 0.1);
-///     assert!((q3.quantile() - 4.02347).abs() < 0.1);
+/// for _ in 0..n_samples {
+///     let x = normal.sample(&mut rand::thread_rng());
+///     q2.accumulate(x);
+///     q3.accumulate(x);
+/// }
+/// assert!((q2.quantile() - 2.0).abs() < 0.1);
+/// assert!((q3.quantile() - 4.02347).abs() < 0.1);
 ///```
 pub struct QuantileP2 {
     dn: [f64;5],        // Precalculated   marker increments
@@ -419,7 +419,7 @@ pub struct QuantileP2 {
 impl QuantileP2 {
     /// Start calculations of a desired p-quantile.
     ///
-    /// At every [`accumulate()`](accumulate()) call, the object will improve it's estimate for the
+    /// At every [`accumulate()`](QuantileP2::accumulate()) call, the object will improve it's estimate for the
     /// p-quantile, i.e. such a value `$x_p$` that `$P_X((-\infty, x_p]) \geqslant p$` and `$P_X([x_p,\infty)) \leqslant 1-p$`
     /// where `$P_X$` is a given (empirical) probability distribution.
     /// For example, `$x_{0.5}$` is the mean of the distribution.
