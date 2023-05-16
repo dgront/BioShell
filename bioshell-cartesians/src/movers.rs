@@ -163,7 +163,7 @@ pub struct CrankshaftMove {
 
 impl CrankshaftMove {
     /// Create a new mover that applies a crankshaft move.
-    pub fn new(max_angle: f64, max_displacement: f64) -> CrankshaftMove {
+    pub fn new(max_angle: f64) -> CrankshaftMove {
         CrankshaftMove {
             max_angle,
             frag_size:5,
