@@ -3,6 +3,9 @@ use std::ops::Range;
 use crate::CartesianSystem;
 use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 use bioshell_sim::{Energy, System};
+use bioshell_numerical::matrix::Matrix3x3;
+use bioshell_numerical::vec3::Vec3;
+use bioshell_numerical::Rototranslation;
 
 /// A mover that moves a single, randomly selected atom by a small random vector.
 pub struct SingleAtomMove {
@@ -150,10 +153,6 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for ChangeVolume {
     }
 }
 
-use bioshell_numerical::matrix::Matrix3x3;
-use bioshell_numerical::vec3::Vec3;
-use bioshell_numerical::Rototranslation;
-
 /// A mover that applies a crankshaft move to a molecule.
 pub struct CrankshaftMove {
     max_angle: f64,
@@ -219,6 +218,89 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
         } else {
             self.apply(system, i1, i2, -angle);
             return None;
+        }
+    }
+
+    fn acceptance_statistics(&self) -> AcceptanceStatistics {
+        self.succ_rate.clone()
+    }
+
+    fn max_range(&self) -> f64 {
+        self.max_angle
+    }
+
+    fn set_max_range(&mut self, new_val: f64) {
+        self.max_angle = new_val;
+    }
+}
+
+/// A mover that applies a terminal move to a molecule.
+pub struct TerminalMove {
+    max_angle: f64,
+    succ_rate: AcceptanceStatistics,
+}
+
+// A class named to perform a random rotation at the termini around a random axis passing through
+// the Cα atom. The move involves a rigid-body rotation of one or two peptide bonds at one of the
+// chain termini picked randomly with rotation axis passing through the alpha carbon in a random
+// direction. It is important that in this scheme any rotation and its inverse are picked with
+// equal probability.
+impl TerminalMove {
+    /// Create a new mover that applies a terminal move.
+    pub fn new(max_angle: f64) -> TerminalMove {
+        TerminalMove {
+            max_angle,
+            succ_rate: Default::default(),
+        }
+    }
+
+    fn apply(&self, system: &mut CartesianSystem, i1: usize, i2: usize, angle: f64) {
+        let mut rng = rand::thread_rng();
+
+        // Generate a random direction for the rotation axis passing through the Cα atom
+        let mut axis = Vec3::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0));
+        axis.normalize();
+
+        let v1 = system.coordinates()[i1].clone();
+        let v2 = system.coordinates()[i2].clone();
+        let end = v2 - v1;
+
+        let rt = Rototranslation::around_axis(&v1, &axis, angle);
+
+        let mut v3 = rt.apply(&end);
+        v3 = v3 - end;
+
+        let coords = system.coordinates();
+        for i in (i1 + 1)..i2 {
+            rt.apply_mut(&coords[i]);
+        }
+    }
+}
+
+impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for TerminalMove {
+    fn perturb(
+        &mut self,
+        system: &mut CartesianSystem,
+        energy: &E,
+        acc: &mut dyn AcceptanceCriterion,
+    ) -> Option<Range<usize>> {
+        let mut rng = rand::thread_rng();
+        let size = system.size();
+
+        let i1 = rng.gen_range(0..(size - 2));
+        let i2 = i1 + 1;
+
+        let old_en = energy.energy(system);
+        let angle = rng.gen_range(-&self.max_angle..self.max_angle);
+        self.apply(system, i1, i2, angle);
+        let new_en = energy.energy(system);
+
+        if acc.check(old_en, new_en) {
+            self.succ_rate.n_succ += 1;
+            Some(i1..(i2 + 1))
+        } else {
+            self.apply(system, i1, i2, -angle);
+            None
         }
     }
 
