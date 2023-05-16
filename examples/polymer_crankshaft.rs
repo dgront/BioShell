@@ -90,7 +90,7 @@ pub fn main() {
     let mut coords: Coordinates;//declare a variable for the coordinates of polymer beads
 
     if args.infile == "" {//if 'infile' is empty,
-        n_beads = args.nbeads;//set the number of beads
+        n_beads = args.n_beads;//set the number of beads
         coords = Coordinates::new(n_beads);//create `n_beads` number of coordinates
         box_length = box_width(E_REP, n_beads, density);//calculate 3D box length
         coords.set_box_len(box_length);//set box length to the calculated length
