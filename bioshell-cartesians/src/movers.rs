@@ -187,7 +187,6 @@ impl CrankshaftMove {
 
         let mut v3 = rt.apply(&end);
         v3.sub(&end);
-        v3.mul(self.max_displacement);
 
         let coords = system.coordinates();
         for i in i1+1..i2 {
@@ -210,7 +209,7 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
         let mut i2 = i1 + &self.frag_size+1;
 
         let old_en = energy.energy(system);
-        let angle = rng.gen_range(-&self.max_angle..&self.max_angle);
+        let angle = rng.gen_range(-&self.max_angle..self.max_angle);
         self.apply(system, i1, i2, angle);
         let new_en = energy.energy(system);
 
