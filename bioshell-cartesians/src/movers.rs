@@ -30,13 +30,13 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for SingleAtomMove {
         energy: &E,
         acc: &mut dyn AcceptanceCriterion,
     ) -> Option<Range<usize>> {
-        let mut rng = rand::thread_rng();
-        let i_moved = rng.gen_range(0..system.size());
+        let mut rng = rand::thread_rng();//obtain a random number generator
+        let i_moved = rng.gen_range(0..system.size());//obtain a random number
 
-        let old_x: f64 = system.coordinates()[i_moved].x;
+        let old_x: f64 = system.coordinates()[i_moved].x;//obtain a random coordinate
         let old_y: f64 = system.coordinates()[i_moved].y;
         let old_z: f64 = system.coordinates()[i_moved].z;
-        let old_en: f64 = energy.energy_by_pos(system, i_moved);
+        let old_energy: f64 = energy.energy_by_pos(system, i_moved);
 
         system.add(
             i_moved,
@@ -45,14 +45,20 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for SingleAtomMove {
             rng.gen_range(-self.max_step..self.max_step),
         );
 
-        let new_en: f64 = energy.energy_by_pos(system, i_moved);
-        if acc.check(old_en, new_en) {
-            system.update_nbl(i_moved);
+        let new_energy: f64 = energy.energy_by_pos(system, i_moved);
+
+        if acc.check(old_energy, new_energy)
+        {
+            //success
+            system.update_nbl(i_moved);//update non-bonded list of neighbors
             self.succ_rate.n_succ += 1;
             return Option::from(i_moved..i_moved);
-        } else {
+        }
+        else
+        {
+            //failure
             self.succ_rate.n_failed += 1;
-            system.set(i_moved, old_x, old_y, old_z);
+            system.set(i_moved, old_x, old_y, old_z);//fall back
             return Option::None;
         }
     }
@@ -156,7 +162,7 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for ChangeVolume {
 /// A mover that applies a crankshaft move to a molecule.
 pub struct CrankshaftMove {
     max_angle: f64,
-    frag_size: usize,
+    frag_size: usize,//how far would be the axis positions
     succ_rate: AcceptanceStatistics,
 }
 
@@ -169,29 +175,6 @@ impl CrankshaftMove {
             succ_rate: Default::default(),
         }
     }
-
-    fn apply(&self, system: &mut CartesianSystem, i1: usize, i2: usize, angle: f64) {
-        let mut center = Vec3::zero();
-        let mut end = Vec3::zero();
-        center.add(&system.coordinates()[i1]);
-        center.add(&system.coordinates()[i2]);
-        center.mul(0.5);
-
-        let v1 = system.coordinates()[i1].clone();
-        let v2 = system.coordinates()[i2].clone();
-        end.add(&v2);
-        end.sub(&v1);
-
-        let rt = Rototranslation::around_axis(&v1, &v2, angle);
-
-        let mut v3 = rt.apply(&end);
-        v3.sub(&end);
-
-        let coords = system.coordinates();
-        for i in i1+1..i2 {
-                rt.apply_mut(&coords[i]);
-        }
-    }
 }
 
 impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
@@ -200,23 +183,44 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
         system: &mut CartesianSystem,
         energy: &E,
         acc: &mut dyn AcceptanceCriterion,
-    ) -> Option<Range<usize>> {
-        let mut rng = rand::thread_rng();
-        let size = system.size();
+    ) -> Option<Range<usize>>
+    {
+        let mut rng = rand::thread_rng();//obtain a random number generator
+        let system_length = system.size();//obtain the length of the Cartesian system
 
-        let i1 = rng.gen_range(0..size-&self.frag_size-1);
-        let mut i2 = i1 + &self.frag_size+1;
+        let i_start = rng.gen_range(0..system_length - &self.frag_size-1);//obtain a random start position
+        let mut i_end = i_start + &self.frag_size + 1;//obtain the end position relative to the start position
 
-        let old_en = energy.energy(system);
-        let angle = rng.gen_range(-&self.max_angle..self.max_angle);
-        self.apply(system, i1, i2, angle);
-        let new_en = energy.energy(system);
+        let angle = rng.gen_range(-&self.max_angle..self.max_angle);//obtain a random angle
 
-        if acc.check(old_en, new_en) {
+        let coords = system.coordinates();
+        let mut start = coords[i_start];
+        let mut end = coords[i_end];
+        let roto_tran = Rototranslation::around_axis(&start, &end, angle);
+
+        let energy_before = energy.energy(system);//calculate the energy before the move
+
+        //apply forward rotation
+        for i in i_start +1..i_end  {
+            roto_tran.apply_mut(&coords[i]);
+        }
+
+        let energy_after = energy.energy(system);
+
+        if acc.check(energy_before, energy_after)
+        {
+            //if move succeeds
             self.succ_rate.n_succ += 1;
-            return Option::from(i1..i2 + 1);
-        } else {
-            self.apply(system, i1, i2, -angle);
+            return Option::from(i_start..i_end + 1);
+        }
+        else
+        {
+            //if move doesn't succeed
+            self.succ_rate.n_failed += 1;
+            //fall back - apply inverse rotation
+            for i in i_start +1..i_end  {
+                roto_tran.apply_inverse_mut(&coords[i]);
+            }
             return None;
         }
     }
@@ -284,23 +288,26 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for TerminalMove {
         energy: &E,
         acc: &mut dyn AcceptanceCriterion,
     ) -> Option<Range<usize>> {
-        let mut rng = rand::thread_rng();
-        let size = system.size();
+        let mut rng = rand::thread_rng();//obtain a random number generator
+        let size = system.size();//obtain the number of atoms in the Cartesian system
 
-        let i1 = rng.gen_range(0..(size - 2));
+        let i1 = rng.gen_range(0..(size - 2));//obtain a random value from (0) to (size-2)
         let i2 = i1 + 1;
 
-        let old_en = energy.energy(system);
-        let angle = rng.gen_range(-&self.max_angle..self.max_angle);
+        let old_en = energy.energy(system);//obtain the total energy of the Cartesian system
+        let angle = rng.gen_range(-&self.max_angle..self.max_angle);//obtain a random angle
         self.apply(system, i1, i2, angle);
-        let new_en = energy.energy(system);
+        let new_en = energy.energy(system);//obtain the total energy of the system again
 
-        if acc.check(old_en, new_en) {
+        if acc.check(old_en, new_en)
+        {
             self.succ_rate.n_succ += 1;
-            Some(i1..(i2 + 1))
-        } else {
+            return Option::from(i1..i2 + 1);
+        }
+        else
+        {
             self.apply(system, i1, i2, -angle);
-            None
+            return None;
         }
     }
 
