@@ -4,3 +4,17 @@ venv-maturin/
 .idea/
 Cargo.lock
 *.pdb
+o
+l
+p
+pp
+out
+OUT
+LOG
+log
+*.dat
+*.out
+*.log
+*.sh
+*.bat
+*.bak
