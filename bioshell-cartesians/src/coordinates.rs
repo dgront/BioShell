@@ -252,6 +252,13 @@ impl Coordinates {
         wrap_coordinate_to_box!(z, self.box_len, self.coords_vec[i].z);
     }
 
+    pub fn set_vec(&mut self, i: usize, vec: Vec3) {
+        let x = vec.x;
+        let y = vec.y;
+        let z = vec.z;
+        self.set(i, x, y, z);
+    }
+
     pub fn add(&mut self, i: usize, x: f64, y: f64, z: f64) {
         wrap_coordinate_to_box!(self.coords_vec[i].x + x, self.box_len, self.coords_vec[i].x);
         wrap_coordinate_to_box!(self.coords_vec[i].y + y, self.box_len, self.coords_vec[i].y);

@@ -79,6 +79,9 @@ impl CartesianSystem {
     pub fn set(&mut self, i: usize, x: f64, y: f64, z: f64) {
         self.coordinates.set(i, x, y, z);
     }
+    pub fn set_vec(&mut self, i: usize, vec: Vec3) {
+        self.coordinates.set_vec(i, vec);
+    }
 
     /// Assigns the residue type for the atom `i` to `t`
     pub fn set_res_type(&mut self, i: usize, t: u8) {

@@ -61,7 +61,7 @@ impl Rototranslation {
     //endregion
 
     //region pub fn apply_mut(&self, vector: &Vec3) -> Vec3
-    pub fn apply_mut(&self, vector: &Vec3) -> Vec3
+    pub fn apply_mut(&self, vector: &mut Vec3) -> Vec3
     {
         let transformed_vector = *vector - self._origin;
         let temp = self._rotation_matrix;
@@ -71,7 +71,7 @@ impl Rototranslation {
     //endregion
 
     //region pub fn apply_inverse_mut(&self, v: &mut Vec3)
-    pub fn apply_inverse_mut(&self, vector: &Vec3) -> Vec3  {
+    pub fn apply_inverse_mut(&self, vector: &mut Vec3) -> Vec3  {
         let transformed_vector = *vector - self._origin;
         let temp = self._inverse_rotation_matrix;
         let transformed_vector = Vec3::transform(transformed_vector, temp);
