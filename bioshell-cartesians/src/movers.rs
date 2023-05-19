@@ -110,23 +110,25 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
         let i_start = rng.gen_range(0..system_length - &self.frag_size-1);//obtain a random start position
         let mut i_end = i_start + &self.frag_size + 1;//obtain the end position relative to the start position
         let angle = rng.gen_range(-&self.max_angle..self.max_angle);//obtain a random angle
-        let mut system_coords = system.coordinates();//returns an immutable copy of the coordinates
-        let mut start = system_coords[i_start];
-        let mut end = system_coords[i_end];
+        ////let mut system_coords = system.coordinates();//returns an immutable copy of the coordinates
+        let mut start = system.coordinates()[i_start].clone();
+        let mut end = system.coordinates()[i_end].clone();
         let roto_tran = Rototranslation::around_axis(&start, &end, angle);
 
         let energy_before = energy.energy(system);//calculate the energy before the move
 
         //apply forward rotation
         for i in i_start +1..i_end  {
-            let mut temp_coord:Vec3 = system_coords[i].clone();
+            let mut temp_coord:Vec3 = system.coordinates()[i].clone();
+            print!("Before ({},{},{})", temp_coord.x, temp_coord.y, temp_coord.z);
             roto_tran.apply_mut(&mut temp_coord);
-            //system.set_vec(i, temp_coord);
+            println!("After ({},{},{})", temp_coord.x, temp_coord.y, temp_coord.z);
+            system.set_vec(i, temp_coord);
         }
 
         let energy_after = energy.energy(system);
 
-        println!("before={}, after={}", energy_before, energy_after);
+        //println!("before={}, after={}", energy_before, energy_after);
 
         if acc.check(energy_before, energy_after)
         {
@@ -140,7 +142,7 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
             self.succ_rate.n_failed += 1;
             //fall back - apply inverse rotation
             for i in i_start +1..i_end  {
-                let mut temp_coord:Vec3 = system_coords[i].clone();
+                let mut temp_coord:Vec3 = system.coordinates()[i].clone();
                 roto_tran.apply_inverse_mut(&mut temp_coord);
                 //system.set_vec(i, temp_coord);
             }
