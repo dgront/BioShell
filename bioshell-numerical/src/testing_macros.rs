@@ -1,3 +1,4 @@
+/// Equality test for floating point values within a given tolerance
 #[macro_export]
 macro_rules! assert_eq_float {
     ($lhs:expr, $rhs:expr, $tolerance:expr) => {
@@ -5,6 +6,7 @@ macro_rules! assert_eq_float {
     };
 }
 
+/// Equality test for Vec3 type within a given tolerance
 #[macro_export]
 macro_rules! assert_eq_vec3 {
     ($lhs:expr, $rhs:expr, $tolerance:expr) => {
