@@ -28,4 +28,4 @@ rustdoc-args = ["--html-in-header", "katex-header.html"]
 
 [[test]]
 name = "bioshell_cartesians_tests"
-path = "tests/"
+path = "tests/test_cartesian_system.rs"

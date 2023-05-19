@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::{debug};
 
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};

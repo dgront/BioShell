@@ -5,10 +5,10 @@ mod coordinates_test {
     use bioshell_cartesians::Coordinates;
     use bioshell_numerical::Vec3;
 
-    fn truncate(float: f64)->f64
-    {
-        return f64::trunc(float  * 100.0) / 100.0; // or f32::trunc
-    }
+    //fn truncate(float: f64)->f64
+    //{
+    //    return f64::trunc(float  * 100.0) / 100.0; // or f32::trunc
+    //}
 
     #[test]
     fn coordinates_initialization_test() {

@@ -19,11 +19,11 @@ mod rototranslation_test {
 
         let mut _candidate_vector: Vec3 = Vec3::new(1.0, 2.0, 3.0);
 
-        let _rotated_vec = _roto.apply_mut(&mut _candidate_vector);
+        _roto.apply_mut(&mut _candidate_vector);
 
-        assert_eq!(truncate(_rotated_vec.x), 3.0);
-        assert_eq!(truncate(_rotated_vec.y), 2.0);
-        assert_eq!(truncate(_rotated_vec.z), 1.0);
+        assert_eq!(truncate(_candidate_vector.x), 3.0);
+        assert_eq!(truncate(_candidate_vector.y), 2.0);
+        assert_eq!(truncate(_candidate_vector.z), 1.0);
     }
 
     #[test]
@@ -37,11 +37,11 @@ mod rototranslation_test {
 
         let mut _candidate_vector: Vec3 = Vec3::new(1.0, 2.0, 3.0);
 
-        let _rotated_vec = _roto.apply_inverse_mut(&mut _candidate_vector);
+        _roto.apply_inverse_mut(&mut _candidate_vector);
 
-        assert_eq!(truncate(_rotated_vec.x), 3.0);
-        assert_eq!(truncate(_rotated_vec.y), 2.0);
-        assert_eq!(truncate(_rotated_vec.z), 1.0);
+        assert_eq!(truncate(_candidate_vector.x), 3.0);
+        assert_eq!(truncate(_candidate_vector.y), 2.0);
+        assert_eq!(truncate(_candidate_vector.z), 1.0);
     }
 
 
@@ -55,7 +55,7 @@ mod rototranslation_test {
         // println!("{:?}", rot.rotation_matrix());
         let mut another_vec = Vec3::new(1.0, 0.0, 0.0);
         for _ in 0..4 {
-            another_vec = rot.apply_mut(&mut another_vec);
+            rot.apply_mut(&mut another_vec);
             println!("{}", another_vec);
         }
         assert_eq!(truncate(another_vec.x), 0.0);
@@ -72,7 +72,7 @@ mod rototranslation_test {
         println!("{}", corner_1);
         let mut another_vec = Vec3::new(1.0, 0.0, 0.0);
         for _ in 0..4 {
-            another_vec = rot.apply_mut(&mut another_vec);
+            rot.apply_mut(&mut another_vec);
             println!("{}", another_vec);
         }
         // assert_eq!(truncate(another_vec.x), 0.0);

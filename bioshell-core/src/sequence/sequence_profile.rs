@@ -1,5 +1,4 @@
 use core::fmt::{Display, Formatter};
-use std::fs::File;
 
 use crate::sequence::{ResidueTypeOrder, Sequence};
 

@@ -3,7 +3,7 @@ use std::ops::Range;
 use crate::CartesianSystem;
 use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 use bioshell_sim::{Energy, System};
-use bioshell_numerical::matrix::Matrix3x3;
+//use bioshell_numerical::matrix::Matrix3x3;
 use bioshell_numerical::vec3::Vec3;
 use bioshell_numerical::Rototranslation;
 
@@ -120,9 +120,9 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
         //apply forward rotation
         for i in i_start +1..i_end  {
             let mut temp_coord:Vec3 = system.coordinates()[i].clone();
-            print!("Before ({},{},{})", temp_coord.x, temp_coord.y, temp_coord.z);
+            //print!("Before ({},{},{})", temp_coord.x, temp_coord.y, temp_coord.z);
             roto_tran.apply_mut(&mut temp_coord);
-            println!("After ({},{},{})", temp_coord.x, temp_coord.y, temp_coord.z);
+            //println!("After ({},{},{})", temp_coord.x, temp_coord.y, temp_coord.z);
             system.set_vec(i, temp_coord);
         }
 
@@ -144,7 +144,7 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
             for i in i_start +1..i_end  {
                 let mut temp_coord:Vec3 = system.coordinates()[i].clone();
                 roto_tran.apply_inverse_mut(&mut temp_coord);
-                //system.set_vec(i, temp_coord);
+                system.set_vec(i, temp_coord);
             }
             return None;
         }

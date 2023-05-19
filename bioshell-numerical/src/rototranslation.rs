@@ -2,7 +2,6 @@ use crate::matrix::Matrix3x3;
 use crate::vec3::Vec3;
 use std::fmt;
 
-//region struct Rototranslation
 pub struct Rototranslation {
     _origin: Vec3,
     _cos_theta: f64,
@@ -11,9 +10,7 @@ pub struct Rototranslation {
     _rotation_matrix: Matrix3x3,
     _inverse_rotation_matrix: Matrix3x3,
 }
-//endregion
 
-//region impl Debug
 impl fmt::Debug for Rototranslation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Rototranslation")
@@ -21,10 +18,8 @@ impl fmt::Debug for Rototranslation {
             .finish()
     }
 }
-//endregion
 
 impl Rototranslation {
-    //region pub fn around_axis(origin: Vec3, start: Vec3, end: Vec3, angle_rad: f64) -> Rototranslation
     pub fn around_axis(start: &Vec3, end: &Vec3, angle_rad: f64) -> Rototranslation {
         let mut axis = end.clone();
         axis.sub(start);
@@ -58,28 +53,23 @@ impl Rototranslation {
             _inverse_rotation_matrix:inverse_rotation_matrix,
         };
     }
-    //endregion
 
-    //region pub fn apply_mut(&self, vector: &Vec3) -> Vec3
-    pub fn apply_mut(&self, vector: &mut Vec3) -> Vec3
-    {
+    pub fn apply_mut(&self, vector: &mut Vec3) {
         let transformed_vector = *vector - self._origin;
         let temp = self._rotation_matrix;
         let transformed_vector = Vec3::transform(transformed_vector, temp);
-        return transformed_vector + self._origin;
+        let vector_ret = transformed_vector + self._origin;
+        vector.set(&vector_ret);
     }
-    //endregion
 
-    //region pub fn apply_inverse_mut(&self, v: &mut Vec3)
-    pub fn apply_inverse_mut(&self, vector: &mut Vec3) -> Vec3  {
+    pub fn apply_inverse_mut(&self, vector: &mut Vec3) {
         let transformed_vector = *vector - self._origin;
         let temp = self._inverse_rotation_matrix;
         let transformed_vector = Vec3::transform(transformed_vector, temp);
-        return transformed_vector + self._origin;
+        let vec_return = transformed_vector + self._origin;
+        vector.set(&vec_return);
     }
-    //endregion
 
-    //region default functions
     pub fn apply_inverse(&self, v: &Vec3) -> Vec3 {
         let mut v = v.clone();
         self.apply_inverse_mut(&mut v);
@@ -91,5 +81,4 @@ impl Rototranslation {
         self.apply_mut(&mut v);
         return v;
     }
-    //endregion
 }
