@@ -1,11 +1,12 @@
 use clap::builder::TypedValueParser;
 use std::env;
+use std::f32::consts::PI;
 use std::time::Instant;
 
 use clap::Parser;
 use log::info;
 
-use bioshell_cartesians::movers::CrankshaftMove;//import single-atom-mover
+use bioshell_cartesians::movers::{CrankshaftMove, TerminalMove};//import single-atom-mover
 use bioshell_cartesians::observers::{GyrationSquared, PdbTrajectory, REndSquared};
 use bioshell_cartesians::{
     box_width, coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList,
@@ -54,19 +55,19 @@ struct Args {
 }
 
 pub fn main() {
-    const E_REP: f64 = 4.25;//This represents the repulsive energy between the beads in the simulation.
-    // It is a parameter in the Lennard-Jones potential function that is often used to model the interactions between particles.
+    // --- This represents the repulsion distance between the beads in the simulation.
+    const E_REP: f64 = 4.25;
+    // It is the distance range where a contact energy is awarded (to model the interactions between particles).
     const E_FROM: f64 = 4.5;
     const E_TO: f64 = 6.0;
     /*
-    E_FROM and E_TO: These represent the range of energy values that are considered for a particle's
-    interaction with its neighbors. In this case, the program seems to use a simple energy function
-    where all interactions are assigned an energy value of -1.0, except for interactions within a
-    range between E_FROM and E_TO, which are assigned an energy value of E_VAL (-1.0 in this case).
+    The program  assigned an energy value of E_VAL = -1.0, when a distance between beads falls in the
+    range between E_FROM and E_TO. When the distance is shorted than E_REP, the repulsion energy
+    REP_VAL = 1000.0 is applied
     */
     const E_VAL: f64 = -1.0;
     const REP_VAL: f64 = 1000.0;
-    const MAX_MOVE_RANGE: f64 = 1.0;
+    const MAX_MOVE_RANGE: f64 = (15.0 * 180.0 / PI) as f64;    // --- max move range is 15 degrees covnerted to  radians
 
     if env::var("RUST_LOG").is_err()
     {
@@ -82,8 +83,8 @@ pub fn main() {
     let prefix = args.prefix; // --- prefix for the output files
     let tra_f_name = format!("{}tra.pdb", &prefix);
 
-    // ---------- Non-bonded List buffer radius
-    let buffer_thickness = args.buffer.max(MAX_MOVE_RANGE * 4.0);
+    // ---------- Non-bonded List buffer radius in Angstroms
+    let buffer_thickness = args.buffer.max(5.0);
 
     // ---------- Create system's coordinates
     let n_beads: usize;//declare a variable to keep track of number of beads
@@ -152,6 +153,7 @@ pub fn main() {
     let mut simple_sampler: IsothermalMC<CartesianSystem, TotalEnergy<CartesianSystem>> =
         IsothermalMC::new(temperature);
     simple_sampler.add_mover(Box::new(CrankshaftMove::new(MAX_MOVE_RANGE)));
+    simple_sampler.add_mover(Box::new(TerminalMove::new(MAX_MOVE_RANGE)));
 
     // ---------- Decorate the sampler into an adaptive MC protocol
     let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));

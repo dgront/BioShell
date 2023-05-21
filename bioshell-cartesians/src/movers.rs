@@ -4,7 +4,6 @@ use crate::CartesianSystem;
 use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 use bioshell_sim::{Energy, System};
 use bioshell_numerical::vec3::Vec3;
-use bioshell_numerical::type_casting;
 use bioshell_numerical::{random_point_nearby, Rototranslation};
 
 /// A mover that moves a single, randomly selected atom by a small random vector.
@@ -284,42 +283,38 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for TerminalMove {
         if terminal_flag == 0 {
             i_start = 0;
             i_end = self.frag_size;
-            terminal_vec = system.coordinates()[i_start];
+            terminal_vec = system.coordinates()[i_end-1];
             term_rot_axis_start = system.coordinates()[i_end];
         } else {
-            i_start = size - 1 - self.frag_size;
-            i_end = size - 1;
+            i_start = size - self.frag_size;
+            i_end = size;
             term_rot_axis_start = system.coordinates()[i_start];
-            terminal_vec = system.coordinates()[i_end];
+            terminal_vec = system.coordinates()[i_start+1];
         }
 
         let angle = rng.gen_range(-&self.max_angle..self.max_angle);
         let start = term_rot_axis_start;
-        let end = random_point_nearby(&start, self.frag_size as f64);
+        // let end = random_point_nearby(&start, self.frag_size as f64);
+        let end = terminal_vec;
         let roto_tran = Rototranslation::around_axis(&start, &end, angle);
         let energy_before = energy.energy(system);//calculate the energy before the move
 
-        //apply forward rotation
-        for i in i_start + 1..i_end {
+        // --- apply forward rotation
+        for i in i_start..i_end {
             let mut temp_coord: Vec3 = system.coordinates()[i].clone();
-            //print!("Before ({},{},{})", temp_coord.x, temp_coord.y, temp_coord.z);
             roto_tran.apply_mut(&mut temp_coord);
-            //println!("After ({},{},{})", temp_coord.x, temp_coord.y, temp_coord.z);
             system.set_vec(i, temp_coord);
         }
 
         let energy_after = energy.energy(system);
 
-        if acc.check(energy_before, energy_after)
-        {
-            //if move succeeds
+        if acc.check(energy_before, energy_after) { // --- if move succeeds
             self.succ_rate.n_succ += 1;
             return Option::from(i_start..i_end + 1);
-        } else {
-            //if move doesn't succeed
+        } else {            // --- if move doesn't succeed
             self.succ_rate.n_failed += 1;
-            //fall back - apply inverse rotation
-            for i in i_start + 1..i_end {
+            // --- fall back - apply inverse rotation
+            for i in i_start..i_end {
                 let mut temp_coord: Vec3 = system.coordinates()[i].clone();
                 roto_tran.apply_inverse_mut(&mut temp_coord);
                 system.set_vec(i, temp_coord);
