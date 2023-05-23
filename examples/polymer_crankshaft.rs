@@ -1,3 +1,4 @@
+use std::any::Any;
 use clap::builder::TypedValueParser;
 use std::env;
 use std::f32::consts::PI;
@@ -12,8 +13,9 @@ use bioshell_cartesians::{
     box_width, coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList,
     PolymerRules, RandomChain,
 };
+use bioshell_core::utils::out_writer;
 
-use bioshell_sim::{Energy, ObserversSet, System};
+use bioshell_sim::{Energy, Observer, ObserversSet, System};
 
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{AdaptiveMCProtocol, IsothermalMC, Sampler, StepwiseBuilder};
@@ -166,6 +168,7 @@ pub fn main() {
         1,
     );
     observations.add_observer(Box::new(REndSquared::new("r2.dat".to_string(), true)), 1);
+    observations.add_observer(Box::new(BondViolationObserver::new("bond_violations.dat".to_string(), true)), 1);
     sampler.run_simulation(
         args.inner,
         args.outer,
@@ -180,4 +183,49 @@ pub fn main() {
         format!("{}final.pdb", &prefix).as_str(),
         false,
     );
+}
+
+pub struct BondViolationObserver {
+    pub out_fname: String,
+    pub if_append: bool,
+    i_model: usize,
+}
+
+impl BondViolationObserver {
+    pub fn new(fname: String, if_append: bool) -> BondViolationObserver {
+        BondViolationObserver {
+            out_fname: fname,
+            if_append,
+            i_model: 0,
+        }
+    }
+}
+
+impl Observer for BondViolationObserver {
+    type S = CartesianSystem;
+
+    fn observe(&mut self, object: &Self::S) {
+        let coords = object.coordinates();
+        let mut out_writer = out_writer(&self.out_fname, self.if_append);
+        out_writer
+            .write(format!("{:.6} ", self.i_model).as_bytes())
+            .ok();
+        for ic in 0..coords.count_chains() {
+            // HERE !!!
+            let result: f64 = 0.12345;
+            out_writer.write(format!("{:>10.3} ", result).as_bytes()).ok();
+        }
+        out_writer.write("\n".as_bytes()).ok();
+        self.i_model += 1;
+    }
+
+    fn flush(&mut self) {}
+
+    fn name(&self) -> &str {
+        "BondViolationObserver"
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }

@@ -5,11 +5,6 @@ mod coordinates_test {
     use bioshell_cartesians::Coordinates;
     use bioshell_numerical::Vec3;
 
-    //fn truncate(float: f64)->f64
-    //{
-    //    return f64::trunc(float  * 100.0) / 100.0; // or f32::trunc
-    //}
-
     #[test]
     fn coordinates_initialization_test() {
         let mut coords = Coordinates::new(3);//create a coordinate of length: 5.
@@ -21,6 +16,4 @@ mod coordinates_test {
         assert_eq!(coords[1], Vec3::new(2.0, 2.0, 2.0));
         assert_eq!(coords[2], Vec3::new(3.0, 3.0, 3.0));
     }
-
-
 }
