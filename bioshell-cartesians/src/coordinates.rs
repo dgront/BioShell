@@ -33,6 +33,7 @@ macro_rules! wrap_coordinate_to_box {
     };
 }
 
+/// Calculates the shortest difference `c1 - c2`, taking periodic boundary condition into account
 macro_rules! closest_image {
     ($c1:expr, $c2:expr, $L: expr,$L2: expr, $delta:expr) => {
         $delta = $c1 - $c2;
@@ -111,6 +112,11 @@ impl Coordinates {
         &self.chains[idx]
     }
 
+    /// Calculates the square of the (true) distance between two atoms
+    ///
+    /// # Arguments
+    /// * `i` - index of the first atom
+    /// * `j` - index of the second atom
     pub fn distance_square(&self, i: usize, j: usize) -> f64 {
         let mut d = self.coords_vec[i].x - self.coords_vec[j].x;
         let mut d2 = d * d;
@@ -121,6 +127,13 @@ impl Coordinates {
         return d2;
     }
 
+    /// Calculates the square of the shortest distance between two atoms.
+    ///
+    /// The returned distance is evaluate between atom `i` and its closest image of atom `j`
+    ///
+    /// # Arguments
+    /// * `i` - index of the first atom
+    /// * `j` - index of the second atom
     pub fn closest_distance_square(&self, i: usize, j: usize) -> f64 {
         let mut d: f64;
         closest_image!(self.coords_vec[i].x, self.coords_vec[j].x, self.box_len, self.box_len_half, d);
@@ -132,6 +145,13 @@ impl Coordinates {
         return d2 + d * d;
     }
 
+    /// Calculates the square of the shortest distance between two atoms.
+    ///
+    /// The returned distance is evaluate between atom `i` and its closest image of a given vector
+    ///
+    /// # Arguments
+    /// * `i` - index of the first atom
+    /// * `v` - position of the second atom
     pub fn closest_distance_square_to_vec(&self, i: usize, v: &Vec3) -> f64 {
         let mut d: f64;
         closest_image!(self.coords_vec[i].x, v.x, self.box_len, self.box_len_half, d);
@@ -141,6 +161,25 @@ impl Coordinates {
         closest_image!(self.coords_vec[i].z, v.z, self.box_len, self.box_len_half, d);
 
         return d2 + d * d;
+    }
+
+    /// Creates a Vec3 that holds the image of `the_atom` that is the closest to `ref_atom`
+    ///
+    /// # Arguments
+    /// * `ref_atom` - the reference atom
+    /// * `the_atom` - index of the atom to be cloned
+    pub fn clone_closest_image(&self, ref_atom: usize, the_atom: usize) -> Vec3 {
+
+        let mut out = self.coords_vec[ref_atom].clone();
+        let mut d: f64;
+        closest_image!(self.coords_vec[the_atom].x, self.coords_vec[ref_atom].x, self.box_len, self.box_len_half, d);
+        out.x += d;
+        closest_image!(self.coords_vec[the_atom].y, self.coords_vec[ref_atom].y, self.box_len, self.box_len_half, d);
+        out.y += d;
+        closest_image!(self.coords_vec[the_atom].z, self.coords_vec[ref_atom].z, self.box_len, self.box_len_half, d);
+        out.z += d;
+
+        return out;
     }
 
     /// Calculates the difference in ``x`` coordinate between the i-th atom and a given ``x`` value

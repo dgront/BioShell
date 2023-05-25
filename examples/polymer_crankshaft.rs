@@ -24,7 +24,7 @@ use bioshell_ff::bonded::SimpleHarmonic;
 use bioshell_ff::TotalEnergy;
 
 #[derive(Parser, Debug)]
-#[clap(name = "polymer")]
+#[clap(name = "polymer_crankshaft")]
 #[clap(version = "0.2")]
 #[clap(about = "Simple polymer model", long_about = None)]
 /// simulation of a simple polymer model
