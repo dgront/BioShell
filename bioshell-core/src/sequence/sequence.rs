@@ -44,6 +44,7 @@ impl Sequence {
     }
 
     /// Create a new instance of a Sequence by consuming the given data
+    ///
     /// # Example
     /// ```rust
     /// use bioshell_core::sequence::Sequence;
@@ -59,8 +60,35 @@ impl Sequence {
         Sequence {id, seq}
     }
 
-    /// Return the reference of the id of this Sequence.
-    pub fn id(&self) -> &str { self.id.as_ref() }
+    /// Return the description line of this Sequence.
+    ///
+    /// # Example
+    /// ```rust
+    /// use bioshell_core::sequence::Sequence;
+    ///
+    /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
+    /// let sequence = "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
+    /// let seq = Sequence::from_attrs(header, sequence.as_bytes().to_vec());
+    /// assert_eq!(seq.description(), "gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
+    /// ```
+    pub fn description(&self) -> &str { self.id.as_ref() }
+
+    /// Return a string slice holding the ID of this sequence
+    ///
+    /// According to the NCBI standard, the FASTA header line should provide the unique identifier.
+    /// The ID should be no longer than 25 characters and cannot contain any spaces; its fields should
+    /// be separated by vertical bar (`|`) characters
+    ///
+    /// # Example
+    /// ```rust
+    /// use bioshell_core::sequence::Sequence;
+    ///
+    /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
+    /// let sequence = "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
+    /// let seq = Sequence::from_attrs(header, sequence.as_bytes().to_vec());
+    /// assert_eq!("gi|5524211|gb|AAD44166.1|", seq.id());
+    /// ```
+    pub fn id(&self) -> &str { self.id.split_whitespace().next().unwrap() }
 
     /// Return the reference of the sequence itself
     pub fn seq(&self) -> &Vec<u8> { &self.seq }
@@ -102,7 +130,7 @@ impl fmt::Display for Sequence {
     /// assert_eq!(actual, expected)
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "> {}\n{}\n", self.id(), self.to_string())
+        write!(f, "> {}\n{}\n", self.description(), self.to_string())
     }
 }
 

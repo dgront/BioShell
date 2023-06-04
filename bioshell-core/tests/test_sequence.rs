@@ -77,8 +77,8 @@ fn read_stockholm() {
 
     assert_eq!(records[0].len(), 56);
     assert_eq!(records[1].len(), 56);
-    assert_eq!(records[0].id(), "2gb1A");
-    assert_eq!(records[1].id(), "UniRef100_UPI0000D834FD");
+    assert_eq!(records[0].description(), "2gb1A");
+    assert_eq!(records[1].description(), "UniRef100_UPI0000D834FD");
     let ss: String = records[1].to_string();
     assert_eq!(ss, "HQYKLALNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
 }

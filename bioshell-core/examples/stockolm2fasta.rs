@@ -31,7 +31,7 @@ pub fn main() {
         info!("removing gapped column according to {}",seq_id);
         let mut ref_seq: Option<Sequence> = None;
         for seq in &seq {
-            if seq.id()==seq_id { ref_seq = Option::from(seq.clone()); }
+            if seq.description()==seq_id { ref_seq = Option::from(seq.clone()); }
         }
         match ref_seq {
             None => { panic!("Can't find the reference sequence: {} in the input MSA",seq_id); }
