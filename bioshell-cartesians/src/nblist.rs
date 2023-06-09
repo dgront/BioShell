@@ -1,28 +1,9 @@
-use crate::{Coordinates, CoordinatesView};
+use crate::coordinates::{Coordinates};
+use crate::coordinates_view::{CoordinatesView};
 use bioshell_numerical::Vec3;
 use bioshell_sim::System;
+use crate::trait_nb_list_rules::NbListRules;
 
-/// Rules that define which atoms and which atom pairs will be excluded from hashing
-///
-/// This trait defines exclusion rules for a neighbor list structs, such as  [`NbList`](NbList).
-/// By default, a neighbor list provides all spatial neighbors of a given atom for efficient
-/// evaluation of pairwise interactions.  An object derived from this [`NbListRules`] trait asks
-/// a neighbor list to omit some of them.
-///
-/// For example, atoms that are directly connected with a covalent bond are typically excluded
-/// from non-bonded energy evaluation. ``NbListRules::if_pair_excluded(i, j)`` should return
-/// ``true`` in such cases. To exclude a given atom `i` from any energy evaluation,
-/// ``NbListRules::if_atom_excluded(i)`` can be used.
-pub trait NbListRules {
-    /// Says if an atom is excluded from any interactions
-    fn if_atom_excluded(&self, coordinates: &Coordinates, i_atom: usize) -> bool;
-
-    /// Says if a given pair of atoms is excluded from any interactions
-    fn if_pair_excluded(&self, coordinates: &Coordinates, i_atom: usize, j_atom: usize) -> bool;
-
-    /// Each NbListRules must provide a way to clone its boxed instance
-    fn box_clone(&self) -> Box<dyn NbListRules>;
-}
 
 impl Clone for Box<dyn NbListRules> {
     fn clone(&self) -> Box<dyn NbListRules> {
@@ -114,7 +95,7 @@ pub struct NbList {
 macro_rules! insert_nb_pair {
     ($i:expr, $j:expr, $system:expr, $self:expr) => {
         if !$self.nb_rules.if_pair_excluded(&$system, $i, $j) {
-            if $system.closest_distance_square($j, $i) < $self.total_cutoff_sq {
+            if $system.get_closest_distance_square($j, $i) < $self.total_cutoff_sq {
                 $self.nb_lists[$j].push($i);
                 $self.nb_lists[$i].push($j);
             }
@@ -182,9 +163,9 @@ impl NbList {
         self.extend(&system);
 
         // ---------- accumulate the displacement
-        let x = system.x(which_atom);
-        let y = system.y(which_atom);
-        let z = system.z(which_atom);
+        let x = system.get_x(which_atom);
+        let y = system.get_y(which_atom);
+        let z = system.get_z(which_atom);
         self.travelled[which_atom].x += x - self.recent_pos[which_atom].x;
         self.travelled[which_atom].y += y - self.recent_pos[which_atom].y;
         self.travelled[which_atom].z += z - self.recent_pos[which_atom].z;
@@ -225,7 +206,7 @@ impl NbList {
             // --- check distance, update list of neighbors
             insert_nb_pair!(which_atom, i, system, self);
         }
-        for i in which_atom + 1..system.size() {
+        for i in which_atom + 1..system.get_size() {
             insert_nb_pair!(which_atom, i, system, self);
         }
     }
@@ -239,13 +220,13 @@ impl NbList {
             self.nb_lists[vi].clear()
         }
         // --- copy coordinates
-        for i in 0..system.size() {
+        for i in 0..system.get_size() {
             if self.nb_rules.if_atom_excluded(system, i) {
                 continue;
             }
-            self.recent_pos[i].x = system.x(i);
-            self.recent_pos[i].y = system.y(i);
-            self.recent_pos[i].z = system.z(i);
+            self.recent_pos[i].x = system.get_x(i);
+            self.recent_pos[i].y = system.get_y(i);
+            self.recent_pos[i].z = system.get_z(i);
             self.travelled[i].x = 0.0;
             self.travelled[i].y = 0.0;
             self.travelled[i].z = 0.0;
@@ -273,8 +254,8 @@ impl NbList {
 
     /// Add inner vectors to this non-bonded list so it has at least as many rows as the number of atoms in the given structure
     fn extend(&mut self, system: &Coordinates) {
-        if system.size() > self.nb_lists.len() {
-            for _ in self.nb_lists.len()..system.size() {
+        if system.get_size() > self.nb_lists.len() {
+            for _ in self.nb_lists.len()..system.get_size() {
                 self.nb_lists.push(Vec::new());
                 self.recent_pos.push(Vec3::new(0.0, 0.0, 0.0));
                 self.travelled.push(Vec3::new(0.0, 0.0, 0.0));

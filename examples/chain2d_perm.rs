@@ -36,8 +36,8 @@ impl ChainBuilder {
 impl<E: Energy<Coordinates>> StepwiseMover<Coordinates, E> for ChainBuilder {
     /// Starts a new chain by placing its first bead in (0, 0, 0) and returns 1.0 as the statistical weight
     fn start(&mut self, system: &mut Coordinates, _energy: &E) -> f64 {
-        let c = system.box_len() / 2.0;
-        system.set(0, c, c, 0.0);
+        let c = system.get_box_len() / 2.0;
+        system.set_xyz(0, c, c, 0.0);
         system.set_size(1);
 
         return 1.0;
@@ -45,13 +45,13 @@ impl<E: Energy<Coordinates>> StepwiseMover<Coordinates, E> for ChainBuilder {
 
     /// Grows the current chain by one bead
     fn grow_by_one(&mut self, system: &mut Coordinates, energy: &E) -> f64 {
-        let i = system.size();
+        let i = system.get_size();
         system.set_size(i + 1);
 
         let center: Vec3 = (&system[i - 1]).clone();
         // ---------- propose n_trials random proposals and score them
         for k in 0..4 {
-            system.set(
+            system.set_xyz(
                 i,
                 center.x + self.moves[k].0 * self.bond_length,
                 center.y + self.moves[k].1 * self.bond_length,
@@ -76,7 +76,7 @@ impl<E: Energy<Coordinates>> StepwiseMover<Coordinates, E> for ChainBuilder {
         }
 
         // ---------- set the coordinates
-        system.set(
+        system.set_xyz(
             i,
             center.x + self.moves[which_v].0 * self.bond_length,
             center.y + self.moves[which_v].1 * self.bond_length,

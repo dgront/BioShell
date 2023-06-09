@@ -7,7 +7,7 @@ use log::info;
 
 use clap::Parser;
 
-use bioshell_cartesians::observers::PdbTrajectory;
+use bioshell_cartesians::r_end_squared::PdbTrajectory;
 use bioshell_cartesians::{
     coordinates_to_pdb, pdb_to_coordinates, square_grid_atoms, ArgonRules, CartesianSystem,
     Coordinates, NbList,
@@ -83,10 +83,10 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> for DiskM
     ) -> Option<Range<usize>> {
         let mut rng = rand::thread_rng();
         // ---------- index of a disk we move
-        let i_moved = rng.gen_range(0..system.size());
+        let i_moved = rng.gen_range(0..system.get_size());
         // ---------- backup its coordinates and record current energy
-        let old_x: f64 = system.coordinates()[i_moved].x;
-        let old_y: f64 = system.coordinates()[i_moved].y;
+        let old_x: f64 = system.get_coordinates()[i_moved].x;
+        let old_y: f64 = system.get_coordinates()[i_moved].y;
         let old_en: f64 = energy.energy_by_pos(system, i_moved);
 
         // ---------- test the energy consistency - in debug build only
@@ -94,7 +94,7 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> for DiskM
         let total_en_before: f64 = energy.energy(system);
 
         // ---------- actually make the move and update the NBL (mandatory!!)
-        system.add(
+        system.add_xyz(
             i_moved,
             rng.gen_range(-self.max_step..self.max_step),
             rng.gen_range(-self.max_step..self.max_step),
@@ -131,7 +131,7 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> for DiskM
         } else {
             // ---------- undo the move
             self.succ_rate.n_failed += 1;
-            system.set(i_moved, old_x, old_y, 0.0);
+            system.set_xyz(i_moved, old_x, old_y, 0.0);
             system.update_nbl(i_moved);
             return Option::None;
         }
@@ -152,7 +152,7 @@ impl Mover<CartesianSystem, PairwiseNonbondedEvaluator<SimpleContact>> for DiskM
 
 fn rescore(conformation: &CartesianSystem, energy: &PairwiseNonbondedEvaluator<SimpleContact>) {
     let mut total: f64 = 0.0;
-    for pos in 0..conformation.size() {
+    for pos in 0..conformation.get_size() {
         let en: f64 = energy.energy_by_pos(conformation, pos);
         total += en;
         println!("{} {}", pos, en);
@@ -201,7 +201,7 @@ pub fn main() {
             }
             _ => panic!("Can't read from file >{}<", args.infile),
         };
-        n_atoms = coords.size();
+        n_atoms = coords.get_size();
         box_length = box_width(R, n_atoms, density);
         coords.set_box_len(box_length);
     }
@@ -257,5 +257,5 @@ pub fn main() {
         &mut observers,
     );
 
-    coordinates_to_pdb(&system.coordinates(), 1, final_fname.as_str(), false);
+    coordinates_to_pdb(&system.get_coordinates(), 1, final_fname.as_str(), false);
 }

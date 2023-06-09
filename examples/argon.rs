@@ -3,9 +3,9 @@ use std::time::Instant;
 use clap::Parser;
 
 use bioshell_cartesians::movers::{ChangeVolume, SingleAtomMove};
-use bioshell_cartesians::observers::PdbTrajectory;
+use bioshell_cartesians::r_end_squared::PdbTrajectory;
 use bioshell_cartesians::{
-    box_width, coordinates_to_pdb, cubic_grid_atoms, ArgonRules, CartesianSystem, Coordinates,
+    compute_box_width, coordinates_to_pdb, cubic_grid_atoms, ArgonRules, CartesianSystem, Coordinates,
     NbList,
 };
 use bioshell_ff::nonbonded::{LennardJonesHomogenic, PairwiseNonbondedEvaluator};
@@ -70,7 +70,7 @@ pub fn main() {
 
     // ---------- Create system's coordinates
     let mut coords = Coordinates::new(n_atoms);
-    coords.set_box_len(box_width(SIGMA as f64, n_atoms, density));
+    coords.set_box_len(compute_box_width(SIGMA as f64, n_atoms, density));
     cubic_grid_atoms(&mut coords);
     coordinates_to_pdb(&coords, 1, tra_fname.as_str(), false);
 
@@ -114,5 +114,5 @@ pub fn main() {
         &mut observers,
     );
 
-    coordinates_to_pdb(&system.coordinates(), 1, final_fname.as_str(), false);
+    coordinates_to_pdb(&system.get_coordinates(), 1, final_fname.as_str(), false);
 }

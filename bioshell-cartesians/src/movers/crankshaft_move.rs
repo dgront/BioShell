@@ -3,8 +3,7 @@ use std::ops::Range;
 use crate::CartesianSystem;
 use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 use bioshell_sim::{Energy, System};
-use bioshell_numerical::vec3::Vec3;
-use bioshell_numerical::{random_point_nearby, Rototranslation};
+use bioshell_numerical::{Rototranslation};
 
 /// A mover that applies a crankshaft move to a molecule.
 pub struct CrankshaftMove {
@@ -32,12 +31,12 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
         acc: &mut dyn AcceptanceCriterion,
     ) -> Option<Range<usize>> {
         let mut rng = rand::thread_rng();
-        let system_length = system.size();
+        let system_length = system.get_size();
         let i_start = rng.gen_range(0..system_length - self.frag_size - 1);
         let i_end = i_start + self.frag_size + 1;
         let angle = rng.gen_range(-self.max_angle..self.max_angle);
-        let start = system.coordinates()[i_start].clone();
-        let end = system.coordinates()[i_end].clone();
+        let start = system.get_coordinates()[i_start].clone();
+        let end = system.get_coordinates()[i_end].clone();
 
         // Take the periodic image of the end vector closest to the start vector
         let periodic_end = system.get_periodic_image(&start, &end);
@@ -48,9 +47,9 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
 
         // Apply forward rotation
         for i in i_start + 1..i_end {
-            let mut temp_coord = system.coordinates()[i].clone();
+            let mut temp_coord = system.get_coordinates()[i].clone();
             roto_tran.apply_mut(&mut temp_coord);
-            system.set_vec(i, temp_coord);
+            system.set_vec3(i, temp_coord);
         }
 
         let energy_after = energy.energy(system);
@@ -64,9 +63,9 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
             self.succ_rate.n_failed += 1;
             // Fall back - apply inverse rotation
             for i in i_start + 1..i_end {
-                let mut temp_coord = system.coordinates()[i].clone();
+                let mut temp_coord = system.get_coordinates()[i].clone();
                 roto_tran.apply_inverse_mut(&mut temp_coord);
-                system.set_vec(i, temp_coord);
+                system.set_vec3(i, temp_coord);
             }
             None
         }

@@ -17,11 +17,11 @@ macro_rules! atom_xyz {
 
 macro_rules! pairwise_contact_kernel {
     ($x:expr, $y:expr, $z:expr, $chain:expr, $i:expr, $self:expr, $en:expr) => {
-        let mut d = $chain.delta_x($i, $x);
+        let mut d = $chain.get_delta_x($i, $x);
         let mut d2 = d * d;
-        d = $chain.delta_y($i, $y);
+        d = $chain.get_delta_y($i, $y);
         d2 += d * d;
-        d = $chain.delta_z($i, $z);
+        d = $chain.get_delta_z($i, $z);
         d2 += d * d;
         $en += $self.energy.energy_for_distance_squared(d2);
     };
@@ -38,17 +38,17 @@ macro_rules! pairwise_contact_neighbors_loop {
 
 macro_rules! pairwise_contact_kernel_with_cutoff {
     ($x:expr, $y:expr, $z:expr, $chain:expr, $i:expr, $self:expr, $en:expr) => {
-        let mut d = $chain.delta_x($i, $x);
+        let mut d = $chain.get_delta_x($i, $x);
         let mut d2 = d * d;
         if d2 >= $self.cutoff_square {
             continue;
         }
-        d = $chain.delta_y($i, $y);
+        d = $chain.get_delta_y($i, $y);
         d2 += d * d;
         if d2 >= $self.cutoff_square {
             continue;
         }
-        d = $chain.delta_z($i, $z);
+        d = $chain.get_delta_z($i, $z);
         d2 += d * d;
         if d2 < $self.cutoff_square {
             $en += $self.energy.energy_for_distance_squared(d2);
@@ -65,7 +65,7 @@ macro_rules! pairwise_contact_loop {
                 pairwise_contact_kernel_with_cutoff!(x, y, z, $chain, i, $self, $en);
             }
         }
-        for i in $pos + 2..$chain.size() {
+        for i in $pos + 2..$chain.get_size() {
             pairwise_contact_kernel_with_cutoff!(x, y, z, $chain, i, $self, $en);
         }
     };
@@ -94,7 +94,7 @@ impl<E: PairwiseNonbonded> PairwiseNonbondedEvaluator<E> {
 impl<E: PairwiseNonbonded> Energy<CartesianSystem> for PairwiseNonbondedEvaluator<E> {
     fn energy(&self, system: &CartesianSystem) -> f64 {
         let mut en: f64 = 0.0;
-        for i in 0..system.size() {
+        for i in 0..system.get_size() {
             en += self.energy_by_pos(system, i);
         }
 
@@ -104,14 +104,14 @@ impl<E: PairwiseNonbonded> Energy<CartesianSystem> for PairwiseNonbondedEvaluato
     fn energy_by_pos(&self, system: &CartesianSystem, pos: usize) -> f64 {
         let mut en: f64 = 0.0;
 
-        let chain = system.coordinates();
-        let pos_neighbors = system.neighbor_list().neighbors(pos);
+        let chain = system.get_coordinates();
+        let pos_neighbors = system.get_neighbor_list().neighbors(pos);
         pairwise_contact_neighbors_loop!(self, chain, pos, pos_neighbors, en);
 
         return en;
     }
 
-    fn energy_by_range(&self, system: &CartesianSystem, range: &Range<usize>) -> f64 {
+    fn energy_by_range(&self, _system: &CartesianSystem, _range: &Range<usize>) -> f64 {
         todo!()
     }
 
@@ -123,7 +123,7 @@ impl<E: PairwiseNonbonded> Energy<CartesianSystem> for PairwiseNonbondedEvaluato
 impl<E: PairwiseNonbonded> Energy<Coordinates> for PairwiseNonbondedEvaluator<E> {
     fn energy(&self, system: &Coordinates) -> f64 {
         let mut en: f64 = 0.0;
-        for i in 0..system.size() {
+        for i in 0..system.get_size() {
             en += self.energy_by_pos(system, i);
         }
 
@@ -137,8 +137,8 @@ impl<E: PairwiseNonbonded> Energy<Coordinates> for PairwiseNonbondedEvaluator<E>
         return en;
     }
 
-    fn energy_by_range(&self, system: &Coordinates, range: &Range<usize>) -> f64 {
-        todo!()
+    fn energy_by_range(&self, _system: &Coordinates, _range: &Range<usize>) -> f64 {
+        return 0.0;
     }
 
     fn name(&self) -> String {

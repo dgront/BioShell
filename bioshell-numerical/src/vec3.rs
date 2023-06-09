@@ -475,7 +475,7 @@ pub fn random_unit_versor() -> (f64, f64, f64) {
 ///
 /// The newly generated point is randomly located on a sphere of a given `radius` and centered
 /// on a given `center`
-pub fn random_point_nearby(center: &Vec3, radius: f64) -> Vec3 {
+pub fn get_random_point_nearby(center: &Vec3, radius: f64) -> Vec3 {
     let (mut x, mut y, mut z) = three_normal_rands!(rand::thread_rng());
     let mut l: f64 = x * x + y * y + z * z;
     l = l.sqrt() / radius;

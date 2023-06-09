@@ -58,7 +58,7 @@ impl IsingSystem {
 }
 
 impl System for IsingSystem {
-    fn size(&self) -> usize {
+    fn get_size(&self) -> usize {
         SIZE * SIZE
     }
 

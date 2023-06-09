@@ -3,8 +3,6 @@ use std::ops::Range;
 use crate::CartesianSystem;
 use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 use bioshell_sim::{Energy, System};
-use bioshell_numerical::vec3::Vec3;
-use bioshell_numerical::{random_point_nearby, Rototranslation};
 
 /// A mover that changes a volume of a Cartesian system.
 pub struct ChangeVolume {
@@ -40,39 +38,39 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for ChangeVolume {
         // ---------- attempt the volume change
         let en_before = energy.energy(system);
         let mut rng = rand::thread_rng();
-        let v0 = system.volume();
+        let v0 = system.get_box_volume();
         let lnV0 = v0.ln();
         let lnV = lnV0 + rng.gen_range(-self.max_step..self.max_step);
         let new_V = lnV.exp();
-        let old_len = system.box_len();
+        let old_len = system.get_box_len();
         let new_len = new_V.powf(0.333333333);
-        let f = new_len / system.box_len();
-        for i in 0..system.size() {
-            let x = system.coordinates().x(i) * f;
-            let y = system.coordinates().y(i) * f;
-            let z = system.coordinates().z(i) * f;
-            system.set(i, x, y, z);
+        let f = new_len / system.get_box_len();
+        for i in 0..system.get_size() {
+            let x = system.get_coordinates().get_x(i) * f;
+            let y = system.get_coordinates().get_y(i) * f;
+            let z = system.get_coordinates().get_z(i) * f;
+            system.set_xyz(i, x, y, z);
         }
         system.set_box_len(new_len);
         let en_after = energy.energy(system);
         let weight = ((en_after - en_before) + self.pressure * (new_V - v0) * pV_to_Kelvins)
             / self.temperature
-            - (system.size() + 1) as f64 * (new_V / v0).ln();
+            - (system.get_size() + 1) as f64 * (new_V / v0).ln();
 
         if rng.gen_range(0.0..1.0) > (-weight / self.temperature).exp() {
             // --- move rejected
-            for i in 0..system.size() {
-                let x = system.coordinates().x(i) / f;
-                let y = system.coordinates().y(i) / f;
-                let z = system.coordinates().z(i) / f;
-                system.set(i, x, y, z);
+            for i in 0..system.get_size() {
+                let x = system.get_coordinates().get_x(i) / f;
+                let y = system.get_coordinates().get_y(i) / f;
+                let z = system.get_coordinates().get_z(i) / f;
+                system.set_xyz(i, x, y, z);
             }
             self.succ_rate.n_failed += 1;
             system.set_box_len(old_len);
             return None;
         } else {
             self.succ_rate.n_succ += 1;
-            return Some(0..system.size());
+            return Some(0..system.get_size());
         }
     }
 

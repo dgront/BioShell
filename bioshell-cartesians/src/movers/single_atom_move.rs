@@ -3,8 +3,6 @@ use std::ops::Range;
 use crate::CartesianSystem;
 use bioshell_montecarlo::{AcceptanceCriterion, AcceptanceStatistics, Mover};
 use bioshell_sim::{Energy, System};
-use bioshell_numerical::vec3::Vec3;
-use bioshell_numerical::{random_point_nearby, Rototranslation};
 
 /// A mover that moves a single, randomly selected atom by a small random vector.
 pub struct SingleAtomMove {
@@ -30,15 +28,15 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for SingleAtomMove {
         acc: &mut dyn AcceptanceCriterion,
     ) -> Option<Range<usize>> {
         let mut rng = rand::thread_rng();//obtain a random number generator
-        let i_moved = rng.gen_range(0..system.size());//obtain a random number
+        let i_moved = rng.gen_range(0..system.get_size());//obtain a random number
 
-        let old_x: f64 = system.coordinates()[i_moved].x;//obtain a random coordinate of x
-        let old_y: f64 = system.coordinates()[i_moved].y;//obtain a random coordinate of y
-        let old_z: f64 = system.coordinates()[i_moved].z;//obtain a random coordinate of z
+        let old_x: f64 = system.get_coordinates()[i_moved].x;//obtain a random coordinate of x
+        let old_y: f64 = system.get_coordinates()[i_moved].y;//obtain a random coordinate of y
+        let old_z: f64 = system.get_coordinates()[i_moved].z;//obtain a random coordinate of z
         let old_energy: f64 = energy.energy_by_pos(system, i_moved);
 
         //add the randomly generated coordinate into the Cartesian System.
-        system.add(
+        system.add_xyz(
             i_moved,
             rng.gen_range(-self.max_step..self.max_step),
             rng.gen_range(-self.max_step..self.max_step),
@@ -58,7 +56,7 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for SingleAtomMove {
         {
             //failure
             self.succ_rate.n_failed += 1;
-            system.set(i_moved, old_x, old_y, old_z);//fall back
+            system.set_xyz(i_moved, old_x, old_y, old_z);//fall back
             return Option::None;
         }
     }

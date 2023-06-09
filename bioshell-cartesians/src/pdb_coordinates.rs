@@ -24,16 +24,16 @@ const CHAINS_ORDER: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 /// # Examples
 /// ```rust
 /// ```
-pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str, if_append: bool) {
+pub fn coordinates_to_pdb(coords: &Coordinates, i_model: i16, out_fname: &str, if_append: bool) {
     let mut out_writer = out_writer(&out_fname, if_append);
 
     out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();
     let mut i_res = 0;
     let mut prev_chain: char = ' ';
-    for i in 0..chain.size() {
+    for i in 0..coords.get_size() {
         let chain_id = CHAINS_ORDER
             .chars()
-            .nth(chain[i].chain_id as usize)
+            .nth(coords[i].chain_id as usize)
             .unwrap();
         if chain_id != prev_chain {
             prev_chain = chain_id;
@@ -41,8 +41,8 @@ pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str, if
         }
         out_writer
             .write(format!(
-                    "ATOM   {:4}{}  ALA {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
-                    i, " CA ", chain_id, i_res, chain.x(i), chain.y(i), chain.z(i)).as_bytes(), ).ok();
+                "ATOM   {:4}{}  ALA {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C\n",
+                i, " CA ", chain_id, i_res, coords.get_x(i), coords.get_y(i), coords.get_z(i)).as_bytes(), ).ok();
         i_res += 1
     }
     out_writer.write(b"ENDMDL\n").ok();
@@ -60,31 +60,34 @@ pub fn coordinates_to_pdb(chain: &Coordinates, i_model: i16, out_fname: &str, if
 /// ```rust
 /// ```
 pub fn pdb_to_coordinates(input_fname: &str) -> Result<Coordinates, io::Error> {
-    let file = match File::open(input_fname) {
-        Ok(file) => file,
-        Err(e) => return Err(e),
+    let file = match File::open(input_fname) { // Open the file
+        Ok(file) => file, // File opened successfully
+        Err(e) => return Err(e), // Return an error if file opening fails
     };
-    let reader = BufReader::new(file);
 
-    let mut buff: Vec<Vec3> = vec![];
+    let reader = BufReader::new(file); // Wrap the file in a buffered reader
 
-    for line in reader.lines() {
-        if let Some(line_ok) = line.ok() {
-            if line_ok.starts_with("ATOM  ") {
-                buff.push(vec_from_atom_line(&line_ok));
+    let mut buff: Vec<Vec3> = vec![]; // Create an empty vector to store coordinates
+
+    for line in reader.lines() { // Iterate over each line in the reader
+        if let Some(line_ok) = line.ok() { // Check if line is valid
+            if line_ok.starts_with("ATOM  ") { // Check if line starts with "ATOM  "
+                buff.push(vec_from_atom_line(&line_ok)); // Parse line and add coordinates to the vector
             }
         }
     }
 
-    let mut coords: Coordinates = Coordinates::new(buff.len());
-    coords.set_size(buff.len());
-    for i in 0..buff.len() {
-        coords.set(i, buff[i].x, buff[i].y, buff[i].z);
-        coords[i].chain_id = buff[i].chain_id;
+    let mut coords: Coordinates = Coordinates::new(buff.len()); // Create a new Coordinates instance
+    coords.set_size(buff.len()); // Set the size of the Coordinates instance
+
+    for i in 0..buff.len() { // Iterate over the coordinates vector
+        coords.set_xyz(i, buff[i].x, buff[i].y, buff[i].z); // Set x, y, z coordinates for the i-th atom
+        coords[i].chain_id = buff[i].chain_id; // Set the chain ID for the i-th atom
     }
 
-    return Ok(coords);
+    return Ok(coords); // Return the Coordinates instance
 }
+
 
 /// Provides X, Y, Z from an ATOM line in the pdb format
 fn xzy_from_atom_line(atom_line: &String, x: &mut f64, y: &mut f64, z: &mut f64) {

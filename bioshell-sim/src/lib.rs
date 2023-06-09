@@ -24,7 +24,7 @@ pub trait Energy<S> {
 /// of interaction centers: spins, atoms, etc.
 pub trait System: Clone {
     /// Returns the current size of the modelled system
-    fn size(&self) -> usize;
+    fn get_size(&self) -> usize;
 
     /// Sets i-th component of this system by copying its DOFs from a given `rhs` object
     fn copy_from(&mut self, i: usize, rhs: &Self);
@@ -36,7 +36,7 @@ pub trait ResizableSystem: System {
     fn set_size(&mut self, new_size: usize);
 
     /// Returns the maximum size of the modelled system
-    fn capacity(&self) -> usize;
+    fn get_capacity(&self) -> usize;
 }
 
 /// Observer takes observations of a system of a generic type `S`.

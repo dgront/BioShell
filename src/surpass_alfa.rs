@@ -1,24 +1,19 @@
+/*
 use std::env;
 use std::time::Instant;
-
 use clap::Parser;
 use log::info;
-
 use bioshell_cartesians::movers::SingleAtomMove;
-use bioshell_cartesians::observers::{GyrationSquared, PdbTrajectory, REndSquared};
+use bioshell_cartesians::r_end_squared::{GyrationSquared, PdbTrajectory, REndSquared};
 use bioshell_cartesians::{
-    box_width, coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList,
+    compute_box_width, coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList,
     PolymerRules, RandomChain,
 };
-
 use bioshell_sim::{Energy, ObserversSet, System};
-
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{AdaptiveMCProtocol, IsothermalMC, Sampler, StepwiseBuilder};
-
 use bioshell_ff::bonded::SimpleHarmonic;
 use bioshell_ff::TotalEnergy;
-
 #[derive(Parser, Debug)]
 #[clap(name = "surpass_alfa")]
 #[clap(version = "0.2")]
@@ -97,11 +92,11 @@ pub fn main() {
             }
             _ => panic!("Can't read from file >{}<", args.infile),
         };
-        n_beads = coords.size();
-        n_chains = coords.count_chains();
+        n_beads = coords.get_size();
+        n_chains = coords.get_count_chains();
     }
     box_length = match args.boxwidth {
-        None => box_width(E_REP, n_beads, density),
+        None => compute_box_width(E_REP, n_beads, density),
         Some(w) => w,
     };
     coords.set_box_len(box_length);
@@ -130,7 +125,7 @@ pub fn main() {
     let mut total = TotalEnergy::new();
     total.add_component(Box::new(harmonic), 1.0);
     total.add_component(Box::new(contacts), 1.0);
-    if system.size() == 0 {
+    if system.get_size() == 0 {
         RandomChain::default().build(&mut system, &total);
         let res_per_chain = n_beads / n_chains;
         let mut chain_ranges: Vec<(usize, usize)> = vec![];
@@ -176,3 +171,4 @@ pub fn main() {
         false,
     );
 }
+*/

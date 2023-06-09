@@ -67,12 +67,12 @@ impl SequenceProfile {
 impl Display for SequenceProfile {
     /// Prints a sequence profile as a nice table
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for (i, row) in self.data.iter().enumerate() {
-            write!(f, "{i:4} ");
+        for (_i, row) in self.data.iter().enumerate() {
+            //write!(f, "{i:4} ");
             for val in row {
-                write!(f, "{val:5.3} ");
+                //write!(f, "{val:5.3} ");
             }
-            writeln!(f, "");
+            //writeln!(f, "");
         }
         Ok(())
     }

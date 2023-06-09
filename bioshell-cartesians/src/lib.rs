@@ -1,16 +1,23 @@
-mod builders;
-mod calc_from_coordinates;
+mod indie_functions;
 mod cartesian_system;
 mod coordinates;
+mod coordinates_view;
 mod nblist;
 mod pdb_coordinates;
 
 pub mod movers;
-pub mod observers;
+pub mod r_end_squared;
+pub mod random_chain;
+pub mod perm_chain_step;
+pub mod trait_nb_list_rules;
+pub mod pdb_trajectory;
+pub mod gyration_squared;
+pub mod macros;
 
-pub use builders::{cubic_grid_atoms, square_grid_atoms, PERMChainStep, RandomChain};
-pub use calc_from_coordinates::{cm, gyration_squared, r_end_squared};
+pub use indie_functions::{*};
 pub use cartesian_system::CartesianSystem;
-pub use coordinates::{box_width, Coordinates, CoordinatesView};
-pub use nblist::{ArgonRules, NbList, NbListRules, PolymerRules};
+pub use crate::coordinates::{Coordinates};
+pub use crate::coordinates_view::{CoordinatesView};
+pub use nblist::{ArgonRules, NbList, PolymerRules};
+pub use trait_nb_list_rules::NbListRules;
 pub use pdb_coordinates::{coordinates_to_pdb, pdb_to_coordinates};

@@ -5,9 +5,9 @@ use clap::Parser;
 use log::info;
 
 use bioshell_cartesians::movers::SingleAtomMove;//import single-atom-mover
-use bioshell_cartesians::observers::{GyrationSquared, PdbTrajectory, REndSquared};
+use bioshell_cartesians::r_end_squared::{GyrationSquared, PdbTrajectory, REndSquared};
 use bioshell_cartesians::{
-    box_width, coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList,
+    compute_box_width, coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList,
     PolymerRules, RandomChain,
 };
 
@@ -91,7 +91,7 @@ pub fn main() {
     if args.infile == "" {//if 'infile' is empty,
         n_beads = args.nbeads;//set the number of beads
         coords = Coordinates::new(n_beads);//create `n_beads` number of coordinates
-        box_length = box_width(E_REP, n_beads, density);//calculate 3D box length
+        box_length = compute_box_width(E_REP, n_beads, density);//calculate 3D box length
         coords.set_box_len(box_length);//set box length to the calculated length
     }
     else
@@ -104,8 +104,8 @@ pub fn main() {
             }
             _ => panic!("Can't read from file >{}<", args.infile),
         };
-        n_beads = coords.size();//get number of atoms
-        box_length = box_width(E_REP, n_beads, density);//calculate box length
+        n_beads = coords.get_size();//get number of atoms
+        box_length = compute_box_width(E_REP, n_beads, density);//calculate box length
         coords.set_box_len(box_length);//set coords to box length
     }
 
@@ -139,12 +139,12 @@ pub fn main() {
     let mut total = TotalEnergy::new();
     total.add_component(Box::new(harmonic), 1.0);
     total.add_component(Box::new(contacts), 1.0);
-    if system.size() == 0 {
+    if system.get_size() == 0 {
         RandomChain::default().build(&mut system, &total);
     }
 
     // ---------- Show the starting point
-    coordinates_to_pdb(&system.coordinates(), 0, tra_fname.as_str(), false);
+    coordinates_to_pdb(&system.get_coordinates(), 0, tra_fname.as_str(), false);
     println!("# starting energy: {}", total.energy(&system));
 
     // ---------- Create a sampler and add a mover into it
@@ -172,7 +172,7 @@ pub fn main() {
     );
 
     coordinates_to_pdb(
-        &system.coordinates(),
+        &system.get_coordinates(),
         1i16,
         format!("{}final.pdb", &prefix).as_str(),
         false,
