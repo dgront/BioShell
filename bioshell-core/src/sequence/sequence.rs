@@ -19,7 +19,7 @@ use std::hash::{Hash, Hasher};
 /// the [`Sequence`](Sequence) struct stores an amino acid or a nucleic sequence as `Vec<u8>`.
 pub struct Sequence {
     /// identifies this sequence
-    id: String,
+    description: String,
     /// a sequence is represented as a vector of u8 bytes
     seq: Vec<u8>,
 }
@@ -36,9 +36,9 @@ impl Sequence {
     ///
     /// assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string())
     /// ```
-    pub fn new(id: &String, seq: &String) -> Self {
+    pub fn new(description: &String, seq: &String) -> Self {
         Sequence {
-            id: id.to_owned(),
+            description: description.to_owned(),
             seq: Self::filter_to_u8(seq)
         }
     }
@@ -56,8 +56,8 @@ impl Sequence {
     /// let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
     /// assert_eq!(expected, seq.to_string());
     /// ```
-    pub fn from_attrs(id: String, seq: Vec<u8>) -> Self {
-        Sequence {id, seq}
+    pub fn from_attrs(description: String, seq: Vec<u8>) -> Self {
+        Sequence { description, seq}
     }
 
     /// Return the description line of this Sequence.
@@ -71,7 +71,7 @@ impl Sequence {
     /// let seq = Sequence::from_attrs(header, sequence.as_bytes().to_vec());
     /// assert_eq!(seq.description(), "gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     /// ```
-    pub fn description(&self) -> &str { self.id.as_ref() }
+    pub fn description(&self) -> &str { self.description.as_ref() }
 
     /// Return a string slice holding the ID of this sequence
     ///
@@ -88,7 +88,7 @@ impl Sequence {
     /// let seq = Sequence::from_attrs(header, sequence.as_bytes().to_vec());
     /// assert_eq!("gi|5524211|gb|AAD44166.1|", seq.id());
     /// ```
-    pub fn id(&self) -> &str { self.id.split_whitespace().next().unwrap() }
+    pub fn id(&self) -> &str { self.description.split_whitespace().next().unwrap() }
 
     /// Return the reference of the sequence itself
     pub fn seq(&self) -> &Vec<u8> { &self.seq }
@@ -99,7 +99,18 @@ impl Sequence {
     /// Returns an amino acid character at a given position in this `Sequence`
     pub fn char(&self, pos:usize) -> char { self.seq[pos] as char }
 
-    /// Creates a string representing this sequence
+    /// Creates a string representing this sequence.
+    ///
+    /// The returned string contains only the sequence itself without description.
+    /// # Example
+    /// ```rust
+    /// use bioshell_core::sequence::Sequence;
+    ///
+    /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
+    /// let sequence = "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
+    /// let seq = Sequence::from_attrs(header, sequence.as_bytes().to_vec());
+    /// assert_eq!(seq.to_string(), "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV");
+    /// ```
     pub fn to_string(&self) -> String { String::from_utf8(self.seq.clone()).unwrap() }
 
     fn filter_to_u8(seq: &String) -> Vec<u8> {
@@ -343,7 +354,7 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
                         seq_data.push(*c);
                     }
                 }
-                sequences[i] = Sequence::from_attrs(seq.id.clone(), seq_data);
+                sequences[i] = Sequence::from_attrs(seq.description.clone(), seq_data);
             }
         }
         A3mConversionMode::ExpandWithGaps => { todo!() }
@@ -396,7 +407,7 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
     }
     // --- copy
     for j in 0..n_seq {
-        let id = &sequences[j].id;
+        let id = &sequences[j].description;
         let old_aa: &Vec<u8> = sequences[j].seq();
         let mut new_aa: Vec<u8> = vec![];
         for pi in &pos {
