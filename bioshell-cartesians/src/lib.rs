@@ -20,4 +20,4 @@ pub use crate::coordinates::{Coordinates};
 pub use crate::coordinates_view::{CoordinatesView};
 pub use nblist::{ArgonRules, NbList, PolymerRules};
 pub use trait_nb_list_rules::NbListRules;
-pub use pdb_coordinates::{coordinates_to_pdb, pdb_to_coordinates};
+pub use pdb_coordinates::{write_coordinates_to_pdb, pdb_to_coordinates};

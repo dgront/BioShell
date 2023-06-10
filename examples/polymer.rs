@@ -5,11 +5,14 @@ use clap::Parser;
 use log::info;
 
 use bioshell_cartesians::movers::SingleAtomMove;//import single-atom-mover
-use bioshell_cartesians::r_end_squared::{GyrationSquared, PdbTrajectory, REndSquared};
+use bioshell_cartesians::gyration_squared::{GyrationSquared};
+use bioshell_cartesians::pdb_trajectory::{PdbTrajectory};
+use bioshell_cartesians::r_end_squared::{REndSquared};
 use bioshell_cartesians::{
-    compute_box_width, coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList,
-    PolymerRules, RandomChain,
+    compute_box_width, write_coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList,
+    PolymerRules,
 };
+use bioshell_cartesians::random_chain::RandomChain;
 
 use bioshell_sim::{Energy, ObserversSet, System};
 
@@ -144,7 +147,7 @@ pub fn main() {
     }
 
     // ---------- Show the starting point
-    coordinates_to_pdb(&system.get_coordinates(), 0, tra_fname.as_str(), false);
+    write_coordinates_to_pdb(&system.get_coordinates(), 0, tra_fname.as_str(), false);
     println!("# starting energy: {}", total.energy(&system));
 
     // ---------- Create a sampler and add a mover into it
@@ -171,7 +174,7 @@ pub fn main() {
         &mut observations,
     );
 
-    coordinates_to_pdb(
+    write_coordinates_to_pdb(
         &system.get_coordinates(),
         1i16,
         format!("{}final.pdb", &prefix).as_str(),

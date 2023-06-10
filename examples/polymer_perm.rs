@@ -2,10 +2,11 @@ use log::{error, info};
 use std::env;
 use std::time::Instant;
 
-use bioshell_cartesians::{coordinates_to_pdb, CartesianSystem, Coordinates, PERMChainStep};
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{StepwiseBuilder, PERM};
 use clap::Parser;
+use bioshell_cartesians::Coordinates;
+use bioshell_cartesians::perm_chain_step::PERMChainStep;
 
 use bioshell_sim::Energy;
 

@@ -24,7 +24,7 @@ const CHAINS_ORDER: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 /// # Examples
 /// ```rust
 /// ```
-pub fn coordinates_to_pdb(coords: &Coordinates, i_model: i16, out_fname: &str, if_append: bool) {
+pub fn write_coordinates_to_pdb(coords: &Coordinates, i_model: i16, out_fname: &str, if_append: bool) {
     let mut out_writer = out_writer(&out_fname, if_append);
 
     out_writer.write(format!("MODEL    {i_model}\n").as_bytes()).ok();

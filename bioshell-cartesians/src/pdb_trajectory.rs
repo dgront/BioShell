@@ -1,4 +1,4 @@
-use crate::{coordinates_to_pdb, CartesianSystem};
+use crate::{write_coordinates_to_pdb, CartesianSystem};
 use bioshell_sim::{Observer};
 use std::any::Any;
 
@@ -31,7 +31,7 @@ impl Observer for PdbTrajectory {
     type S = CartesianSystem;
 
     fn observe(&mut self, object: &Self::S) {
-        coordinates_to_pdb(
+        write_coordinates_to_pdb(
             &object.get_coordinates(),
             self.i_model as i16,
             &self.fname,

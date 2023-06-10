@@ -4,7 +4,7 @@ use rand::Rng;
 use std::env;
 use std::time::Instant;
 
-use bioshell_cartesians::{coordinates_to_pdb, Coordinates};
+use bioshell_cartesians::{write_coordinates_to_pdb, Coordinates};
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{StepwiseBuilder, StepwiseMover, PERM};
 use bioshell_numerical::Vec3;
@@ -134,7 +134,7 @@ pub fn main() {
         if w > 0.0 {
             i_chain += 1;
             println!("en, w: {:5} {:5.1e}", contacts.energy(&system), w);
-            coordinates_to_pdb(&system, i_chain as i16, "chain2d_tra.pdb", true);
+            write_coordinates_to_pdb(&system, i_chain as i16, "chain2d_tra.pdb", true);
             info!("chain {:5} finished after {:.2?}", i_chain, start.elapsed());
             // println!("{}", sampler);
         }

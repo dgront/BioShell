@@ -6,10 +6,9 @@ use std::time::Instant;
 use log::info;
 
 use clap::Parser;
-
-use bioshell_cartesians::r_end_squared::PdbTrajectory;
+use bioshell_cartesians::pdb_trajectory::PdbTrajectory;
 use bioshell_cartesians::{
-    coordinates_to_pdb, pdb_to_coordinates, square_grid_atoms, ArgonRules, CartesianSystem,
+    write_coordinates_to_pdb, pdb_to_coordinates, square_grid_atoms, ArgonRules, CartesianSystem,
     Coordinates, NbList,
 };
 use bioshell_sim::{Energy, Observer, ObserversSet, System};
@@ -257,5 +256,5 @@ pub fn main() {
         &mut observers,
     );
 
-    coordinates_to_pdb(&system.get_coordinates(), 1, final_fname.as_str(), false);
+    write_coordinates_to_pdb(&system.get_coordinates(), 1, final_fname.as_str(), false);
 }

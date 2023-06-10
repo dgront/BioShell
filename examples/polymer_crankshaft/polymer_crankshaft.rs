@@ -1,3 +1,5 @@
+mod bond_violation_observer;
+
 use std::any::Any;
 use std::env;
 use std::f32::consts::PI;
@@ -9,7 +11,7 @@ use bioshell_cartesians::movers::{CrankshaftMove, TerminalMove};//import single-
 use bioshell_cartesians::gyration_squared::{GyrationSquared};
 use bioshell_cartesians::pdb_trajectory::{PdbTrajectory};
 use bioshell_cartesians::r_end_squared::{REndSquared};
-use bioshell_cartesians::{coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList, PolymerRules, compute_box_width};
+use bioshell_cartesians::{write_coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList, PolymerRules, compute_box_width};
 use bioshell_cartesians::random_chain::RandomChain;
 use bioshell_core::utils::out_writer;
 
@@ -146,7 +148,7 @@ pub fn main() {
     }
 
     // ---------- Show the starting point
-    coordinates_to_pdb(&system.get_coordinates(), 0, tra_f_name.as_str(), false);
+    write_coordinates_to_pdb(&system.get_coordinates(), 0, tra_f_name.as_str(), false);
     println!("# starting energy: {}", total.energy(&system));
 
     // ---------- Create a sampler and add a mover into it
@@ -175,7 +177,7 @@ pub fn main() {
         &mut observations,
     );
 
-    coordinates_to_pdb(
+    write_coordinates_to_pdb(
         &system.get_coordinates(),
         1i16,
         format!("{}final.pdb", &prefix).as_str(),
@@ -183,47 +185,3 @@ pub fn main() {
     );
 }
 
-pub struct BondViolationObserver {
-    pub out_fname: String,
-    pub if_append: bool,
-    i_model: usize,
-}
-
-impl BondViolationObserver {
-    pub fn new(fname: String, if_append: bool) -> BondViolationObserver {
-        BondViolationObserver {
-            out_fname: fname,
-            if_append,
-            i_model: 0,
-        }
-    }
-}
-
-impl Observer for BondViolationObserver {
-    type S = CartesianSystem;
-
-    fn observe(&mut self, object: &Self::S) {
-        let coords = object.get_coordinates();
-        let mut out_writer = out_writer(&self.out_fname, self.if_append);
-        out_writer
-            .write(format!("{:.6} ", self.i_model).as_bytes())
-            .ok();
-        for _ic in 0..coords.get_chains_count() {
-            // HERE !!!
-            let result: f64 = 0.12345;
-            out_writer.write(format!("{:>10.3} ", result).as_bytes()).ok();
-        }
-        out_writer.write("\n".as_bytes()).ok();
-        self.i_model += 1;
-    }
-
-    fn flush(&mut self) {}
-
-    fn name(&self) -> &str {
-        "BondViolationObserver"
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
