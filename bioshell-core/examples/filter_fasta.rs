@@ -1,6 +1,6 @@
 use std::env;
 use clap::{Parser};
-use log::{info};
+use log::{debug, info};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::fs::File;
@@ -8,7 +8,7 @@ use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
 
-use bioshell_core::sequence::{FastaIterator, count_residue_type};
+use bioshell_core::sequence::{FastaIterator, count_residue_type, Sequence};
 use bioshell_core::utils::open_file;
 
 #[derive(Parser, Debug)]
@@ -29,9 +29,12 @@ struct Args {
     /// print only unique sequences
     #[clap(short='u', long)]
     unique: bool,
-    /// batch retrieval: print only these sequences whose ID is on the list provided as an input file
+    /// batch retrieval by ID: print only these sequences whose ID is on the list provided as an input file
     #[clap(short='r', long)]
     retrieval_list: Option<String>,
+    /// batch retrieval by FASTA: print a database sequence only if it also appears in the given query FASTA file
+    #[clap(short='q', long)]
+    query_fasta: Option<String>,
 }
 
 pub fn main() {
@@ -40,6 +43,8 @@ pub fn main() {
     env_logger::init();
     let args = Args::parse();
     let fname= args.infile;
+
+    // ---------- Check is user wants to retrieve sequences by IDs
     let mut if_retrieve = false;
     let mut requested_ids: HashSet<String> = HashSet::new();
     if let Some(rfile) = args.retrieval_list {
@@ -49,6 +54,20 @@ pub fn main() {
         requested_ids = HashSet::from_iter(reader.lines().map(|l| l.unwrap()));
         info!("{} sequences selected for retrieval", requested_ids.len());
     }
+
+    // ---------- Check is user wants to retrieve sequences that are given in a query FASTA file
+    let mut query_fasta: Vec<(String, String)> = vec![];
+    let mut if_fasta_retrieve = false;
+    if let Some(qfile) = args.query_fasta {
+        if_fasta_retrieve = true;
+        let reader = open_file(&qfile);
+        let seq_iter = FastaIterator::new(reader);
+        for sequence in seq_iter {
+            let id = String::from(sequence.id());
+            query_fasta.push((sequence.to_string(), id));
+        }
+    }
+
     let reader = open_file(&fname);
     let seq_iter = FastaIterator::new(reader);
     let mut cnt_all: usize = 0;
@@ -62,15 +81,31 @@ pub fn main() {
     let start = Instant::now();
     for sequence in seq_iter {
         cnt_all += 1;
+        // ---------- filter by length
+        if sequence.len() < min_len || sequence.len() > max_len { continue }
+        // ---------- remove too many X's
+        if max_x > 0 && count_residue_type(&sequence, 'X') > max_x { continue }
         // ---------- keep only requested sequences
         if if_retrieve {
             let id = sequence.id();
             if !requested_ids.contains(id) { continue }
         }
-        // ---------- filter by length
-        if sequence.len() < min_len || sequence.len() > max_len { continue }
-        // ---------- remove too many X's
-        if max_x > 0 && count_residue_type(&sequence, 'X') > max_x { continue }
+        // ---------- keep only sequences found in the input query fasta
+        if if_fasta_retrieve {
+            let sequence_as_str: String = sequence.to_string();
+            for (seq, id) in &query_fasta {
+                let it: Vec<_>  = sequence_as_str.match_indices(seq).collect();
+                if it.len() > 0 { debug!("Found {} in {}",id, sequence.id()) }
+                for (from, hit) in it {
+                    let new_id = format!("{} ({} {}:{})",
+                                         sequence.description(), id, from, from + hit.len());
+                    let s = Sequence::new(&new_id, &sequence_as_str);
+                    println!("{}", s);
+                }
+            }
+            if cnt_all % 100 == 0 { debug!("Processed {} sequences",cnt_all); }
+            continue;
+        }
         // ---------- remove redundant sequences
         if args.unique {
             let mut hasher = DefaultHasher::new();
