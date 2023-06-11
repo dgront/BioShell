@@ -171,4 +171,4 @@ pub fn main() {
         false,
     );
 }
-*/
+*/fn main() {}

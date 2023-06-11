@@ -161,64 +161,30 @@ impl CartesianSystem {
     }
 
     /// Calculates the periodic image of a vector relative to a reference point
-    /*pub fn periodic_image(&self, reference: &Vec3, vector: &Vec3) -> Vec3 {
-        let box_len = self.box_len();
-
-        let mut image = vector.clone();
-        let mut delta = reference.clone() - *vector;
-
-        // Apply periodic boundary conditions along each dimension
-        if delta.x > 0.5 * box_len {
-            delta.x -= box_len;
-            image.x += box_len;
-        } else if delta.x < -0.5 * box_len {
-            delta.x += box_len;
-            image.x -= box_len;
-        }
-
-        if delta.y > 0.5 * box_len {
-            delta.y -= box_len;
-            image.y += box_len;
-        } else if delta.y < -0.5 * box_len {
-            delta.y += box_len;
-            image.y -= box_len;
-        }
-
-        if delta.z > 0.5 * box_len {
-            delta.z -= box_len;
-            image.z += box_len;
-        } else if delta.z < -0.5 * box_len {
-            delta.z += box_len;
-            image.z -= box_len;
-        }
-
-        image
-    }*/
-    /// Calculates the periodic image of a vector relative to a reference point
     pub fn get_periodic_image(&self, reference: &Vec3, vector: &Vec3) -> Vec3 {
-        let box_len = self.get_box_len();
+        let box_len_f64 = self.get_box_len();
 
-        let mut image = *vector;
-        let delta = *reference - *vector;
+        let mut image_vec3 = Vec3::new(vector.x, vector.y, vector.z);
+        let delta_vec3 = *reference - *vector;
 
         // Apply periodic boundary conditions along each dimension
-        let half_box_len = 0.5 * box_len;
+        let half_box_len_f64 = 0.5 * box_len_f64;
 
         // X-axis
-        if delta.x.abs() > half_box_len {
-            image.x += box_len * delta.x.signum();
+        if delta_vec3.x.abs() > half_box_len_f64 {
+            image_vec3.x += box_len_f64 * delta_vec3.x.signum();
         }
 
         // Y-axis
-        if delta.y.abs() > half_box_len {
-            image.y += box_len * delta.y.signum();
+        if delta_vec3.y.abs() > half_box_len_f64 {
+            image_vec3.y += box_len_f64 * delta_vec3.y.signum();
         }
 
         // Z-axis
-        if delta.z.abs() > half_box_len {
-            image.z += box_len * delta.z.signum();
+        if delta_vec3.z.abs() > half_box_len_f64 {
+            image_vec3.z += box_len_f64 * delta_vec3.z.signum();
         }
-        image
+        image_vec3
     }
 }
 

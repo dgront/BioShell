@@ -83,4 +83,3 @@ impl<E: Energy<CartesianSystem>> Mover<CartesianSystem, E> for CrankshaftMove {
         self.max_angle = new_val;
     }
 }
-
