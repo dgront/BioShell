@@ -92,17 +92,23 @@ pub fn main() {
         }
         // ---------- keep only sequences found in the input query fasta
         if if_fasta_retrieve {
+            let mut if_found = false;
             let sequence_as_str: String = sequence.to_string();
             for (seq, id) in &query_fasta {
                 let it: Vec<_>  = sequence_as_str.match_indices(seq).collect();
-                if it.len() > 0 { debug!("Found {} in {}",id, sequence.id()) }
+                if it.len() > 0 {
+                    if_found = true;
+                    debug!("Found {} in {}",id, sequence.id());
+                }
                 for (from, hit) in it {
-                    let new_id = format!("{} ({} {}:{})",
-                                         sequence.description(), id, from, from + hit.len());
+                    let perc = (hit.len() as f64) / (sequence.len() as f64) * 100.0;
+                    let new_id = format!("{} ({} {}:{}, {:6.2}%)",
+                                         sequence.description(), id, from, from + hit.len(), perc);
                     let s = Sequence::new(&new_id, &sequence_as_str);
                     println!("{}", s);
                 }
             }
+            if !if_found { debug!("Nothing found for {}",sequence.id()); }
             if cnt_all % 100 == 0 { debug!("Processed {} sequences",cnt_all); }
             continue;
         }
