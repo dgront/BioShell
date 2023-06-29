@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod cartesian_system_test {
-    use bioshell_cartesians::{CartesianSystem, Coordinates, NbList, NbListRules, PolymerRules};
+    use bioshell_cartesians::{CartesianSystem, Coordinates, NeighborList, NbListRules, PolymerRules};
     use bioshell_numerical::{Rototranslation, Vec3, assert_eq_vec3, assert_eq_float};
 
     #[test]
     fn cartesian_system_test_1() {
         const E_TO: f64 = 6.0;
         let buffer_thickness = 4.0;
-        let nbl: NbList = NbList::new(E_TO, buffer_thickness, Box::new(PolymerRules {}));
+        let nbl: NeighborList = NeighborList::new(E_TO, buffer_thickness, Box::new(PolymerRules {}));
         let mut coords = Coordinates::new(3);//create a coordinate of length: 3.
         coords.add_xyz(0, 1.0, 1.0, 1.0);
         coords.add_xyz(1, 2.0, 2.0, 2.0);
@@ -24,7 +24,7 @@ mod cartesian_system_test {
     fn cartesian_system_test_2() {
         const E_TO: f64 = 6.0;
         let buffer_thickness = 4.0;
-        let nbl: NbList = NbList::new(E_TO, buffer_thickness, Box::new(PolymerRules {}));
+        let nbl: NeighborList = NeighborList::new(E_TO, buffer_thickness, Box::new(PolymerRules {}));
         let mut coords = Coordinates::new(3);   //create a coordinate of length: 3.
         coords.add_xyz(0, 1.0, 1.0, 1.0);
         coords.add_xyz(1, 2.0, 2.0, 2.0);
@@ -49,7 +49,7 @@ mod cartesian_system_test {
     fn cartesian_system_rototranslation_test() {
         const E_TO: f64 = 6.0;
         let buffer_thickness = 4.0;
-        let nbl: NbList = NbList::new(E_TO, buffer_thickness, Box::new(PolymerRules {}));
+        let nbl: NeighborList = NeighborList::new(E_TO, buffer_thickness, Box::new(PolymerRules {}));
         let mut coords = Coordinates::new(5);
         coords.add_xyz(0, 1.0, 1.0, 1.0);
         coords.add_xyz(1, 1.0, 2.0, 3.0);
@@ -81,7 +81,7 @@ mod cartesian_system_test {
     fn cartesian_system_periodic_image_test() {
         const E_TO: f64 = 6.0;
         let buffer_thickness = 4.0;
-        let nbl: NbList = NbList::new(E_TO, buffer_thickness, Box::new(PolymerRules {}));
+        let nbl: NeighborList = NeighborList::new(E_TO, buffer_thickness, Box::new(PolymerRules {}));
         let mut coords = Coordinates::new(5);
         let mut coords = Coordinates::new(5);
         coords.add_xyz(0, 1.0, 1.0, 1.0);

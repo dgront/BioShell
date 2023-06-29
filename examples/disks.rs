@@ -9,7 +9,7 @@ use clap::Parser;
 use bioshell_cartesians::pdb_trajectory::PdbTrajectory;
 use bioshell_cartesians::{
     write_coordinates_to_pdb, pdb_to_coordinates, square_grid_atoms, ArgonRules, CartesianSystem,
-    Coordinates, NbList,
+    Coordinates, NeighborList,
 };
 use bioshell_sim::{Energy, Observer, ObserversSet, System};
 
@@ -216,7 +216,7 @@ pub fn main() {
     );
 
     // ---------- Create system's list of neighbors
-    let nbl: NbList = NbList::new(R + W as f64, buffer_thickness, Box::new(ArgonRules {}));
+    let nbl: NeighborList = NeighborList::new(R + W as f64, buffer_thickness, Box::new(ArgonRules {}));
 
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);

@@ -1,6 +1,6 @@
 use crate::coordinates::{Coordinates};
 use crate::coordinates_view::{CoordinatesView};
-use crate::nblist::{NbList};
+use crate::nblist::{NeighborList};
 use crate::trait_nb_list_rules::{NbListRules};
 use bioshell_numerical::Vec3;
 use bioshell_sim::{ResizableSystem, System};
@@ -8,11 +8,11 @@ use bioshell_sim::{ResizableSystem, System};
 #[derive(Clone)]
 pub struct CartesianSystem {
     coords_: Coordinates,
-    neighbor_list_: NbList,
+    neighbor_list_: NeighborList,
 }
 
 impl CartesianSystem {
-    pub fn new(coords: Coordinates, neighbor_list: NbList) -> CartesianSystem {
+    pub fn new(coords: Coordinates, neighbor_list: NeighborList) -> CartesianSystem {
         let mut system = CartesianSystem {
             coords_: coords,
             neighbor_list_: neighbor_list,
@@ -53,7 +53,7 @@ impl CartesianSystem {
     }
 
     /// Provide immutable access to the list of neighbors
-    pub fn get_neighbor_list(&self) -> &NbList {
+    pub fn get_neighbor_list(&self) -> &NeighborList {
         &self.neighbor_list_
     }
 
@@ -132,7 +132,7 @@ impl CartesianSystem {
 
     /// Provides the interaction cutoff radius used by the neighbor list
     pub fn get_cutoff(&self) -> f64 {
-        self.neighbor_list_.cutoff()
+        self.neighbor_list_.get_cutoff()
     }
 
     /// Modifies the interaction cutoff radius used by the neighbor list
@@ -142,12 +142,12 @@ impl CartesianSystem {
 
     /// Provides the width of the buffer zone used by the neighbor list
     pub fn get_buffer_width(&self) -> f64 {
-        self.neighbor_list_.buffer_width()
+        self.neighbor_list_.get_buffer_thickness()
     }
 
     /// Modifies the width of the buffer zone used by the neighbor list
     pub fn set_buffer_width(&mut self, width: f64) {
-        self.neighbor_list_.set_buffer_width(width);
+        self.neighbor_list_.set_buffer_thickness(width);
     }
 
     /// Sets new rules that define which atoms and atom pairs can be neighbors.

@@ -9,13 +9,11 @@ use bioshell_cartesians::gyration_squared::{GyrationSquared};
 use bioshell_cartesians::pdb_trajectory::{PdbTrajectory};
 use bioshell_cartesians::r_end_squared::{REndSquared};
 use bioshell_cartesians::{
-    compute_box_width, write_coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NbList,
+    compute_box_width, write_coordinates_to_pdb, pdb_to_coordinates, CartesianSystem, Coordinates, NeighborList,
     PolymerRules,
 };
 use bioshell_cartesians::random_chain::RandomChain;
-
 use bioshell_sim::{Energy, ObserversSet, System};
-
 use bioshell_ff::nonbonded::{PairwiseNonbondedEvaluator, SimpleContact};
 use bioshell_montecarlo::{AdaptiveMCProtocol, IsothermalMC, Sampler, StepwiseBuilder};
 
@@ -125,7 +123,7 @@ pub fn main() {
     );
 
     // ---------- Create a non-bonded list of neighbors
-    let nbl: NbList = NbList::new(E_TO, buffer_thickness, Box::new(PolymerRules {}));
+    let nbl: NeighborList = NeighborList::new(E_TO, buffer_thickness, Box::new(PolymerRules {}));
     
 	// ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);
@@ -156,7 +154,8 @@ pub fn main() {
     simple_sampler.add_mover(Box::new(SingleAtomMove::new(MAX_MOVE_RANGE)));
 
     // ---------- Decorate the sampler into an adaptive MC protocol
-    let mut sampler = AdaptiveMCProtocol::new(Box::new(simple_sampler));
+    let mut sampler
+        = AdaptiveMCProtocol::new(Box::new(simple_sampler));
     sampler.target_rate = 0.4;
 
     let mut observations: ObserversSet<CartesianSystem> = ObserversSet::new();

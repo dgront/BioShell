@@ -18,6 +18,6 @@ pub use indie_functions::{*};
 pub use cartesian_system::CartesianSystem;
 pub use crate::coordinates::{Coordinates};
 pub use crate::coordinates_view::{CoordinatesView};
-pub use nblist::{ArgonRules, NbList, PolymerRules};
+pub use nblist::{ArgonRules, NeighborList, PolymerRules};
 pub use trait_nb_list_rules::NbListRules;
 pub use pdb_coordinates::{write_coordinates_to_pdb, pdb_to_coordinates};

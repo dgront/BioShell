@@ -6,7 +6,7 @@ use bioshell_cartesians::movers::{ChangeVolume, SingleAtomMove};
 use bioshell_cartesians::pdb_trajectory::PdbTrajectory;
 use bioshell_cartesians::{
     compute_box_width, write_coordinates_to_pdb, cubic_grid_atoms, ArgonRules, CartesianSystem, Coordinates,
-    NbList,
+    NeighborList,
 };
 use bioshell_ff::nonbonded::{LennardJonesHomogenic, PairwiseNonbondedEvaluator};
 use bioshell_montecarlo::{AdaptiveMCProtocol, IsothermalMC, Sampler};
@@ -75,7 +75,7 @@ pub fn main() {
     write_coordinates_to_pdb(&coords, 1, tra_fname.as_str(), false);
 
     // ---------- Create system's list of neighbors
-    let nbl: NbList = NbList::new(CUTOFF as f64, 4.0, Box::new(ArgonRules {}));
+    let nbl: NeighborList = NeighborList::new(CUTOFF as f64, 4.0, Box::new(ArgonRules {}));
 
     // ---------- Create the system
     let mut system: CartesianSystem = CartesianSystem::new(coords, nbl);

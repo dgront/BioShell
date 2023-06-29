@@ -105,7 +105,7 @@ impl<E: PairwiseNonbonded> Energy<CartesianSystem> for PairwiseNonbondedEvaluato
         let mut en: f64 = 0.0;
 
         let chain = system.get_coordinates();
-        let pos_neighbors = system.get_neighbor_list().neighbors(pos);
+        let pos_neighbors = system.get_neighbor_list().get_neighbor(pos);
         pairwise_contact_neighbors_loop!(self, chain, pos, pos_neighbors, en);
 
         return en;
