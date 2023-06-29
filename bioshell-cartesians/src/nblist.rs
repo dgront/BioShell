@@ -260,7 +260,9 @@ impl NeighborList {
 
 
 
-    /// Add inner vectors to this non-bonded list so it has at least as many rows as the number of atoms in the given structure
+    /// Add inner vectors to this non-bonded list so it has
+    /// at least as many rows as the number of atoms in the
+    /// given structure
     fn extend(&mut self, system: &Coordinates) {
         if system.get_size() > self.nb_lists.len() {
             for _ in self.nb_lists.len()..system.get_size() {
