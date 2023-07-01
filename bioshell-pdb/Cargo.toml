@@ -1,0 +1,18 @@
+
+[package]
+name = "bioshell-pdb"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Provides PDB parsing facility"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell"]
+
+[lib]
+crate-type =["rlib", "cdylib"]
+
+[dependencies]
+rand = { version = "0.8.5", features = [ "small_rng" ] }
+clap = { version = "3.1.18", features = ["derive"] }
+rand_distr = {}   # for NormalDistribution
+

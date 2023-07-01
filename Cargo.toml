@@ -11,6 +11,7 @@ keywords = ["bioshell"]
 members = [
     "bioshell-core",
     "bioshell-numerical",
+    "bioshell-pdb",
     "bioshell-ff",
     "bioshell-sim",
     "bioshell-statistics",
@@ -22,6 +23,7 @@ members = [
 [dependencies]
 bioshell-core = { path = "./bioshell-core" }
 bioshell-numerical = { path = "./bioshell-numerical" }
+bioshell-pdb = { path = "./bioshell-pdb" }
 bioshell-ff = { path = "./bioshell-ff" }
 bioshell-sim = { path = "./bioshell-sim" }
 bioshell-clustering = { path = "./bioshell-clustering" }
