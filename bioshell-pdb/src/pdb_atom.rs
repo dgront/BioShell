@@ -1,0 +1,185 @@
+pub struct PdbAtom {
+    pub protein_name: String,
+    pub atom_serial_no: Option<i32>,
+    pub atom_symbol: String,
+    pub atom_position: String,
+    pub atom_no_in_the_branch: Option<i32>,
+    pub connected_to_atom_no_in_the_branch: Option<i32>,
+    pub alt_loc_indicator: String,
+    pub residue_name: String,
+    pub chain_name: String,
+    pub residue_no: Option<i32>,
+    pub insertion_code: String,
+    pub coordinate: Vec3,
+    pub occupancy: Option<f64>,
+    pub temperature_factor: Option<f64>,
+    pub segment_identifier: String,
+    pub segment_identifier_symbol: String,
+    pub charge_of_the_atom: String,
+}
+
+impl PdbAtom {
+    pub fn new() -> PdbAtom {
+        PdbAtom {
+            protein_name: String::new(),
+            atom_serial_no: Some(0),
+            atom_symbol: String::new(),
+            atom_position: String::new(),
+            atom_no_in_the_branch: Some(0),
+            connected_to_atom_no_in_the_branch: Some(0),
+            alt_loc_indicator: String::new(),
+            residue_name: String::new(),
+            chain_name: String::new(),
+            residue_no: Some(0),
+            insertion_code: String::new(),
+            coordinate: Vec3::new(),
+            occupancy: Some(0.0),
+            temperature_factor: Some(0.0),
+            segment_identifier: String::new(),
+            segment_identifier_symbol: String::new(),
+            charge_of_the_atom: String::new(),
+        }
+    }
+
+    pub fn parse(atom_line: &str) -> PdbAtom {
+        let elements = PdbLineParser::parse_atom(atom_line).unwrap();
+
+        let mut atom = PdbAtom::new();
+
+        atom.atom_serial_no = Some(elements[1].trim().parse().unwrap());
+        let atom_info = elements[2].trim();
+
+        ///////////////////////////////////////
+        //OE1
+        //CA
+        let atom_info_len = atom_info.len();
+        if atom_info_len > 0 {
+            atom.atom_symbol = atom_info[0..1].to_string();
+        }
+        if atom_info_len > 1 {
+            atom.atom_position = atom_info[1..2].to_string();
+        }
+        if atom_info_len > 2 {
+            atom.atom_no_in_the_branch = Some(atom_info[2..3].parse().unwrap());
+        }
+        if atom_info_len > 3 {
+            atom.connected_to_atom_no_in_the_branch = Some(atom_info[3..4].parse().unwrap());
+        }
+
+        ///////////////////////////////////////
+        atom.alt_loc_indicator = elements[3].trim().to_string();
+        atom.residue_name = elements[4].trim().to_string();
+        atom.chain_name = elements[5].trim().to_string();
+        atom.residue_no = Some(elements[6].trim().parse().unwrap());
+        atom.insertion_code = elements[7].trim().to_string();
+        atom.coordinate = Vec3::new(
+            elements[8].trim().parse().unwrap(),
+            elements[9].trim().parse().unwrap(),
+            elements[10].trim().parse().unwrap(),
+        );
+        atom.occupancy = Some(elements[11].trim().parse().unwrap());
+        atom.temperature_factor = Some(elements[12].trim().parse().unwrap());
+        atom.segment_identifier =
+            if elements[13].trim().is_empty() { String::new() } else { elements[13].trim().to_string() };
+        atom.segment_identifier_symbol = elements[14].trim().to_string();
+        atom.charge_of_the_atom =
+            if elements[15].trim().is_empty() { String::new() } else { elements[15].trim().to_string() };
+
+        atom
+    }
+
+    pub fn header() -> String {
+        "AtomSerialNo,AtomSymbol,AtomPosition,AtomNoInTheBranch,ConnectedToAtomNoInTheBranch,AltLocIndicator,ResidueName,ChainName,ResidueNo,InsertionCode,Coordinate.X,Coordinate.Y,Coordinate.Z,Occupancy,TemperatureFactor,SegmentIdentifier,ChargeOfTheAtom".to_string()
+    }
+
+    pub fn to_csv_string(&self) -> String {
+        let mut csv_string = String::new();
+
+        csv_string.push_str(&self.atom_serial_no.map_or("#".to_string(), |x| x.to_string()));
+        csv_string.push(',');
+        csv_string.push_str(if self.atom_symbol.is_empty() { "#" } else { &self.atom_symbol });
+        csv_string.push(',');
+        csv_string.push_str(if self.atom_position.is_empty() { "#" } else { &self.atom_position });
+        csv_string.push(',');
+        csv_string.push_str(&self.atom_no_in_the_branch.map_or("#".to_string(), |x| x.to_string()));
+        csv_string.push(',');
+        csv_string.push_str(&self.connected_to_atom_no_in_the_branch.map_or("#".to_string(), |x| x.to_string()));
+        csv_string.push(',');
+        csv_string.push_str(&self.alt_loc_indicator);
+        csv_string.push(',');
+        csv_string.push_str(&self.residue_name);
+        csv_string.push(',');
+        csv_string.push_str(&self.chain_name);
+        csv_string.push(',');
+        csv_string.push_str(&self.residue_no.map_or("#".to_string(), |x| x.to_string()));
+        csv_string.push(',');
+        csv_string.push_str(&self.insertion_code);
+        csv_string.push(',');
+        csv_string.push_str(&self.coordinate.x.to_string());
+        csv_string.push(',');
+        csv_string.push_str(&self.coordinate.y.to_string());
+        csv_string.push(',');
+        csv_string.push_str(&self.coordinate.z.to_string());
+        csv_string.push(',');
+        csv_string.push_str(&self.occupancy.map_or("#".to_string(), |x| x.to_string()));
+        csv_string.push(',');
+        csv_string.push_str(&self.temperature_factor.map_or("#".to_string(), |x| x.to_string()));
+        csv_string.push(',');
+        csv_string.push_str(&self.segment_identifier);
+        csv_string.push(',');
+        csv_string.push_str(&self.segment_identifier_symbol);
+        csv_string.push(',');
+        csv_string.push_str(&self.charge_of_the_atom);
+
+        csv_string
+    }
+}
+
+pub struct Vec3 {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+}
+
+impl Vec3 {
+    pub fn new() -> Vec3 {
+        Vec3 { x: 0.0, y: 0.0, z: 0.0 }
+    }
+
+    pub fn new_with_values(x: f64, y: f64, z: f64) -> Vec3 {
+        Vec3 { x, y, z }
+    }
+}
+
+pub struct PdbLineParser {}
+
+impl PdbLineParser {
+    pub fn parse_atom(atom_line: &str) -> Option<Vec<&str>> {
+        if !atom_line.starts_with("ATOM") && !atom_line.starts_with("HETATM") {
+            return None;
+        }
+
+        let mut elements: Vec<&str> = Vec::with_capacity(16);
+
+        let line = atom_line.trim_end();
+
+        elements.push(&line[0..6]); // Record name
+        elements.push(&line[6..11]); // Atom serial number
+        elements.push(&line[12..16]); // Atom name
+        elements.push(&line[16..17]); // Alt location indicator
+        elements.push(&line[17..20]); // Residue name
+        elements.push(&line[21..22]); // Chain identifier
+        elements.push(&line[22..26]); // Residue sequence number
+        elements.push(&line[26..27]); // Insertion code
+        elements.push(&line[30..38]); // X coordinate
+        elements.push(&line[38..46]); // Y coordinate
+        elements.push(&line[46..54]); // Z coordinate
+        elements.push(&line[54..60]); // Occupancy
+        elements.push(&line[60..66]); // Temperature factor
+        elements.push(&line[72..76]); // Segment identifier
+        elements.push(&line[76..78]); // Element symbol
+        elements.push(&line[78..80]); // Charge on the atom
+
+        Some(elements)
+    }
+}
