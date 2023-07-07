@@ -1,10 +1,13 @@
+use std::string::String;
+use crate::pdb_atom::PdbAtom;
+
 pub struct PdbLineParser;
 
 impl PdbLineParser {
     pub fn parse_atom(pdb_line: &str) -> Option<[String; 16]> {
-        let mut elements = [String::new(); 16];
+        let mut elements: [String; 16] = Default::default();
 
-        let record_name = &pdb_line[0..6];
+        let record_name = &pdb_line[0..6].trim();
         let atom_serial_no = &pdb_line[6..11];
         let atom_name = &pdb_line[12..16];
         let alt_loc_indicator = &pdb_line[16..17];
@@ -42,10 +45,16 @@ impl PdbLineParser {
     }
 
     pub fn assemble_atom(pdb_atom: &PdbAtom) -> String {
+        let atom_serial_no = pdb_atom.atom_serial_no.unwrap_or(0);
+        let residue_no = pdb_atom.residue_no.unwrap_or(0);
+
+        let occupancy = pdb_atom.occupancy.unwrap_or(0.0);
+        let temperature_factor = pdb_atom.temperature_factor.unwrap_or(0.0);
+
         let atom = format!("{:<6}{:>5} {:<4}{:<1}{:<3} {:<1}{:>4}{:>1}{:>8.3}{:>8.3}{:>8.3}{:>6.2}{:>6.2}{:>10}{:<2}{:<2}",
-                           "ATOM", pdb_atom.atom_serial_no, pdb_atom.atom_symbol, pdb_atom.alt_loc_indicator, pdb_atom.residue_name,
-                           pdb_atom.chain_name, pdb_atom.residue_no, pdb_atom.insertion_code, pdb_atom.coordinate.x, pdb_atom.coordinate.y, pdb_atom.coordinate.z, pdb_atom.occupancy,
-                           pdb_atom.temperature_factor, pdb_atom.segment_identifier, pdb_atom.segment_identifier_symbol, pdb_atom.charge_of_the_atom);
+                           "ATOM", atom_serial_no, pdb_atom.atom_symbol, pdb_atom.alt_loc_indicator, pdb_atom.residue_name,
+                           pdb_atom.chain_name, residue_no, pdb_atom.insertion_code, pdb_atom.coordinate.x, pdb_atom.coordinate.y, pdb_atom.coordinate.z, occupancy,
+                           temperature_factor, pdb_atom.segment_identifier, pdb_atom.segment_identifier_symbol, pdb_atom.charge_of_the_atom);
 
         atom
     }

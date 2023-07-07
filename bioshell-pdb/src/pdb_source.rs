@@ -1,3 +1,4 @@
+/*
 pub struct PdbSource {
     molecule_id: i32,
     scientific_organism: String,
@@ -36,4 +37,4 @@ impl PdbSource {
     pub fn strain(&self) -> &str {
         &self.strain
     }
-}
+}*/

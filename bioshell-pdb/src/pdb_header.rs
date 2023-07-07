@@ -1,3 +1,4 @@
+/*
 pub struct PdbHeader {
     description: String,
     date: String,
@@ -17,3 +18,4 @@ impl PdbHeader {
         format!("{}{}{}", self.description, self.date, self.protein_name)
     }
 }
+ */

@@ -23,7 +23,7 @@ members = [
 [dependencies]
 bioshell-core = { path = "./bioshell-core" }
 bioshell-numerical = { path = "./bioshell-numerical" }
-bioshell-pdb = { path = "./bioshell-pdb" }
+bioshell_pdb = { path = "./bioshell-pdb" }
 bioshell-ff = { path = "./bioshell-ff" }
 bioshell-sim = { path = "./bioshell-sim" }
 bioshell-clustering = { path = "./bioshell-clustering" }

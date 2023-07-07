@@ -1,3 +1,4 @@
+/*
 pub struct PdbCompound {
     molecule_id: i32,
     molecule_name: String,
@@ -25,3 +26,4 @@ impl PdbCompound {
         &self.chain
     }
 }
+ */

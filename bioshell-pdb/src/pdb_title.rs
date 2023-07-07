@@ -1,3 +1,4 @@
+/*
 pub struct PdbTitle {
     text: String,
 }
@@ -12,4 +13,4 @@ impl PdbTitle {
     pub fn to_string(&self) -> String {
         self.text.clone()
     }
-}
+}*/

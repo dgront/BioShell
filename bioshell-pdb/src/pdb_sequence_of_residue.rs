@@ -1,3 +1,4 @@
+/*
 pub struct PdbSequenceOfResidue {
     chain_id: String,
     sequence: Vec<String>,
@@ -19,3 +20,5 @@ impl PdbSequenceOfResidue {
         &self.sequence
     }
 }
+
+ */

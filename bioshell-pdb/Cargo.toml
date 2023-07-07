@@ -1,6 +1,5 @@
-
 [package]
-name = "bioshell-pdb"
+name = "bioshell_pdb"
 version = "4.0.0-dev"
 edition = "2021"
 description = "Provides PDB parsing facility"
@@ -10,9 +9,11 @@ keywords = ["bioshell"]
 
 [lib]
 crate-type =["rlib", "cdylib"]
+name = "bioshell_pdb"
+path = "src/lib.rs"
 
 [dependencies]
 rand = { version = "0.8.5", features = [ "small_rng" ] }
 clap = { version = "3.1.18", features = ["derive"] }
 rand_distr = {}   # for NormalDistribution
-
+bioshell-numerical = { path = "../bioshell-numerical" }

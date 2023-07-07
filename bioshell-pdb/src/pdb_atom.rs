@@ -1,3 +1,7 @@
+use std::string::String;
+use bioshell_numerical::vec3::Vec3;
+use crate::pdb_line_parser::PdbLineParser;
+
 pub struct PdbAtom {
     pub protein_name: String,
     pub atom_serial_no: Option<i32>,
@@ -32,7 +36,7 @@ impl PdbAtom {
             chain_name: String::new(),
             residue_no: Some(0),
             insertion_code: String::new(),
-            coordinate: Vec3::new(),
+            coordinate: Vec3::zero(),
             occupancy: Some(0.0),
             temperature_factor: Some(0.0),
             segment_identifier: String::new(),
@@ -132,54 +136,5 @@ impl PdbAtom {
         csv_string.push_str(&self.charge_of_the_atom);
 
         csv_string
-    }
-}
-
-pub struct Vec3 {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
-}
-
-impl Vec3 {
-    pub fn new() -> Vec3 {
-        Vec3 { x: 0.0, y: 0.0, z: 0.0 }
-    }
-
-    pub fn new_with_values(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3 { x, y, z }
-    }
-}
-
-pub struct PdbLineParser {}
-
-impl PdbLineParser {
-    pub fn parse_atom(atom_line: &str) -> Option<Vec<&str>> {
-        if !atom_line.starts_with("ATOM") && !atom_line.starts_with("HETATM") {
-            return None;
-        }
-
-        let mut elements: Vec<&str> = Vec::with_capacity(16);
-
-        let line = atom_line.trim_end();
-
-        elements.push(&line[0..6]); // Record name
-        elements.push(&line[6..11]); // Atom serial number
-        elements.push(&line[12..16]); // Atom name
-        elements.push(&line[16..17]); // Alt location indicator
-        elements.push(&line[17..20]); // Residue name
-        elements.push(&line[21..22]); // Chain identifier
-        elements.push(&line[22..26]); // Residue sequence number
-        elements.push(&line[26..27]); // Insertion code
-        elements.push(&line[30..38]); // X coordinate
-        elements.push(&line[38..46]); // Y coordinate
-        elements.push(&line[46..54]); // Z coordinate
-        elements.push(&line[54..60]); // Occupancy
-        elements.push(&line[60..66]); // Temperature factor
-        elements.push(&line[72..76]); // Segment identifier
-        elements.push(&line[76..78]); // Element symbol
-        elements.push(&line[78..80]); // Charge on the atom
-
-        Some(elements)
     }
 }
