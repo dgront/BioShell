@@ -2,7 +2,6 @@
 mod tests {
     use bioshell_numerical::Vec3;
     use bioshell_pdb::PdbAtom;
-    use super::*;
 
     #[test]
     fn test_new() {
@@ -35,7 +34,7 @@ mod tests {
         assert_eq!(atom.atom_symbol, "O");
         assert_eq!(atom.atom_position, "E");
         assert_eq!(atom.atom_no_in_the_branch, Some(1));
-        assert_eq!(atom.connected_to_atom_no_in_the_branch, None);
+        assert_eq!(atom.connected_to_atom_no_in_the_branch, Some(0));
         assert_eq!(atom.alt_loc_indicator, "");
         assert_eq!(atom.residue_name, "GLN");
         assert_eq!(atom.chain_name, "A");
@@ -47,18 +46,18 @@ mod tests {
         assert_eq!(atom.occupancy, Some(1.0));
         assert_eq!(atom.temperature_factor, Some(9.58));
         assert_eq!(atom.segment_identifier, "");
-        assert_eq!(atom.segment_identifier_symbol, "");
-        assert_eq!(atom.charge_of_the_atom, "O");
+        assert_eq!(atom.segment_identifier_symbol, "O");
+        assert_eq!(atom.charge_of_the_atom, "");
     }
 
     #[test]
     fn test_to_csv_string() {
         let mut atom = PdbAtom::new();
         atom.atom_serial_no = Some(2831);
-        atom.atom_symbol = "O".to_string();
-        atom.atom_position = "E".to_string();
-        atom.atom_no_in_the_branch = Some(1);
-        atom.residue_name = "GLN".to_string();
+        atom.atom_symbol = "O".to_string();//O
+        atom.atom_position = "E".to_string();//E
+        atom.atom_no_in_the_branch = Some(1);//1
+        atom.residue_name = "GLN".to_string();//
         atom.chain_name = "A".to_string();
         atom.residue_no = Some(294);
         atom.coordinate = Vec3::new(-27.117, 12.343, 28.479);
@@ -66,7 +65,9 @@ mod tests {
         atom.temperature_factor = Some(9.58);
         atom.charge_of_the_atom = "O".to_string();
         let csv_string = atom.to_csv_string();
-        assert_eq!(csv_string, "2831,O,E,1,0,,GLN,A,294,,,-27.117,12.343,28.479,1,9.58,,O");
+
+        ///////////////////////"2831,O,E,1,#,#,GLN,A,294,#,-27.117,12.343,28.479,1,9.58,#,#,O"
+        assert_eq!(csv_string, "2831,O,E,1,#,#,GLN,A,294,#,-27.117,12.343,28.479,1,9.58,#,#,O");
     }
 
     #[test]

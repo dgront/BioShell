@@ -96,9 +96,9 @@ impl PdbAtom {
         "AtomSerialNo,AtomSymbol,AtomPosition,AtomNoInTheBranch,ConnectedToAtomNoInTheBranch,AltLocIndicator,ResidueName,ChainName,ResidueNo,InsertionCode,Coordinate.X,Coordinate.Y,Coordinate.Z,Occupancy,TemperatureFactor,SegmentIdentifier,ChargeOfTheAtom".to_string()
     }
 
-    pub fn to_csv_string(&self) -> String {
+    pub fn to_csv_string(&self) -> String
+    {
         let mut csv_string = String::new();
-
         csv_string.push_str(&self.atom_serial_no.map_or("#".to_string(), |x| x.to_string()));
         csv_string.push(',');
         csv_string.push_str(if self.atom_symbol.is_empty() { "#" } else { &self.atom_symbol });
@@ -107,9 +107,15 @@ impl PdbAtom {
         csv_string.push(',');
         csv_string.push_str(&self.atom_no_in_the_branch.map_or("#".to_string(), |x| x.to_string()));
         csv_string.push(',');
-        csv_string.push_str(&self.connected_to_atom_no_in_the_branch.map_or("#".to_string(), |x| x.to_string()));
+        csv_string.push_str(&self.connected_to_atom_no_in_the_branch.map_or("#".to_string(), |n| {
+            if n == 0 {
+                "#".to_string()
+            } else {
+                n.to_string()
+            }
+        }));///#
         csv_string.push(',');
-        csv_string.push_str(&self.alt_loc_indicator);
+        csv_string.push_str(if self.alt_loc_indicator.is_empty() { "#" } else {&self.alt_loc_indicator});//#
         csv_string.push(',');
         csv_string.push_str(&self.residue_name);
         csv_string.push(',');
@@ -117,7 +123,7 @@ impl PdbAtom {
         csv_string.push(',');
         csv_string.push_str(&self.residue_no.map_or("#".to_string(), |x| x.to_string()));
         csv_string.push(',');
-        csv_string.push_str(&self.insertion_code);
+        csv_string.push_str(if self.insertion_code.is_empty() { "#" } else {&self.insertion_code});//#
         csv_string.push(',');
         csv_string.push_str(&self.coordinate.x.to_string());
         csv_string.push(',');
@@ -129,12 +135,11 @@ impl PdbAtom {
         csv_string.push(',');
         csv_string.push_str(&self.temperature_factor.map_or("#".to_string(), |x| x.to_string()));
         csv_string.push(',');
-        csv_string.push_str(&self.segment_identifier);
+        csv_string.push_str(if self.segment_identifier.is_empty() {"#"} else {&self.segment_identifier});
         csv_string.push(',');
-        csv_string.push_str(&self.segment_identifier_symbol);
+        csv_string.push_str(if self.segment_identifier_symbol.is_empty() {"#"} else {&self.segment_identifier_symbol});
         csv_string.push(',');
         csv_string.push_str(&self.charge_of_the_atom);
-
-        csv_string
+        return csv_string;
     }
 }
