@@ -5,9 +5,13 @@ pub struct PdbLineParser;
 
 impl PdbLineParser {
     pub fn parse_atom(pdb_line: &str) -> Option<[String; 16]> {
+        if !pdb_line.starts_with("ATOM"){
+            return None;
+        }
+
         let mut elements: [String; 16] = Default::default();
 
-        let record_name = &pdb_line[0..6].trim();
+        let record_name = &pdb_line[0..6];
         let atom_serial_no = &pdb_line[6..11];
         let atom_name = &pdb_line[12..16];
         let alt_loc_indicator = &pdb_line[16..17];
@@ -24,22 +28,22 @@ impl PdbLineParser {
         let segment_id_symbol = &pdb_line[76..78];
         let charge_on_the_atom = &pdb_line[78..80];
 
-        elements[0] = record_name.to_string();
-        elements[1] = atom_serial_no.to_string();
-        elements[2] = atom_name.to_string();
-        elements[3] = alt_loc_indicator.to_string();
-        elements[4] = residue_name.to_string();
-        elements[5] = chain_id.to_string();
-        elements[6] = residue_seq_no.to_string();
-        elements[7] = code_for_insertion_of_residues.to_string();
-        elements[8] = x_coord.to_string();
-        elements[9] = y_coord.to_string();
-        elements[10] = z_coord.to_string();
-        elements[11] = occupancy.to_string();
-        elements[12] = temperature_factor.to_string();
-        elements[13] = segment_id.to_string();
-        elements[14] = segment_id_symbol.to_string();
-        elements[15] = charge_on_the_atom.to_string();
+        elements[0] = record_name.trim().to_string();
+        elements[1] = atom_serial_no.trim().to_string();
+        elements[2] = atom_name.trim().to_string();
+        elements[3] = alt_loc_indicator.trim().to_string();
+        elements[4] = residue_name.trim().to_string();
+        elements[5] = chain_id.trim().to_string();
+        elements[6] = residue_seq_no.trim().to_string();
+        elements[7] = code_for_insertion_of_residues.trim().to_string();
+        elements[8] = x_coord.trim().to_string();
+        elements[9] = y_coord.trim().to_string();
+        elements[10] = z_coord.trim().to_string();
+        elements[11] = occupancy.trim().to_string();
+        elements[12] = temperature_factor.trim().to_string();
+        elements[13] = segment_id.trim().to_string();
+        elements[14] = segment_id_symbol.trim().to_string();
+        elements[15] = charge_on_the_atom.trim().to_string();
 
         Some(elements)
     }

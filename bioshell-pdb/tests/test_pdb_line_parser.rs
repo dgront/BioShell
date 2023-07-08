@@ -45,6 +45,6 @@ mod tests {
         pdb_atom.charge_of_the_atom = "O".to_string();
 
         let pdb_line = PdbLineParser::assemble_atom(&pdb_atom);
-        assert_eq!(pdb_line, "ATOM     2831 OE1  GLN A 294      -27.117  12.343  28.479  1.00  9.58          O ");
+        assert_eq!(pdb_line, "ATOM   2831 OE1  GLN A 294  -27.117  12.343  28.479  1.00  9.58            O ");
     }
 }
