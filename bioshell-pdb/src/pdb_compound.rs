@@ -1,4 +1,4 @@
-/*
+
 pub struct PdbCompound {
     molecule_id: i32,
     molecule_name: String,
@@ -14,16 +14,15 @@ impl PdbCompound {
         }
     }
 
-    pub fn molecule_id(&self) -> i32 {
+    pub fn get_molecule_id(&self) -> i32 {
         self.molecule_id
     }
 
-    pub fn molecule_name(&self) -> &str {
+    pub fn get_molecule_name(&self) -> &str {
         &self.molecule_name
     }
 
-    pub fn chain(&self) -> &str {
+    pub fn get_chain_id(&self) -> &str {
         &self.chain
     }
 }
- */
