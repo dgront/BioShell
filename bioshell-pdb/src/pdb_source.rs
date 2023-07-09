@@ -1,4 +1,4 @@
-/*
+
 pub struct PdbSource {
     molecule_id: i32,
     scientific_organism: String,
@@ -18,23 +18,23 @@ impl PdbSource {
         }
     }
 
-    pub fn molecule_id(&self) -> i32 {
+    pub fn get_molecule_id(&self) -> i32 {
         self.molecule_id
     }
 
-    pub fn scientific_organism(&self) -> &str {
+    pub fn get_scientific_organism(&self) -> &str {
         &self.scientific_organism
     }
 
-    pub fn common_organism(&self) -> &str {
+    pub fn get_common_organism(&self) -> &str {
         &self.common_organism
     }
 
-    pub fn organism_tax_id(&self) -> &str {
+    pub fn get_organism_tax_id(&self) -> &str {
         &self.organism_tax_id
     }
 
-    pub fn strain(&self) -> &str {
+    pub fn get_strain(&self) -> &str {
         &self.strain
     }
-}*/
+}
