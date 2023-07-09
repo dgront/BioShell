@@ -1,4 +1,4 @@
-/*
+
 pub struct PdbSequenceOfResidue {
     chain_id: String,
     sequence: Vec<String>,
@@ -12,13 +12,11 @@ impl PdbSequenceOfResidue {
         }
     }
 
-    pub fn chain_id(&self) -> &str {
+    pub fn get_chain_id(&self) -> &str {
         &self.chain_id
     }
 
-    pub fn sequence(&self) -> &[String] {
+    pub fn get_sequence(&self) -> &[String] {
         &self.sequence
     }
 }
-
- */
