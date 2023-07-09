@@ -1,4 +1,4 @@
-/*
+use clap::Result;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
@@ -9,7 +9,6 @@ use crate::pdb_header::PdbHeader;
 use crate::pdb_sequence_of_residue::PdbSequenceOfResidue;
 use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
-
 
 pub struct Pdb {
     pub header: Option<PdbHeader>,
@@ -94,4 +93,3 @@ impl Pdb {
         self.atoms_list.clone()
     }
 }
-*/
