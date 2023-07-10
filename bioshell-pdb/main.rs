@@ -1,22 +1,28 @@
 use bioshell_numerical::Vec3;
+use bioshell_pdb::Pdb;
 use bioshell_pdb::pdb_atom::PdbAtom;
 
 
 fn main() {
-    let mut atom = PdbAtom::new();
-    atom.atom_serial_no = Some(2831);
-    atom.atom_symbol = "O".to_string();//O
-    atom.atom_position = "E".to_string();//E
-    atom.atom_no_in_the_branch = Some(1);//1
-    atom.residue_name = "GLN".to_string();//
-    atom.chain_name = "A".to_string();
-    atom.residue_no = Some(294);
-    atom.coordinate = Vec3::new(-27.117, 12.343, 28.479);
-    atom.occupancy = Some(1.0);
-    atom.temperature_factor = Some(9.58);
-    atom.charge_of_the_atom = "O".to_string();
+    let pdb_file_path = "tests/test_files/4hhb.pdb";
+    let pdb = Pdb::from_file(pdb_file_path)?;
 
-    //////////////////////////2831,O,E,1,0,,GLN,A,294,,-27.117,12.343,28.479,1,9.58,,,O
-    //assert_eq!(csv_string, "2831,O,E,1,#,#,GLN,A,294,#,-27.117,12.343,28.479,1,9.58,#,O");
-    let csv_string = atom.to_csv_string();
+    assert_eq!(pdb.get_atoms_list().len(), 4384);
+
+    let first_atom = &pdb.get_atoms_list()[0];
+    assert_eq!(first_atom.get_atom_serial_no(), Some(0));
+    assert_eq!(first_atom.get_atom_symbol(), "N");
+    assert_eq!(first_atom.get_alt_loc_indicator(), " ");
+    assert_eq!(first_atom.get_residue_name(), "VAL");
+    assert_eq!(first_atom.get_chain_name(), "A");
+    assert_eq!(first_atom.get_residue_no(), Some(1));
+    assert_eq!(first_atom.get_insertion_code(), " ");
+    assert_eq!(first_atom.get_coordinate().x, 11.54);
+    assert_eq!(first_atom.get_coordinate().y, 11.88);
+    assert_eq!(first_atom.get_coordinate().z, 7.95);
+    assert_eq!(first_atom.get_occupancy(), Some(1.0));
+    assert_eq!(first_atom.get_temperature_factor(), Some(0.0));
+    assert_eq!(first_atom.get_atom_symbol(), "N");
+    assert_eq!(first_atom.get_charge_of_the_atom(), " ");
+    assert_eq!(first_atom.get_protein_name(), "4HHB");
 }

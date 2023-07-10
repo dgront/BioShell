@@ -2,6 +2,7 @@ use std::string::String;
 use bioshell_numerical::vec3::Vec3;
 use crate::pdb_line_parser::PdbLineParser;
 
+#[derive(Clone)]
 pub struct PdbAtom {
     pub protein_name: String,
     pub atom_serial_no: Option<i32>,
@@ -43,6 +44,10 @@ impl PdbAtom {
             segment_identifier_symbol: String::new(),
             charge_of_the_atom: String::new(),
         }
+    }
+
+    pub fn to_string(&self) -> String{
+       return PdbLineParser::assemble_atom(&self);
     }
 
     pub fn parse(atom_line: &str) -> PdbAtom {
@@ -113,7 +118,7 @@ impl PdbAtom {
             } else {
                 n.to_string()
             }
-        }));///#
+        }));
         csv_string.push(',');
         csv_string.push_str(if self.alt_loc_indicator.is_empty() { "#" } else {&self.alt_loc_indicator});//#
         csv_string.push(',');
@@ -141,5 +146,73 @@ impl PdbAtom {
         csv_string.push(',');
         csv_string.push_str(&self.charge_of_the_atom);
         return csv_string;
+    }
+
+    pub fn get_protein_name(&self) -> &str {
+        &self.protein_name
+    }
+
+    pub fn get_atom_serial_no(&self) -> Option<i32> {
+        self.atom_serial_no
+    }
+
+    pub fn get_atom_symbol(&self) -> &str {
+        &self.atom_symbol
+    }
+
+    pub fn get_atom_position(&self) -> &str {
+        &self.atom_position
+    }
+
+    pub fn get_atom_no_in_the_branch(&self) -> Option<i32> {
+        self.atom_no_in_the_branch
+    }
+
+    pub fn get_connected_to_atom_no_in_the_branch(&self) -> Option<i32> {
+        self.connected_to_atom_no_in_the_branch
+    }
+
+    pub fn get_alt_loc_indicator(&self) -> &str {
+        &self.alt_loc_indicator
+    }
+
+    pub fn get_residue_name(&self) -> &str {
+        &self.residue_name
+    }
+
+    pub fn get_chain_name(&self) -> &str {
+        &self.chain_name
+    }
+
+    pub fn get_residue_no(&self) -> Option<i32> {
+        self.residue_no
+    }
+
+    pub fn get_insertion_code(&self) -> &str {
+        &self.insertion_code
+    }
+
+    pub fn get_coordinate(&self) -> &Vec3 {
+        &self.coordinate
+    }
+
+    pub fn get_occupancy(&self) -> Option<f64> {
+        self.occupancy
+    }
+
+    pub fn get_temperature_factor(&self) -> Option<f64> {
+        self.temperature_factor
+    }
+
+    pub fn get_segment_identifier(&self) -> &str {
+        &self.segment_identifier
+    }
+
+    pub fn get_segment_identifier_symbol(&self) -> &str {
+        &self.segment_identifier_symbol
+    }
+
+    pub fn get_charge_of_the_atom(&self) -> &str {
+        &self.charge_of_the_atom
     }
 }

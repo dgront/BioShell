@@ -47,15 +47,21 @@ impl Pdb {
                     pdb_file.header = Some(header);
                 },
                 "TITLE" => {
-                    let title = PdbTitle::new(line);
+                    let title = PdbTitle::new(line.as_str());
                     pdb_file.title = Some(title);
                 },
                 "COMPND" => {},
                 "Source_" => {},
                 "SequenceOfResidue_" => {},
                 "ATOM" => {
-                    let mut atom = PdbAtom::new(line);
-                    atom.protein_name = pdb_file.header.as_ref().map_or_else(|| Path::new(file_name).file_stem().unwrap().to_str().unwrap().to_string(), |h| h.protein_name.clone());
+                    let mut atom = PdbAtom::new();
+
+                    let protein_name = match &pdb_file.header {
+                        Some(header) => header.get_protein_name(),
+                        None => Path::new(file_name).file_stem().unwrap().to_str().unwrap(),
+                    };
+
+                    atom.protein_name = protein_name.to_string();
                     pdb_file.atoms_list.push(atom);
                 },
                 _ => {},
@@ -90,6 +96,6 @@ impl Pdb {
     }
 
     pub fn get_atoms_list(&self) -> Vec<PdbAtom> {
-        self.atoms_list.clone()
+        return self.atoms_list.clone();
     }
 }
