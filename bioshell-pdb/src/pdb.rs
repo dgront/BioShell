@@ -6,6 +6,7 @@ use std::path::Path;
 use crate::pdb_atom::PdbAtom;
 use crate::pdb_compound::PdbCompound;
 use crate::pdb_header::PdbHeader;
+use crate::pdb_parsing_error::PdbParseError;
 use crate::pdb_sequence_of_residue::PdbSequenceOfResidue;
 use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
@@ -30,18 +31,15 @@ impl Pdb {
             atoms_list: vec![],
         }
     }
-
-    pub fn from_file(file_name: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_file(file_name: &str) -> Result<Self, PdbParseError> {
         let file = File::open(file_name)?;
         let reader = BufReader::new(file);
-
         let mut pdb_file = Pdb::new();
-
         for line in reader.lines() {
             let line = line?;
-            let splitted_line: Vec<&str> = line.split_whitespace().collect();
-
-            match splitted_line[0] {
+            // Check that the line has a valid PDB record type
+            let record_type = &line[0..6];
+            match record_type.trim() {
                 "HEADER" => {
                     let header = PdbHeader::new(&line);
                     pdb_file.header = Some(header);
@@ -64,19 +62,45 @@ impl Pdb {
                     atom.protein_name = protein_name.to_string();
                     pdb_file.atoms_list.push(atom);
                 },
-                _ => {},
+                _ => {
+                    return Err(PdbParseError::InvalidFormat);
+                },
             };
         }
-
         Ok(pdb_file)
     }
+
 
     pub fn write_csv(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let mut file = File::create(file_path)?;
         writeln!(file, "{}", PdbAtom::header())?;
 
         for atom in &self.atoms_list {
-            writeln!(file, "{}", atom.to_csv_string())?;
+            let mut fields = vec![
+                atom.atom_serial_no.unwrap().to_string(),
+                atom.atom_symbol.clone(),
+                atom.alt_loc_indicator.to_string(),
+                atom.residue_name.clone(),
+                atom.chain_name.to_string(),
+                atom.residue_no.unwrap().to_string(),
+                atom.insertion_code.to_string(),
+                atom.get_coordinate().x.to_string(),
+                atom.get_coordinate().y.to_string(),
+                atom.get_coordinate().z.to_string(),
+                atom.occupancy.map(|f| f.to_string()).unwrap_or_default(),
+                atom.temperature_factor.map(|f| f.to_string()).unwrap_or_default(),
+                atom.segment_identifier_symbol.to_string(),
+                atom.charge_of_the_atom.to_string(),
+                atom.protein_name.clone(),
+            ];
+
+            // Remove empty fields from the end of the vector
+            while fields.last().map(|s| s.is_empty()).unwrap_or(false) {
+                fields.pop();
+            }
+
+            // Write the fields to the CSV file
+            writeln!(file, "{}", fields.join(","))?;
         }
 
         Ok(())
@@ -96,6 +120,7 @@ impl Pdb {
     }
 
     pub fn get_atoms_list(&self) -> Vec<PdbAtom> {
+
         return self.atoms_list.clone();
     }
 }

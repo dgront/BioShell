@@ -47,7 +47,7 @@ impl PdbAtom {
     }
 
     pub fn to_string(&self) -> String{
-       return PdbLineParser::assemble_atom(&self);
+        return PdbLineParser::assemble_atom(&self);
     }
 
     pub fn parse(atom_line: &str) -> PdbAtom {
