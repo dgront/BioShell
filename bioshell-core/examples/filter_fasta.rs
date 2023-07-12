@@ -7,6 +7,7 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
+use regex::Regex;
 
 use bioshell_core::sequence::{FastaIterator, count_residue_type, Sequence};
 use bioshell_core::utils::open_file;
@@ -32,9 +33,9 @@ struct Args {
     /// batch retrieval by ID: print only these sequences whose ID is on the list provided as an input file
     #[clap(short='r', long)]
     retrieval_list: Option<String>,
-    /// batch retrieval by FASTA: print a database sequence only if it also appears in the given query FASTA file
-    #[clap(short='q', long)]
-    query_fasta: Option<String>,
+    /// batch retrieval by subsequences: print a database sequence only if it contains aa subsequence from a given FASTA file
+    #[clap(short='m', long)]
+    match_subsequences: Option<String>,
 }
 
 pub fn main() {
@@ -58,7 +59,7 @@ pub fn main() {
     // ---------- Check is user wants to retrieve sequences that are given in a query FASTA file
     let mut query_fasta: Vec<(String, String)> = vec![];
     let mut if_fasta_retrieve = false;
-    if let Some(qfile) = args.query_fasta {
+    if let Some(qfile) = args.match_subsequences {
         if_fasta_retrieve = true;
         let reader = open_file(&qfile);
         let seq_iter = FastaIterator::new(reader);
@@ -110,7 +111,7 @@ pub fn main() {
             }
             if !if_found { debug!("Nothing found for {}",sequence.id()); }
             if cnt_all % 100 == 0 { debug!("Processed {} sequences",cnt_all); }
-            continue;
+            continue;   // --- don't go below, since the sequence is already printed; instead start with the next sequence
         }
         // ---------- remove redundant sequences
         if args.unique {
