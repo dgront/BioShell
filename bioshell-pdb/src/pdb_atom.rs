@@ -69,7 +69,8 @@ impl PdbAtom {
             atom.atom_position = atom_info[1..2].to_string();
         }
         if atom_info_len > 2 {
-            atom.atom_no_in_the_branch = Some(atom_info[2..3].parse().unwrap());
+            let integer = atom_info[2..3].parse().unwrap_or(0);
+            atom.atom_no_in_the_branch = Some(integer);
         }
         if atom_info_len > 3 {
             atom.connected_to_atom_no_in_the_branch = Some(atom_info[3..4].parse().unwrap());
@@ -120,7 +121,7 @@ impl PdbAtom {
             }
         }));
         csv_string.push(',');
-        csv_string.push_str(if self.alt_loc_indicator.is_empty() { "#" } else {&self.alt_loc_indicator});//#
+        csv_string.push_str(if self.alt_loc_indicator.is_empty() { "#" } else { &self.alt_loc_indicator });//#
         csv_string.push(',');
         csv_string.push_str(&self.residue_name);
         csv_string.push(',');
@@ -128,7 +129,7 @@ impl PdbAtom {
         csv_string.push(',');
         csv_string.push_str(&self.residue_no.map_or("#".to_string(), |x| x.to_string()));
         csv_string.push(',');
-        csv_string.push_str(if self.insertion_code.is_empty() { "#" } else {&self.insertion_code});//#
+        csv_string.push_str(if self.insertion_code.is_empty() { "#" } else { &self.insertion_code });//#
         csv_string.push(',');
         csv_string.push_str(&self.coordinate.x.to_string());
         csv_string.push(',');
@@ -140,79 +141,80 @@ impl PdbAtom {
         csv_string.push(',');
         csv_string.push_str(&self.temperature_factor.map_or("#".to_string(), |x| x.to_string()));
         csv_string.push(',');
-        csv_string.push_str(if self.segment_identifier.is_empty() {"#"} else {&self.segment_identifier});
+        csv_string.push_str(if self.segment_identifier.is_empty() { "#" } else { &self.segment_identifier });
         csv_string.push(',');
-        csv_string.push_str(if self.segment_identifier_symbol.is_empty() {"#"} else {&self.segment_identifier_symbol});
+        csv_string.push_str(if self.segment_identifier_symbol.is_empty() { "#" } else { &self.segment_identifier_symbol });
         csv_string.push(',');
         csv_string.push_str(&self.charge_of_the_atom);
         return csv_string;
     }
-
-    pub fn get_protein_name(&self) -> &str {
-        &self.protein_name
-    }
-
-    pub fn get_atom_serial_no(&self) -> Option<i32> {
-        self.atom_serial_no
-    }
-
-    pub fn get_atom_symbol(&self) -> &str {
-        &self.atom_symbol
-    }
-
-    pub fn get_atom_position(&self) -> &str {
-        &self.atom_position
-    }
-
-    pub fn get_atom_no_in_the_branch(&self) -> Option<i32> {
-        self.atom_no_in_the_branch
-    }
-
-    pub fn get_connected_to_atom_no_in_the_branch(&self) -> Option<i32> {
-        self.connected_to_atom_no_in_the_branch
-    }
-
-    pub fn get_alt_loc_indicator(&self) -> &str {
-        &self.alt_loc_indicator
-    }
-
-    pub fn get_residue_name(&self) -> &str {
-        &self.residue_name
-    }
-
-    pub fn get_chain_name(&self) -> &str {
-        &self.chain_name
-    }
-
-    pub fn get_residue_no(&self) -> Option<i32> {
-        self.residue_no
-    }
-
-    pub fn get_insertion_code(&self) -> &str {
-        &self.insertion_code
-    }
-
-    pub fn get_coordinate(&self) -> &Vec3 {
-        &self.coordinate
-    }
-
-    pub fn get_occupancy(&self) -> Option<f64> {
-        self.occupancy
-    }
-
-    pub fn get_temperature_factor(&self) -> Option<f64> {
-        self.temperature_factor
-    }
-
-    pub fn get_segment_identifier(&self) -> &str {
-        &self.segment_identifier
-    }
-
-    pub fn get_segment_identifier_symbol(&self) -> &str {
-        &self.segment_identifier_symbol
-    }
-
-    pub fn get_charge_of_the_atom(&self) -> &str {
-        &self.charge_of_the_atom
-    }
+        //
+        // pub fn get_protein_name(&self) -> &str {
+        //     &self.protein_name
+        // }
+        //
+        // pub fn get_atom_serial_no(&self) -> Option<i32> {
+        //     self.atom_serial_no
+        // }
+        //
+        // pub fn get_atom_symbol(&self) -> &str {
+        //     &self.atom_symbol
+        // }
+        //
+        // pub fn get_atom_position(&self) -> &str {
+        //     &self.atom_position
+        // }
+        //
+        // pub fn get_atom_no_in_the_branch(&self) -> Option<i32> {
+        //     self.atom_no_in_the_branch
+        // }
+        //
+        // pub fn get_connected_to_atom_no_in_the_branch(&self) -> Option<i32> {
+        //     self.connected_to_atom_no_in_the_branch
+        // }
+        //
+        // pub fn get_alt_loc_indicator(&self) -> &str {
+        //     &self.alt_loc_indicator
+        // }
+        //
+        // pub fn get_residue_name(&self) -> &str {
+        //     &self.residue_name
+        // }
+        //
+        // pub fn get_chain_name(&self) -> &str {
+        //     &self.chain_name
+        // }
+        //
+        // pub fn get_residue_no(&self) -> Option<i32> {
+        //     self.residue_no
+        // }
+        //
+        // pub fn get_insertion_code(&self) -> &str {
+        //     &self.insertion_code
+        // }
+        //
+        pub fn get_coordinate(&self) -> &Vec3 {
+             &self.coordinate
+        }
+        //
+        // pub fn get_occupancy(&self) -> Option<f64> {
+        //     self.occupancy
+        // }
+        //
+        // pub fn get_temperature_factor(&self) -> Option<f64> {
+        //     self.temperature_factor
+        // }
+        //
+        // pub fn get_segment_identifier(&self) -> &str {
+        //     &self.segment_identifier
+        // }
+        //
+        // pub fn get_segment_identifier_symbol(&self) -> &str {
+        //     &self.segment_identifier_symbol
+        // }
+        //
+        // pub fn get_charge_of_the_atom(&self) -> &str {
+        //     &self.charge_of_the_atom
+        // }
+    //}
 }

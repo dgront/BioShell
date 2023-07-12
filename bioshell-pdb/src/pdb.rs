@@ -1,7 +1,6 @@
 use clap::Result;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
-use std::path::Path;
+use std::io::{BufRead, BufReader};
 
 use crate::pdb_atom::PdbAtom;
 use crate::pdb_compound::PdbCompound;
@@ -17,7 +16,7 @@ pub struct Pdb {
     pub compound: Option<PdbCompound>,
     pub source: Option<PdbSource>,
     pub sequence_of_residue: Option<PdbSequenceOfResidue>,
-    atoms_list: Vec<PdbAtom>,
+    pub atoms_list: Vec<PdbAtom>,
 }
 
 impl Pdb {
@@ -39,7 +38,8 @@ impl Pdb {
             let line = line?;
             // Check that the line has a valid PDB record type
             let record_type = &line[0..6];
-            match record_type.trim() {
+            let record = record_type.trim();
+            match record {
                 "HEADER" => {
                     let header = PdbHeader::new(&line);
                     pdb_file.header = Some(header);
@@ -48,29 +48,21 @@ impl Pdb {
                     let title = PdbTitle::new(line.as_str());
                     pdb_file.title = Some(title);
                 },
-                "COMPND" => {},
-                "Source_" => {},
-                "SequenceOfResidue_" => {},
+                //"COMPND" => {},
+                //"Source_" => {},
+                //"SequenceOfResidue_" => {},
                 "ATOM" => {
-                    let mut atom = PdbAtom::new();
-
-                    let protein_name = match &pdb_file.header {
-                        Some(header) => header.get_protein_name(),
-                        None => Path::new(file_name).file_stem().unwrap().to_str().unwrap(),
-                    };
-
-                    atom.protein_name = protein_name.to_string();
+                    let atom = PdbAtom::parse(line.as_str());
+                    //atom.protein_name = protein_name.to_string();
                     pdb_file.atoms_list.push(atom);
                 },
-                _ => {
-                    return Err(PdbParseError::InvalidFormat);
-                },
+                _ => {},
             };
         }
         Ok(pdb_file)
     }
 
-
+/*
     pub fn write_csv(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let mut file = File::create(file_path)?;
         writeln!(file, "{}", PdbAtom::header())?;
@@ -105,7 +97,8 @@ impl Pdb {
 
         Ok(())
     }
-
+*/
+    /*
     pub fn write_to_file(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let mut file = File::create(file_path)?;
         let mut pdb_string = String::new();
@@ -117,7 +110,8 @@ impl Pdb {
         writeln!(file, "{}", pdb_string)?;
 
         Ok(())
-    }
+    }*/
+
 
     pub fn get_atoms_list(&self) -> Vec<PdbAtom> {
 
