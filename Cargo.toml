@@ -9,27 +9,31 @@ keywords = ["bioshell"]
 
 [workspace]
 members = [
+    "bioshell-cartesians",
+    "bioshell-clustering",
     "bioshell-core",
+    "bioshell-dataframe",
+    "bioshell-ff",
+    "bioshell-montecarlo",
     "bioshell-numerical",
     "bioshell-pdb",
-    "bioshell-ff",
+    "bioshell-oop-adt",
     "bioshell-sim",
     "bioshell-statistics",
-    "bioshell-clustering",
-    "bioshell-montecarlo",
-    "bioshell-cartesians"
 ]
 
 [dependencies]
-bioshell-core = { path = "./bioshell-core" }
-bioshell-numerical = { path = "./bioshell-numerical" }
-bioshell_pdb = { path = "./bioshell-pdb" }
-bioshell-ff = { path = "./bioshell-ff" }
-bioshell-sim = { path = "./bioshell-sim" }
-bioshell-clustering = { path = "./bioshell-clustering" }
-bioshell-statistics = { path = "./bioshell-statistics" }
-bioshell-montecarlo = { path = "./bioshell-montecarlo" }
 bioshell-cartesians = { path = "./bioshell-cartesians" }
+bioshell-clustering = { path = "./bioshell-clustering" }
+bioshell-core = { path = "./bioshell-core" }
+bioshell-dataframe={path="./bioshell-dataframe"}
+bioshell-ff = { path = "./bioshell-ff" }
+bioshell-montecarlo = { path = "./bioshell-montecarlo" }
+bioshell-numerical = { path = "./bioshell-numerical" }
+bioshell-oop-adt={path="./bioshell-oop-adt"}
+bioshell-pdb = { path = "./bioshell-pdb" }
+bioshell-sim = { path = "./bioshell-sim" }
+bioshell-statistics = { path = "./bioshell-statistics" }
 
 clap = { version = "3.1.18", features = ["derive"] }
 rand = { version = "0.8.5", features = [ "small_rng" ] }
