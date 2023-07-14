@@ -1,0 +1,17 @@
+May 24, 2023,
+
+Sure, I've started typing the message for you yesterday afternoon. I realised however that the Coordinates class does not provide easy way to find the closest image of a point. So that is the place I stuck. Anyway, here is what I typed yesterday:
+
+OK, so here is the list of tasks we discussed today:
+
+1) Finish the BondViolationObserver implementation.
+
+In the BondViolationObserver::observe() method 
+
+1. record the longest bond length. 
+2. evaluate closest distance between any atom "i" and "i+1", write the longest to file. 
+
+See REndSquared as another example (it's defined in bioshell-cartesians/observers.rs).
+
+Use the Coordinates::closest_distance_square(i, j) method to calculate the distance that is the shortest within the periodic box
+

@@ -1,0 +1,26 @@
+[package]
+name = "bioshell-dataframe"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Provides OOP abstract data type facility for protein elements"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell"]
+
+[lib]
+crate-type =["rlib", "cdylib"]
+name = "bioshell_dataframe"
+path = "src/lib.rs"
+
+[dependencies]
+rand = { version = "0.8.5", features = [ "small_rng" ] }
+clap = { version = "3.1.18", features = ["derive"] }
+rand_distr = {}   # for NormalDistribution
+bioshell-numerical = { path = "../bioshell-numerical" }
+bioshell-pdb = { path = "../bioshell-pdb" }
+thiserror = "1.0.26"
+polars = "0.28.0"
+
+[[bin]]
+name = "dataframe_main_exe"
+path = "main.rs"
