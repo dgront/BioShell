@@ -21,6 +21,7 @@ pub struct PdbAtom {
     pub segment_identifier: String,
     pub segment_identifier_symbol: String,
     pub charge_of_the_atom: String,
+    pub is_hetero_atom: bool,
 }
 
 impl PdbAtom {

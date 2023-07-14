@@ -52,7 +52,14 @@ impl Pdb {
                 //"Source_" => {},
                 //"SequenceOfResidue_" => {},
                 "ATOM" => {
-                    let atom = PdbAtom::parse(line.as_str());
+                    let mut atom = PdbAtom::parse(line.as_str());
+                    atom.is_hetero_atom = false;
+                    //atom.protein_name = protein_name.to_string();
+                    pdb_file.atoms_list.push(atom);
+                },
+                "HETATM" => {
+                    let mut atom = PdbAtom::parse(line.as_str());
+                    atom.is_hetero_atom = true;
                     //atom.protein_name = protein_name.to_string();
                     pdb_file.atoms_list.push(atom);
                 },
