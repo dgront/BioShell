@@ -4,6 +4,7 @@ venv-maturin/
 .idea/
 Cargo.lock
 ./*.pdb
+*.pdb
 o
 l
 p
