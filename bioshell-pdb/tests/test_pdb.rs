@@ -12,24 +12,29 @@ mod tests {
         let pdb_file_path = "./tests/test_files/16pk.pdb";
         let pdb = Pdb::from_file(pdb_file_path)?;
 
-        assert_eq!(pdb.get_atoms_list().len(), 3781);
-        //"ATOM      1  N   VAL A   1      19.323  29.727  42.781  1.00 49.05           N  "
+        assert_eq!(pdb.get_atoms_list().len(), 3801);
+        //"ATOM      1  N   VAL A   1      19.323  29.727  42.781  1.00 49.05           N  " //4hhb
+        //ATOM      1  N   GLU A   5     -15.953  21.156  16.122  1.00 30.79           N  "//16pk
         let first_atom = &pdb.get_atoms_list()[0];
-        assert_eq!(first_atom.atom_serial_no_1, Some(0));
+        assert_eq!(first_atom.atom_serial_no_1, Some(1));
         assert_eq!(first_atom.atom_symbol_2, "N");
-        assert_eq!(first_atom.alt_loc_indicator_6, " ");
-        assert_eq!(first_atom.residue_name_7, "VAL");
+        assert_eq!(first_atom.atom_position_3, "");
+        assert_eq!(first_atom.atom_no_in_the_branch_4, Some(0));
+        assert_eq!(first_atom.connected_to_atom_no_5, Some(0));
+        assert_eq!(first_atom.alt_loc_indicator_6, "");
+        assert_eq!(first_atom.residue_name_7, "GLU");
         assert_eq!(first_atom.chain_name_8, "A");
-        assert_eq!(first_atom.residue_no_9, Some(1));
-        assert_eq!(first_atom.insertion_code_10, " ");
-        assert_eq!(first_atom.coordinate_11.x, 11.54);
-        assert_eq!(first_atom.coordinate_11.y, 11.88);
-        assert_eq!(first_atom.coordinate_11.z, 7.95);
+        assert_eq!(first_atom.residue_no_9, Some(5));
+        assert_eq!(first_atom.insertion_code_10, "");
+        assert_eq!(first_atom.coordinate_11.x, -15.953);
+        assert_eq!(first_atom.coordinate_11.y, 21.156);
+        assert_eq!(first_atom.coordinate_11.z, 16.122);
         assert_eq!(first_atom.occupancy_12, Some(1.0));
-        assert_eq!(first_atom.temperature_factor_13, Some(0.0));
-        assert_eq!(first_atom.atom_symbol_2, "N");
-        assert_eq!(first_atom.charge_of_the_atom_16, " ");
-        assert_eq!(first_atom.protein_name, "4HHB");
+        assert_eq!(first_atom.temperature_factor_13, Some(30.79));
+        assert_eq!(first_atom.segment_identifier_14, "");
+        assert_eq!(first_atom.segment_identifier_symbol_15, "N");
+        assert_eq!(first_atom.charge_of_the_atom_16, "");
+        assert_eq!(first_atom.protein_name, "16PK");
 
         Ok(())
     }

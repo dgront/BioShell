@@ -5,7 +5,7 @@ pub struct PdbLineParser;
 
 impl PdbLineParser {
     pub fn parse_atom(pdb_line: &str) -> Option<[String; 16]> {
-        if !pdb_line.starts_with("ATOM"){
+        if !(pdb_line.starts_with("ATOM") || pdb_line.starts_with("HETATM")) {
             return None;
         }
 

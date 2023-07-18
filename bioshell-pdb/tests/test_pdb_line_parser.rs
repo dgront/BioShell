@@ -5,6 +5,30 @@ mod tests {
     use bioshell_pdb::PdbAtom;
 
     #[test]
+    fn test_parse_hetero_atom() {
+        let pdb_line = "HETATM 3169  PB  BIS A 499     -10.950  43.372   1.324  1.00 18.00           P  ";
+        let elements = PdbLineParser::parse_atom(pdb_line).unwrap();
+        assert_eq!(elements[0], "HETATM");
+        assert_eq!(elements[1], "3169");
+        assert_eq!(elements[2], "PB");
+        assert_eq!(elements[3], "");
+        assert_eq!(elements[4], "BIS");
+        assert_eq!(elements[5], "A");
+        assert_eq!(elements[6], "499");
+        assert_eq!(elements[7], "");
+        assert_eq!(elements[8], "-10.950");
+        assert_eq!(elements[9], "43.372");
+        assert_eq!(elements[10], "1.324");
+        assert_eq!(elements[11], "1.00");
+        assert_eq!(elements[12], "18.00");
+        assert_eq!(elements[13], "");
+        assert_eq!(elements[14], "P");
+        assert_eq!(elements[15], "");
+
+
+    }
+
+    #[test]
     fn test_parse_atom() {
         let pdb_line = "ATOM   2831  OE1 GLN A 294     -27.117  12.343  28.479  1.00  9.58           O  ";
         let elements = PdbLineParser::parse_atom(pdb_line).unwrap();
@@ -27,8 +51,8 @@ mod tests {
 
         // Test with a line that doesn't start with "ATOM"
         let pdb_line = "HETATM 2831  OE1 GLN A 294     -27.117  12.343  28.479  1.00  9.58           O  ";
-        let elements = PdbLineParser::parse_atom(pdb_line);
-        assert_eq!(elements, None);
+        let elements = PdbLineParser::parse_atom(pdb_line).unwrap();
+        assert_eq!(elements, ["HETATM", "2831", "OE1", "", "GLN", "A", "294", "", "-27.117", "12.343", "28.479", "1.00", "9.58", "", "O", ""]);
     }
 
     #[test]
