@@ -2,6 +2,9 @@ pkg/
 target/
 venv-maturin/
 .idea/
+.vs/
+.vscode/
+vscode/
 Cargo.lock
 ./*.pdb
 *.pdb
