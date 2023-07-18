@@ -1,8 +1,7 @@
 use std::string::String;
 use bioshell_numerical::vec3::Vec3;
-use crate::pdb_line_parser::PdbLineParser;
+use crate::pdb_atom_line_parser::PdbLineParser;
 
-#[derive(Clone)]
 pub struct PdbAtom {
     pub protein_name: String,
     pub atom_serial_no_1: Option<i32>,
@@ -22,6 +21,7 @@ pub struct PdbAtom {
     pub segment_identifier_symbol_15: String,
     pub charge_of_the_atom_16: String,
     pub is_hetero_atom: bool,
+    pub secondary_struct_symbol: char,
 }
 
 impl PdbAtom {
@@ -45,7 +45,12 @@ impl PdbAtom {
             segment_identifier_symbol_15: String::new(),
             charge_of_the_atom_16: String::new(),
             is_hetero_atom: false,
+            secondary_struct_symbol: '\u{0020}',
         }
+    }
+
+    pub fn get_key(&self) -> i32 {
+        self.atom_serial_no_1.unwrap()
     }
 
     pub fn to_string(&self) -> String{

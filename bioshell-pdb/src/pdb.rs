@@ -1,4 +1,5 @@
 use clap::Result;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -16,7 +17,7 @@ pub struct Pdb {
     pub compound: Option<PdbCompound>,
     pub source: Option<PdbSource>,
     pub sequence_of_residue: Option<PdbSequenceOfResidue>,
-    pub atoms_list: Vec<PdbAtom>,
+    pub atoms_dict: HashMap<i32, PdbAtom>,
 }
 
 impl Pdb {
@@ -27,18 +28,18 @@ impl Pdb {
             compound: None,
             source: None,
             sequence_of_residue: None,
-            atoms_list: vec![],
+            atoms_dict: HashMap::new(),
         }
     }
+
     pub fn from_file(file_name: &str) -> Result<Self, PdbParseError> {
         let file = File::open(file_name)?;
         let reader = BufReader::new(file);
         let mut pdb_file = Pdb::new();
-        //let mut line_count = 0;
+
         for line in reader.lines() {
             let line = line?;
-            //line_count = line_count + 1;
-            //println!("{:?}, {:?}", line_count, line);
+
             // Check that the line has a valid PDB record type
             let record_type = &line[0..6];
             let record = record_type.trim();
@@ -58,19 +59,29 @@ impl Pdb {
                     let mut atom = PdbAtom::parse(line.as_str());
                     atom.is_hetero_atom = false;
                     atom.protein_name = pdb_file.header.as_ref().unwrap().get_protein_name().to_string();
-                    pdb_file.atoms_list.push(atom);
+
+                    let key = atom.get_key();
+                    pdb_file.atoms_dict.insert(key, atom);
                 },
                 "HETATM" => {
                     let mut atom = PdbAtom::parse(line.as_str());
                     atom.is_hetero_atom = true;
                     atom.protein_name = pdb_file.header.as_ref().unwrap().get_protein_name().to_string();
-                    pdb_file.atoms_list.push(atom);
+
+                    let key = atom.get_key();
+                    pdb_file.atoms_dict.insert(key, atom);
                 },
                 _ => {},
             };
         }
         Ok(pdb_file)
     }
+
+    pub fn get_atom(&self, index: i32) -> Option<&PdbAtom> {
+        self.atoms_dict.get(&index)
+    }
+    pub fn get_len(&self)-> usize {self.atoms_dict.len()}
+}
 
 /*
     pub fn write_csv(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -123,8 +134,3 @@ impl Pdb {
     }*/
 
 
-    pub fn get_atoms_list(&self) -> Vec<PdbAtom> {
-
-        return self.atoms_list.clone();
-    }
-}

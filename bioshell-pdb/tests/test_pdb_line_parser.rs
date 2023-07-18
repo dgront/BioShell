@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use bioshell_numerical::Vec3;
-    use bioshell_pdb::pdb_line_parser::PdbLineParser;
+    use bioshell_pdb::pdb_atom_line_parser::PdbLineParser;
     use bioshell_pdb::PdbAtom;
 
     #[test]
