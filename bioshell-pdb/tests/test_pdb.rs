@@ -5,7 +5,41 @@ mod tests {
     use bioshell_pdb::Pdb;
 
     #[test]
-    fn test_pdb_from_file() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_hetero_atom_from_pdb_file() -> Result<(), Box<dyn std::error::Error>> {
+        if let Ok(current_dir) = env::current_dir() {
+            println!("Current working directory: {}", current_dir.display());
+        }
+        let pdb_file_path = "./tests/test_files/16pk.pdb";
+        let pdb = Pdb::from_file(pdb_file_path)?;
+
+        assert_eq!(pdb.get_atoms_list().len(), 3801);
+        //"HETATM 3802  O   HOH A1079     -27.733  61.507 -13.719  1.00 51.04           O  "//16pk
+        let first_atom = &pdb.get_atoms_list()[3800];
+        assert_eq!(first_atom.atom_serial_no_1, Some(3802));
+        assert_eq!(first_atom.atom_symbol_2, "O");
+        assert_eq!(first_atom.atom_position_3, "");
+        assert_eq!(first_atom.atom_no_in_the_branch_4, Some(0));
+        assert_eq!(first_atom.connected_to_atom_no_5, Some(0));
+        assert_eq!(first_atom.alt_loc_indicator_6, "");
+        assert_eq!(first_atom.residue_name_7, "HOH");
+        assert_eq!(first_atom.chain_name_8, "A");
+        assert_eq!(first_atom.residue_no_9, Some(1079));
+        assert_eq!(first_atom.insertion_code_10, "");
+        assert_eq!(first_atom.coordinate_11.x, -27.733);
+        assert_eq!(first_atom.coordinate_11.y, 61.507);
+        assert_eq!(first_atom.coordinate_11.z, -13.719);
+        assert_eq!(first_atom.occupancy_12, Some(1.0));
+        assert_eq!(first_atom.temperature_factor_13, Some(51.04));
+        assert_eq!(first_atom.segment_identifier_14, "");
+        assert_eq!(first_atom.segment_identifier_symbol_15, "O");
+        assert_eq!(first_atom.charge_of_the_atom_16, "");
+        assert_eq!(first_atom.protein_name, "16PK");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_atom_from_pdb_file() -> Result<(), Box<dyn std::error::Error>> {
         if let Ok(current_dir) = env::current_dir() {
             println!("Current working directory: {}", current_dir.display());
         }

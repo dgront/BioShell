@@ -63,7 +63,7 @@ impl Pdb {
                 "HETATM" => {
                     let mut atom = PdbAtom::parse(line.as_str());
                     atom.is_hetero_atom = true;
-                    //atom.protein_name = protein_name.to_string();
+                    atom.protein_name = pdb_file.header.as_ref().unwrap().get_protein_name().to_string();
                     pdb_file.atoms_list.push(atom);
                 },
                 _ => {},
