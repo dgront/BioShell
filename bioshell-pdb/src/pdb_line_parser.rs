@@ -49,16 +49,16 @@ impl PdbLineParser {
     }
 
     pub fn assemble_atom(pdb_atom: &PdbAtom) -> String {
-        let atom_serial_no = pdb_atom.atom_serial_no.unwrap_or(0);
-        let residue_no = pdb_atom.residue_no.unwrap_or(0);
+        let atom_serial_no = pdb_atom.atom_serial_no_1.unwrap_or(0);
+        let residue_no = pdb_atom.residue_no_9.unwrap_or(0);
 
-        let occupancy = pdb_atom.occupancy.unwrap_or(0.0);
-        let temperature_factor = pdb_atom.temperature_factor.unwrap_or(0.0);
+        let occupancy = pdb_atom.occupancy_12.unwrap_or(0.0);
+        let temperature_factor = pdb_atom.temperature_factor_13.unwrap_or(0.0);
 
         let atom = format!("{:<6}{:>5} {:<4}{:<1}{:<3} {:<1}{:>4}{:>1}{:>8.3}{:>8.3}{:>8.3}{:>6.2}{:>6.2}{:>10}{:<2}{:<2}",
-                           "ATOM", atom_serial_no, pdb_atom.atom_symbol, pdb_atom.alt_loc_indicator, pdb_atom.residue_name,
-                           pdb_atom.chain_name, residue_no, pdb_atom.insertion_code, pdb_atom.coordinate.x, pdb_atom.coordinate.y, pdb_atom.coordinate.z, occupancy,
-                           temperature_factor, pdb_atom.segment_identifier, pdb_atom.segment_identifier_symbol, pdb_atom.charge_of_the_atom);
+                           "ATOM", atom_serial_no, pdb_atom.atom_symbol_2, pdb_atom.alt_loc_indicator_6, pdb_atom.residue_name_7,
+                           pdb_atom.chain_name_8, residue_no, pdb_atom.insertion_code_10, pdb_atom.coordinate_11.x, pdb_atom.coordinate_11.y, pdb_atom.coordinate_11.z, occupancy,
+                           temperature_factor, pdb_atom.segment_identifier_14, pdb_atom.segment_identifier_symbol_15, pdb_atom.charge_of_the_atom_16);
 
         atom
     }

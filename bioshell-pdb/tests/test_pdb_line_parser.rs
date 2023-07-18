@@ -34,15 +34,15 @@ mod tests {
     #[test]
     fn test_assemble_atom() {
         let mut pdb_atom = PdbAtom::new();
-        pdb_atom.atom_serial_no = Some(2831);
-        pdb_atom.atom_symbol = "OE1".to_string();
-        pdb_atom.residue_name = "GLN".to_string();
-        pdb_atom.chain_name = "A".to_string();
-        pdb_atom.residue_no = Some(294);
-        pdb_atom.coordinate = Vec3::new(-27.117, 12.343, 28.479);
-        pdb_atom.occupancy = Some(1.0);
-        pdb_atom.temperature_factor = Some(9.58);
-        pdb_atom.charge_of_the_atom = "O".to_string();
+        pdb_atom.atom_serial_no_1 = Some(2831);
+        pdb_atom.atom_symbol_2 = "OE1".to_string();
+        pdb_atom.residue_name_7 = "GLN".to_string();
+        pdb_atom.chain_name_8 = "A".to_string();
+        pdb_atom.residue_no_9 = Some(294);
+        pdb_atom.coordinate_11 = Vec3::new(-27.117, 12.343, 28.479);
+        pdb_atom.occupancy_12 = Some(1.0);
+        pdb_atom.temperature_factor_13 = Some(9.58);
+        pdb_atom.charge_of_the_atom_16 = "O".to_string();
 
         let pdb_line = PdbLineParser::assemble_atom(&pdb_atom);
         assert_eq!(pdb_line, "ATOM   2831 OE1  GLN A 294  -27.117  12.343  28.479  1.00  9.58            O ");

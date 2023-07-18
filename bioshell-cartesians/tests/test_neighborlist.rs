@@ -3,8 +3,8 @@ mod test_cartesian_system;
 #[cfg(test)]
 mod neighbor_list_test {
     use bioshell_cartesians::{Coordinates, NbListRules, NeighborList, PolymerRules};
-    use bioshell_numerical::Vec3;
-    use bioshell_numerical::{assert_eq_float, assert_eq_vec3};
+   // use bioshell_numerical::Vec3;
+    use bioshell_numerical::{assert_eq_float};//, assert_eq_vec3};
 
     #[test]
     fn neighbor_list_initialization_test() {

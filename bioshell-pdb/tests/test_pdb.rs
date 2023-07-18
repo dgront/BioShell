@@ -1,31 +1,35 @@
 #[cfg(test)]
 mod tests {
+    use std::env;
     use clap::Result;
     use bioshell_pdb::Pdb;
 
     #[test]
     fn test_pdb_from_file() -> Result<(), Box<dyn std::error::Error>> {
-        let pdb_file_path = "tests/test_files/4hhb.pdb";
+        if let Ok(current_dir) = env::current_dir() {
+            println!("Current working directory: {}", current_dir.display());
+        }
+        let pdb_file_path = "./tests/test_files/16pk.pdb";
         let pdb = Pdb::from_file(pdb_file_path)?;
 
-        assert_eq!(pdb.get_atoms_list().len(), 4384);
-
+        assert_eq!(pdb.get_atoms_list().len(), 3781);
+        //"ATOM      1  N   VAL A   1      19.323  29.727  42.781  1.00 49.05           N  "
         let first_atom = &pdb.get_atoms_list()[0];
-        assert_eq!(first_atom.get_atom_serial_no(), Some(0));
-        assert_eq!(first_atom.get_atom_symbol(), "N");
-        assert_eq!(first_atom.get_alt_loc_indicator(), " ");
-        assert_eq!(first_atom.get_residue_name(), "VAL");
-        assert_eq!(first_atom.get_chain_name(), "A");
-        assert_eq!(first_atom.get_residue_no(), Some(1));
-        assert_eq!(first_atom.get_insertion_code(), " ");
-        assert_eq!(first_atom.get_coordinate().x, 11.54);
-        assert_eq!(first_atom.get_coordinate().y, 11.88);
-        assert_eq!(first_atom.get_coordinate().z, 7.95);
-        assert_eq!(first_atom.get_occupancy(), Some(1.0));
-        assert_eq!(first_atom.get_temperature_factor(), Some(0.0));
-        assert_eq!(first_atom.get_atom_symbol(), "N");
-        assert_eq!(first_atom.get_charge_of_the_atom(), " ");
-        assert_eq!(first_atom.get_protein_name(), "4HHB");
+        assert_eq!(first_atom.atom_serial_no_1, Some(0));
+        assert_eq!(first_atom.atom_symbol_2, "N");
+        assert_eq!(first_atom.alt_loc_indicator_6, " ");
+        assert_eq!(first_atom.residue_name_7, "VAL");
+        assert_eq!(first_atom.chain_name_8, "A");
+        assert_eq!(first_atom.residue_no_9, Some(1));
+        assert_eq!(first_atom.insertion_code_10, " ");
+        assert_eq!(first_atom.coordinate_11.x, 11.54);
+        assert_eq!(first_atom.coordinate_11.y, 11.88);
+        assert_eq!(first_atom.coordinate_11.z, 7.95);
+        assert_eq!(first_atom.occupancy_12, Some(1.0));
+        assert_eq!(first_atom.temperature_factor_13, Some(0.0));
+        assert_eq!(first_atom.atom_symbol_2, "N");
+        assert_eq!(first_atom.charge_of_the_atom_16, " ");
+        assert_eq!(first_atom.protein_name, "4HHB");
 
         Ok(())
     }

@@ -34,8 +34,11 @@ impl Pdb {
         let file = File::open(file_name)?;
         let reader = BufReader::new(file);
         let mut pdb_file = Pdb::new();
+        let mut line_count = 0;
         for line in reader.lines() {
             let line = line?;
+            line_count = line_count + 1;
+            println!("{:?}, {:?}", line_count, line);
             // Check that the line has a valid PDB record type
             let record_type = &line[0..6];
             let record = record_type.trim();

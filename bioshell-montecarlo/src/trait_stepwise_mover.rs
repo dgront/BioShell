@@ -1,4 +1,4 @@
-use crate::trait_stepwise_builder::StepwiseBuilder;
+//use crate::trait_stepwise_builder::StepwiseBuilder;
 use bioshell_sim::{Energy, ResizableSystem};
 
 pub trait StepwiseMover<S: ResizableSystem, E: Energy<S>> {

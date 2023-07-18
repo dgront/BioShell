@@ -9,7 +9,6 @@ keywords = ["bioshell"]
 
 [lib]
 crate-type =["rlib", "cdylib"]
-name = "bioshell_pdb"
 path = "src/lib.rs"
 
 [dependencies]
