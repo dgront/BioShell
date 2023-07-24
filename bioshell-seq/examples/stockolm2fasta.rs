@@ -2,8 +2,8 @@ use std::env;
 use clap::{Parser};
 use log::{info};
 
-use bioshell_core::sequence::{Sequence, remove_gaps_by_sequence, StockholmIterator};
-use bioshell_core::utils::open_file;
+use bioshell_seq::sequence::{Sequence, remove_gaps_by_sequence, StockholmIterator};
+use bioshell_io::open_file;
 
 #[derive(Parser, Debug)]
 #[clap(name = "stockholm2fasta")]

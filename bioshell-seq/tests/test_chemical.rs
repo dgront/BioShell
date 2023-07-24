@@ -1,4 +1,4 @@
-use bioshell_core::chemical::{ResidueType, ResidueTypeManager, MonomerType, StandardResidueType, ResidueTypeProperties};
+use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, MonomerType, StandardResidueType, ResidueTypeProperties};
 
 #[test]
 fn test_residue_types() {

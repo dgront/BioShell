@@ -1,7 +1,7 @@
 use clap::{Parser};
 
 use bioshell_statistics::{Estimable, MultiNormalDistribution};
-use bioshell_core::utils::{read_tsv};
+use bioshell_io::{read_tsv};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

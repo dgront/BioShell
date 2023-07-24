@@ -30,7 +30,7 @@ impl TryFrom<char> for MonomerType {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_core::chemical::MonomerType;
+    /// use bioshell_seq::chemical::MonomerType;
     /// assert_eq!(MonomerType::try_from('P').unwrap(), MonomerType::PeptideLinking);
     /// ```
     fn try_from(value: char) -> Result<Self, Self::Error> {
@@ -73,7 +73,7 @@ pub trait ResidueTypeProperties {
 ///
 /// # Example
 /// ```rust
-/// use bioshell_core::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
+/// use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
 /// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
 /// assert_eq!(aln.code3, String::from("ALN"));
 /// assert_eq!(aln.parent_type, StandardResidueType::ALA);
@@ -101,7 +101,7 @@ impl TryFrom<String> for ResidueType {
     ///
     /// # Examples
     /// ```rust
-    /// use bioshell_core::chemical::ResidueType;
+    /// use bioshell_seq::chemical::ResidueType;
     /// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
     /// ```
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -122,7 +122,7 @@ impl TryFrom<String> for ResidueType {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_core::chemical::{ResidueType, ResidueTypeManager};
+/// use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
 ///
 /// let mut mgr = ResidueTypeManager::new();
 /// // --- This should pass, as all standard residue types (including alanine) are preloaded by a constructor
@@ -181,7 +181,7 @@ impl ResidueTypeManager {
     ///
     /// # Examples
     /// ```rust
-    /// use bioshell_core::chemical::{ResidueType, ResidueTypeManager};
+    /// use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
     /// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
     /// let mut mgr = ResidueTypeManager::new();
     /// // This should pass, as all standard residue types are preloaded by a constructor
@@ -281,7 +281,7 @@ macro_rules! define_res_types {
             ///
             /// # Examples
             /// ``` rust
-            /// use bioshell_core::chemical::{StandardResidueType, ResidueTypeProperties, MonomerType};
+            /// use bioshell_seq::chemical::{StandardResidueType, ResidueTypeProperties, MonomerType};
             ///
             /// // ---------- Iterate over standard amino acid enum types
             /// let mut n_aa: i8 = 0;

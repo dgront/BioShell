@@ -1,5 +1,5 @@
 use std::fmt::Write;
-use bioshell_core::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, StockholmIterator};
+use bioshell_seq::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, StockholmIterator};
 use std::io::BufReader;
 
 #[test]

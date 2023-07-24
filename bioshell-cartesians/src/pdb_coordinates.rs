@@ -5,7 +5,7 @@ use bioshell_sim::{ResizableSystem, System};
 use bioshell_numerical::{Vec3};
 use crate::Coordinates;
 
-use bioshell_core::utils::{out_writer};
+use bioshell_io::{out_writer};
 
 const CHAINS_ORDER: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 

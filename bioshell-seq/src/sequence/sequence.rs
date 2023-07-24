@@ -28,7 +28,7 @@ impl Sequence {
     /// Create a new instance of a Sequence from Strings.
     /// # Example
     /// ```rust
-    /// use bioshell_core::sequence::Sequence;
+    /// use bioshell_seq::sequence::Sequence;
     ///
     /// let seq_id: String = String::from("2gb1");
     /// let sequence: String = String::from("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
@@ -47,7 +47,7 @@ impl Sequence {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_core::sequence::Sequence;
+    /// use bioshell_seq::sequence::Sequence;
     ///
     /// let seq_id = String::from("2gb1");
     /// let sequence: Vec<u8> = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE".as_bytes().to_vec();
@@ -64,7 +64,7 @@ impl Sequence {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_core::sequence::Sequence;
+    /// use bioshell_seq::sequence::Sequence;
     ///
     /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     /// let sequence = "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
@@ -81,7 +81,7 @@ impl Sequence {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_core::sequence::Sequence;
+    /// use bioshell_seq::sequence::Sequence;
     ///
     /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     /// let sequence = "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
@@ -104,7 +104,7 @@ impl Sequence {
     /// The returned string contains only the sequence itself without description.
     /// # Example
     /// ```rust
-    /// use bioshell_core::sequence::Sequence;
+    /// use bioshell_seq::sequence::Sequence;
     ///
     /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     /// let sequence = "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
@@ -125,7 +125,7 @@ impl fmt::Display for Sequence {
     /// Create a `Sequence` and turn it into a string
     ///
     /// ```rust
-    /// use bioshell_core::sequence::Sequence;
+    /// use bioshell_seq::sequence::Sequence;
     /// use std::fmt::Write;
     /// // create a Sequence object
     /// let seq_id = String::from("2gb1");
@@ -333,8 +333,8 @@ pub enum A3mConversionMode {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_core::sequence::{Sequence, a3m_to_fasta};
-/// use bioshell_core::sequence::A3mConversionMode::RemoveSmallCaps;
+/// use bioshell_seq::sequence::{Sequence, a3m_to_fasta};
+/// use bioshell_seq::sequence::A3mConversionMode::RemoveSmallCaps;
 /// // create two Sequence objects
 /// let mut sequences = vec![Sequence::from_attrs(String::from("seq1"), "MTYKLILNGKTLKgeTTTEAVDAAT".as_bytes().to_vec()),
 ///         Sequence::from_attrs(String::from("seq2"), "HQYKLALNGKTLKaqTTTEAVDAAT".as_bytes().to_vec())];
@@ -371,7 +371,7 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 ///
 /// # Example
 /// ```rust
-/// use bioshell_core::sequence::{Sequence, StockholmIterator, remove_gaps_by_sequence};
+/// use bioshell_seq::sequence::{Sequence, StockholmIterator, remove_gaps_by_sequence};
 /// use std::io::{BufReader};
 ///
 /// let alignment = "A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
@@ -421,7 +421,7 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_core::sequence::{Sequence, count_residue_type};
+/// use bioshell_seq::sequence::{Sequence, count_residue_type};
 /// let seq_str = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQY";
 /// let sequence = Sequence::from_attrs(String::from("test_seq"), seq_str.as_bytes().to_vec());
 /// assert_eq!(count_residue_type(&sequence,'T'),6);

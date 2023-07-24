@@ -5,7 +5,7 @@ use std::io;
 use std::io::{BufRead, BufReader};
 use log::{debug, info};
 
-use bioshell_core::utils::split_into_strings;
+use bioshell_io::split_into_strings;
 
 /// Represents a single `data_` block of a CIF file.
 pub struct CifData {

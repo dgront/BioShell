@@ -7,10 +7,10 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
-use regex::Regex;
+// use regex::Regex;
 
-use bioshell_core::sequence::{FastaIterator, count_residue_type, Sequence};
-use bioshell_core::utils::open_file;
+use bioshell_seq::sequence::{FastaIterator, count_residue_type, Sequence};
+use bioshell_io::open_file;
 
 #[derive(Parser, Debug)]
 #[clap(name = "filter_fasta")]

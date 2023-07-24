@@ -1,6 +1,6 @@
 use std::any::Any;
 use std::io::Write;
-use bioshell_core::utils::out_writer;
+use bioshell_io::out_writer;
 use crate::{CartesianSystem, coordinates_to_pdb, gyration_squared, r_end_squared};
 use bioshell_sim::{Energy, System, Observer};
 

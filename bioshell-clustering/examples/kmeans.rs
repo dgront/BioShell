@@ -4,7 +4,7 @@ use clap::{Parser};
 use log::{info};
 
 use bioshell_clustering::kmeans::KMeans;
-use bioshell_core::utils::{read_tsv};
+use bioshell_io::{read_tsv};
 use bioshell_numerical::distance::euclidean_distance_squared;
 
 

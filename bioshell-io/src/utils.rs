@@ -19,7 +19,7 @@ use flate2::read;
 /// # Examples
 ///
 /// ```
-/// use bioshell_core::utils::writes_to_screen;
+/// use bioshell_io::writes_to_screen;
 /// assert!(writes_to_screen(""));
 /// assert!(writes_to_screen("stderr"));
 /// assert!(writes_to_screen("stdout"));
@@ -47,7 +47,7 @@ pub fn writes_to_screen(out_fname: &str) -> bool {
 /// # Examples
 ///
 /// ```
-/// use bioshell_core::utils::out_writer;
+/// use bioshell_io::out_writer;
 /// let mut to_stream = out_writer("", true);
 /// to_stream = out_writer("stdout", true);
 /// let mut to_file = out_writer("file.out", false);
