@@ -1,4 +1,5 @@
-use bioshell_ff::{Coordinates, System};
+use bioshell_sim::{System, Energy};
+use bioshell_cartesians::{Coordinates, CartesianSystem, NbList};
 use bioshell_ff::bonded::SimpleHarmonic;
 use bioshell_ff::Energy;
 use bioshell_ff::nonbonded::{ArgonRules, NbList};

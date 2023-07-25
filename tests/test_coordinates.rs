@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use bioshell_ff::Coordinates;
+use bioshell_cartesians::Coordinates;
 
 #[test]
 fn coordinates_methods() {
