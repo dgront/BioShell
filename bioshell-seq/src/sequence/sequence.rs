@@ -1,10 +1,4 @@
-/*! # Common operations on biological sequences and their alignments
-This crate provides the [`Sequence`](Sequence) struct to store an amino acid or a nucleic sequence.
-This data can be loaded from the following file formats:
 
-  - [FASTA](https://en.wikipedia.org/wiki/FASTA_format), including the ``a3m`` variant
-  - [Stockholm](https://sonnhammer.sbc.su.se/Stockholm.html)
-*/
 
 use std::collections::HashMap;
 use std::fmt;
