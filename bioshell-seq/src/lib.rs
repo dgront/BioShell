@@ -10,3 +10,4 @@
 pub mod chemical;
 pub mod sequence;
 pub mod msa;
+pub(crate) mod errors;
