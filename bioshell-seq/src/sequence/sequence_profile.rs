@@ -1,7 +1,9 @@
 use core::fmt::{Formatter, Display};
+use std::string::String;
+
 use crate::msa::MSA;
 
-use crate::sequence::{ProfileColumnOrder};
+use crate::sequence::{ProfileColumnOrder, Sequence};
 
 #[derive(Clone, Debug)]
 /// Represents a sequence profile.
@@ -26,7 +28,7 @@ use crate::sequence::{ProfileColumnOrder};
 ///                                    Sequence::from_str("seq-3", "ctaagg"),
 ///                                    Sequence::from_str("seq-4", "cttaga")]).unwrap();
 /// let profile = SequenceProfile::new(ProfileColumnOrder::dna_standard(), &msa);
-/// assert_eq!(profile.most_probable_sequence(), String::from("cttaga"));
+/// assert_eq!(profile.most_probable_string(), String::from("cttaga"));
 /// ```
 pub struct SequenceProfile {
     mapping: ProfileColumnOrder,
@@ -60,13 +62,6 @@ impl SequenceProfile {
 
     /// Returns a probability for a given sequence position and a residue type.
     pub fn fraction(&self, pos: usize, column: usize) -> f32 { self.data[pos][column] }
-
-    /// Returns the index of a column that holds maximum probability for a given profile position
-    pub fn most_probable_res(&self, pos: usize) -> usize {
-        self.data[pos].iter().enumerate()
-            .max_by(|(_, a), (_, b)| a.total_cmp(b))
-            .map(|(index, _)| index).unwrap()
-    }
 
     /// Provides immutable access to the residue ordering used by this sequence profile
     pub fn column_order(&self) -> &ProfileColumnOrder { &self.mapping }
@@ -104,7 +99,14 @@ impl SequenceProfile {
     /// Returns the number of sequence positions in this sequence profile
     pub fn len(&self) -> usize { self.data.len() }
 
-    /// Returns the most probable sequence
+    /// Returns the index of a column that holds maximum probability for a given profile position
+    pub fn most_probable_res(&self, pos: usize) -> usize {
+        self.data[pos].iter().enumerate()
+            .max_by(|(_, a), (_, b)| a.total_cmp(b))
+            .map(|(index, _)| index).unwrap()
+    }
+
+    /// Returns the most probable sequence.
     ///
     /// Returned string contains characters that are the occur most often at each position of this profile
     /// # Example
@@ -116,9 +118,17 @@ impl SequenceProfile {
     ///                                    Sequence::from_str("seq-3", "ctaagg"),
     ///                                    Sequence::from_str("seq-4", "cttaga")]).unwrap();
     /// let profile = SequenceProfile::new(ProfileColumnOrder::dna_standard(), &msa);
-    /// assert_eq!(profile.most_probable_sequence(), String::from("cttaga"));
+    /// assert_eq!(profile.most_probable_sequence().to_string(), String::from("cttaga"));
     /// ```
-    pub fn most_probable_sequence(&self) -> String {
+    pub fn most_probable_sequence(&self) -> Sequence {
+        return Sequence::new(&String::from("most probable sequence"), &self.most_probable_string());
+    }
+
+    /// Returns the most probable sequence as a string.
+    ///
+    /// This methods works as [`most_probable_sequence()`](Self::most_probable_sequence()), but returns just a string representation
+    /// of a sequence. Use this method when a full Sequence is not needed.
+    pub fn most_probable_string(&self) -> String {
         let mut resids = vec![];
         for i in 0..self.len() {
             resids.push(self.column_char(self.most_probable_res(i) as u8));

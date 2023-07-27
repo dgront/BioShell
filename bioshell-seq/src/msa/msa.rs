@@ -104,15 +104,7 @@ impl MSA {
     /// assert_eq!(msa.identical_count(0,1), 2);
     /// ```
     pub fn identical_count(&self, i_seq: usize, j_seq: usize) -> usize {
-        let mut ret = 0;
-        let si = &self.msa[i_seq];
-        let sj = &self.msa[j_seq];
-        for i in 0..self.len() {
-            if si.u8(i)==sj.u8(i) && si.u8(i)!=b'-' && si.u8(i)!=b'_' {
-                ret += 1;
-            }
-        }
-        return ret;
+        return Self::sum_identical(&self.msa[i_seq], &self.msa[j_seq]);
     }
 
     /// Computes the sequence identity fraction between two sequences of this MSA.
@@ -121,6 +113,16 @@ impl MSA {
     pub fn identical_fraction(&self, i_seq: usize, j_seq: usize) -> f64 {
 
         return self.identical_count(i_seq, j_seq) as f64 / self.len() as f64;
+    }
+
+    pub(crate) fn sum_identical(si: &Sequence, sj: &Sequence) -> usize {
+        let mut ret = 0;
+        for i in 0..si.len() {
+            if si.u8(i)==sj.u8(i) && si.u8(i)!=b'-' && si.u8(i)!=b'_' {
+                ret += 1;
+            }
+        }
+        return ret;
     }
 
     fn check_msa(msa: &Vec<Sequence>) -> Result<(), SequenceError> {

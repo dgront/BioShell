@@ -4,6 +4,8 @@ use std::fmt;
 use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
 use std::hash::{Hash, Hasher};
+use crate::errors::SequenceError;
+use crate::msa::MSA;
 
 #[derive(Default, Clone, Debug)]
 /// Amino acid / nucleic sequence.
@@ -443,4 +445,29 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
 /// ```
 pub fn count_residue_type(sequence: &Sequence, res_type: char) -> usize {
     sequence.seq.iter().filter(|&c| *c == res_type as u8).count()
+}
+
+/// Counts identical residues between two sequences.
+///
+/// Matching gap symbols are not included in the count. Returns
+/// [`AlignedSequencesOfDifferentLengths`](crate::SequenceError::AlignedSequencesOfDifferentLengths)
+///  if the sequences differ by length.
+///
+/// # Example
+/// ```rust
+/// # use bioshell_seq::sequence::{Sequence, count_identical};
+/// let si = Sequence::from_str("seq-1", "PERF");
+/// let sj = Sequence::from_str("seq-2", "P-RV");
+/// assert_eq!(count_identical(&si, &sj).unwrap(), 2);
+/// ```
+pub fn count_identical(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> {
+    let mut ret = 0;
+    if si.len() != sj.len() {
+        return Err(SequenceError::AlignedSequencesOfDifferentLengths {
+            length_expected: si.len(),
+            length_found: sj.len(),
+        });
+    }
+
+    return Ok(MSA::sum_identical(si, sj));
 }
