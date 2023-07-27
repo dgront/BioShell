@@ -1,4 +1,4 @@
-//! Module that defines chemical entities important for bioinformatics and molecular modeling
+//! Defines sequence components such as amino acids and nucleotide residues
 //!
 //! # Residue typing
 //!

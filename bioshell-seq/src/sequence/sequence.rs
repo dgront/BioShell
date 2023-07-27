@@ -43,7 +43,7 @@ impl Sequence {
     /// use bioshell_seq::sequence::Sequence;
     ///
     /// let seq_id = String::from("2gb1");
-    /// let sequence: Vec<u8> = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE".as_bytes().to_vec();
+    /// let sequence: Vec<u8> = b"MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE".to_vec();
     /// let seq = Sequence::from_attrs(seq_id, sequence);
     ///
     /// let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
@@ -75,8 +75,8 @@ impl Sequence {
     /// use bioshell_seq::sequence::Sequence;
     ///
     /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
-    /// let sequence = "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
-    /// let seq = Sequence::from_attrs(header, sequence.as_bytes().to_vec());
+    /// let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
+    /// let seq = Sequence::from_attrs(header, sequence.to_vec());
     /// assert_eq!(seq.description(), "gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     /// ```
     pub fn description(&self) -> &str { self.description.as_ref() }
@@ -92,8 +92,8 @@ impl Sequence {
     /// use bioshell_seq::sequence::Sequence;
     ///
     /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
-    /// let sequence = "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
-    /// let seq = Sequence::from_attrs(header, sequence.as_bytes().to_vec());
+    /// let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
+    /// let seq = Sequence::from_attrs(header, sequence.to_vec());
     /// assert_eq!("gi|5524211|gb|AAD44166.1|", seq.id());
     /// ```
     pub fn id(&self) -> &str { self.description.split_whitespace().next().unwrap() }
@@ -118,8 +118,8 @@ impl Sequence {
     /// use bioshell_seq::sequence::Sequence;
     ///
     /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
-    /// let sequence = "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
-    /// let seq = Sequence::from_attrs(header, sequence.as_bytes().to_vec());
+    /// let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
+    /// let seq = Sequence::from_attrs(header, sequence.to_vec());
     /// assert_eq!(seq.to_string(), "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV");
     /// ```
     pub fn to_string(&self) -> String { String::from_utf8(self.seq.clone()).unwrap() }
@@ -140,8 +140,8 @@ impl fmt::Display for Sequence {
     /// use std::fmt::Write;
     /// // create a Sequence object
     /// let seq_id = String::from("2gb1");
-    /// let sequence = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
-    /// let seq = Sequence::from_attrs(seq_id, sequence.as_bytes().to_vec());
+    /// let sequence = b"MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
+    /// let seq = Sequence::from_attrs(seq_id, sequence.to_vec());
     ///
     /// let mut actual = String::new();
     /// // populate `actual` with a string representation of the sequence
