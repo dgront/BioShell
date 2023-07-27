@@ -89,6 +89,7 @@ impl MSA {
             column: n
         }
     }
+
     /// Counts identical residues between two sequences of this MSA.
     ///
     /// Matching gap symbols are not included in the count.

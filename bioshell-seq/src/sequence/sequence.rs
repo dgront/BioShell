@@ -272,7 +272,11 @@ impl<R: BufRead> StockholmIterator<R> {
                 Ok(cnt) => { if cnt == 0 { break; } },
                 Err(e) => panic!("Cannot read from a Stockholm buffer, error occurred:  {:?}", e),
             };
-            if ! buffer.starts_with('#') {
+            // --- Remove header produced by the muscle program
+            if buffer.starts_with("MUSCLE (") { continue }
+            // --- first 8 spaces meand there is no seq-id => no sequence entry here, just markup
+            if buffer.starts_with("        ") { continue }
+            if ! buffer.starts_with('#') {      // --- the reader doesn't parse sequence annotations yet
                 let tokens: Vec<&str> = buffer.split_ascii_whitespace().collect::<Vec<&str>>();
                 if tokens.len() != 2 { continue;}
                 else {
