@@ -1,32 +1,32 @@
 /// Provides `u8` (one byte) index for a residue type, e.g. for a standard amino acid.
 ///
-/// [`ResidueTypeOrder`](ResidueTypeOrder) defines the order of columns in a sequence profile, e.g.
+/// [`ProfileColumnOrder`](ProfileColumnOrder) defines the order of columns in a sequence profile, e.g.
 /// according to the standard NCBI's order, amino acids are listed alphabetically by their full name,
 /// which results in the following order or one-letter codes: `ARNDCQEGHILKMFPSTWYVX`.
 ///
 #[derive(Clone, Debug)]
-pub struct ResidueTypeOrder {
+pub struct ProfileColumnOrder {
     index_to_aa: Vec<u8>,
     aa_to_index: Vec<usize>,
 }
 
-impl ResidueTypeOrder {
+impl ProfileColumnOrder {
 
     /// Creates a new mapping for a given order of letters
-    pub fn new(chars_ordered: &str) -> ResidueTypeOrder {
+    pub fn new(chars_ordered: &str) -> ProfileColumnOrder {
         let index_to_aa = chars_ordered.as_bytes().to_vec();
         let mut aa_to_index: Vec<usize> = vec![0; 128];
         for (i, aai) in chars_ordered.chars().enumerate() {
             aa_to_index[aai as usize] = i;
         }
-        ResidueTypeOrder {index_to_aa, aa_to_index}
+        ProfileColumnOrder {index_to_aa, aa_to_index}
     }
 
     /// Creates a new mapping for amino acids in the NCBI's order: `ARNDCQEGHILKMFPSTWYVX`
-    pub fn aa_standard() -> ResidueTypeOrder { ResidueTypeOrder::new("ARNDCQEGHILKMFPSTWYVX") }
+    pub fn aa_standard() -> ProfileColumnOrder { ProfileColumnOrder::new("ARNDCQEGHILKMFPSTWYVX") }
 
     /// Creates a new mapping for amino acids and the gap symbol in the NCBI's order: `ARNDCQEGHILKMFPSTWYVX-`
-    pub fn aa_standard_gapped() -> ResidueTypeOrder { ResidueTypeOrder::new("ARNDCQEGHILKMFPSTWYVX-") }
+    pub fn aa_standard_gapped() -> ProfileColumnOrder { ProfileColumnOrder::new("ARNDCQEGHILKMFPSTWYVX-") }
 
     /// Returns the size of this mapping i.e. the number of residue types mapped
     pub fn size(&self) -> usize { self.index_to_aa.len() }

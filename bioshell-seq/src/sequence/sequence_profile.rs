@@ -1,6 +1,6 @@
 use core::fmt::{Formatter, Display};
 
-use crate::sequence::{Sequence, ResidueTypeOrder};
+use crate::sequence::{Sequence, ProfileColumnOrder};
 
 #[derive(Clone, Debug)]
 /// Represents a sequence profile.
@@ -12,16 +12,16 @@ use crate::sequence::{Sequence, ResidueTypeOrder};
 /// reflect how likely is to find any amino acid type (say, GLY or TYR) at that position.
 ///
 /// Integer indexes are used to refer to both a residue position in a sequence and an amino acid (ro nucleotide) type;
-/// both indexes start from 0. Residue type indexes must be consistent with the [`ResidueTypeOrder`]
+/// both indexes start from 0. Residue type indexes must be consistent with the [`ProfileColumnOrder`]
 /// object used by a given profile.
 pub struct SequenceProfile {
-    mapping: ResidueTypeOrder,
+    mapping: ProfileColumnOrder,
     data: Vec<Vec<f32>>,
 }
 
 impl SequenceProfile {
     /// Creates a sequence profile from a given pool of aligned sequences
-    pub fn new(mapping: ResidueTypeOrder, msa: &Vec<Sequence>) -> SequenceProfile {
+    pub fn new(mapping: ProfileColumnOrder, msa: &Vec<Sequence>) -> SequenceProfile {
 
         let n = msa[0].len();
         let k = mapping.size();
@@ -53,7 +53,7 @@ impl SequenceProfile {
     pub fn fraction(&self, pos: usize, aa: usize) -> f32 { self.data[pos][aa] }
 
     /// Provides immutable access to the residue ordering used by this sequence profile
-    pub fn column_order(&self) -> &ResidueTypeOrder { &self.mapping }
+    pub fn column_order(&self) -> &ProfileColumnOrder { &self.mapping }
 
     /// Returns the number of sequence positions in this sequence profile
     pub fn len(&self) -> usize { self.data.len() }
