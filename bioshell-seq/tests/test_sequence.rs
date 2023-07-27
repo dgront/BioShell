@@ -1,6 +1,8 @@
 use std::fmt::Write;
-use bioshell_seq::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, StockholmIterator};
+use bioshell_seq::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, StockholmIterator, SequenceProfile, ProfileColumnOrder};
 use std::io::BufReader;
+use std::iter::zip;
+use bioshell_seq::msa::MSA;
 
 #[test]
 fn create_sequence() {
@@ -126,4 +128,13 @@ UniRef90_UPI000F744328/389-447           -------TL----ES---TW-EK--PQE-----";
 
     assert_eq!("TKQTTWEKPA--", sequences[0].to_string());
     assert_eq!("TQQTSWLHPVSQ", sequences[8].to_string());
+}
+
+#[test]
+fn create_sequence_profile() {
+    let seq = zip(vec!["s1","s2","s3","s4"].iter(),vec!["cttaga","ctcaga","ctaagg","cttaga"].iter())
+        .map(|(d,s)| Sequence::from_str(*d,*s)).collect();
+    let msa = MSA::from_sequences(seq).unwrap();
+    let profile = SequenceProfile::new(ProfileColumnOrder::dna_standard(),&msa);
+    assert_eq!(profile.fraction(0, 1), 1.0);
 }

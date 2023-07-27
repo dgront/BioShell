@@ -22,6 +22,18 @@ impl ProfileColumnOrder {
         ProfileColumnOrder {index_to_aa, aa_to_index}
     }
 
+    /// Creates a new mapping for nucleotides in the following order: `acgt`
+    pub fn dna_standard() -> ProfileColumnOrder { ProfileColumnOrder::new("acgt") }
+
+    /// Creates a new mapping for nucleotides in the following order: `acgt-`
+    pub fn dna_standard_gapped() -> ProfileColumnOrder { ProfileColumnOrder::new("acgt-") }
+
+    /// Creates a new mapping for nucleotides in the following order: `acgu`
+    pub fn rna_standard() -> ProfileColumnOrder { ProfileColumnOrder::new("acgu") }
+
+    /// Creates a new mapping for nucleotides in the following order: `acgu-`
+    pub fn rna_standard_gapped() -> ProfileColumnOrder { ProfileColumnOrder::new("acgu-") }
+
     /// Creates a new mapping for amino acids in the NCBI's order: `ARNDCQEGHILKMFPSTWYVX`
     pub fn aa_standard() -> ProfileColumnOrder { ProfileColumnOrder::new("ARNDCQEGHILKMFPSTWYVX") }
 
