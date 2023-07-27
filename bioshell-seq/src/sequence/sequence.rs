@@ -1,5 +1,4 @@
 
-
 use std::collections::HashMap;
 use std::fmt;
 use std::io::{BufRead, BufReader};
@@ -54,6 +53,21 @@ impl Sequence {
         Sequence { description, seq}
     }
 
+    /// A handy way to create a new Sequence from `str` data
+    ///
+    /// # Example
+    /// ```rust
+    /// use bioshell_seq::sequence::Sequence;
+    ///
+    /// let seq = Sequence::from_str("2gb1", "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
+    ///
+    /// let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
+    /// assert_eq!(expected, seq.to_string());
+    /// ```
+    pub fn from_str(description: &str, seq: &str) -> Self {
+        Self { description: String::from(description), seq: seq.as_bytes().to_vec()}
+    }
+
     /// Return the description line of this Sequence.
     ///
     /// # Example
@@ -90,8 +104,11 @@ impl Sequence {
     /// Return the length of this sequence
     pub fn len(&self) -> usize { self.seq.len() }
 
-    /// Returns an amino acid character at a given position in this `Sequence`
+    /// Returns a residue (e.g. an amino acid or a nucleotide) character at a given position in this `Sequence`
     pub fn char(&self, pos:usize) -> char { self.seq[pos] as char }
+
+    /// Returns a residue (e.g. an amino acid or a nucleotide) u8 code at a given position in this `Sequence`
+    pub fn u8(&self, pos:usize) -> u8 { self.seq[pos] }
 
     /// Creates a string representing this sequence.
     ///
