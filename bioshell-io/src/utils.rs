@@ -10,7 +10,7 @@ use flate2::read;
 
 /// Check whether a `Writer` object created based on a given string would actually write to screen.
 ///
-/// Returns true if the name is  `"stdout"` `"stderr"` or empty.
+/// Returns true if the given `out_fname` is  `"stdout"` `"stderr"`, or when that string is empty.
 ///
 /// # Arguments
 ///
