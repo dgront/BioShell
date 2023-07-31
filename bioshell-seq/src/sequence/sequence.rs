@@ -439,8 +439,8 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
 /// # Examples
 /// ```rust
 /// use bioshell_seq::sequence::{Sequence, count_residue_type};
-/// let seq_str = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQY";
-/// let sequence = Sequence::from_attrs(String::from("test_seq"), seq_str.as_bytes().to_vec());
+/// let seq_str = b"MTYKLILNGKTLKGETTTEAVDAATAEKVFKQY";
+/// let sequence = Sequence::from_attrs(String::from("test_seq"), seq_str.to_vec());
 /// assert_eq!(count_residue_type(&sequence,'T'),6);
 /// ```
 pub fn count_residue_type(sequence: &Sequence, res_type: char) -> usize {
@@ -461,7 +461,6 @@ pub fn count_residue_type(sequence: &Sequence, res_type: char) -> usize {
 /// assert_eq!(count_identical(&si, &sj).unwrap(), 2);
 /// ```
 pub fn count_identical(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> {
-    let mut ret = 0;
     if si.len() != sj.len() {
         return Err(SequenceError::AlignedSequencesOfDifferentLengths {
             length_expected: si.len(),
@@ -470,4 +469,57 @@ pub fn count_identical(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceEr
     }
 
     return Ok(MSA::sum_identical(si, sj));
+}
+
+
+/// Length of a [`Sequence`](Sequence) excluding gaps
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, len_ungapped};
+/// let sequence = Sequence::from_str("test_seq", "P-RF");
+/// assert_eq!(len_ungapped(&sequence),3);
+/// let sequence = Sequence::from_str("test_seq", "__PERF_");
+/// assert_eq!(len_ungapped(&sequence),4);
+/// ```
+pub fn len_ungapped(sequence: &Sequence) -> usize {
+    sequence.seq.iter().filter(|&c| *c != b'-' && *c != b'_').count()
+}
+
+/// Removes gaps from a [`Sequence`](Sequence)
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, remove_gaps};
+/// let mut sequence = Sequence::from_str("test_seq", "P-RF_");
+/// remove_gaps(&mut sequence);
+/// assert_eq!(sequence.to_string(), String::from("PRF"));
+/// ```
+pub fn remove_gaps(sequence: &mut Sequence) {
+
+    let new_seq = sequence.seq.iter()
+        .filter(|&c| *c != b'-' && *c != b'_')
+        .map(|&c| c)
+        .collect();
+    sequence.seq = new_seq;
+}
+
+
+/// Makes an un-gapped copy of a given [`Sequence`](Sequence)
+///
+/// Returns a new [`Sequence`](Sequence) object that is an un-gapped copy of the argument. The new
+/// [`Sequence`](Sequence) will inherit a description string from its source.
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, clone_ungapped};
+/// let mut sequence = Sequence::from_str("test_seq", "P-RF_");
+/// let ungapped = clone_ungapped(&mut sequence);
+/// assert_eq!(ungapped.to_string(), String::from("PRF"));
+/// ```
+pub fn clone_ungapped(sequence: &Sequence) -> Sequence {
+
+    let mut s = sequence.clone();
+    remove_gaps(&mut s);
+    return s
 }
