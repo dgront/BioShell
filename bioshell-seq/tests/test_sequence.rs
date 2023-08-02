@@ -138,3 +138,12 @@ fn create_sequence_profile() {
     let profile = SequenceProfile::new(ProfileColumnOrder::dna_standard(),&msa);
     assert_eq!(profile.fraction(0, 1), 1.0);
 }
+
+#[test]
+fn sequence_to_string() {
+    let mut sequence = Sequence::from_str("test_seq", "P-RF_");
+    bioshell_seq::sequence::remove_gaps(&mut sequence);
+    let l = sequence.len();
+    let ss = sequence.to_string();
+    assert_eq!(sequence.to_string(), String::from("PRF"));
+}

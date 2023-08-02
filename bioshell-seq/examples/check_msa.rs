@@ -2,7 +2,8 @@ use std::env;
 use clap::{Parser};
 use log::{debug, info};
 
-use bioshell_seq::sequence::{clone_ungapped, count_identical, FastaIterator, len_ungapped, ProfileColumnOrder, Sequence, SequenceProfile, StockholmIterator};
+use bioshell_seq::sequence::{clone_ungapped, count_identical, FastaIterator, len_ungapped, ProfileColumnOrder, remove_gaps, Sequence, SequenceProfile, StockholmIterator, AlwaysTrue, DescriptionContains, SequenceFilter};
+
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::msa::MSA;
 
@@ -69,25 +70,17 @@ pub fn main() {
 
     if let Some(fname) = args.out_fasta {
         let mut writer = out_writer(&fname, false);
+        // ---------- Filter to print only selected sequences from the MSA
+        let mut filter: Box<dyn SequenceFilter> = Box::new(AlwaysTrue);
         if let Some(substr) = args.select {
-            let pat = substr.as_str();
-            for si in msa.sequences().iter().filter(|&s|s.description().contains(pat)) {
-                if args.remove_gaps {
-                    writer.write(format!("{}", clone_ungapped(si)).as_bytes()).ok();
-                }
-                else {
-                    writer.write(format!("{}", si).as_bytes()).ok();
-                }
-            }
+            filter = Box::new(DescriptionContains{ substring: substr });
+        }
 
-        } else {
-            for si in msa.sequences() {
-                if args.remove_gaps {
-                    writer.write(format!("{}", clone_ungapped(si)).as_bytes()).ok();
-                }
-                else {
-                    writer.write(format!("{}", si).as_bytes()).ok();
-                }
+        for si in msa.sequences().iter().filter(|s| filter.filter(&s)) {
+            if args.remove_gaps {
+                writer.write(format!("{}", clone_ungapped(si)).as_bytes()).ok();
+            } else {
+                writer.write(format!("{}", si).as_bytes()).ok();
             }
         }
     }

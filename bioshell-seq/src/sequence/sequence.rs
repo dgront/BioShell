@@ -497,11 +497,12 @@ pub fn len_ungapped(sequence: &Sequence) -> usize {
 /// ```
 pub fn remove_gaps(sequence: &mut Sequence) {
 
-    let new_seq = sequence.seq.iter()
+    let new_seq: Vec<_>  = sequence.seq.iter()
         .filter(|&c| *c != b'-' && *c != b'_')
         .map(|&c| c)
         .collect();
-    sequence.seq = new_seq;
+    sequence.seq.clear();
+    for c in new_seq.iter() { sequence.seq.push(*c)}
 }
 
 
