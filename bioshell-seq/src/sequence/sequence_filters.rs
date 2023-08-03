@@ -1,9 +1,14 @@
-use crate::sequence::Sequence;
+use crate::sequence::{count_residue_type, Sequence};
 
+/// Says `true` or `false` for a [`Sequence`](Sequence) object
+///
+/// Sequence filters are be used to select sequences from a larger pool
 pub trait SequenceFilter {
+    /// Returns `true` or `false` for a given `sequence` object
     fn filter(&self, sequence: &Sequence) -> bool;
 }
 
+/// Returns `true` if a description of a given [`Sequence`](Sequence) contains a given substring
 pub struct DescriptionContains { pub substring: String}
 
 impl SequenceFilter for DescriptionContains {
@@ -12,8 +17,52 @@ impl SequenceFilter for DescriptionContains {
     }
 }
 
+/// Always returns `true`; serves a the defafult filter that pass every sequence
 pub struct AlwaysTrue;
 
 impl SequenceFilter for AlwaysTrue {
     fn filter(&self, _: &Sequence) -> bool { true }
+}
+
+/// Returns `true` if the length of a given [`Sequence`](Sequence) is within a certain range
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, SequenceLengthWithinRange, SequenceFilter};
+/// let sequence1 = Sequence::from_str("test_seq", "MRAA");
+/// let sequence2 = Sequence::from_str("test_seq", "MRAGIA");
+/// let filter = SequenceLengthWithinRange{from: 3,to: 5};
+/// assert_eq!(filter.filter(&sequence1), true);
+/// assert_eq!(filter.filter(&sequence2), false);
+/// ```
+pub struct SequenceLengthWithinRange {
+    pub from: usize,
+    pub to: usize
+}
+
+impl SequenceFilter for SequenceLengthWithinRange {
+    fn filter(&self, sequence: &Sequence) -> bool {
+        sequence.len() >= self.from && sequence.len() <= self.to
+    }
+}
+
+/// Returns `true` if a given [`Sequence`](Sequence) contains at least `n` unknown residues, marked as `'X'`
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, ContainsX, SequenceFilter};
+/// let sequence1 = Sequence::from_str("test_seq", "MRAXXA");
+/// let sequence2 = Sequence::from_str("test_seq", "MRAXXXA");
+/// let filter = ContainsX{min_x: 3};
+/// assert_eq!(filter.filter(&sequence1),false);
+/// assert_eq!(filter.filter(&sequence2),true);
+/// ```
+pub struct ContainsX {
+    pub min_x: usize,
+}
+
+impl SequenceFilter for ContainsX {
+    fn filter(&self, sequence: &Sequence) -> bool {
+        count_residue_type(sequence, 'X') >= self.min_x
+    }
 }
