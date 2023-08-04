@@ -1,0 +1,21 @@
+[package]
+name = "bioshell-pdb"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Provides struct that holds biomacromolecular structures, loaded from a PDB or mmCIF file"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell"]
+
+[lib]
+crate-type =["rlib", "cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+clap = { version = "3.1.18", features = ["derive"] }
+thiserror = "1.0.26"
+bioshell-numerical = { path = "../bioshell-numerical" }
+
+[[bin]]
+name = "pdb_main_exe"
+path = "main.rs"

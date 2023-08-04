@@ -19,12 +19,14 @@ members = [
     "bioshell-montecarlo",
     "bioshell-cartesians",
     "bioshell-cif",
+    "bioshell-pdb",
     "bioshell-datastructures",
 ]
 
 [dependencies]
 bioshell-io = { path = "./bioshell-io" }
 bioshell-seq = { path = "./bioshell-seq" }
+bioshell-pdb = { path = "./bioshell-pdb" }
 bioshell-numerical = { path = "./bioshell-numerical" }
 bioshell-ff = { path = "./bioshell-ff" }
 bioshell-sim = { path = "./bioshell-sim" }
