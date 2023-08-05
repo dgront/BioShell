@@ -10,7 +10,7 @@ mod pdb_sheet;
 pub mod pdb_helix_line_parser;
 pub mod pdb_sheet_line_parser;
 mod pdb_atom;
-// mod atom_iterators;
+mod pdb_atom_filters;
 
 pub use pdb::{Structure, load_pdb, ResidueIndex};
 
