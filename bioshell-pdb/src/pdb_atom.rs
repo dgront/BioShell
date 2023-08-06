@@ -1,5 +1,18 @@
 use std::string::String;
 
+/// Atom data as found in a single line of a PDB file
+///
+///The struct holds all data parsed from ATOM or HETATM lines
+///
+/// # Examples
+///```rust
+/// use bioshell_pdb::PdbAtom;
+/// let a = PdbAtom::from_atom_line("ATOM    320  CA  PHE A  43      16.101   9.057  19.587  1.00 18.18           C ");
+/// assert_eq!(a.name.as_str(), " CA ");
+/// assert_eq!(a.res_name.as_str(), "PHE");
+/// assert_eq!(a.is_hetero_atom, false);
+///```
+#[derive(Clone, Debug)]
 pub struct PdbAtom {
     pub serial: i32,
     pub name: String,
@@ -45,7 +58,8 @@ impl PdbAtom {
     //     return PdbLineParser::assemble_atom(&self);
     // }
 
-    pub fn from_atom_line(pdb_line: &str, is_hetero: bool) -> PdbAtom {
+    /// todo: [MS] implement parding charge and element type
+    pub fn from_atom_line(pdb_line: &str) -> PdbAtom {
 
         let serial = pdb_line[6..11].trim().parse::<i32>().unwrap();
         let name = pdb_line[12..16].to_string();
@@ -74,75 +88,8 @@ impl PdbAtom {
             temp_factor,
             element: None,
             charge: None,
-            is_hetero_atom: is_hetero,
+            is_hetero_atom: pdb_line.starts_with("H"),
             secondary_struct_symbol: 'C'
         };
     }
-
-        //
-        // pub fn get_protein_name(&self) -> &str {
-        //     &self.protein_name
-        // }
-        //
-        // pub fn get_atom_serial_no(&self) -> Option<i32> {
-        //     self.atom_serial_no
-        // }
-        //
-        // pub fn get_atom_symbol(&self) -> &str {
-        //     &self.atom_symbol
-        // }
-        //
-        // pub fn get_atom_position(&self) -> &str {
-        //     &self.atom_position
-        // }
-        //
-        // pub fn get_atom_no_in_the_branch(&self) -> Option<i32> {
-        //     self.atom_no_in_the_branch
-        // }
-        //
-        // pub fn get_connected_to_atom_no_in_the_branch(&self) -> Option<i32> {
-        //     self.connected_to_atom_no_in_the_branch
-        // }
-        //
-        // pub fn get_alt_loc_indicator(&self) -> &str {
-        //     &self.alt_loc_indicator
-        // }
-        //
-        // pub fn get_residue_name(&self) -> &str {
-        //     &self.residue_name
-        // }
-        //
-        // pub fn get_chain_name(&self) -> &str {
-        //     &self.chain_name
-        // }
-        //
-        // pub fn get_residue_no(&self) -> Option<i32> {
-        //     self.residue_no
-        // }
-        //
-        // pub fn get_insertion_code(&self) -> &str {
-        //     &self.insertion_code
-        // }
-        //
-        //
-        // pub fn get_occupancy(&self) -> Option<f64> {
-        //     self.occupancy
-        // }
-        //
-        // pub fn get_temperature_factor(&self) -> Option<f64> {
-        //     self.temperature_factor
-        // }
-        //
-        // pub fn get_segment_identifier(&self) -> &str {
-        //     &self.segment_identifier
-        // }
-        //
-        // pub fn get_segment_identifier_symbol(&self) -> &str {
-        //     &self.segment_identifier_symbol
-        // }
-        //
-        // pub fn get_charge_of_the_atom(&self) -> &str {
-        //     &self.charge_of_the_atom
-        // }
-    //}
 }
