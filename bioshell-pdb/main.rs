@@ -1,6 +1,5 @@
 use std::env;
 use bioshell_pdb::{Structure, load_pdb};
-use std::io::{self, Read};
 
 fn main(){
     let args: Vec<String> = env::args().collect();

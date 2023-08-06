@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use bioshell_pdb::pdb_compound::PdbCompound;
+    use bioshell_pdb::PdbCompound;
 
     #[test]
     fn test_pdb_compound() {

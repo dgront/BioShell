@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use bioshell_pdb::pdb_header::PdbHeader;
+    use bioshell_pdb::PdbHeader;
 
     #[test]
     fn test_pdb_header_new() {

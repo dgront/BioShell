@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use bioshell_pdb::pdb_source::PdbSource;
+    use bioshell_pdb::PdbSource;
 
     #[test]
     fn test_pdb_source() {

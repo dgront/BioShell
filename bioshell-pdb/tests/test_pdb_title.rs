@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use bioshell_pdb::pdb_title::PdbTitle;
+    use bioshell_pdb::PdbTitle;
 
     #[test]
     fn test_pdb_title() {
