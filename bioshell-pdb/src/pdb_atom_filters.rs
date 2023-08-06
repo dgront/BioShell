@@ -1,21 +1,59 @@
+//! Allows to process atoms of a [`Structure`](Structure) with iterators.
+//!
+//! Atoms of a [`Structure`](Structure) may be accessed by `Structure::atoms()` or `Structure::atoms_mut()`
+//! (immutable or mutable access, respectively) method which borrows
+//! an immutable reference to a vector of atoms.
+//! while filtering Rust iterators. Example below shows how to iterate over backbone atoms
+//!
+//! ```
+//! use bioshell_pdb::{PdbAtom, Structure};
+//! use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
+//! let mut strctr = Structure::new();
+//! strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
+//! strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+//! strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
+//! strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
+//! strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
+//! let bb = IsBackbone{};
+//! for bb_atom in strctr.atoms().iter().filter(|b| bb.check(b)) {
+//!     println!("{}",bb_atom.name);
+//! }
+//! ```
+//!
+//! Atoms selected from a [`Structure`](Structure) may be **cloned and collected** into a new `Vec<PdbAtom>` as below:
+//! ```
+//! # use bioshell_pdb::{PdbAtom, Structure};
+//! # use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
+//! # let mut strctr = Structure::new();
+//! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
+//! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+//! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
+//! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
+//! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
+//! let bb = IsBackbone{};
+//! let bb_only: Vec<PdbAtom> = strctr.atoms().iter().filter(|b| bb.check(b)).cloned().collect();
+//! assert_eq!(bb_only.len(), 4);
+//! ```
+//! Alternatively, an iteration over atoms may be directly copied into a new [`Structure`](Structure):
+//! ```
+//! # use bioshell_pdb::{PdbAtom, Structure};
+//! # use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
+//! # let mut strctr = Structure::new();
+//! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
+//! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+//! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
+//! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
+//! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
+//! # let bb = IsBackbone{};
+//! let bb_strctr = Structure::from_iterator(strctr.atoms().iter().filter(|b| bb.check(b)));
+//! ```
+
 use crate::PdbAtom;
 
-/// A handy filter to process atoms of a  [`Structure`](Structure) with iterators.
+/// A handy filter to process atoms of a [`Structure`](Structure) with iterators.
 ///
-/// # Examples
-/// ```
-/// use bioshell_pdb::{PdbAtom, Structure};
-/// use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
-/// let mut strctr = Structure::new();
-/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
-/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
-/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
-/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
-/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
-/// let bb = IsBackbone{};
-/// let bb_count = strctr.atoms().iter().filter(|b| bb.check(b)).count();
-/// assert_eq!(bb_count, 4);
-/// ```
+/// Structs implementing [`PdbAtomPredicate`](PdbAtomPredicate) trait can be used as predicates
+/// while filtering Rust iterators. Example below shows how to iterate over backbone atoms
 pub trait PdbAtomPredicate {
     fn check(&self, a: &PdbAtom) -> bool;
 }
@@ -43,8 +81,6 @@ impl PdbAtomPredicate for ChainMatches {
     fn check(&self, a: &PdbAtom) -> bool { a.chain_id == self.chain_id }
 }
 
-pub struct IsBackbone;
-
 /// Returns `true` if an atom belongs to a backbone.
 ///
 /// # Examples
@@ -61,11 +97,35 @@ pub struct IsBackbone;
 /// let bb_count = strctr.atoms().iter().filter(|b| bb.check(b)).count();
 /// # assert_eq!(bb_count, 4);
 /// ```
+pub struct IsBackbone;
+
+
 impl PdbAtomPredicate for IsBackbone {
     fn check(&self, a: &PdbAtom) -> bool {
         a.name == " CA " || a.name == " C  " || a.name == " N  " || a.name == " O  "
     }
 }
 
+/// A filter defined for a pair of atoms.
+///
+/// Structs implementing [`PdbAtomPredicate`](PdbAtomPredicate) trait can be used as predicates
+/// while filtering Rust iterators. Example below shows how to iterate over backbone atoms
+pub trait PdbAtomPredicate2 {
+    fn check(&self, ai: &PdbAtom, aj: &PdbAtom) -> bool;
+}
 
+/// Returns `true` if both atoms belong to the same chain
+pub struct SameChain;
 
+impl PdbAtomPredicate2 for SameChain {
+    fn check(&self, ai: &PdbAtom, aj: &PdbAtom) -> bool { ai.chain_id == aj.chain_id }
+}
+
+/// Returns `true` if both atoms belong to the same residue
+pub struct SameResidue;
+
+impl PdbAtomPredicate2 for SameResidue {
+    fn check(&self, ai: &PdbAtom, aj: &PdbAtom) -> bool {
+        ai.chain_id == aj.chain_id && ai.res_seq == aj.res_seq && ai.i_code == aj.i_code
+    }
+}

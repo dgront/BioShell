@@ -12,6 +12,7 @@ use crate::pdb_parsing_error::ParseError;
 use crate::pdb_sequence_of_residue::PdbSequenceOfResidue;
 use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
+use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2};
 
 pub struct ResidueIndex {
     pub chain_id: String,
@@ -42,7 +43,6 @@ pub struct Structure {
     atoms: Vec<PdbAtom>,
 }
 
-/// todo: Implement adding new atoms into a structure; remember to sort them; maybe insert after binary search?
 impl Structure {
     pub fn new() -> Self {
         Self {
@@ -55,11 +55,29 @@ impl Structure {
         }
     }
 
-    pub fn from_iterator<'a, T: Iterator+Copy>(iter: &T) -> Structure
+    /// Creates a new [`Structure`](Structure) by filling it with atoms from an iterator.
+    ///
+    /// Atoms provided by an iterator will be cloned.
+    ///
+    /// # Example
+    ///```
+    /// # use bioshell_pdb::{PdbAtom, Structure};
+    /// # use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
+    /// let mut strctr = Structure::new();
+    /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
+    /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+    /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
+    /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
+    /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
+    /// let bb = IsBackbone{};
+    /// let bb_strctr = Structure::from_iterator(strctr.atoms().iter().filter(|a|bb.check(a)));
+    /// # assert_eq!(bb_strctr.count_atoms(), 4);
+    /// ```
+    pub fn from_iterator<'a, T: Iterator+Clone>(iter: T) -> Structure
         where T: Iterator<Item=&'a PdbAtom> {
 
         let mut strctr = Structure::new();
-        strctr.atoms = iter.cloned().collect();
+        for a in iter { strctr.atoms.push(a.clone()) }
 
         return strctr;
     }
@@ -71,10 +89,36 @@ impl Structure {
     }
 
     /// Counts atoms of this [`Structure`](Structure)
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, Structure};
+    /// let mut strctr = Structure::new();
+    /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N"));
+    /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"));
+    /// assert_eq!(strctr.count_atoms(), 2);
+    /// ```
     pub fn count_atoms(&self) -> usize { self.atoms.len() }
 
-    /// Provides immutable acces to atoms of this  [`Structure`](Structure)
+    /// Counts residues of this [`Structure`](Structure)
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, Structure};
+    /// let mut strctr = Structure::new();
+    /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N"));
+    /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"));
+    /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
+    /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+    ///
+    /// assert_eq!(strctr.count_residues(), 2);
+    /// ```
+    pub fn count_residues(&self) -> usize {
+        let same_res = SameResidue{};
+        return self.atoms().windows(2).filter(|a| !same_res.check(&a[0], &a[1])).count() + 1
+    }
+
+    /// Provides immutable access to atoms of this  [`Structure`](Structure)
     pub fn atoms(&self) -> &Vec<PdbAtom> { &self.atoms }
+
+    /// Provides mutable access to atoms of this  [`Structure`](Structure)
+    pub fn atoms_mut(&mut self) -> &mut Vec<PdbAtom> { &mut self.atoms }
 
     pub fn chain_ids(&self) -> Vec<String> {
         let uniq: HashSet<&String> = self.atoms.iter().map(|a| &a.chain_id).collect();
