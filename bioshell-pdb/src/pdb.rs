@@ -42,6 +42,7 @@ pub struct Structure {
     atoms: Vec<PdbAtom>,
 }
 
+/// todo: Implement adding new atoms into a structure; remember to sort them; maybe insert after binary search?
 impl Structure {
     pub fn new() -> Self {
         Self {
@@ -52,6 +53,12 @@ impl Structure {
             defined_sequence: None,
             atoms: vec![],
         }
+    }
+
+    pub fn from_iterator<'a, T: Iterator+Copy>(iter: &T) where T: Iterator<Item=&'a PdbAtom>{
+        let mut strctr = Structure::new();
+        strctr.atoms = iter.cloned().collect();
+
     }
 
     pub fn atoms(&self) -> &Vec<PdbAtom> { &self.atoms }
@@ -102,10 +109,10 @@ pub fn load_pdb(file_name: &str) -> Result<Structure,ParseError> {
             //"Source_" => {},
             //"SequenceOfResidue_" => {},
             "ATOM" => {
-                atoms.push(PdbAtom::from_atom_line(&line, false));
+                atoms.push(PdbAtom::from_atom_line(&line));
             },
             "HETATM" => {
-                atoms.push(PdbAtom::from_atom_line(&line, false));
+                atoms.push(PdbAtom::from_atom_line(&line));
             },
             _ => {},
         };
