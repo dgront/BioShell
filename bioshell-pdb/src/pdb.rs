@@ -55,12 +55,25 @@ impl Structure {
         }
     }
 
-    pub fn from_iterator<'a, T: Iterator+Copy>(iter: &T) where T: Iterator<Item=&'a PdbAtom>{
+    pub fn from_iterator<'a, T: Iterator+Copy>(iter: &T) -> Structure
+        where T: Iterator<Item=&'a PdbAtom> {
+
         let mut strctr = Structure::new();
         strctr.atoms = iter.cloned().collect();
 
+        return strctr;
     }
 
+    /// Pushes a given [`PdbAtom`](PdbAtom) at the end of this [`Structure`](Structure)
+    /// The given atom object will be consumed in the process
+    pub fn push_atom(&mut self, a: PdbAtom) {
+        self.atoms.push(a);
+    }
+
+    /// Counts atoms of this [`Structure`](Structure)
+    pub fn count_atoms(&self) -> usize { self.atoms.len() }
+
+    /// Provides immutable acces to atoms of this  [`Structure`](Structure)
     pub fn atoms(&self) -> &Vec<PdbAtom> { &self.atoms }
 
     pub fn chain_ids(&self) -> Vec<String> {
