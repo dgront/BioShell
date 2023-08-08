@@ -1,10 +1,12 @@
-//! Allows to process atoms of a [`Structure`](Structure) with iterators.
+//! Allows to process atoms of a [`Structure`](crate::Structure) with iterators.
 //!
-//! Atoms of a [`Structure`](Structure) may be accessed by `Structure::atoms()` or `Structure::atoms_mut()`
-//! (immutable or mutable access, respectively) method which borrows
-//! an immutable reference to a vector of atoms.
-//! while filtering Rust iterators. Example below shows how to iterate over backbone atoms
+//! Atoms of a [`Structure`](crate::Structure) may be accessed by [`Structure::atoms()`](crate::Structure::atoms())
+//! or [`Structure::atoms_mut()`](crate::Structure::atoms_mut())
+//! (immutable or mutable access, respectively) which borrow a reference to a vector of atoms.
+//! These can be processed in a standard rust way with iterator tools. A [`PdbAtomPredicate`](PdbAtomPredicate)
+//! trait defines [`check()`](PdbAtomPredicate::check()) method that returns true if a given predicate is satisfied.
 //!
+//! For example, [`IsBackbone`](IsBackbone) predicate may be used to filter backbone atoms:
 //! ```
 //! use bioshell_pdb::{PdbAtom, Structure};
 //! use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
@@ -18,9 +20,9 @@
 //! for bb_atom in strctr.atoms().iter().filter(|b| bb.check(b)) {
 //!     println!("{}",bb_atom.name);
 //! }
-//! ```
+//!```
 //!
-//! Atoms selected from a [`Structure`](Structure) may be **cloned and collected** into a new `Vec<PdbAtom>` as below:
+//! Atoms selected from a [`Structure`](crate::Structure) may be **cloned and collected** into a new `Vec<PdbAtom>` as below:
 //! ```
 //! # use bioshell_pdb::{PdbAtom, Structure};
 //! # use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
@@ -34,7 +36,7 @@
 //! let bb_only: Vec<PdbAtom> = strctr.atoms().iter().filter(|b| bb.check(b)).cloned().collect();
 //! assert_eq!(bb_only.len(), 4);
 //! ```
-//! Alternatively, an iteration over atoms may be directly copied into a new [`Structure`](Structure):
+//! Alternatively, an iteration over atoms may be directly copied into a new [`Structure`](crate::Structure):
 //! ```
 //! # use bioshell_pdb::{PdbAtom, Structure};
 //! # use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
@@ -50,7 +52,7 @@
 
 use crate::{PdbAtom, ResidueIndex};
 
-/// A handy filter to process atoms of a [`Structure`](Structure) with iterators.
+/// A handy filter to process atoms of a [`Structure`](crate::Structure) with iterators.
 ///
 /// Structs implementing [`PdbAtomPredicate`](PdbAtomPredicate) trait can be used as predicates
 /// while filtering Rust iterators. Example below shows how to iterate over backbone atoms
@@ -128,6 +130,26 @@ impl PdbAtomPredicate for IsBackbone {
     fn check(&self, a: &PdbAtom) -> bool {
         a.name == " CA " || a.name == " C  " || a.name == " N  " || a.name == " O  "
     }
+}
+
+/// Returns `true` if an atom is an alpha carbon
+///
+/// # Examples
+/// ```
+/// # use bioshell_pdb::{PdbAtom, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{IsCA, PdbAtomPredicate};
+/// # let mut strctr = Structure::new();
+/// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
+/// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+/// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
+/// let ca = IsCA{};
+/// let ca_count = strctr.atoms().iter().filter(|a| ca.check(a)).count();
+/// # assert_eq!(ca_count, 1);
+/// ```
+pub struct IsCA;
+
+impl PdbAtomPredicate for IsCA {
+    fn check(&self, a: &PdbAtom) -> bool { a.name == " CA " }
 }
 
 /// A filter defined for a pair of atoms.

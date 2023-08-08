@@ -35,7 +35,77 @@ impl TryFrom<&PdbAtom> for ResidueIndex {
     }
 }
 
-// todo: Replace defined_sequence with a struct from bioshell-seq
+/// A biomacromolecular structure composed of [`PdbAtom`](PdbAtom) objects.
+///
+/// A [`Structure`](Structure) struct holds all atoms in a `Vec<PdbAtom>` container; its implementation
+/// provides methods to look at them in various ways.
+///
+/// # Creating a [`Structure`](Structure)
+/// Typically one gets a [`Structure`](Structure) object by loading it from a file in the PDB format:
+/// ```no_run
+/// use bioshell_pdb::{load_pdb, Structure};
+/// let strctr = load_pdb("2gb1.pdb").unwrap();
+/// ```
+/// A [`Structure`](Structure) can be also created from an [`Iterator`](Iterator) over [`PdbAtom`](PdbAtom)s:
+/// ```
+/// use bioshell_pdb::{PdbAtom, Structure};
+/// let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+///                      "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+///                      "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+///                      "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+/// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+/// let strctr = Structure::from_iterator(atoms.iter());
+/// # assert_eq!(strctr.count_atoms(), 4);
+/// ```
+///
+/// # Accessing its atoms
+/// A [`Structure`](Structure) implements two methods that provide mutable  and immutable borrow
+/// of the vector of its atoms: [`atoms()`](Structure::atoms()) and [`atoms_mut()`](Structure::atoms_mut()) respectively.
+/// These can be easily filtered by [`PdbAtomPredicate`](PdbAtomPredicate) predicates provided
+/// by [`pdb_atom_filters`](pdb_atom_filters) module.
+/// ```
+/// # use bioshell_pdb::{PdbAtom, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{IsCA, PdbAtomPredicate};
+/// # let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+/// #                     "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+/// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+/// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+/// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+/// # let strctr = Structure::from_iterator(atoms.iter());
+/// let is_ca = IsCA;
+/// # let mut n_ca = 0;
+/// for ca in  strctr.atoms().iter().filter(|a| is_ca.check(&a)) {
+///     // --- process each alpha carbon here
+/// # n_ca += 1;
+/// }
+/// # assert_eq!(n_ca, 2);
+/// ```
+///
+///
+/// # Accessing its residues and chains
+/// A  [`Structure`](Structure) struct hold only atoms; chains and residues are not stored explicitely.
+/// A list of residue IDs can be created on-demand from atoms:
+/// ```
+/// # use bioshell_pdb::{PdbAtom, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{ByResidue, PdbAtomPredicate};
+/// # let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+/// #                     "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+/// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+/// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+/// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+/// # let strctr = Structure::from_iterator(atoms.iter());
+/// let residue_ids = Structure::residue_ids_from_atoms(strctr.atoms().iter());
+/// for res_id in residue_ids {
+///     let res_filter = ByResidue::new(res_id);
+///     # let mut cnt = 0;
+///     for atom in strctr.atoms().iter().filter(|a| res_filter.check(&a)) {
+///         // ... process atoms of a given residue one by one
+///         # cnt += 1
+///     }
+///     # assert_eq!(cnt, 2);
+/// }
+/// ```
+///
 pub struct Structure {
     pub header: Option<PdbHeader>,
     pub title: Option<PdbTitle>,
@@ -141,7 +211,7 @@ impl Structure {
     /// assert_eq!(format!("{}", res_idx[1]), "A:69 ");
     /// assert_eq!(res_idx.len(), 2);
     /// ```
-    pub fn residue_ids_from_atoms<'a>(mut atoms: impl Iterator<Item = &'a PdbAtom>) -> Vec<ResidueIndex> {
+    pub fn residue_ids_from_atoms<'a>(atoms: impl Iterator<Item = &'a PdbAtom>) -> Vec<ResidueIndex> {
         // --- predicate used to check whether we are entering a new residue
         let same_res = SameResidue{};
         // --- turn a given iterator into a peekable one
