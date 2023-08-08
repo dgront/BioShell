@@ -13,7 +13,7 @@ mod pdb_atom;
 
 pub mod pdb_atom_filters;
 
-pub use pdb::{Structure, load_pdb, ResidueIndex};
+pub use pdb::{Structure, load_pdb, ResidueId};
 
 pub use pdb_atom::PdbAtom;
 pub use pdb_compound::PdbCompound;

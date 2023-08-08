@@ -50,7 +50,7 @@
 //! let bb_strctr = Structure::from_iterator(strctr.atoms().iter().filter(|b| bb.check(b)));
 //! ```
 
-use crate::{PdbAtom, ResidueIndex};
+use crate::{PdbAtom, ResidueId};
 
 /// A handy filter to process atoms of a [`Structure`](crate::Structure) with iterators.
 ///
@@ -96,10 +96,10 @@ impl PdbAtomPredicate for ByChain {
 /// let atoms_A: Vec<PdbAtom> = strctr.atoms().iter().filter(|a| select_chain_A.check(a)).cloned().collect();
 /// assert_eq!(atoms_A.len(), 1);
 /// ```
-pub struct ByResidue {res_id: ResidueIndex}
+pub struct ByResidue {res_id: ResidueId }
 
 impl ByResidue {
-    pub fn new(res_id: ResidueIndex) -> ByResidue { ByResidue { res_id } }
+    pub fn new(res_id: ResidueId) -> ByResidue { ByResidue { res_id } }
 }
 
 impl PdbAtomPredicate for ByResidue {

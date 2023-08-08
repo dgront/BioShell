@@ -16,22 +16,56 @@ use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2};
 
-pub struct ResidueIndex {
+/// Unique identifier for a residue
+///
+/// Such an ID may be used to access atom of a residue from a [`Structure`](Structure)
+/// # Example
+/// ```
+/// use bioshell_pdb::ResidueId;
+/// # use bioshell_pdb::{PdbAtom, Structure};
+/// # use bioshell_pdb::pdb_atom_filters::{ByResidue, PdbAtomPredicate};
+/// # let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+/// #                     "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+/// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+/// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+/// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+/// # let strctr = Structure::from_iterator(atoms.iter());
+/// let res_id = ResidueId::new("A", 68, " ");
+/// let get_res = ByResidue::new(res_id);
+/// # let mut cnt = 0;
+/// for atom in strctr.atoms().iter().filter(|a| get_res.check(&a)) {
+///     // ... process atoms of the residue 68 of chain A
+///     cnt += 1;
+/// }
+/// # assert_eq!(cnt, 2);
+/// ```
+pub struct ResidueId {
     pub chain_id: String,
     pub res_seq: i32,
     pub i_code: String
 }
 
-impl fmt::Display for ResidueIndex {
+impl ResidueId {
+    /// Creates a new [`ResidueId`](ResidueId) from its properties
+    pub fn new(chain_id: &str, res_seq: i32, i_code: &str) -> ResidueId {
+        ResidueId{
+            chain_id: chain_id.to_string(),
+            res_seq,
+            i_code: i_code.to_string()
+        }
+    }
+}
+
+impl fmt::Display for ResidueId {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}:{}{}", self.chain_id,self.res_seq,self.i_code) }
 }
 
-impl TryFrom<&PdbAtom> for ResidueIndex {
+impl TryFrom<&PdbAtom> for ResidueId {
     type Error = ();
 
     fn try_from(a: &PdbAtom) -> Result<Self, Self::Error> {
-        Ok(ResidueIndex{ chain_id: a.chain_id.clone(), res_seq: a.res_seq, i_code: a.i_code.clone() })
+        Ok(ResidueId { chain_id: a.chain_id.clone(), res_seq: a.res_seq, i_code: a.i_code.clone() })
     }
 }
 
@@ -197,7 +231,7 @@ impl Structure {
         Vec::from_iter(uniq.iter().map(|s| *s).cloned())
     }
 
-    /// Creates a vector of [`ResidueIndex`](ResidueIndex) object for each residue found in a given vector of atoms
+    /// Creates a vector of [`ResidueId`](ResidueId) object for each residue found in a given vector of atoms
     ///
     /// ```
     /// # use bioshell_pdb::{PdbAtom, Structure};
@@ -211,7 +245,7 @@ impl Structure {
     /// assert_eq!(format!("{}", res_idx[1]), "A:69 ");
     /// assert_eq!(res_idx.len(), 2);
     /// ```
-    pub fn residue_ids_from_atoms<'a>(atoms: impl Iterator<Item = &'a PdbAtom>) -> Vec<ResidueIndex> {
+    pub fn residue_ids_from_atoms<'a>(atoms: impl Iterator<Item = &'a PdbAtom>) -> Vec<ResidueId> {
         // --- predicate used to check whether we are entering a new residue
         let same_res = SameResidue{};
         // --- turn a given iterator into a peekable one
@@ -221,10 +255,10 @@ impl Structure {
 
         if let Some(&first) = maybe_first {
             // --- take the ResidueIdx of the first PdbAtom
-            let first_idx = ResidueIndex::try_from(first).unwrap();
-            let mut ret: Vec<ResidueIndex> = peek_iter.tuple_windows()
+            let first_idx = ResidueId::try_from(first).unwrap();
+            let mut ret: Vec<ResidueId> = peek_iter.tuple_windows()
                 .filter(|(a,b)| !same_res.check(&a, &b))
-                .map(|(_, b)|ResidueIndex::try_from(b).unwrap()).collect();
+                .map(|(_, b)| ResidueId::try_from(b).unwrap()).collect();
 
             // --- insert the first ResidueIdx which we actually juped over during the iteration above
             ret.insert(0, first_idx);
@@ -234,19 +268,19 @@ impl Structure {
         return Vec::new();
     }
 
-    /// Creates a vector of [`ResidueIndex`](ResidueIndex) object for each residue of this [`Structure`](Structure)
+    /// Creates a vector of [`ResidueId`](ResidueId) object for each residue of this [`Structure`](Structure)
     ///
     /// This method simply calls [`Structure::residue_ids_from_atoms()`](Structure::residue_ids_from_atoms()) for `self` atoms
-    pub fn residue_ids(&self) -> Vec<ResidueIndex> {
+    pub fn residue_ids(&self) -> Vec<ResidueId> {
 
         Structure::residue_ids_from_atoms(self.atoms.iter())
     }
 
-    pub fn residue_ids_by_chain(&self, chain_id: &str) -> Vec<ResidueIndex> {
+    pub fn residue_ids_by_chain(&self, chain_id: &str) -> Vec<ResidueId> {
 
         self.atoms.iter()
             .filter(|a| a.chain_id==chain_id)
-            .map(|a| ResidueIndex::try_from(a).unwrap()).collect()
+            .map(|a| ResidueId::try_from(a).unwrap()).collect()
     }
 
 }
