@@ -58,7 +58,6 @@ impl PdbAtom {
     //     return PdbLineParser::assemble_atom(&self);
     // }
 
-    /// todo: [MS] implement parding charge and element type
     pub fn from_atom_line(pdb_line: &str) -> PdbAtom {
 
         let serial = pdb_line[6..11].trim().parse::<i32>().unwrap();

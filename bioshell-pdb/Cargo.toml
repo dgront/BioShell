@@ -15,6 +15,7 @@ path = "src/lib.rs"
 clap = { version = "3.1.18", features = ["derive"] }
 thiserror = "1.0.26"
 bioshell-numerical = { path = "../bioshell-numerical" }
+itertools = "0.11.0"
 
 [[bin]]
 name = "pdb_main_exe"

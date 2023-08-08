@@ -5,6 +5,8 @@ use std::io::{BufRead, BufReader};
 use std::convert::TryFrom;
 use std::fmt;
 
+use itertools::{Itertools};
+
 use crate::pdb_atom::PdbAtom;
 use crate::pdb_compound::PdbCompound;
 use crate::pdb_header::PdbHeader;
@@ -114,7 +116,7 @@ impl Structure {
         return self.atoms().windows(2).filter(|a| !same_res.check(&a[0], &a[1])).count() + 1
     }
 
-    /// Provides immutable access to atoms of this  [`Structure`](Structure)
+    /// Provides immutable access to atoms of this [`Structure`](Structure)
     pub fn atoms(&self) -> &Vec<PdbAtom> { &self.atoms }
 
     /// Provides mutable access to atoms of this  [`Structure`](Structure)
@@ -125,9 +127,49 @@ impl Structure {
         Vec::from_iter(uniq.iter().map(|s| *s).cloned())
     }
 
+    /// Creates a vector of [`ResidueIndex`](ResidueIndex) object for each residue found in a given vector of atoms
+    ///
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, Structure};
+    /// let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+    ///                      "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+    ///                      "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+    ///                      "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+    /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    /// let res_idx = Structure::residue_ids_from_atoms(atoms.iter());
+    /// assert_eq!(format!("{}", res_idx[0]), "A:68 ");
+    /// assert_eq!(format!("{}", res_idx[1]), "A:69 ");
+    /// assert_eq!(res_idx.len(), 2);
+    /// ```
+    pub fn residue_ids_from_atoms<'a>(mut atoms: impl Iterator<Item = &'a PdbAtom>) -> Vec<ResidueIndex> {
+        // --- predicate used to check whether we are entering a new residue
+        let same_res = SameResidue{};
+        // --- turn a given iterator into a peekable one
+        let mut peek_iter = atoms.peekable();
+        // --- take the first PdbAtom, if there is any
+        let maybe_first = peek_iter.peek();
+
+        if let Some(&first) = maybe_first {
+            // --- take the ResidueIdx of the first PdbAtom
+            let first_idx = ResidueIndex::try_from(first).unwrap();
+            let mut ret: Vec<ResidueIndex> = peek_iter.tuple_windows()
+                .filter(|(a,b)| !same_res.check(&a, &b))
+                .map(|(_, b)|ResidueIndex::try_from(b).unwrap()).collect();
+
+            // --- insert the first ResidueIdx which we actually juped over during the iteration above
+            ret.insert(0, first_idx);
+
+            return ret;
+        }
+        return Vec::new();
+    }
+
+    /// Creates a vector of [`ResidueIndex`](ResidueIndex) object for each residue of this [`Structure`](Structure)
+    ///
+    /// This method simply calls [`Structure::residue_ids_from_atoms()`](Structure::residue_ids_from_atoms()) for `self` atoms
     pub fn residue_ids(&self) -> Vec<ResidueIndex> {
 
-        self.atoms.iter().map(|a| ResidueIndex::try_from(a).unwrap()).collect()
+        Structure::residue_ids_from_atoms(self.atoms.iter())
     }
 
     pub fn residue_ids_by_chain(&self, chain_id: &str) -> Vec<ResidueIndex> {

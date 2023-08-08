@@ -48,7 +48,7 @@
 //! let bb_strctr = Structure::from_iterator(strctr.atoms().iter().filter(|b| bb.check(b)));
 //! ```
 
-use crate::PdbAtom;
+use crate::{PdbAtom, ResidueIndex};
 
 /// A handy filter to process atoms of a [`Structure`](Structure) with iterators.
 ///
@@ -63,22 +63,47 @@ pub trait PdbAtomPredicate {
 /// # Examples
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
-/// use bioshell_pdb::pdb_atom_filters::{ChainMatches, PdbAtomPredicate};
+/// use bioshell_pdb::pdb_atom_filters::{ByChain, PdbAtomPredicate};
 /// let mut strctr = Structure::new();
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA B  69      25.790  28.757  29.513  1.00 16.12           C"));
-/// let select_chain_A = ChainMatches::new("A");
+/// let select_chain_A = ByChain::new("A");
 /// let atoms_A: Vec<PdbAtom> = strctr.atoms().iter().filter(|a| select_chain_A.check(a)).cloned().collect();
 /// assert_eq!(atoms_A.len(), 1);
 /// ```
-pub struct ChainMatches {chain_id: String}
+pub struct ByChain {chain_id: String}
 
-impl ChainMatches {
-    pub fn new(code: &str) -> Self { ChainMatches{ chain_id: String::from(code) } }
+impl ByChain {
+    pub fn new(code: &str) -> Self { ByChain { chain_id: String::from(code) } }
 }
 
-impl PdbAtomPredicate for ChainMatches {
+impl PdbAtomPredicate for ByChain {
     fn check(&self, a: &PdbAtom) -> bool { a.chain_id == self.chain_id }
+}
+
+/// Returns `true` if an atom belongs to a certain residue.
+///
+/// # Examples
+/// ```
+/// # use bioshell_pdb::{PdbAtom, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{ByChain, PdbAtomPredicate};
+/// let mut strctr = Structure::new();
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA B  69      25.790  28.757  29.513  1.00 16.12           C"));
+/// let select_chain_A = ByChain::new("A");
+/// let atoms_A: Vec<PdbAtom> = strctr.atoms().iter().filter(|a| select_chain_A.check(a)).cloned().collect();
+/// assert_eq!(atoms_A.len(), 1);
+/// ```
+pub struct ByResidue {res_id: ResidueIndex}
+
+impl ByResidue {
+    pub fn new(res_id: ResidueIndex) -> ByResidue { ByResidue { res_id } }
+}
+
+impl PdbAtomPredicate for ByResidue {
+    fn check(&self, a: &PdbAtom) -> bool {
+        a.chain_id == self.res_id.chain_id && a.res_seq == self.res_id.res_seq && a.i_code == self.res_id.i_code
+    }
 }
 
 /// Returns `true` if an atom belongs to a backbone.
@@ -98,7 +123,6 @@ impl PdbAtomPredicate for ChainMatches {
 /// # assert_eq!(bb_count, 4);
 /// ```
 pub struct IsBackbone;
-
 
 impl PdbAtomPredicate for IsBackbone {
     fn check(&self, a: &PdbAtom) -> bool {
