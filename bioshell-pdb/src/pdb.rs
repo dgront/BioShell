@@ -69,6 +69,12 @@ impl TryFrom<&PdbAtom> for ResidueId {
     }
 }
 
+impl PdbAtomPredicate for ResidueId {
+    fn check(&self, a: &PdbAtom) -> bool {
+        a.chain_id == self.chain_id && a.res_seq == self.res_seq && a.i_code == self.i_code
+    }
+}
+
 /// A biomacromolecular structure composed of [`PdbAtom`](PdbAtom) objects.
 ///
 /// A [`Structure`](Structure) struct holds all atoms in a `Vec<PdbAtom>` container; its implementation
@@ -231,6 +237,23 @@ impl Structure {
         Vec::from_iter(uniq.iter().map(|s| *s).cloned())
     }
 
+    /// Returns atoms of a given chain
+    ///
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, Structure};
+    /// # let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+    /// #                     "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+    /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+    /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+    /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    /// # let strctr = Structure::from_iterator(atoms.iter());
+    /// let chain_A_atoms = strctr.chain_atoms("A");
+    /// # assert_eq!(chain_A_atoms.iter().count(),4);
+    /// ```
+    pub fn chain_atoms(&self, chain_id: &str) -> Vec<&PdbAtom>{
+        self.atoms.iter().filter(|&a| a.chain_id==chain_id).collect()
+    }
+
     /// Creates a vector of [`ResidueId`](ResidueId) object for each residue found in a given vector of atoms
     ///
     /// ```
@@ -276,13 +299,29 @@ impl Structure {
         Structure::residue_ids_from_atoms(self.atoms.iter())
     }
 
-    pub fn residue_ids_by_chain(&self, chain_id: &str) -> Vec<ResidueId> {
+    /// Creates a vector of [`ResidueId`](ResidueId) object for each residue of a given chain
+    ///
+    pub fn chain_residue_ids(&self, chain_id: &str) -> Vec<ResidueId> {
 
-        self.atoms.iter()
-            .filter(|a| a.chain_id==chain_id)
-            .map(|a| ResidueId::try_from(a).unwrap()).collect()
+        Structure::residue_ids_from_atoms(self.atoms.iter().filter(|&a| a.chain_id==chain_id))
     }
 
+    /// Returns atoms of a given residue
+    ///
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
+    /// # let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+    /// #                     "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+    /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+    /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+    /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    /// # let strctr = Structure::from_iterator(atoms.iter());
+    /// let res_atoms = strctr.residue_atoms(&ResidueId::new("A", 68, " "));
+    /// # assert_eq!(res_atoms.iter().count(),2);
+    /// ```
+    pub fn residue_atoms(&self, residue_id: &ResidueId) -> Vec<&PdbAtom> {
+        self.atoms.iter().filter(|&a| residue_id.check(a)).collect()
+    }
 }
 
 pub fn load_pdb(file_name: &str) -> Result<Structure,ParseError> {

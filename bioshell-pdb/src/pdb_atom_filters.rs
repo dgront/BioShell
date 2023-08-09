@@ -103,9 +103,7 @@ impl ByResidue {
 }
 
 impl PdbAtomPredicate for ByResidue {
-    fn check(&self, a: &PdbAtom) -> bool {
-        a.chain_id == self.res_id.chain_id && a.res_seq == self.res_id.res_seq && a.i_code == self.res_id.i_code
-    }
+    fn check(&self, a: &PdbAtom) -> bool { self.res_id.check(a) }
 }
 
 /// Returns `true` if an atom belongs to a backbone.
