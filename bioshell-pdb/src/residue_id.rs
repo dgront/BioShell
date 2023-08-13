@@ -27,6 +27,7 @@ use crate::pdb_atom_filters::{PdbAtomPredicate};
 /// }
 /// # assert_eq!(cnt, 2);
 /// ```
+#[derive(Clone, Debug)]
 pub struct ResidueId {
     pub chain_id: String,
     pub res_seq: i32,

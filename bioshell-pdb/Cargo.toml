@@ -14,7 +14,8 @@ path = "src/lib.rs"
 [dependencies]
 clap = { version = "3.1.18", features = ["derive"] }
 thiserror = "1.0.26"
-bioshell-numerical = { path = "../bioshell-numerical" }
+#bioshell-numerical = { path = "../bioshell-numerical" }
+bioshell-seq= { path = "../bioshell-seq" }
 itertools = "0.11.0"
 
 [[bin]]

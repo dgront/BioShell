@@ -190,7 +190,10 @@ impl ResidueTypeManager {
     /// // --- ALN hasn't been inserted yet
     /// assert!(mgr.by_code3(&String::from("ALN")).is_none());
     /// mgr.register_residue_type(aln);
+    /// // --- Now ALN can be found in the library
     /// assert!(mgr.by_code3(&String::from("ALN")).is_some());
+    /// // --- Now ALN can be found in the library
+    /// assert!(mgr.by_code3(&String::from("ALN")).unwrap().code1(), "A");
     /// ```
     pub fn by_code3(&self, code3: &String) -> Option<&ResidueType> {
         if self.by_code_3.contains_key(code3) {

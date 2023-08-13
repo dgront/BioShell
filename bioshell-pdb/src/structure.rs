@@ -5,6 +5,8 @@ use std::io::{BufRead, BufReader};
 use std::convert::TryFrom;
 
 use itertools::{Itertools};
+use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties};
+use bioshell_seq::sequence::Sequence;
 
 use crate::pdb_atom::PdbAtom;
 use crate::pdb_compound::PdbCompound;
@@ -95,6 +97,7 @@ pub struct Structure {
     pub source: Option<PdbSource>,
     pub defined_sequence: Option<PdbSequenceOfResidue>,
     atoms: Vec<PdbAtom>,
+    res_type_manager: ResidueTypeManager,
 }
 
 impl Structure {
@@ -106,6 +109,7 @@ impl Structure {
             source: None,
             defined_sequence: None,
             atoms: vec![],
+            res_type_manager: ResidueTypeManager::new()
         }
     }
 
@@ -166,6 +170,28 @@ impl Structure {
     pub fn count_residues(&self) -> usize {
         let same_res = SameResidue{};
         return self.atoms().windows(2).filter(|a| !same_res.check(&a[0], &a[1])).count() + 1
+    }
+
+    /// Provides immutable access to an atom
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, Structure, ResidueId};
+    /// # let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+    /// #                     "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+    /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+    /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+    /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    /// # let strctr = Structure::from_iterator(atoms.iter());
+    /// let a = strctr.atom(&ResidueId::new("A", 69, " ")," CA ").unwrap();
+    /// assert_eq!(a.name, " CA ");
+    /// # assert_eq!(a.res_seq, 69);
+    /// ```
+    pub fn atom(&self, res_id: &ResidueId, name: &str) -> Option<&PdbAtom> {
+        self.atoms.iter().find(|&a| res_id.check(a) && a.name == name)
+    }
+
+    /// Provides mutable access to an atom
+    pub fn atom_mut(&mut self, res_id: &ResidueId, name: &str) -> Option<&mut PdbAtom> {
+        self.atoms.iter_mut().find(|a| res_id.check(a) && a.name == name)
     }
 
     /// Provides immutable access to atoms of this [`Structure`](Structure)
@@ -230,6 +256,7 @@ impl Structure {
 
             return ret;
         }
+        // --- return empty vector if there are no atoms in the given iterator
         return Vec::new();
     }
 
@@ -239,6 +266,33 @@ impl Structure {
     pub fn residue_ids(&self) -> Vec<ResidueId> {
 
         Structure::residue_ids_from_atoms(self.atoms.iter())
+    }
+
+    pub fn residue_type(&self, res_id: &ResidueId) -> Result<&ResidueType, ParseError> {
+
+        // --- check if such a residue has at least one atom in this struct
+        if let Some(atom) = self.atoms().iter().find(|&a| res_id.check(a)) {
+            if let Some(res_type) = self.res_type_manager.by_code3(&atom.res_name) {
+                return Ok(res_type);    // --- atom exists and its residue type is known
+            } else {                    // --- atom exists but its residue type is NOT known
+                return Err(ParseError::UnknownResidueType { res_type: atom.res_name.clone()});
+            }
+        } else {                        // --- atom doesn't exist
+            return Err(ParseError::NoSuchResidue { res_id: res_id.clone() });
+        }
+    }
+
+    pub fn sequence(&self, chain_id: &str) -> Sequence {
+        let atms = self.residue_first_atoms(chain_id);
+        let mut aa: Vec<u8> = vec![];
+        for a in atms {
+            if let Some(restype) = self.res_type_manager.by_code3(&a.res_name) {
+                aa.push(u8::try_from(restype.parent_type.code1()).unwrap());
+            } else {
+                aa.push(b'X');
+            }
+        }
+        return Sequence::from_attrs(format!(":{}", chain_id), aa);
     }
 
     /// Creates a vector of [`ResidueId`](ResidueId) object for each residue of a given chain
@@ -263,6 +317,17 @@ impl Structure {
     /// ```
     pub fn residue_atoms(&self, residue_id: &ResidueId) -> Vec<&PdbAtom> {
         self.atoms.iter().filter(|&a| residue_id.check(a)).collect()
+    }
+
+    fn residue_first_atoms(&self, chain_id: &str) -> Vec<&PdbAtom> {
+        let same_res = SameResidue {};
+        let mut ats: Vec<&PdbAtom> = self.atoms().windows(2)
+                .filter(|a| !same_res.check(&a[0], &a[1]))
+                .filter(|a| &a[0].chain_id==chain_id && &a[1].chain_id==chain_id)
+                .map(|a| &a[1]).collect();
+        ats.insert(0,self.atoms.iter().find(|&a| a.chain_id==chain_id).unwrap());
+
+        return ats;
     }
 }
 
@@ -310,5 +375,22 @@ pub fn load_pdb(file_name: &str) -> Result<Structure,ParseError> {
 }
 
 
+#[test]
+fn test_first_residue_atoms() {
+    let lines: [&str; 6] = [
+        "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+        "ATOM    518  CB  ALA A  68      25.155  27.554  29.987  1.00 21.91           C",
+        "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C",
+        "ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C",
+        "ATOM    515  CA  ALA B  68      25.790  28.757  29.513  1.00 16.12           C",
+        "ATOM    518  CB  ALA B  68      25.155  27.554  29.987  1.00 21.91           C"];
+    let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    let mut strctr = Structure::from_iterator(atoms.iter());
 
+    for a in strctr.residue_first_atoms("A") {
+        println!("{:?}",&a);
+    }
+    assert_eq!(strctr.residue_first_atoms("A").len(), 2);
+    assert_eq!(strctr.residue_first_atoms("B").len(), 1);
+}
 
