@@ -5,7 +5,7 @@ use std::io::{BufRead, BufReader};
 use std::convert::TryFrom;
 
 use itertools::{Itertools};
-use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties, KnownResidueTypes};
+use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties, KNOWN_RESIDUE_TYPES};
 use bioshell_seq::sequence::Sequence;
 
 use crate::pdb_atom::PdbAtom;
@@ -286,7 +286,7 @@ impl Structure {
         let atms = self.residue_first_atoms(chain_id);
         let mut aa: Vec<u8> = vec![];
         for a in atms {
-            if let Some(restype) = KnownResidueTypes.lock().unwrap().by_code3(&a.res_name) {
+            if let Some(restype) = ResidueTypeManager::get().by_code3(&a.res_name) {
                 aa.push(u8::try_from(restype.parent_type.code1()).unwrap());
             } else {
                 aa.push(b'X');

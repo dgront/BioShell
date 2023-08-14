@@ -1,7 +1,6 @@
-use std::cell::Cell;
 use std::collections::HashMap;
 use std::str::SplitWhitespace;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 use clap::__macro_refs::once_cell::sync::Lazy;
 
 /// Defines the types of monomers - residue types that are biomolecular building blocks.
@@ -127,7 +126,7 @@ impl TryFrom<String> for ResidueType {
 /// ```rust
 /// use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
 ///
-/// let mut mgr = ResidueTypeManager::new();
+/// let mut mgr = ResidueTypeManager::get();
 /// // --- This should pass, as all standard residue types (including alanine) are preloaded by a constructor
 /// let ala = mgr.by_code3(&String::from("ALA"));
 /// assert!(ala.is_some());
@@ -147,11 +146,15 @@ pub struct ResidueTypeManager {
 }
 
 impl ResidueTypeManager {
-    /// Creates a new residue type manager
+    /// Creates a new residue type manager.
+    ///
+    /// ResidueTypeManager implements the singleton pattern: there is only one instance of this struct
+    /// allowed, created as a static object. Simply put: the [`new()`] method is private; you should
+    /// use [`KnownResidueTypes`] object instead of creating a new one.
     ///
     /// ``ResidueType`` objects corresponding to standard StandardResidueType enum values are
     /// automatically created and registered in this manager
-    pub fn new() ->  ResidueTypeManager{
+    pub(crate) fn new() ->  ResidueTypeManager {
         let mut out = ResidueTypeManager{registered_types: vec![], by_code_3: HashMap::new()};
 
         for srt in StandardResidueType::TYPES {
@@ -161,6 +164,18 @@ impl ResidueTypeManager {
             out.registered_types.push(rt);
         }
         return out;
+    }
+
+    /// Provides a singleton instance of a [`ResidueTypeManager`] object
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_seq::chemical::ResidueTypeManager;
+    /// let rt_mgr = ResidueTypeManager::get();
+    /// assert!(rt_mgr.by_code3("ALA").is_some());
+    /// ```
+    pub fn get() -> MutexGuard<'static, ResidueTypeManager> {
+        KNOWN_RESIDUE_TYPES.lock().unwrap()
     }
 
     /// Counts the residue types registered in this manager
@@ -186,7 +201,7 @@ impl ResidueTypeManager {
     /// ```rust
     /// use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties};
     /// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
-    /// let mut mgr = ResidueTypeManager::new();
+    /// let mut mgr = ResidueTypeManager::get();
     /// // This should pass, as all standard residue types are preloaded by a constructor
     /// let ala = mgr.by_code3("ALA");
     /// assert!(ala.is_some());
@@ -218,10 +233,12 @@ impl ResidueTypeManager {
     }
 }
 
-/// Residue type manager singleton provides information about registered residues on demand
+/// Residue type manager singleton provides information about registered residues on demand.
+///
+/// **Note**: This object may be globally accessed by calling [`ResidueTypeManager::get()`] method.
 /// ```
-/// use bioshell_seq::chemical::{KnownResidueTypes, ResidueTypeProperties};
-/// let res_manager = KnownResidueTypes.lock().unwrap();
+/// use bioshell_seq::chemical::{KNOWN_RESIDUE_TYPES, ResidueTypeProperties};
+/// let res_manager = KNOWN_RESIDUE_TYPES.lock().unwrap();
 /// // ---------- try unknown residue, which should return `None`
 /// let unknown_res = res_manager.by_code3("XYZ");
 /// assert!(unknown_res.is_none());
@@ -230,7 +247,7 @@ impl ResidueTypeManager {
 /// assert!(ala_res.is_some());
 /// assert_eq!(ala_res.unwrap().parent_type.code1(),'A');
 /// ```
-pub static KnownResidueTypes: Lazy<Mutex<ResidueTypeManager>>
+pub static KNOWN_RESIDUE_TYPES: Lazy<Mutex<ResidueTypeManager>>
     = Lazy::new(|| Mutex::new(ResidueTypeManager::new()));
 
 macro_rules! define_res_types {
