@@ -13,12 +13,12 @@ const lines:  [&str;9] = [
     "ATOM    518  CA  ALW B  64      25.155  27.554  29.987  1.00 21.91           C"];
 
 #[test]
-fn test_backbone_filtering() {
+fn test_sequence_from_structure() {
     let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    let mut strctr = Structure::from_iterator(atoms.iter());
-    let seq_A = strctr.sequence("A");
-    assert_eq!(seq_A.to_string(), "MCGIA");
+    let strctr = Structure::from_iterator(atoms.iter());
+    let seq = strctr.sequence("A");
+    assert_eq!(seq.to_string(), "MCGIA");
 
-    let seq_A = strctr.sequence("B");
-    assert_eq!(seq_A.to_string(), "MACX");
+    let seq = strctr.sequence("B");
+    assert_eq!(seq.to_string(), "MACX");
 }

@@ -1,5 +1,5 @@
 use std::env;
-use bioshell_pdb::{Structure, load_pdb};
+use bioshell_pdb::{load_pdb};
 
 fn main(){
     let args: Vec<String> = env::args().collect();
@@ -7,7 +7,6 @@ fn main(){
     println!("Chains: {:?}",strctr.chain_ids());
 
     for chain_id in strctr.chain_ids() {
-
         println!("{}", strctr.sequence(&chain_id));
     }
 }

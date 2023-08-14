@@ -45,4 +45,7 @@ fn test_residue_types() {
     let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
     mgr.register_residue_type(aln);
     assert_eq!(mgr.count(), 31);
+
+    // ---------- code1() for ALN
+    assert_eq!(mgr.by_code3("ALN").unwrap().parent_type.code1(), 'A');
 }

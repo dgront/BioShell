@@ -1,5 +1,8 @@
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::str::SplitWhitespace;
+use std::sync::Mutex;
+use clap::__macro_refs::once_cell::sync::Lazy;
 
 /// Defines the types of monomers - residue types that are biomolecular building blocks.
 ///
@@ -181,21 +184,21 @@ impl ResidueTypeManager {
     ///
     /// # Examples
     /// ```rust
-    /// use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
+    /// use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties};
     /// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
     /// let mut mgr = ResidueTypeManager::new();
     /// // This should pass, as all standard residue types are preloaded by a constructor
-    /// let ala = mgr.by_code3(&String::from("ALA"));
+    /// let ala = mgr.by_code3("ALA");
     /// assert!(ala.is_some());
     /// // --- ALN hasn't been inserted yet
-    /// assert!(mgr.by_code3(&String::from("ALN")).is_none());
+    /// assert!(mgr.by_code3("ALN").is_none());
     /// mgr.register_residue_type(aln);
     /// // --- Now ALN can be found in the library
-    /// assert!(mgr.by_code3(&String::from("ALN")).is_some());
-    /// // --- Now ALN can be found in the library
-    /// assert!(mgr.by_code3(&String::from("ALN")).unwrap().code1(), "A");
+    /// assert!(mgr.by_code3("ALN").is_some());
+    /// // --- Single-char ID for parent residue type of ALN should be 'A' for alanine
+    /// assert_eq!(mgr.by_code3("ALN").unwrap().parent_type.code1(), 'A');
     /// ```
-    pub fn by_code3(&self, code3: &String) -> Option<&ResidueType> {
+    pub fn by_code3(&self, code3: &str) -> Option<&ResidueType> {
         if self.by_code_3.contains_key(code3) {
             return Some(&self.registered_types[self.by_code_3[code3]]);
         } else {
@@ -215,6 +218,20 @@ impl ResidueTypeManager {
     }
 }
 
+/// Residue type manager singleton provides information about registered residues on demand
+/// ```
+/// use bioshell_seq::chemical::{KnownResidueTypes, ResidueTypeProperties};
+/// let res_manager = KnownResidueTypes.lock().unwrap();
+/// // ---------- try unknown residue, which should return `None`
+/// let unknown_res = res_manager.by_code3("XYZ");
+/// assert!(unknown_res.is_none());
+/// // ---------- ALA should exist
+/// let ala_res = res_manager.by_code3("ALA");
+/// assert!(ala_res.is_some());
+/// assert_eq!(ala_res.unwrap().parent_type.code1(),'A');
+/// ```
+pub static KnownResidueTypes: Lazy<Mutex<ResidueTypeManager>>
+    = Lazy::new(|| Mutex::new(ResidueTypeManager::new()));
 
 macro_rules! define_res_types {
 

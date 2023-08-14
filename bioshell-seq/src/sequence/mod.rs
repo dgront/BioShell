@@ -1,5 +1,5 @@
 //! Provides [`Sequence`](crate::sequence::Sequence) and [`SequenceProfile`](crate::sequence::SequenceProfile) stucts
-//! as well as mumerous utility functions to operate on them
+//! as well as numerous utility functions to operate on them
 
 
 mod sequence;
