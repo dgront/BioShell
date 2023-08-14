@@ -64,7 +64,19 @@ use crate::ResidueId;
 /// }
 /// # assert_eq!(n_ca, 2);
 /// ```
+/// # Removing atoms, residues or chains
+/// This can be easily done using the `retain()` method of a Vec struct. An example below removes
+/// water molecules
 ///
+/// ```
+/// # use bioshell_pdb::{PdbAtom, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{IsWater, PdbAtomPredicate};
+/// # let mut strctr = Structure::new();
+/// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+/// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
+/// let hoh = IsWater{};
+/// strctr.atoms_mut().retain(|a| !hoh.check(&a));
+/// ```
 ///
 /// # Accessing its residues and chains
 /// A  [`Structure`](Structure) struct hold only atoms; chains and residues are not stored explicitely.
