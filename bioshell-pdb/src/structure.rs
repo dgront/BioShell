@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use clap::Result;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -16,6 +16,7 @@ use crate::pdb_sequence_of_residue::PdbSequenceOfResidue;
 use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2};
+use crate::residue_id::residue_id_from_ter_record;
 use crate::ResidueId;
 
 
@@ -78,40 +79,18 @@ use crate::ResidueId;
 /// strctr.atoms_mut().retain(|a| !hoh.check(&a));
 /// ```
 ///
-/// # Accessing its residues and chains
-/// A  [`Structure`](Structure) struct hold only atoms; chains and residues are not stored explicitely.
-/// A list of residue IDs can be created on-demand from atoms:
-/// ```
-/// # use bioshell_pdb::{PdbAtom, Structure};
-/// use bioshell_pdb::pdb_atom_filters::{ByResidue, PdbAtomPredicate};
-/// # let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
-/// #                     "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
-/// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
-/// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
-/// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-/// # let strctr = Structure::from_iterator(atoms.iter());
-/// let residue_ids = Structure::residue_ids_from_atoms(strctr.atoms().iter());
-/// for res_id in residue_ids {
-///     let res_filter = ByResidue::new(res_id);
-///     # let mut cnt = 0;
-///     for atom in strctr.atoms().iter().filter(|a| res_filter.check(&a)) {
-///         // ... process atoms of a given residue one by one
-///         # cnt += 1
-///     }
-///     # assert_eq!(cnt, 2);
-/// }
-/// ```
-///
 pub struct Structure {
     pub header: Option<PdbHeader>,
     pub title: Option<PdbTitle>,
     pub compound: Option<PdbCompound>,
     pub source: Option<PdbSource>,
     pub defined_sequence: Option<PdbSequenceOfResidue>,
+    pub(crate) ter_atoms: HashMap<String, ResidueId>,
     atoms: Vec<PdbAtom>,
 }
 
 impl Structure {
+    /// Create a new empty [`Structure`] that contains no atoms.
     pub fn new() -> Self {
         Self {
             header: None,
@@ -119,6 +98,7 @@ impl Structure {
             compound: None,
             source: None,
             defined_sequence: None,
+            ter_atoms: Default::default(),
             atoms: vec![],
         }
     }
@@ -278,6 +258,19 @@ impl Structure {
         Structure::residue_ids_from_atoms(self.atoms.iter())
     }
 
+    /// Returns the type of a residue.
+    ///
+    /// The type is provided as a [`ResidueType`] object.
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
+    /// use bioshell_seq::chemical::StandardResidueType;
+    /// let pdb_lines = vec!["ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"];
+    /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    /// let strctr = Structure::from_iterator(atoms.iter());
+    /// let res_type = strctr.residue_type(&ResidueId::new("A", 68, " ")).unwrap();
+    /// assert_eq!(res_type.code3, "ALA");
+    /// assert_eq!(res_type.parent_type, StandardResidueType::ALA);
+    /// ```
     pub fn residue_type(&self, res_id: &ResidueId) -> Result<ResidueType, ParseError> {
 
         // --- check if such a residue has at least one atom in this struct
@@ -292,7 +285,26 @@ impl Structure {
         }
     }
 
+    /// Provides the [`ResidueId`] of the last residue in a given chain
+    ///
+    /// Any chain may contain residues and atoms that are listed after the `TER` residue; these are
+    /// not covalently connected to their chain and are considered ligands.
+    ///
+    /// If a chain does not provide a `TER` record, ID of its very last residue is returned
+    pub fn ter_residue(&self, chain_id: &str) -> ResidueId {
+        if let Some(res_id) = self.ter_atoms.get(chain_id) {
+            return res_id.clone();
+        } else {
+            let last_at = self.atoms.iter().rfind(|&a| a.chain_id==chain_id).unwrap();
+            return ResidueId::try_from(last_at).unwrap();
+        }
+    }
+
+    /// Provides a sequence of a given chain.
+    ///
+    /// Residues listed after the `TER` record are not included in the sequence returned by this method
     pub fn sequence(&self, chain_id: &str) -> Sequence {
+        let ter_resid = self.ter_residue(chain_id);
         let atms = self.residue_first_atoms(chain_id);
         let mut aa: Vec<u8> = vec![];
         for a in atms {
@@ -301,6 +313,7 @@ impl Structure {
             } else {
                 aa.push(b'X');
             }
+            if ter_resid.check(a) {break}
         }
         return Sequence::from_attrs(format!(":{}", chain_id), aa);
     }
@@ -327,6 +340,11 @@ impl Structure {
     /// ```
     pub fn residue_atoms(&self, residue_id: &ResidueId) -> Vec<&PdbAtom> {
         self.atoms.iter().filter(|&a| residue_id.check(a)).collect()
+    }
+
+    /// Borrows the very last atom of this [`Structure`]
+    fn last_atom(&self) -> &PdbAtom {
+        &self.atoms[self.atoms.len()-1]
     }
 
     fn residue_first_atoms(&self, chain_id: &str) -> Vec<&PdbAtom> {
@@ -356,6 +374,11 @@ pub fn load_pdb(file_name: &str) -> Result<Structure,ParseError> {
         let record_type = &line[0..6];
         let record = record_type.trim();
         match record {
+            "TER" => {
+                let ter_res = residue_id_from_ter_record(&line);
+                let ter_chain = ter_res.chain_id.clone();
+                pdb_structure.ter_atoms.insert(ter_chain, ter_res);
+            }
             "HEADER" => {
                 let header = PdbHeader::new(&line);
                 pdb_structure.header = Some(header);

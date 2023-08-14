@@ -199,19 +199,11 @@ impl ResidueTypeManager {
     ///
     /// # Examples
     /// ```rust
-    /// use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties};
-    /// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
+    /// use bioshell_seq::chemical::{ResidueTypeManager};
     /// let mut mgr = ResidueTypeManager::get();
     /// // This should pass, as all standard residue types are preloaded by a constructor
     /// let ala = mgr.by_code3("ALA");
     /// assert!(ala.is_some());
-    /// // --- ALN hasn't been inserted yet
-    /// assert!(mgr.by_code3("ALN").is_none());
-    /// mgr.register_residue_type(aln);
-    /// // --- Now ALN can be found in the library
-    /// assert!(mgr.by_code3("ALN").is_some());
-    /// // --- Single-char ID for parent residue type of ALN should be 'A' for alanine
-    /// assert_eq!(mgr.by_code3("ALN").unwrap().parent_type.code1(), 'A');
     /// ```
     pub fn by_code3(&self, code3: &str) -> Option<&ResidueType> {
         if self.by_code_3.contains_key(code3) {

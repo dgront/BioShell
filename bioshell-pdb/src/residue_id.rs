@@ -63,3 +63,11 @@ impl PdbAtomPredicate for ResidueId {
         a.chain_id == self.chain_id && a.res_seq == self.res_seq && a.i_code == self.i_code
     }
 }
+
+/// Extracts [`ResidueId`] object from a `TER` pdb line
+///
+///The parsed PDB line looks like:  `"TER    1187      LEU B  75"`
+pub fn residue_id_from_ter_record(ter_line: &str) -> ResidueId {
+    let res_seq: i32 = ter_line[22..26].trim().parse().ok().unwrap();
+    return ResidueId::new(ter_line[21..22].trim(), res_seq, &ter_line[26..27]);
+}
