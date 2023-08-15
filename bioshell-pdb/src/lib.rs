@@ -1,3 +1,9 @@
+//! Efficient and clean library for processing biomacromolecular structures.
+//!
+//! # Loading PDB files
+//! Structures can be loaded from a PDB file with [`load_pdb_file()`](bioshell-pdb::load_pdb_file())
+//! or directly from a PDB-formatted buffer with [`load_pdb_reader()`](bioshell-pdb::load_pdb_reader())
+//!
 mod structure;
 mod pdb_compound;
 mod pdb_header;
