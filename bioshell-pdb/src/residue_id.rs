@@ -66,8 +66,18 @@ impl PdbAtomPredicate for ResidueId {
 
 /// Extracts [`ResidueId`] object from a `TER` pdb line
 ///
-///The parsed PDB line looks like:  `"TER    1187      LEU B  75"`
+/// # Examples
+/// ```
+/// use bioshell_pdb::residue_id_from_ter_record;
+/// let id1 = residue_id_from_ter_record("TER    1187      LEU B  75 ");
+/// # assert_eq!(id1.i_code," ");
+/// let id2 = residue_id_from_ter_record("TER    1187      LEU B  75A");
+/// # assert_eq!(id2.i_code,"A");
+/// let id3 = residue_id_from_ter_record("TER    1187      LEU B  75");
+/// assert_eq!(format!("{}", id3),"B:75 ");
+/// ```
 pub fn residue_id_from_ter_record(ter_line: &str) -> ResidueId {
     let res_seq: i32 = ter_line[22..26].trim().parse().ok().unwrap();
-    return ResidueId::new(ter_line[21..22].trim(), res_seq, &ter_line[26..27]);
+    let icode = if ter_line.len() > 26 {&ter_line[26..27]} else {" "};
+    return ResidueId::new(ter_line[21..22].trim(), res_seq, icode);
 }

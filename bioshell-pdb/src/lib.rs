@@ -13,11 +13,12 @@ mod pdb_atom;
 
 pub mod pdb_atom_filters;
 mod residue_id;
+pub mod calc;
 
-pub use structure::{Structure, load_pdb};
+pub use structure::{Structure, load_pdb_file, load_pdb_reader};
 
 pub use pdb_atom::PdbAtom;
-pub use residue_id::ResidueId;
+pub use residue_id::{ResidueId, residue_id_from_ter_record};
 pub use pdb_compound::PdbCompound;
 pub use pdb_header::PdbHeader;
 pub use pdb_source::PdbSource;

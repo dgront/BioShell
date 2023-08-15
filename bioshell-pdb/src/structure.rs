@@ -28,8 +28,8 @@ use crate::ResidueId;
 /// # Creating a [`Structure`](Structure)
 /// Typically one gets a [`Structure`](Structure) object by loading it from a file in the PDB format:
 /// ```no_run
-/// use bioshell_pdb::{load_pdb, Structure};
-/// let strctr = load_pdb("2gb1.pdb").unwrap();
+/// use bioshell_pdb::{load_pdb_file, Structure};
+/// let strctr = load_pdb_file("2gb1.pdb").unwrap();
 /// ```
 /// A [`Structure`](Structure) can be also created from an [`Iterator`](Iterator) over [`PdbAtom`](PdbAtom)s:
 /// ```
@@ -356,11 +356,40 @@ impl Structure {
         self.atoms.iter().filter(|&a| residue_id.check(a)).collect()
     }
 
+    /// Returns atoms of a given residue
+    ///
+    /// ```
+    /// # use bioshell_pdb::{load_pdb_reader, PdbAtom, ResidueId, Structure};
+    /// # use std::io::BufReader;
+    /// let pdb_lines = "ATOM   4378  CA  HIS D 146      14.229  -1.501  26.683  1.00 31.89           C
+    /// TER    4388      HIS D 146
+    /// HETATM 4562 FE   HEM D 148      -1.727   4.699  23.942  1.00 15.46          FE";
+    ///
+    /// let mut strctr = load_pdb_reader(BufReader::new(pdb_lines.as_bytes())).unwrap();
+    /// strctr.drop_ligands();
+    /// assert_eq!(strctr.count_atoms(), 1);
+    /// ```
+    pub fn drop_ligands(&mut self) {
+        for chain_id in self.chain_ids() {
+            // --- check if TER is set; otherwise we won't  drop anything
+            if let Some(res_id) = self.ter_atoms.get(&chain_id) {
+                // --- check if TER residue has any atoms; otherwise we won't  drop anything
+                if let Some(last_ter_atom) = self.atoms.iter().rfind(|&a| res_id.check(a)) {
+                    let start_idx = self.atoms.iter().position(|a| a == last_ter_atom).unwrap() + 1;
+                    let last_chain_atom = self.atoms.iter().rfind(|&a| a.chain_id == chain_id).unwrap();
+                    let stop_idx = self.atoms.iter().position(|a| a == last_chain_atom).unwrap() + 1;
+                    self.atoms.drain(start_idx..stop_idx);
+                }
+            }
+        }
+    }
+
     /// Borrows the very last atom of this [`Structure`]
     fn last_atom(&self) -> &PdbAtom {
         &self.atoms[self.atoms.len()-1]
     }
 
+    /// Borrows the first atom from each residue of this [`Structure`]
     fn residue_first_atoms(&self, chain_id: &str) -> Vec<&PdbAtom> {
         let same_res = SameResidue {};
         let mut ats: Vec<&PdbAtom> = self.atoms().windows(2)
@@ -373,10 +402,8 @@ impl Structure {
     }
 }
 
-pub fn load_pdb(file_name: &str) -> Result<Structure,ParseError> {
+pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
 
-    let file = File::open(file_name)?;
-    let reader = BufReader::new(file);
     let mut pdb_structure = Structure::new();
 
     let mut atoms: Vec<PdbAtom> = vec![];
@@ -421,6 +448,11 @@ pub fn load_pdb(file_name: &str) -> Result<Structure,ParseError> {
     Ok(pdb_structure)
 }
 
+pub fn load_pdb_file(file_name: &str) -> Result<Structure, ParseError> {
+    let file = File::open(file_name)?;
+    let reader = BufReader::new(file);
+    return load_pdb_reader(reader);
+}
 
 #[test]
 fn test_first_residue_atoms() {

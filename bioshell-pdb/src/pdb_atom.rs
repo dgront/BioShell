@@ -93,3 +93,9 @@ impl PdbAtom {
         };
     }
 }
+
+impl PartialEq for PdbAtom {
+    fn eq(&self, other: &Self) -> bool {
+        self.serial == other.serial
+    }
+}
