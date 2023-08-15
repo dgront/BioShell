@@ -15,7 +15,7 @@ use crate::pdb_parsing_error::ParseError;
 use crate::pdb_sequence_of_residue::PdbSequenceOfResidue;
 use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
-use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2};
+use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain};
 use crate::residue_id::residue_id_from_ter_record;
 use crate::ResidueId;
 
@@ -66,8 +66,8 @@ use crate::ResidueId;
 /// # assert_eq!(n_ca, 2);
 /// ```
 /// # Removing atoms, residues or chains
-/// This can be easily done using the `retain()` method of a Vec struct. An example below removes
-/// water molecules
+/// This can be easily done using the `retain()` method of a Vec struct combined with a respective
+/// [`PdbAtomPredicate`](PdbAtomPredicate). An example below removes water molecules:
 ///
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
@@ -160,6 +160,20 @@ impl Structure {
     pub fn count_residues(&self) -> usize {
         let same_res = SameResidue{};
         return self.atoms().windows(2).filter(|a| !same_res.check(&a[0], &a[1])).count() + 1
+    }
+
+    /// Counts chains of this [`Structure`](Structure)
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, Structure};
+    /// let mut strctr = Structure::new();
+    /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"));
+    /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA B  68      25.790  28.757  29.513  1.00 16.12           C"));
+    ///
+    /// assert_eq!(strctr.count_chains(), 2);
+    /// ```
+    pub fn count_chains(&self) -> usize {
+        let same_chain = SameChain{};
+        return self.atoms().windows(2).filter(|a| !same_chain.check(&a[0], &a[1])).count() + 1
     }
 
     /// Provides immutable access to an atom
