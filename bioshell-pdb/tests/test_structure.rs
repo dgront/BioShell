@@ -22,3 +22,16 @@ fn test_sequence_from_structure() {
     let seq = strctr.sequence("B");
     assert_eq!(seq.to_string(), "MACX");
 }
+
+#[allow(non_upper_case_globals)]
+const pdb_2gb1:  &str = include_str!("./test_files/2gb1.pdb");
+
+#[test]
+fn test_2gb1_loading() {
+    let lines_2gb1: Vec<_> = pdb_2gb1.split("\n").filter(|&l|l.starts_with("ATOM")).collect();
+    let atoms: Vec<PdbAtom> = lines_2gb1.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    let strctr = Structure::from_iterator(atoms.iter());
+    assert_eq!(strctr.count_atoms(), 855);
+    assert_eq!(strctr.count_residues(), 56);
+    assert_eq!(strctr.count_chains(), 1);
+}

@@ -61,7 +61,6 @@ impl PdbAtom {
     // }
 
     pub fn from_atom_line(pdb_line: &str) -> PdbAtom {
-
         let serial = pdb_line[6..11].trim().parse::<i32>().unwrap();
         let name = pdb_line[12..16].to_string();
         let alt_loc = pdb_line[16..17].to_string();
