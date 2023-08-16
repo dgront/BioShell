@@ -8,9 +8,9 @@
 //!
 //! # Selecting chains, residues and atoms
 //! The `bioshell-pdb` crate provides access to the vector of atoms for a given [`Structure`](crate::Structure)
-//! which may be processed as any Rust [`Iterator`](std::iter::Iterator), e.g. filtered with
+//! which may be processed as any Rust [`Iterator`](std::iter::Iterator) method, e.g. filtered with
 //! [`filter()`](std::iter::Iterator::filter()) or mapped with [`map()`](std::iter::Iterator::map()).
-//! The [`pdb_atom_filters`](crate::pdb_atom_filters) module provides predicated for such applications.
+//! The [`pdb_atom_filters`](crate::pdb_atom_filters) module provides several predicates for such applications.
 //! See also the documentation for [`Structure`](crate::Structure) struct for more examples.
 //!
 //! # Structural calculation
