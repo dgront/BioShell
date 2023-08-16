@@ -9,7 +9,7 @@ use crate::pdb_parsing_error::ParseError;
 /// # Example
 /// ```
 /// use bioshell_pdb::load_pdb_reader;
-/// # use std::io::BufReader;
+/// use std::io::BufReader;
 /// let pdb_txt: &str =
 /// "ATOM      2  CA  MET A   1     -13.296   0.028   3.924  1.00  0.43           C
 /// ATOM     21  CA  THR A   2      -9.669  -0.447   4.998  1.00  0.19           C

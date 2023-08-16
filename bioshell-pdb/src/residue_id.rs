@@ -6,7 +6,7 @@ use crate::pdb_atom_filters::{PdbAtomPredicate};
 
 /// Unique identifier for a residue
 ///
-/// Such an ID may be used to access atom of a residue from a [`Structure`](Structure)
+/// Such an ID may be used to access atom of a residue from a [`Structure`](crate::Structure)
 /// # Example
 /// ```
 /// use bioshell_pdb::ResidueId;

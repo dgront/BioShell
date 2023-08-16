@@ -1,8 +1,9 @@
 use std::string::String;
 
-/// Atom data as found in a single line of a PDB file
+/// Atom record as found in a single line of a PDB file.
 ///
-///The struct holds all data parsed from ATOM or HETATM lines
+///The struct holds all data parsed from [`ATOM`](https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html#ATOM)
+/// or [`HETATM`](https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html#HETATM) lines.
 ///
 /// # Examples
 ///```rust
@@ -33,13 +34,16 @@ pub struct PdbAtom {
 }
 
 impl PdbAtom {
+    /// Returns a default atom.
+    ///
+    /// By default, an atom is set to alpha-carbon of `ALA1` residue in chain "A", located at `[0,0,0]`
     pub fn new() -> PdbAtom {
         PdbAtom {
             serial: 1,
-            name: String::new(),
+            name: String::from(" CA "),
             alt_loc: String::new(),
             res_name: String::from("ALA"),
-            chain_id: String::new(),
+            chain_id: String::from("A"),
             res_seq: 1,
             i_code: String::new(),
             x: 0.0,
@@ -58,6 +62,24 @@ impl PdbAtom {
     //     return PdbLineParser::assemble_atom(&self);
     // }
 
+    /// Creates a [`PdbAtom`] by parsing an `ATOM` or `HETATM` record.
+    ///
+    /// The method automatically sets the [`PdbAtom::is_hetero_atom`](PdbAtom::is_hetero_atom) flag
+    /// based on the record type.
+    /// The format of the records is defined on the [www.wwpdb.org](https://www.wwpdb.org/) site:
+    /// [`ATOM`](https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html#ATOM)
+    /// and [`HETATM`](https://www.wwpdb.org/documentation/file-format-content/format33/sect9.html#HETATM), respectively
+    ///
+    /// ```
+    /// use bioshell_pdb::PdbAtom;
+    /// let a = PdbAtom::from_atom_line("ATOM     33  CA AARG A  -3      12.353  85.696  94.456  0.50 36.67           C");
+    /// assert_eq!(a.res_seq, -3);
+    /// assert_eq!(a.alt_loc, "A");
+    /// assert_eq!(a.name, " CA ");
+    /// assert_eq!(a.element.unwrap(), "C");
+    /// let a = PdbAtom::from_atom_line("ATOM     33  CA AARG A  -3      12.353  85.696  94.456  0.50 36.67");
+    /// assert_eq!(a.element, None);
+    /// ```
     pub fn from_atom_line(pdb_line: &str) -> PdbAtom {
         let serial = pdb_line[6..11].trim().parse::<i32>().unwrap();
         let name = pdb_line[12..16].to_string();
@@ -71,6 +93,7 @@ impl PdbAtom {
         let z = pdb_line[46..54].trim().parse::<f64>().unwrap();
         let occupancy = pdb_line[54..60].trim().parse::<f64>().unwrap();
         let temp_factor = pdb_line[60..66].trim().parse::<f64>().unwrap();
+        let element = if pdb_line.len()>=78 { Some(pdb_line[77..].trim().to_string()) } else { None };
         return PdbAtom{
             serial,
             name,
@@ -84,7 +107,7 @@ impl PdbAtom {
             z,
             occupancy,
             temp_factor,
-            element: None,
+            element: element,
             charge: None,
             is_hetero_atom: pdb_line.starts_with("H"),
             secondary_struct_symbol: 'C'

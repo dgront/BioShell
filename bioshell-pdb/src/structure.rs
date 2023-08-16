@@ -44,7 +44,7 @@ use crate::ResidueId;
 /// A [`Structure`](Structure) implements two methods that provide mutable  and immutable borrow
 /// of the vector of its atoms: [`atoms()`](Structure::atoms()) and [`atoms_mut()`](Structure::atoms_mut()) respectively.
 /// These can be easily filtered by [`PdbAtomPredicate`](PdbAtomPredicate) predicates provided
-/// by [`pdb_atom_filters`](pdb_atom_filters) module.
+/// by [`pdb_atom_filters`](crate::pdb_atom_filters) module.
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
 /// use bioshell_pdb::pdb_atom_filters::{IsCA, PdbAtomPredicate};
@@ -64,7 +64,7 @@ use crate::ResidueId;
 /// ```
 /// # Removing atoms, residues or chains
 /// This can be easily done using the [`retain()`](std::vec::Vec::retain()) method of a [`Vec`](std::vec::Vec) struct combined with a respective
-/// [`PdbAtomPredicate`](PdbAtomPredicate). An example below removes water molecules:
+/// [`PdbAtomPredicate`](PdbAtomPredicate). An example below **removes water molecules**:
 ///
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
@@ -72,8 +72,20 @@ use crate::ResidueId;
 /// # let mut strctr = Structure::new();
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
-/// let hoh = IsWater{};
+/// let hoh = IsWater;
 /// strctr.atoms_mut().retain(|a| !hoh.check(&a));
+/// # assert_eq!(strctr.count_atoms(), 1);
+/// ```
+/// Another example removes all hydrogen atoms:
+/// ```
+/// # use bioshell_pdb::{PdbAtom, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{IsHydrogen, PdbAtomPredicate};
+/// # let mut strctr = Structure::new();
+/// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    149  CA  GLY A   9      10.920  -2.963   0.070  1.00  0.18           C"));
+/// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    153  HA2 GLY A   9      10.848  -2.565  -0.927  1.00  0.20           H"));
+/// let is_h = IsHydrogen;
+/// strctr.atoms_mut().retain(|a| !is_h.check(&a));
+/// # assert_eq!(strctr.count_atoms(), 1);
 /// ```
 ///
 pub struct Structure {

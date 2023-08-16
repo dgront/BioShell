@@ -16,7 +16,7 @@
 //! strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
 //! strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
 //! strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
-//! let bb = IsBackbone{};
+//! let bb = IsBackbone;
 //! for bb_atom in strctr.atoms().iter().filter(|b| bb.check(b)) {
 //!     println!("{}",bb_atom.name);
 //! }
@@ -32,7 +32,7 @@
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
-//! let bb = IsBackbone{};
+//! let bb = IsBackbone;
 //! let bb_only: Vec<PdbAtom> = strctr.atoms().iter().filter(|b| bb.check(b)).cloned().collect();
 //! assert_eq!(bb_only.len(), 4);
 //! ```
@@ -46,7 +46,7 @@
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
-//! # let bb = IsBackbone{};
+//! # let bb = IsBackbone;
 //! let bb_strctr = Structure::from_iterator(strctr.atoms().iter().filter(|b| bb.check(b)));
 //! ```
 
@@ -108,6 +108,9 @@ impl PdbAtomPredicate for ByResidue {
 
 /// Returns `true` if an atom belongs to a backbone.
 ///
+/// The predicate returns true for protein backbone heavy atoms: `N`, `CA`, `C`, `O`, `OXT` as well as
+/// for hydrogens: `H`, `HA`, `HA2` and `HA3`.
+///
 /// # Examples
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
@@ -118,7 +121,7 @@ impl PdbAtomPredicate for ByResidue {
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
-/// let bb = IsBackbone{};
+/// let bb = IsBackbone;
 /// let bb_count = strctr.atoms().iter().filter(|b| bb.check(b)).count();
 /// # assert_eq!(bb_count, 4);
 /// ```
@@ -126,7 +129,8 @@ pub struct IsBackbone;
 
 impl PdbAtomPredicate for IsBackbone {
     fn check(&self, a: &PdbAtom) -> bool {
-        a.name == " CA " || a.name == " C  " || a.name == " N  " || a.name == " O  "
+        a.name == " CA " || a.name == " C  " || a.name == " N  " || a.name == " O  " || a.name == " H  " || a.name == " OXT"
+            || a.name == " HA " || a.name == " HA2" || a.name == " HA3"
     }
 }
 
@@ -140,7 +144,7 @@ impl PdbAtomPredicate for IsBackbone {
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
-/// let ca = IsCA{};
+/// let ca = IsCA;
 /// let ca_count = strctr.atoms().iter().filter(|a| ca.check(a)).count();
 /// # assert_eq!(ca_count, 1);
 /// ```
@@ -150,6 +154,37 @@ impl PdbAtomPredicate for IsCA {
     fn check(&self, a: &PdbAtom) -> bool { a.name == " CA " }
 }
 
+/// Returns `true` if an atom is a hydrogen.
+///
+/// The following example removes all hydrogen atoms from a structure
+///
+/// # Examples
+/// ```
+/// use bioshell_pdb::{load_pdb_reader, PdbAtom, Structure};
+/// use std::io::BufReader;
+/// use bioshell_pdb::pdb_atom_filters::{IsHydrogen, PdbAtomPredicate};
+/// let gly_pdb = "ATOM    148  N   GLY A   9       9.692  -3.742   0.370  1.00  0.14           N
+/// ATOM    149  CA  GLY A   9      10.920  -2.963   0.070  1.00  0.18           C
+/// ATOM    150  C   GLY A   9      12.144  -3.871   0.156  1.00  0.20           C
+/// ATOM    151  O   GLY A   9      12.210  -4.757   0.986  1.00  0.24           O
+/// ATOM    152  H   GLY A   9       9.093  -3.471   1.097  1.00  0.14           H
+/// ATOM    153  HA2 GLY A   9      10.848  -2.565  -0.927  1.00  0.20           H
+/// ATOM    154  HA3 GLY A   9      11.018  -2.149   0.770  1.00  0.21           H";
+/// let mut strctr = load_pdb_reader(BufReader::new(gly_pdb.as_bytes())).unwrap();
+/// let is_h = IsHydrogen;
+/// strctr.atoms_mut().retain(|a| !is_h.check(a));
+/// # assert_eq!(strctr.count_atoms(), 4);
+/// ```
+pub struct IsHydrogen;
+
+impl PdbAtomPredicate for IsHydrogen {
+    fn check(&self, a: &PdbAtom) -> bool {
+        if let Some(element) = &a.element {
+            if element == "H" { return true }
+        }
+        return false;
+    }
+}
 
 /// Returns `true` if an atom belongs to a water molecule
 ///
@@ -161,7 +196,7 @@ impl PdbAtomPredicate for IsCA {
 /// # let mut strctr = Structure::new();
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
-/// let hoh = IsWater{};
+/// let hoh = IsWater;
 /// strctr.atoms_mut().retain(|a| !hoh.check(&a));
 /// # assert_eq!(strctr.count_atoms(), 1);
 /// # assert_eq!(strctr.atoms()[0].name, " CA ");
