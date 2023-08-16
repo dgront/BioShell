@@ -33,8 +33,10 @@ mod pdb_atom;
 pub mod pdb_atom_filters;
 mod residue_id;
 pub mod calc;
+mod load_pdb;
 
-pub use structure::{Structure, load_pdb_file, load_pdb_reader};
+pub use structure::Structure;
+pub use load_pdb::*;
 
 pub use pdb_atom::PdbAtom;
 pub use residue_id::{ResidueId, residue_id_from_ter_record};

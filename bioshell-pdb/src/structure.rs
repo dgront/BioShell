@@ -1,7 +1,5 @@
 use std::collections::{HashMap, HashSet};
 use clap::Result;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
 use std::convert::TryFrom;
 
 use itertools::{Itertools};
@@ -16,7 +14,6 @@ use crate::pdb_sequence_of_residue::PdbSequenceOfResidue;
 use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain};
-use crate::residue_id::residue_id_from_ter_record;
 use crate::ResidueId;
 
 
@@ -86,7 +83,7 @@ pub struct Structure {
     pub source: Option<PdbSource>,
     pub defined_sequence: Option<PdbSequenceOfResidue>,
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
-    atoms: Vec<PdbAtom>,
+    pub(crate) atoms: Vec<PdbAtom>,
 }
 
 impl Structure {
@@ -384,10 +381,9 @@ impl Structure {
         }
     }
 
+    #[allow(dead_code)]
     /// Borrows the very last atom of this [`Structure`]
-    fn last_atom(&self) -> &PdbAtom {
-        &self.atoms[self.atoms.len()-1]
-    }
+    fn last_atom(&self) -> &PdbAtom { &self.atoms[self.atoms.len()-1] }
 
     /// Borrows the first atom from each residue of this [`Structure`]
     fn residue_first_atoms(&self, chain_id: &str) -> Vec<&PdbAtom> {
@@ -402,57 +398,7 @@ impl Structure {
     }
 }
 
-pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
 
-    let mut pdb_structure = Structure::new();
-
-    let mut atoms: Vec<PdbAtom> = vec![];
-
-    for line in reader.lines() {
-        let line = line?;
-
-        // Check that the line has a valid PDB record type
-        let record_type = &line[0..6];
-        let record = record_type.trim();
-        match record {
-            "TER" => {
-                let ter_res = residue_id_from_ter_record(&line);
-                let ter_chain = ter_res.chain_id.clone();
-                pdb_structure.ter_atoms.insert(ter_chain, ter_res);
-            }
-            "HEADER" => {
-                let header = PdbHeader::new(&line);
-                pdb_structure.header = Some(header);
-            },
-            "TITLE" => {
-                let title = PdbTitle::new(line.as_str());
-                pdb_structure.title = Some(title);
-            },
-            //"COMPND" => {},
-            //"Source_" => {},
-            //"SequenceOfResidue_" => {},
-            "ATOM" => {
-                atoms.push(PdbAtom::from_atom_line(&line));
-            },
-            "HETATM" => {
-                atoms.push(PdbAtom::from_atom_line(&line));
-            },
-            _ => {},
-        };
-    }
-
-    println!("{:} atoms loaded",atoms.len());
-
-    pdb_structure.atoms = atoms;
-
-    Ok(pdb_structure)
-}
-
-pub fn load_pdb_file(file_name: &str) -> Result<Structure, ParseError> {
-    let file = File::open(file_name)?;
-    let reader = BufReader::new(file);
-    return load_pdb_reader(reader);
-}
 
 #[test]
 fn test_first_residue_atoms() {

@@ -1,6 +1,4 @@
 use std::string::String;
-use bioshell_seq::chemical::ResidueType;
-use crate::pdb_parsing_error::ParseError;
 
 /// Atom data as found in a single line of a PDB file
 ///
