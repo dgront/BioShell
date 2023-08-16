@@ -14,7 +14,7 @@
 //! See also the documentation for [`Structure`](crate::Structure) struct for more examples.
 //!
 //! # Structural calculation
-//! The [`pdb`](crate::pdb) module provides functions to calculate structural properties,
+//! The [`calc`](crate::calc) module provides functions to calculate structural properties,
 //! such as distances, planar or dihedral angles.
 
 mod structure;
