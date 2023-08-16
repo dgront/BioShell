@@ -66,7 +66,7 @@ use crate::ResidueId;
 /// # assert_eq!(n_ca, 2);
 /// ```
 /// # Removing atoms, residues or chains
-/// This can be easily done using the `retain()` method of a Vec struct combined with a respective
+/// This can be easily done using the [`retain()`](std::vec::Vec::retain()) method of a [`Vec`](std::vec::Vec) struct combined with a respective
 /// [`PdbAtomPredicate`](PdbAtomPredicate). An example below removes water molecules:
 ///
 /// ```
