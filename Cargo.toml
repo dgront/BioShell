@@ -21,6 +21,7 @@ members = [
     "bioshell-cif",
     "bioshell-pdb",
     "bioshell-datastructures",
+    "surpass",
 ]
 
 [dependencies]
@@ -36,7 +37,7 @@ bioshell-montecarlo = { path = "./bioshell-montecarlo" }
 bioshell-cartesians = { path = "./bioshell-cartesians" }
 bioshell-datastructures = { path = "./bioshell-datastructures"}
 bioshell-cif = { path = "./bioshell-cif" }
-
+surpass = { path = "./surpass" }
 clap = { version = "3.1.18", features = ["derive"] }
 rand = { version = "0.8.5", features = [ "small_rng" ] }
 rand_distr="0.4.3"
