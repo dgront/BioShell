@@ -46,7 +46,7 @@ impl fmt::Debug for Matrix3x3 {
     }
 }
 
-impl std::ops::AddAssign<&Matrix3x3> for Matrix3x3 {
+impl AddAssign<&Matrix3x3> for Matrix3x3 {
     /// Provides `+=` operator that adds another matrix to this matrix.
     ///
     /// ```rust
@@ -65,7 +65,7 @@ impl std::ops::AddAssign<&Matrix3x3> for Matrix3x3 {
     }
 }
 
-impl std::ops::SubAssign<&Matrix3x3> for Matrix3x3 {
+impl SubAssign<&Matrix3x3> for Matrix3x3 {
     /// Provides `-=` operator that subtracts another matrix from this matrix.
     ///
     /// ```rust
@@ -158,6 +158,54 @@ impl Matrix3x3 {
     /// ```
     pub fn from_array(m: [f64; 9]) -> Self {
         Matrix3x3 { array: m }
+    }
+
+    /// Construct a Matrix3x3 from three column vectors, representing the x, y, and z axes of the matrix.
+    ///
+    /// # Arguments
+    ///
+    /// * cx - A reference to a Vec3 object representing the x axis of the matrix.
+    /// * cy - A reference to a Vec3 object representing the y axis of the matrix.
+    /// * cz - A reference to a Vec3 object representing the z axis of the matrix.
+    ///
+    /// # Example
+    /// ```rust
+    /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
+    ///
+    /// let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let mat: Matrix3x3 = Matrix3x3::from_column_vectors(&cx, &cy, &cx);
+    /// assert_eq!(cx.x, mat[0]); assert_eq!(cx.y, mat[1]); assert_eq!(cx.z, mat[2]);
+    /// assert_eq!(cy.x, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cy.z, mat[5]);
+    /// assert_eq!(cz.x, mat[6]); assert_eq!(cz.y, mat[7]); assert_eq!(cz.z, mat[8]);
+    ///```
+    pub fn from_column_vectors(cx: &Vec3, cy: &Vec3, cz: &Vec3) -> Self {
+        Self::from_array([cx.x, cx.y, cx.z, cy.x, cy.y, cy.z, cz.x, cz.y, cz.z])
+    }
+
+    /// This method creates a Matrix3x3 from three Vec3 objects representing the columns of the matrix.
+    ///
+    /// # Arguments
+    ///
+    /// * rx - A reference to a Vec3 object representing the first column of the matrix.
+    /// * ry - A reference to a Vec3 object representing the second column of the matrix.
+    /// * rz - A reference to a Vec3 object representing the third column of the matrix.
+    ///
+    /// # Example
+    ///```rust
+    /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
+    ///
+    /// let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let mat: Matrix3x3 = Matrix3x3::from_row_vectors(&cx, &cy, &cx);
+    /// assert_eq!(cx.x, mat[0]); assert_eq!(cy.x, mat[1]); assert_eq!(cz.x, mat[2]);
+    /// assert_eq!(cx.y, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cz.y, mat[5]);
+    /// assert_eq!(cx.z, mat[6]); assert_eq!(cy.z, mat[7]); assert_eq!(cz.z, mat[8]);
+    ///```
+    pub fn from_row_vectors(rx: &Vec3, ry: &Vec3, rz: &Vec3) -> Self {
+        Self::from_array([rx.x, ry.x, rz.x, rx.y, ry.y, rz.y, rx.z, ry.z, rz.z])
     }
 
     /// Multiplies the caller matrix object with a Vec3 in place, i.e., modifies the matrix object itself.
@@ -318,53 +366,6 @@ impl Matrix3x3 {
         }
     }
 
-    /// Construct a Matrix3x3 from three column vectors, representing the x, y, and z axes of the matrix.
-    ///
-    /// # Arguments
-    ///
-    /// * cx - A reference to a Vec3 object representing the x axis of the matrix.
-    /// * cy - A reference to a Vec3 object representing the y axis of the matrix.
-    /// * cz - A reference to a Vec3 object representing the z axis of the matrix.
-    ///
-    /// # Example
-    /// ```rust
-    /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
-    ///
-    /// let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let mat: Matrix3x3 = Matrix3x3::from_column_vectors(&cx, &cy, &cx);
-    /// assert_eq!(cx.x, mat[0]); assert_eq!(cx.y, mat[1]); assert_eq!(cx.z, mat[2]);
-    /// assert_eq!(cy.x, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cy.z, mat[5]);
-    /// assert_eq!(cz.x, mat[6]); assert_eq!(cz.y, mat[7]); assert_eq!(cz.z, mat[8]);
-    ///```
-    pub fn from_column_vectors(cx: &Vec3, cy: &Vec3, cz: &Vec3) -> Self {
-        Self::from_array([cx.x, cx.y, cx.z, cy.x, cy.y, cy.z, cz.x, cz.y, cz.z])
-    }
-
-    /// This method creates a Matrix3x3 from three Vec3 objects representing the columns of the matrix.
-    ///
-    /// # Arguments
-    ///
-    /// * rx - A reference to a Vec3 object representing the first column of the matrix.
-    /// * ry - A reference to a Vec3 object representing the second column of the matrix.
-    /// * rz - A reference to a Vec3 object representing the third column of the matrix.
-    ///
-    /// # Example
-    ///```rust
-    /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
-    ///
-    /// let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let mat: Matrix3x3 = Matrix3x3::from_row_vectors(&cx, &cy, &cx);
-    /// assert_eq!(cx.x, mat[0]); assert_eq!(cy.x, mat[1]); assert_eq!(cz.x, mat[2]);
-    /// assert_eq!(cx.y, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cz.y, mat[5]);
-    /// assert_eq!(cx.z, mat[6]); assert_eq!(cy.z, mat[7]); assert_eq!(cz.z, mat[8]);
-    ///```
-    pub fn from_row_vectors(rx: &Vec3, ry: &Vec3, rz: &Vec3) -> Self {
-        Self::from_array([rx.x, ry.x, rz.x, rx.y, ry.y, rz.y, rx.z, ry.z, rz.z])
-    }
 
     /// Adds two Matrix3x3 matrices and returns the result.
     ///
@@ -440,6 +441,12 @@ impl Matrix3x3 {
 
     /// Multiplies a 3x3 matrix with a 3D vector and returns the resulting 3D vector.
     ///
+    /// Returns a newly created vector that is the result of a matrix-by-vector multiplication
+    /// ```text
+    /// |   |   |     |   |   |
+    /// | v | = |  M  | * | v |
+    /// |   |   |     |   |   |
+    /// ```
     /// # Arguments
     ///
     /// * mat - A reference to a Matrix3x3 object.
