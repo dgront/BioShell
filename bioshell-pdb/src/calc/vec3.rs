@@ -90,14 +90,6 @@ macro_rules! scalar_operation {
     };
 }
 
-macro_rules! float3_operation {
-    ($lhs:expr, $OP:tt, $x:expr, $y:expr, $z:expr) => {
-        $lhs.x $OP $x;
-        $lhs.y $OP $y;
-        $lhs.z $OP $z;
-    };
-}
-
 impl SubAssign<&Vec3> for Vec3 {
     /// Performs the `-=` operation.
     ///
