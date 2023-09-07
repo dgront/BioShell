@@ -5,14 +5,13 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::ops::{Index, IndexMut};
 
-/// 3D vector used to represent an interaction center in a simulation
+/// 3D vector used to manipulate with atomic coordinates
 ///
-/// Vec3 struct contains coordinates of a point, chain index and staple atom typing data. Its implementation
-/// provides basic vector-type calculations.
+/// Vec3 struct contains coordinates of a point.
 ///
 /// The example below tests a few basic properties of a unit cube of with 1.0:
 /// ```
-/// # use bioshell_numerical::{dihedral_angle4, planar_angle3, Vec3};
+/// # use bioshell_pdb::calc::{dihedral_angle4, planar_angle3, Vec3};
 /// let cube_points = [[0f64, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0],
 ///     [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0, 1.0]];
 /// let cube_vec: Vec<Vec3>  = cube_points.iter().map(|p| Vec3::new(p[0],p[1],p[2])).collect();
@@ -36,19 +35,13 @@ pub struct Vec3 {
     /// the ``y`` coordinate of this vector
     pub y: f64,
     /// the ``z`` coordinate of this vector
-    pub z: f64,
-    /// residue type assigned to this vector
-    pub res_type: u8,
-    /// atom type assigned to this vector
-    pub atom_type: u8,
-    /// index of a chain this atom belongs to
-    pub chain_id: u16,
+    pub z: f64
 }
 
-/// Indexing operator provides access to X, Y, Z components of a vector
 impl Index<usize> for Vec3 {
     type Output = f64;
 
+    /// Indexing operator provides access to X, Y, Z components of a vector
     fn index(&self, index: usize) -> &f64 {
         match index {
             0 => &self.x,
@@ -60,6 +53,7 @@ impl Index<usize> for Vec3 {
 }
 
 impl IndexMut<usize> for Vec3 {
+    /// Indexing operator provides mutable access to X, Y, Z components of a vector
     fn index_mut(&mut self, index: usize) -> &mut f64 {
         match index {
             0 => &mut self.x,
@@ -73,26 +67,20 @@ impl IndexMut<usize> for Vec3 {
 impl fmt::Debug for Vec3 {
     /// Debug formatting of a Vec3 prints all its fields, e.g.
     /// ```rust
-    /// use bioshell_numerical::Vec3;
+    /// use bioshell_pdb::calc::Vec3;
     /// let mut v = Vec3::new(0.0, 1.0, 2.0);
-    /// v.res_type = 1;
-    /// v.atom_type = 6;
-    /// v.chain_id = 128;
-    /// assert_eq!(format!("{:?}",v), "[0.000 1.000 2.000] >6,128,1<");
+    /// assert_eq!(format!("{:?}",v), "[0.000 1.000 2.000]");
     /// ```
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "[{:.3} {:.3} {:.3}] >{},{},{}<", self.x, self.y, self.z, self.atom_type, self.chain_id, self.res_type)
+        write!(f, "[{:.3} {:.3} {:.3}]", self.x, self.y, self.z)
     }
 }
 
 impl Display for Vec3 {
     /// Prints X Y Z coordinates of a given 3D vector
     /// ```rust
-    /// use bioshell_numerical::Vec3;
+    /// use bioshell_pdb::calc::Vec3;
     /// let mut v = Vec3::new(0.0, 1.0, 2.0);
-    /// v.res_type = 1;
-    /// v.atom_type = 6;
-    /// v.chain_id = 128;
     /// assert_eq!(format!("{}",v), "0.000 1.000 2.000");
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -134,30 +122,14 @@ impl Vec3 {
 
     /// Creates a new vector from given coordinates.
     ///
-    /// ``res_type``, ``atom_type`` and ``chain_id`` are by default set to ``0``
     pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3 {
-            x: x,
-            y: y,
-            z: z,
-            res_type: 0,
-            atom_type: 0,
-            chain_id: 0,
-        }
+        Vec3 { x, y, z }
     }
 
     /// Creates a new vector with all coordinates equal to a given value.
     ///
-    /// ``res_type``, ``atom_type`` and ``chain_id`` are by default set to ``0``
     pub fn from_float(value: f64) -> Vec3 {
-        Vec3 {
-            x: value,
-            y: value,
-            z: value,
-            res_type: 0,
-            atom_type: 0,
-            chain_id: 0,
-        }
+        Vec3 { x: value, y: value, z: value }
     }
 
     /// Assigns new content to this vector
@@ -168,7 +140,7 @@ impl Vec3 {
     /// Turns self into the opposite vector
     /// Sum of a vector and its opposite should be zero:
     /// ```
-    /// # use bioshell_numerical::Vec3;
+    /// # use bioshell_pdb::calc::Vec3;
     /// let v1 = Vec3::new(1.0, 2.0, 3.0);
     /// let mut v2 = v1.clone();
     /// v2.opposite();
@@ -228,7 +200,7 @@ impl Vec3 {
 
     /// Returns a normalized copy of this vector
     /// ```
-    /// # use bioshell_numerical::Vec3;
+    /// # use bioshell_pdb::calc::Vec3;
     ///
     /// let v = Vec3::new(3.0, 2.0, 1.0).normalized();
     /// assert!((v.length() - 1.0).abs() < 0.00001);
@@ -252,7 +224,7 @@ impl Vec3 {
     /// Calculate a dot product of two vectors
     ///
     /// ```
-    /// # use bioshell_numerical::Vec3;
+    /// # use bioshell_pdb::calc::Vec3;
     /// // let's try two ortogonal vectors
     /// let v1 = Vec3::new(3.0, 2.0, 1.0);
     /// let v2 = Vec3::new(-2.0, 3.0, 0.0);
@@ -264,7 +236,7 @@ impl Vec3 {
 
     /// Calculate the squared distance to another point
     /// ```
-    /// # use bioshell_numerical::Vec3;
+    /// # use bioshell_pdb::calc::Vec3;
     /// // Classic Pytagoras triangle with edges 3, 4 and 5
     /// let d = Vec3::new(3.0, 0.0, 0.0).distance_square_to(&Vec3::new(0.0, 4.0, 0.0));
     /// assert!((d-25.0).abs() < 0.00001);
@@ -285,7 +257,7 @@ impl Vec3 {
 
     /// Calculate vector product
     /// ```
-    /// # use bioshell_numerical::Vec3;
+    /// # use bioshell_pdb::calc::Vec3;
     /// // multiply X and Y versors to get Z
     /// let x = Vec3::new(1.0, 0.0, 0.0);
     /// let y = Vec3::new(0.0, 1.0, 0.0);
@@ -297,10 +269,7 @@ impl Vec3 {
         return Vec3 {
             x: a.y * b.z - a.z * b.y,
             y: a.z * b.x - a.x * b.z,
-            z: a.x * b.y - a.y * b.x,
-            res_type: 0,
-            atom_type: 0,
-            chain_id: a.chain_id,
+            z: a.x * b.y - a.y * b.x
         };
     }
 }
@@ -381,9 +350,6 @@ pub fn random_point_nearby(center: &Vec3, radius: f64) -> Vec3 {
     return Vec3 {
         x,
         y,
-        z,
-        res_type: center.res_type,
-        atom_type: center.atom_type,
-        chain_id: center.chain_id,
+        z
     };
 }
