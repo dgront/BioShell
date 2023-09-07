@@ -3,30 +3,40 @@ use rand::thread_rng;
 use rand_distr::Normal;
 use std::fmt;
 use std::fmt::{Display, Formatter};
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, AddAssign, SubAssign, MulAssign, DivAssign};
 
-/// 3D vector used to manipulate with atomic coordinates
+/// 3D vector used to manipulate with atomic coordinates.
 ///
-/// Vec3 struct contains coordinates of a point.
+/// [`Vec3`] struct contains 3D coordinates; it is used to store the location of a [`PdbAtom`](crate::PdbAtom).
+/// The [`Vec3`] struct implements also a few operators, such as `-=` or `+=` to facilitate vector arithmetics.
 ///
-/// The example below tests a few basic properties of a unit cube of with 1.0:
+/// The example below tests a few basic properties of a unit cube of with 1.0, which looks as below:
+/// ```text
+///   h----g             The vertex a is placed at [0, 0, 0]
+///  /    /|
+/// e----f |             The vertex d is placed at [0, 1, 0] (hidden behind the front face abfe)
+/// |    | c
+/// |    |/
+/// a----b
+/// ```
 /// ```
 /// # use bioshell_pdb::calc::{dihedral_angle4, planar_angle3, Vec3};
 /// let cube_points = [[0f64, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0],
 ///     [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0, 1.0]];
 /// let cube_vec: Vec<Vec3>  = cube_points.iter().map(|p| Vec3::new(p[0],p[1],p[2])).collect();
-///
 /// let mut center_expected = Vec3::new(0.5, 0.5, 0.5);
-/// let mut center = Vec3::new(0.0, 0.0, 0.0);
-/// for v in &cube_vec { center.add(&v) }
-/// center.div(8.0);
+/// let mut center = Vec3::from_float(0.0);
+/// for v in &cube_vec { center += &v }
+/// center /= 8.0;
 ///
 /// assert!(center_expected.distance_to(&center) < 0.0001);
-/// center.sub(&center_expected);
+/// center -= &center_expected;
 /// assert!(center.length() < 0.00001);
 ///
-/// assert!((planar_angle3(&cube_vec[3], &cube_vec[0], &cube_vec[1]).to_degrees() - 90.0).abs() < 0.0001);
-/// assert!((dihedral_angle4(&cube_vec[3], &cube_vec[0], &cube_vec[1], &cube_vec[5]).to_degrees() - 90.0).abs() < 0.0001);
+/// // unpack the vertices to allow calling them by letters as on the diagram above
+/// let [a, b, c, d, e, f, g, h] = <[Vec3; 8]>::try_from(cube_vec).ok().unwrap();
+/// assert!((planar_angle3(&a, &b, &f).to_degrees() - 90.0).abs() < 0.0001);
+/// assert!((dihedral_angle4(&e, &a, &b, &c).to_degrees() + 90.0).abs() < 0.0001);
 /// ```
 #[derive(Clone, Copy)]
 pub struct Vec3 {
@@ -64,6 +74,92 @@ impl IndexMut<usize> for Vec3 {
     }
 }
 
+macro_rules! vec_operation {
+    ($lhs:expr, $rhs:expr, $OP:tt ) => {
+        $lhs.x $OP $rhs.x;
+        $lhs.y $OP $rhs.y;
+        $lhs.z $OP $rhs.z;
+    };
+}
+
+macro_rules! scalar_operation {
+    ($lhs:expr, $rhs:expr, $OP:tt ) => {
+        $lhs.x $OP $rhs;
+        $lhs.y $OP $rhs;
+        $lhs.z $OP $rhs;
+    };
+}
+
+macro_rules! float3_operation {
+    ($lhs:expr, $OP:tt, $x:expr, $y:expr, $z:expr) => {
+        $lhs.x $OP $x;
+        $lhs.y $OP $y;
+        $lhs.z $OP $z;
+    };
+}
+
+impl SubAssign<&Vec3> for Vec3 {
+    /// Performs the `-=` operation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bioshell_pdb::calc::Vec3;
+    /// let mut v0 = Vec3::new(1.0, 2.0, 3.0);
+    /// let mut v1 = Vec3::new(1.0, 2.0, 3.0);
+    /// v0 -= &v1;
+    /// assert!((v0.x).abs() < 0.000001);
+    /// ```
+    fn sub_assign(&mut self, other: &Vec3) {
+        vec_operation!(self, other, -=);
+    }
+}
+
+impl AddAssign<&Vec3> for Vec3 {
+    /// Performs the `+=` operation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bioshell_pdb::calc::Vec3;
+    /// let mut v0 = Vec3::new(1.0, 2.0, 3.0);
+    /// let mut v1 = Vec3::new(1.0, 1.0, 1.0);
+    /// v0 += &v1;
+    /// assert!((v0.x - 2.0).abs() < 0.000001);
+    /// ```
+    fn add_assign(&mut self, other: &Vec3) {
+        vec_operation!(self, other, +=);
+    }
+}
+
+impl MulAssign<f64> for Vec3 {
+    /// Performs the `*=` operation that multiplies this vector by a constant.
+    ///
+    /// ```
+    /// use bioshell_pdb::calc::Vec3;
+    /// let mut v0 = Vec3::new(1.0, 2.0, 3.0);
+    /// v0 *= 2.0;
+    /// assert!((v0.x - 2.0).abs() < 0.000001);
+    /// ```
+    fn mul_assign(&mut self, rhs: f64) {
+        scalar_operation!(self, rhs, *=);
+    }
+}
+
+impl DivAssign<f64> for Vec3 {
+    /// Performs the `/=` operation that divides this vector by a constant.
+    ///
+    /// ```
+    /// use bioshell_pdb::calc::Vec3;
+    /// let mut v0 = Vec3::new(1.0, 2.0, 4.0);
+    /// v0 /= 2.0;
+    /// assert!((v0.z - 2.0).abs() < 0.000001);
+    /// ```
+    fn div_assign(&mut self, rhs: f64) {
+        scalar_operation!(self, rhs, /=);
+    }
+}
+
 impl fmt::Debug for Vec3 {
     /// Debug formatting of a Vec3 prints all its fields, e.g.
     /// ```rust
@@ -89,108 +185,63 @@ impl Display for Vec3 {
 }
 
 impl PartialEq for Vec3 {
+    /// Two vectors are equal if the values of all three coordinates are equal
     fn eq(&self, other: &Self) -> bool {
         return self.x == other.x && self.y == other.y && self.z == other.z;
     }
-}
-
-macro_rules! vec_operation {
-    ($lhs:expr, $rhs:expr, $OP:tt ) => {
-        $lhs.x $OP $rhs.x;
-        $lhs.y $OP $rhs.y;
-        $lhs.z $OP $rhs.z;
-    };
-}
-
-macro_rules! scalar_operation {
-    ($lhs:expr, $rhs:expr, $OP:tt ) => {
-        $lhs.x $OP $rhs;
-        $lhs.y $OP $rhs;
-        $lhs.z $OP $rhs;
-    };
-}
-
-macro_rules! float3_operation {
-    ($lhs:expr, $OP:tt, $x:expr, $y:expr, $z:expr) => {
-        $lhs.x $OP $x;
-        $lhs.y $OP $y;
-        $lhs.z $OP $z;
-    };
 }
 
 impl Vec3 {
 
     /// Creates a new vector from given coordinates.
     ///
+    /// ```
+    /// # use bioshell_pdb::calc::Vec3;
+    /// let v1 = Vec3::new(1.0, 2.0, 2.0);
+    /// # assert_eq!(v1.length(), 3.0);
+    /// ```
     pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
         Vec3 { x, y, z }
     }
 
     /// Creates a new vector with all coordinates equal to a given value.
     ///
+    /// ```
+    /// # use bioshell_pdb::calc::Vec3;
+    /// let zero_vec = Vec3::from_float(0.0);
+    /// assert_eq!(zero_vec.length(), 0.0);
+    /// ```
     pub fn from_float(value: f64) -> Vec3 {
         Vec3 { x: value, y: value, z: value }
     }
 
-    /// Assigns new content to this vector
+    /// Assigns new content to this vector.
+    ///
+    /// ```
+    /// # use bioshell_pdb::calc::Vec3;
+    /// let mut v1 = Vec3::new(1.0, 2.0, 2.0);
+    /// v1.set(&Vec3::from_float(0.0));
+    /// assert_eq!(v1.length(), 0.0);
+    /// ```
     pub fn set(&mut self, v: &Vec3) {
         vec_operation!(self,v,=);
     }
 
-    /// Turns self into the opposite vector
+    /// Turns self into the opposite vector.
+    ///
     /// Sum of a vector and its opposite should be zero:
     /// ```
     /// # use bioshell_pdb::calc::Vec3;
     /// let v1 = Vec3::new(1.0, 2.0, 3.0);
     /// let mut v2 = v1.clone();
     /// v2.opposite();
-    /// v2.add(&v1);
+    /// v2 += &v1;
     /// assert!(v2.length() < 0.00001);
     /// ```
     pub fn opposite(&mut self) {
         self.x = -self.x;
         self.y = -self.y;
         self.z = -self.z;
-    }
-
-    /// Adds a vector to this vector
-    pub fn add(&mut self, v: &Vec3) {
-        vec_operation!(self,v,+=);
-    }
-
-    /// Creates a new vector as a sum of two other vectors
-    pub fn add_two(v1: &Vec3, v2: &Vec3) -> Vec3 {
-        return Vec3::new(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
-    }
-
-    /// Subtracts a vector from this vector
-    pub fn sub(&mut self, v: &Vec3) {
-        vec_operation!(self,v,-=);
-    }
-
-    /// Creates a new vector as a subtraction of two other vectors
-    pub fn sub_two(v1: &Vec3, v2: &Vec3) -> Vec3 {
-        return Vec3::new(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
-    }
-
-    /// Subtracts a constant from this vector
-    pub fn mul(&mut self, f: f64) {
-        scalar_operation!(self,f,*=);
-    }
-
-    /// Divide this vector by a constant
-    pub fn div(&mut self, f: f64) {
-        scalar_operation!(self,f,/=);
-    }
-
-    /// Adds float x, y, x values to this vector
-    pub fn add3(&mut self, x: f64, y: f64, z: f64) {
-        float3_operation!(self, +=, x, y, z);
-    }
-
-    /// Subtracts float x, y, x values from this vector
-    pub fn sub3(&mut self, x: f64, y: f64, z: f64) {
-        float3_operation!(self, -=, x, y, z);
     }
 
     /// Returns the squared length of this 3D vector
@@ -207,14 +258,12 @@ impl Vec3 {
     /// ```
     pub fn normalized(&self) -> Vec3 {
         let mut v = self.clone();
-        v.div(self.length());
+        v /= self.length();
         return v;
     }
 
     /// Normalizes this vector
-    pub fn normalize(&mut self) {
-        self.div(self.length());
-    }
+    pub fn normalize(&mut self) { *self /= self.length(); }
 
     /// Returns a length of this vector
     pub fn length(&self) -> f64 {
@@ -281,36 +330,46 @@ pub fn planar_angle2(a: &Vec3, b: &Vec3) -> f64 {
 }
 
 /// Calculates a planar angle of the a-b-c triangle in 3D
+/// ```
+/// use bioshell_pdb::calc::{planar_angle3, Vec3};
+/// let va = Vec3::new(1.0, 0.0, 0.0);
+/// let vb = Vec3::from_float(0.0);
+/// let vc = Vec3::new(0.0, 1.0, 0.0);
+/// assert!((planar_angle3(&va, &vb, &vc).to_degrees()-90.0)<0.001);
+/// ```
 pub fn planar_angle3(a: &Vec3, b: &Vec3, c: &Vec3) -> f64 {
+
     let mut v1: Vec3 = Vec3::clone(a);
-    v1.sub(b);
+    v1 -= b;
     let mut v2: Vec3 = Vec3::clone(c);
-    v2.sub(b);
+    v2 -= b;
     return planar_angle2(&v1, &v2);
 }
 
-/// Calculates a dihedral angle of the a-b-c-d points in 3D
+/// Calculates a dihedral angle defined by the four a-b-c-d points in 3D
 pub fn dihedral_angle4(a: &Vec3, b: &Vec3, c: &Vec3, d: &Vec3) -> f64 {
-    let mut b0 = b.clone(); // b0 = -1.0*(b - a)
-    b0.sub(a);
-    b0.mul(-1.0);
+
+    let mut b0 = b.clone(); // b0 = -(b - a)
+    b0 -= a;
+    b0.opposite();
     let mut b1 = c.clone(); // b1 = c - b
-    b1.sub(b);
+    b1 -= b;
     b1.normalize(); // normalize b1
     let mut b2 = d.clone(); // b2 = d - c
-    b2.sub(c);
+    b2 -= c;
 
     let mut v = b1.clone(); // v is the projection of b0 onto plane perpendicular to b1
-    v.mul(-Vec3::dot(&b0, &b1));
-    v.add(&b0);
+    v *= -Vec3::dot(&b0, &b1);
+    v += &b0;
 
     let mut w = b1.clone(); // v is the projection of of b2 onto plane perpendicular to b1
-    w.mul(-Vec3::dot(&b2, &b1));
-    w.add(&b2);
+    w *= -Vec3::dot(&b2, &b1);
+    w += &b2;
 
     let x: f64 = Vec3::dot(&v, &w) as f64;
     let y: f64 = Vec3::dot(&Vec3::cross(&b1, &v), &w) as f64;
 
+    println!("{} {} {}",y, x, f64::atan2(y, x));
     return f64::atan2(y, x);
 }
 
