@@ -4,6 +4,7 @@ use rand_distr::Normal;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::ops::{Index, IndexMut, AddAssign, SubAssign, MulAssign, DivAssign};
+use crate::calc::Matrix3x3;
 
 /// 3D vector used to manipulate with atomic coordinates.
 ///
@@ -236,6 +237,11 @@ impl Vec3 {
         self.z = -self.z;
     }
 
+    /// Returns a length of this vector
+    pub fn length(&self) -> f64 {
+        return self.length_squared().sqrt();
+    }
+
     /// Returns the squared length of this 3D vector
     pub fn length_squared(&self) -> f64 {
         return self.x * self.x + self.y * self.y + self.z * self.z;
@@ -256,11 +262,6 @@ impl Vec3 {
 
     /// Normalizes this vector
     pub fn normalize(&mut self) { *self /= self.length(); }
-
-    /// Returns a length of this vector
-    pub fn length(&self) -> f64 {
-        return self.length_squared().sqrt();
-    }
 
     /// Calculate a dot product of two vectors
     ///
@@ -312,6 +313,24 @@ impl Vec3 {
             y: a.z * b.x - a.x * b.z,
             z: a.x * b.y - a.y * b.x
         };
+    }
+
+    /// Calculate outer product of two vectors
+    pub fn outer(lhs: &Vec3, rhs: &Vec3) -> Matrix3x3 {
+        let mut data = [0.0; 9];
+        data[0] = lhs.x * rhs.x;
+        data[1] = lhs.x * rhs.y;
+        data[2] = lhs.x * rhs.z;
+
+        data[3] = lhs.y * rhs.x;
+        data[4] = lhs.y * rhs.y;
+        data[5] = lhs.y * rhs.z;
+
+        data[6] = lhs.z * rhs.x;
+        data[7] = lhs.z * rhs.y;
+        data[8] = lhs.z * rhs.z;
+
+        Matrix3x3::from_array(data)
     }
 }
 
