@@ -1,4 +1,5 @@
 use std::string::String;
+use crate::calc::Vec3;
 
 /// Atom record as found in a single line of a PDB file.
 ///
@@ -22,9 +23,7 @@ pub struct PdbAtom {
     pub chain_id: String,
     pub res_seq: i32,
     pub i_code: String,
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
+    pub pos: Vec3,
     pub occupancy: f64,
     pub temp_factor: f64,
     pub element: Option<String>,
@@ -46,9 +45,7 @@ impl PdbAtom {
             chain_id: String::from("A"),
             res_seq: 1,
             i_code: String::new(),
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
+            pos: Vec3::from_float(0.0),
             occupancy: 0.0,
             temp_factor: 0.0,
             element: None,
@@ -102,9 +99,7 @@ impl PdbAtom {
             chain_id,
             res_seq,
             i_code,
-            x,
-            y,
-            z,
+            pos: Vec3::new(x, y, z),
             occupancy,
             temp_factor,
             element: element,
