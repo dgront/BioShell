@@ -66,6 +66,9 @@ impl SurpassAlphaSystem {
         return s;
     }
 
+    /// Returns the number of atoms in this system (of all its chains)
+    pub fn count_atoms(&self) -> usize { self.cax.len() }
+
     /// X coordinate of i-th CA atom
     pub fn cax(&self, i: usize) -> f64 { int_to_real!(self.int_to_real, self.cax[i]) }
 
@@ -81,6 +84,7 @@ impl SurpassAlphaSystem {
     ///  -  `i` - atom index
     pub fn chain(&self, i: usize) -> u16 { self.chain_ids[i] }
 
+    /// Returns the number of chains in this system
     pub fn count_chains(&self) -> usize { self.chains_map.len() }
 
     /// Returns a string id denoting a given chain.
@@ -124,9 +128,9 @@ impl SurpassAlphaSystem {
                 surpass_model.chains_map.insert(ai.chain_id.clone(), surpass_model.chains_map.len());
             }
             surpass_model.chain_ids.push(*(surpass_model.chains_map.get(&ai.chain_id).unwrap()) as u16);
-            surpass_model.cax[i_atom] = real_to_int!(surpass_model.int_to_real, ai.x);
-            surpass_model.cay[i_atom] = real_to_int!(surpass_model.int_to_real, ai.y);
-            surpass_model.caz[i_atom] = real_to_int!(surpass_model.int_to_real, ai.z);
+            surpass_model.cax[i_atom] = real_to_int!(surpass_model.int_to_real, ai.pos.x);
+            surpass_model.cay[i_atom] = real_to_int!(surpass_model.int_to_real, ai.pos.y);
+            surpass_model.caz[i_atom] = real_to_int!(surpass_model.int_to_real, ai.pos.z);
             i_atom += 1;
         }
         assert_eq!(surpass_model.chains_map.len(), chain_sizes.len());
