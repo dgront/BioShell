@@ -231,9 +231,9 @@ impl Matrix3x3 {
     ///```
     pub fn mul_vec_mut(&self, rhs: &mut Vec3) {
         let lhs = self;
-        let x = lhs[0] * rhs.x + lhs[1] * rhs.y + lhs[2] * rhs.z;
-        let y = lhs[3] * rhs.x + lhs[4] * rhs.y + lhs[5] * rhs.z;
-        let z = lhs[6] * rhs.x + lhs[7] * rhs.y + lhs[8] * rhs.z;
+        let x = lhs[0] * rhs.x + lhs[3] * rhs.y + lhs[6] * rhs.z;
+        let y = lhs[1] * rhs.x + lhs[4] * rhs.y + lhs[7] * rhs.z;
+        let z = lhs[2] * rhs.x + lhs[5] * rhs.y + lhs[8] * rhs.z;
         rhs.x = x;
         rhs.y = y;
         rhs.z = z;
@@ -327,22 +327,7 @@ impl Matrix3x3 {
     ///     assert_eq!(lhs[i], *val);
     /// }
     ///```
-    ///
-    /// # Errors
-    ///
-    /// This function returns a Result type that wraps the inverse if it exists. If the matrix is not invertible,
-    /// i.e. has a determinant of zero, it returns an error containing a string that explains the cause of the error.
-    /// Here is an example of how to handle the error:
-    ///
-    /// use bioshell_numerical::matrix::Matrix3x3;
-    ///
-    /// let mut mat = Matrix3x3::new();
-    ///
-    /// // calculate the inverse and handle the error
-    /// if let Err(e) = mat.inverse() {
-    /// println!("Error: {}", e);
-    /// }
-    ///
+    /// todo: Throw exception when det==0
     pub fn inverse(&mut self) {
         let _det = self.det();
         let lhs = self;

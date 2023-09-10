@@ -9,17 +9,14 @@ pub fn place_atom(a: &Vec3, b: &Vec3, c: &Vec3, r: f64, planar: f64, dihedral: f
     n = Vec3::cross(&n,&bc);
     n.normalize();
     let cross = Vec3::cross(&n, &bc);
-    let rot_m = Matrix3x3::from_row_vectors(&bc, &cross, &n);
+    let rot_m = Matrix3x3::from_column_vectors(&bc, &cross, &n);
 
     let angle = std::f64::consts::PI - planar;
 
     output.set3(r * angle.cos(),
                 r * angle.sin() * dihedral.cos(),
                 r * angle.sin() * dihedral.sin());
-    println!("befr>>>> {} {} {} {} {} {}", planar.to_degrees(), angle.to_degrees(), dihedral, dihedral.to_degrees(), c.x, output.x);
     rot_m.mul_vec_mut( output);
-    println!("{:?}",rot_m);
-    println!("aftr>>>> {} {} {} {} {} {}", planar.to_degrees(), angle.to_degrees(), dihedral, dihedral.to_degrees(), c.x, output.x);
     *output += c;
 }
 

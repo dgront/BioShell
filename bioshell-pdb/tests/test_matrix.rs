@@ -70,12 +70,15 @@ mod matrix_test {
 
     #[test]
     fn matrix_mul_vec_mut() {
-        let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        let rx = Vec3::from_array(&[3.0, 2.0, 1.0]);
+        let ry = Vec3::from_array(&[0.0, 2.0, 1.0]);
+        let rz = Vec3::from_array(&[0.0, 0.0, 1.0]);
+        let lhs: Matrix3x3 = Matrix3x3::from_row_vectors(&rx, &ry, &rz);
         let mut rhs = Vec3::new(2.0, 2.0, 2.0);
         lhs.mul_vec_mut(&mut rhs);
         assert_eq!(12.0, rhs[0]);
-        assert_eq!(30.0, rhs[1]);
-        assert_eq!(48.0, rhs[2]);
+        assert_eq!(6.0, rhs[1]);
+        assert_eq!(2.0, rhs[2]);
     }
 
     #[test]

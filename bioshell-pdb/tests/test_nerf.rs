@@ -4,7 +4,7 @@ macro_rules! assert_delta {
     }
 }
 
-const ile_pdb: [&str;8] = ["ATOM      1  N   ILE A   1       0.000   0.000   0.000  1.00  0.00           N",
+const ILE_PDB: [&str;8] = ["ATOM      1  N   ILE A   1       0.000   0.000   0.000  1.00  0.00           N",
     "ATOM      2  CA  ILE A   1       1.458   0.000   0.000  1.00  0.00           C",
     "ATOM      3  C   ILE A   1       2.009   1.420   0.000  1.00  0.00           C",
     "ATOM      4  O   ILE A   1       1.383   2.339  -0.529  1.00  0.00           O",
@@ -17,7 +17,7 @@ const ile_pdb: [&str;8] = ["ATOM      1  N   ILE A   1       0.000   0.000   0.0
 mod nerf_test {
     use bioshell_pdb::calc::{Vec3, place_atom, place_chain, dihedral_angle4, planar_angle3};
     use bioshell_pdb::PdbAtom;
-    use crate::ile_pdb;
+    use crate::ILE_PDB;
 
     #[test]
     fn build_stub() {
@@ -50,10 +50,10 @@ mod nerf_test {
     #[test]
     fn build_aminoacid() {
 
-        let pdb_atoms: Vec<PdbAtom> = ile_pdb.iter().map(|&s| PdbAtom::from_atom_line(s)).collect();
+        let pdb_atoms: Vec<PdbAtom> = ILE_PDB.iter().map(|&s| PdbAtom::from_atom_line(s)).collect();
         let atoms: Vec<Vec3> = pdb_atoms.iter().map(|a|a.pos.clone()).collect();
 
-        let atom_names = [" N  ", " CA ", " C  ", " O  ", " CB ", " CG ", " CD1", " CD2"];
+        let _atom_names = [" N  ", " CA ", " C  ", " O  ", " CB ", " CG ", " CD1", " CD2"];
         let ile_topo = [[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 2, 0],
             [0, 1, 2, 3], [0, 1, 2, 4], [0, 1, 4, 5], [1, 4, 5, 6], [1, 4, 5, 7]];
 
@@ -67,10 +67,6 @@ mod nerf_test {
             t.push(dihedral_angle4(&atoms[i],&atoms[j], &atoms[k], &atoms[l]));
         }
 
-        println!("{:?}", r);
-        println!("{:?}", a);
-        println!("{:?}", t);
-
         // allocate the full chain and place the first atom in its correct position
         let mut chain = vec![Vec3::default(); 8];
         chain[0].set(&atoms[0]);
@@ -81,13 +77,14 @@ mod nerf_test {
             let [i, j, k, l] = ile_topo[iatom];
             place_atom(&chain[i], &chain[j], &chain[k], r[iatom], a[iatom], t[iatom], &mut v);
             chain[l].set(&v);
-            println!("{}", v);
         }
-            // let epsilon= 0.00000001;
+        let epsilon = 0.00000001;
         for iatom in 0..8 {
-            println!("ATOM   {:4} {} ILE {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C",
-                    iatom, &atom_names[iatom], "A", 1, &chain[iatom].x, &chain[iatom].y, &chain[iatom].z);
+            // println!("ATOM   {:4} {} ILE {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C",
+            //         iatom, &_atom_names[iatom], "A", 1, &chain[iatom].x, &chain[iatom].y, &chain[iatom].z);
+            assert_delta!(chain[iatom].x, atoms[iatom].x, epsilon);
+            assert_delta!(chain[iatom].y, atoms[iatom].y, epsilon);
+            assert_delta!(chain[iatom].z, atoms[iatom].z, epsilon);
         }
-
     }
 }
