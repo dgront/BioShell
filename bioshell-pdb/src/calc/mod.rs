@@ -11,4 +11,4 @@ pub use vec3::{Vec3, planar_angle2, planar_angle3, dihedral_angle4,
 pub use matrix::{Matrix3x3};
 pub use transformation::{Rototranslation};
 
-pub use nerf::{place_atom, place_chain};
+pub use nerf::{restore_atom, restore_linear_chain, restore_branched_chain};
