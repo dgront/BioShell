@@ -128,4 +128,20 @@ mod nerf_test {
         // }
         assert_delta!(chain[1].distance_to(&chain[9]), 5.4, 0.01);
     }
+
+    #[allow(non_snake_case)]
+    #[test]
+    fn build_methane() {
+        let r_CH: f64 = 1.05;
+        let a_HCH: f64 = 109.471_f64.to_radians();
+        let r = vec![0.0, r_CH, r_CH, r_CH, r_CH];
+        let a = vec![0.0, 0.0, a_HCH, a_HCH, a_HCH];
+        let t = vec![0.0, 0.0, 0.0, 120.0_f64.to_radians(), 240.0_f64.to_radians()];
+        let topo = vec![[0, 0, 0, 0], [0, 1, 0, 0], [1, 0, 2, 0], [1, 2, 0, 3], [1, 2, 0, 4]];
+        let mut methane = vec![Vec3::default(); 5];
+        restore_branched_chain(&r, &a, &t, &topo, &mut methane);
+        assert_delta!(methane[4].x, 1.400, 0.001);
+        assert_delta!(methane[4].y, -0.495, 0.001);
+        assert_delta!(methane[4].z, 0.857, 0.001);
+    }
 }

@@ -1,14 +1,21 @@
 use crate::calc::{Matrix3x3, Vec3};
 
-pub fn create_stub(r: &[f64], planar: &[f64], output_chain: &mut [Vec3]) {
+// pub fn create_stub_(r: &[f64], planar: &[f64], output_chain: &mut [Vec3]) {
+//
+//     if r.len() != 3|| planar.len()  != 3 || output_chain.len() != 3 {
+//         panic!("build_stub() function requires 3-element slices for distances, angles and positions")
+//     }
+//     output_chain[1].set3(r[1] + output_chain[0].x, output_chain[0].y, output_chain[0].z);
+//     let angle = std::f64::consts::PI - planar[2];
+//     output_chain[2].set3(r[2]*angle.cos() + output_chain[1].x,
+//                          r[2]*angle.sin() + output_chain[1].y, output_chain[1].z );
+// }
 
-    if r.len() != 3|| planar.len()  != 3 || output_chain.len() != 3 {
-        panic!("build_stub() function requires 3-element slices for distances, angles and positions")
-    }
-    output_chain[1].set3(r[1] + output_chain[0].x, output_chain[0].y, output_chain[0].z);
-    let angle = std::f64::consts::PI - planar[2];
-    output_chain[2].set3(r[2]*angle.cos() + output_chain[1].x,
-                         r[2]*angle.sin() + output_chain[1].y, output_chain[1].z );
+pub fn create_stub(a: &Vec3, r_ab: f64, r_bc: f64, a_abc: f64, b: &mut Vec3, c: &mut Vec3) {
+
+    b.set3(a.x+r_ab,a.y, a.z);
+    let angle = std::f64::consts::PI - a_abc;
+    c.set3(r_bc*angle.cos() + b.x, r_bc*angle.sin() + b.y, b.z );
 }
 
 pub fn restore_atom(a: &Vec3, b: &Vec3, c: &Vec3, r: f64, planar: f64, dihedral: f64, output: &mut Vec3) {
@@ -31,9 +38,9 @@ pub fn restore_atom(a: &Vec3, b: &Vec3, c: &Vec3, r: f64, planar: f64, dihedral:
 }
 
 
-/// Rebuilds Cartesian coordinates of a linear chain given internal coordinates of its atoms.
+/// Calculates Cartesian coordinates of a linear chain given internal coordinates of its atoms.
 ///
-/// This simplified function reconstructs i-th atom of a chain  based on positions of (i-1), (i-2) and (i-3) atoms,
+/// This simplified function reconstructs every i-th atom of a chain  based on positions of (i-1), (i-2) and (i-3) atoms,
 /// `r[i]` radius, `planar[i]` planar and `dihedral[i]` dihedral; resulting coordinates are writen to `output_chain[i]`.
 ///
 /// # Arguments
@@ -51,16 +58,37 @@ pub fn restore_linear_chain(r: &[f64], planar: &[f64], dihedral: &[f64], output_
                r.len(), planar.len(), dihedral.len(), output_chain.len())
     }
 
-    create_stub(&r[0..3], &planar[0..3], &mut output_chain[0..3]);
+    let [a, b, c] = &mut output_chain[0..3] else { unreachable!(); };
+    create_stub(&a, r[1], r[2], planar[2], b,  c);
 
     for i in 3..r.len() {
-        let [a, b, c, d] = &mut output_chain[i-3..i+1] else {
-            unreachable!();
-        };
+        let [a, b, c, d] = &mut output_chain[i-3..i+1] else { unreachable!(); };
         restore_atom(a, b, c, r[i], planar[i], dihedral[i], d);
     }
 }
 
+/// Calculates Cartesian coordinates of a molecule from internal coordinates of its atoms.
+///
+/// ```
+/// #use bioshell_pdb::nerf::restore_branched_chain;
+/// let r_CH: f64 = 1.05;
+/// let a_HCH: f64 = 109.471_f64.to_radians();
+/// let r = vec![0.0, r_CH, r_CH, r_CH, r_CH];
+/// let a = vec![0.0, 0.0, a_HCH, a_HCH, a_HCH];
+/// let t = vec![0.0, 0.0, 0.0, 120.0_f64.to_radians(), 240.0_f64.to_radians()];
+/// let topo = vec![[0, 0, 0, 0], [0, 1, 0, 0], [1, 0, 2, 0], [1, 2, 0, 3], [1, 2, 0, 4]];
+/// let mut methane = vec![Vec3::default(); 5];
+/// restore_branched_chain(&r, &a, &t, &topo, &mut methane);
+/// ```
+/// # Arguments
+///  * `r` - array of bond lengths
+///  * `planar` - array of planar angles
+///  * `dihedral` - array of dihedral angles in radians
+///  * `topology` - array that provides indexes of atoms
+///  * `output_chain` - array of [`Vec3`] objects where the recovered Cartesian coordinates will be stored;
+///    **Note**: reconstruction starts from the second atom (i.e. `output_chain[1]`) while
+///    `output_chain[0]` is used as the starting point.
+///
 pub fn restore_branched_chain(r: &[f64], planar: &[f64], dihedral: &[f64], topology: &[[usize;4]],
                               output_chain: &mut [Vec3]) {
 
@@ -70,14 +98,17 @@ pub fn restore_branched_chain(r: &[f64], planar: &[f64], dihedral: &[f64], topol
     }
 
     // --- rebuild the stub
-    create_stub(&r[0..3], &planar[0..3], &mut output_chain[0..3]);
-
+    let mut b = Vec3::default();
     let mut v = Vec3::default();
+    let [k, l, m] = topology[2][0..3] else { unreachable!(); };
+    create_stub(&output_chain[k], r[1], r[2], planar[2], &mut b, &mut v);
+    output_chain[l].set(&b);
+    output_chain[m].set(&v);
+
     for iatom in 3..output_chain.len() {
         let [i, j, k, l] = topology[iatom];
         restore_atom(&output_chain[i], &output_chain[j], &output_chain[k],
                      r[iatom], planar[iatom], dihedral[iatom], &mut v);
         output_chain[l].set(&v);
     }
-
 }
