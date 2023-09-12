@@ -39,7 +39,7 @@ use crate::calc::Matrix3x3;
 /// assert!((planar_angle3(&a, &b, &f).to_degrees() - 90.0).abs() < 0.0001);
 /// assert!((dihedral_angle4(&e, &a, &b, &c).to_degrees() + 90.0).abs() < 0.0001);
 /// ```
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Vec3 {
     /// the ``x`` coordinate of this vector
     pub x: f64,
@@ -208,6 +208,17 @@ impl Vec3 {
         Vec3 { x: value, y: value, z: value }
     }
 
+    /// Creates a new vector with given values
+    ///
+    /// ```
+    /// # use bioshell_pdb::calc::Vec3;
+    /// let zero_vec = Vec3::from_array(&[2.0, 1.0, 2.0]);
+    /// assert_eq!(zero_vec.length(), 3.0);
+    /// ```
+    pub fn from_array(values: &[f64; 3]) -> Vec3 {
+        Vec3 { x: values[0], y: values[1], z: values[2] }
+    }
+
     /// Assigns new content to this vector.
     ///
     /// ```
@@ -218,6 +229,30 @@ impl Vec3 {
     /// ```
     pub fn set(&mut self, v: &Vec3) {
         vec_operation!(self,v,=);
+    }
+
+    /// Add two vectors to creates a new one
+    pub fn add_s(a: &Vec3, b: &Vec3) -> Vec3 {
+        Vec3::new(a.x + b.x, a.y + b.y, a.z + b.z)
+    }
+
+    /// Subtract two vectors to creates a new one
+    pub fn sub_s(a: &Vec3, b: &Vec3) -> Vec3 {
+        Vec3::new(a.x - b.x, a.y - b.y, a.z - b.z)
+    }
+
+    /// Assigns new content to this vector.
+    ///
+    /// ```
+    /// # use bioshell_pdb::calc::Vec3;
+    /// let mut v1 = Vec3::new(1.0, 2.0, 2.0);
+    /// v1.set3(3.0, 0.0, 1.0);
+    /// assert_eq!(v1.length(), 3.0);
+    /// ```
+    pub fn set3(&mut self, x: f64, y: f64, z: f64) {
+        self.x = x;
+        self.y = y;
+        self.z = z;
     }
 
     /// Turns self into the opposite vector.
@@ -380,7 +415,6 @@ pub fn dihedral_angle4(a: &Vec3, b: &Vec3, c: &Vec3, d: &Vec3) -> f64 {
     let x: f64 = Vec3::dot(&v, &w) as f64;
     let y: f64 = Vec3::dot(&Vec3::cross(&b1, &v), &w) as f64;
 
-    println!("{} {} {}",y, x, f64::atan2(y, x));
     return f64::atan2(y, x);
 }
 

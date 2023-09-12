@@ -31,8 +31,10 @@ pub mod pdb_sheet_line_parser;
 mod pdb_atom;
 
 pub mod pdb_atom_filters;
-mod residue_id;
 pub mod calc;
+pub mod nerf;
+
+mod residue_id;
 mod load_pdb;
 
 pub use structure::Structure;

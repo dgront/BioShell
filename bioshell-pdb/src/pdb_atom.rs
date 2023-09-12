@@ -55,6 +55,7 @@ impl PdbAtom {
         }
     }
 
+    // todo: Implement pub fn to_string(&self)
     // pub fn to_string(&self) -> String{
     //     return PdbLineParser::assemble_atom(&self);
     // }
