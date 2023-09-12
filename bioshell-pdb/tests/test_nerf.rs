@@ -17,8 +17,8 @@ const ILE_PDB: [&str;8] = ["ATOM      1  N   ILE A   1       0.000   0.000   0.0
 #[cfg(test)]
 mod nerf_test {
     use std::f64::consts::PI;
-    use bioshell_pdb::calc::{Vec3, restore_atom, restore_linear_chain, restore_branched_chain,
-                             dihedral_angle4, planar_angle3};
+    use bioshell_pdb::calc::{Vec3, dihedral_angle4, planar_angle3};
+    use bioshell_pdb::nerf::{restore_branched_chain, restore_linear_chain, restore_atom};
     use bioshell_pdb::PdbAtom;
     use crate::ILE_PDB;
 
@@ -109,9 +109,9 @@ mod nerf_test {
         let phi = -57.8_f64.to_radians();
         let psi = -47.0_f64.to_radians();
         let omega = 180.0_f64.to_radians();
-        let mut r = vec![0.0, r_NCa, r_CaC, r_CN, r_CO, r_NCa, r_CaC, r_CN, r_CO, r_NCa, r_CaC, r_CO, r_COxt];
-        let mut a = vec![0.0, 0.0, a_NCaC, a_CaCN, a_CaCO, a_CNCa, a_NCaC, a_CaCN, a_CaCO, a_CNCa, a_NCaC, a_CaCO, a_CaCOxt];
-        let mut t = vec![0.0, 0.0, 0.0, psi, PI, omega, phi, psi, PI, omega, phi, psi, PI];
+        let r = vec![0.0, r_NCa, r_CaC, r_CN, r_CO, r_NCa, r_CaC, r_CN, r_CO, r_NCa, r_CaC, r_CO, r_COxt];
+        let a = vec![0.0, 0.0, a_NCaC, a_CaCN, a_CaCO, a_CNCa, a_NCaC, a_CaCN, a_CaCO, a_CNCa, a_NCaC, a_CaCO, a_CaCOxt];
+        let t = vec![0.0, 0.0, 0.0, psi, PI, omega, phi, psi, PI, omega, phi, psi, PI];
         let bb_topo = [[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 2, 0],
             [0, 1, 2, 4], [4, 1, 2, 3], [1, 2, 4, 5], [2, 4, 5, 6], [4, 5, 6, 8], [8, 5,6, 7],
                                         [5, 6, 8, 9], [6, 8, 9, 10], [8, 9, 10, 12], [12, 9, 10, 11]];
