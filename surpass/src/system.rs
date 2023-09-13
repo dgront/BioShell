@@ -112,7 +112,6 @@ impl SurpassAlphaSystem {
     ///  -  `chain_idx` - integer index of a chain, starting from 0; to obtain the string id for
     ///     a particular atoms, use [`chain()`](chain()) method to find the integer index of that chain
     pub fn chain_id(&self, chain_idx: usize) -> Result<&String, &str> {
-        println!(">> {:?}", self.chain_id_by_index);
 
         if chain_idx < self.chain_id_by_index.len() { return Ok(&self.chain_id_by_index[chain_idx])}
         else {return Err("Incorrect chain index") }

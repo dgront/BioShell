@@ -37,7 +37,6 @@ fn system_from_pdb() {
     assert!((model.caz(10) - 2.466).abs() < 0.001);
 
     // --- compute the distance between two atoms
-    println!("{}", model.distance(0, 1));
     assert!((model.distance(0, 1) - 3.812) < 0.01);
 }
 
