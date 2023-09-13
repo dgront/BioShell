@@ -18,7 +18,7 @@ ATOM     56  CA  LYS B   4      -3.922  -3.881   4.044  1.00  0.10           C
 ATOM     78  CA  LEU B   5      -0.651  -2.752   2.466  1.00  0.11           C";
 
 #[test]
-fn test_from_pdb() {
+fn system_from_pdb() {
 
     let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
 
@@ -39,4 +39,10 @@ fn test_from_pdb() {
     // --- compute the distance between two atoms
     println!("{}", model.distance(0, 1));
     assert!((model.distance(0, 1) - 3.812) < 0.01);
+}
+
+#[test]
+fn build_new_system() {
+    let model = SurpassAlphaSystem::new(&[10, 10, 10, 10], 100.0);
+    model.to_pdb_file("s.pdb", false);
 }

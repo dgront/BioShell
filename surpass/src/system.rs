@@ -1,23 +1,24 @@
-use std::collections::HashMap;
-use std::fmt;
-use std::fmt::Debug;
-use num_traits::WrappingSub;
+use std::io::Write;
+use rand::{Rng, thread_rng};
 use bioshell_pdb::{load_pdb_file, Structure};
+use bioshell_pdb::calc::Vec3;
+use bioshell_pdb::nerf::restore_linear_chain;
 use bioshell_pdb::pdb_atom_filters::{IsCA, PdbAtomPredicate};
 use bioshell_pdb::pdb_parsing_error::ParseError;
+use bioshell_io::out_writer;
 
 /// SURPASS-alpha system holds coordinates of all atoms
 ///
 #[derive(Clone)]
 pub struct SurpassAlphaSystem {
-    chain_ids: Vec<u16>,
+    chain_indexes: Vec<u16>,
     cax: Vec<i32>,
     cay: Vec<i32>,
     caz: Vec<i32>,
     sgx: Vec<i32>,
     sgy: Vec<i32>,
     sgz: Vec<i32>,
-    chains_map: HashMap<String, usize>,
+    chain_id_by_index: Vec<String>,
     int_to_real: f64,
     int_to_real_2: f64
 }
@@ -46,21 +47,39 @@ macro_rules! int_to_real {
 
 impl SurpassAlphaSystem {
 
-    fn new_empty(chain_lengths: &Vec<usize>, box_length: f64) -> SurpassAlphaSystem {
-        let n_atoms = chain_lengths.iter().sum();
+    pub fn new(chain_lengths: &[usize], box_length: f64) -> SurpassAlphaSystem {
+
+        // ---------- Create an empty system
         let l = box_length / 2.0 / (i32::MAX as f64);
+        let n_atoms = chain_lengths.iter().sum();
+        let n_chains = chain_lengths.len();
         let mut s = SurpassAlphaSystem{
-            chain_ids: vec![0; n_atoms], cax: vec![0; n_atoms], cay: vec![0; n_atoms], caz: vec![0; n_atoms],
+            chain_indexes: vec![0; n_atoms], cax: vec![0; n_atoms], cay: vec![0; n_atoms], caz: vec![0; n_atoms],
             sgx: vec![0; n_atoms], sgy: vec![0; n_atoms], sgz: vec![0; n_atoms],
-            chains_map: Default::default(), int_to_real: l, int_to_real_2: l*l
+            chain_id_by_index: vec![String::from("A");n_chains], int_to_real: l, int_to_real_2: l*l
         };
+        // ---------- Initialize coordinates
+        let r = vec![3.8; n_atoms];
+        let mut planar: Vec<f64> = Vec::with_capacity(n_atoms);
+        let mut dihedral: Vec<f64> = Vec::with_capacity(n_atoms);
+        let mut rnd = thread_rng();
+        for i in 0..n_atoms {
+            planar.push(rnd.gen_range(90.0_f64.to_radians()..170.0_f64.to_radians()));
+            dihedral.push(rnd.gen_range(-180.0_f64.to_radians()..180.0_f64.to_radians()));
+        }
+        let mut coords = vec![Vec3::default(); n_atoms];
+        restore_linear_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &mut coords[0..n_atoms]);
+        for i in 0..n_atoms {
+            s.cax[i] = real_to_int!(s.int_to_real, coords[i].x);
+            s.cay[i] = real_to_int!(s.int_to_real, coords[i].y);
+            s.caz[i] = real_to_int!(s.int_to_real, coords[i].z);
+        }
+        // ---------- Assign atoms to chains
         let mut atoms_total = 0;
-        let mut chain_idx = 0;
-        for nc in chain_lengths {
-            for i in 0..*nc {
-                s.chain_ids[i+ atoms_total] = chain_idx;
-            }
-            chain_idx += 1;
+        let codes: Vec<char> = ('A'..'Z').collect();
+        for (ic,nc) in chain_lengths.iter().enumerate() {
+            for i in 0..*nc { s.chain_indexes[i+ atoms_total] = ic as u16; }
+            s.chain_id_by_index[ic] = codes[ic].to_string();
             atoms_total += nc;
         }
         return s;
@@ -82,19 +101,37 @@ impl SurpassAlphaSystem {
     ///
     /// # Arguments
     ///  -  `i` - atom index
-    pub fn chain(&self, i: usize) -> u16 { self.chain_ids[i] }
+    pub fn chain(&self, i: usize) -> u16 { self.chain_indexes[i] }
 
     /// Returns the number of chains in this system
-    pub fn count_chains(&self) -> usize { self.chains_map.len() }
+    pub fn count_chains(&self) -> usize { self.chain_id_by_index.len() }
 
     /// Returns a string id denoting a given chain.
     ///
     /// # Arguments
     ///  -  `chain_idx` - integer index of a chain, starting from 0; to obtain the string id for
     ///     a particular atoms, use [`chain()`](chain()) method to find the integer index of that chain
-    pub fn chain_id(&self, chain_idx: usize) -> Option<&String> {
-        self.chains_map.iter()
-            .find_map(|(key, &val)| if val == chain_idx { Some(key) } else { None })
+    pub fn chain_id(&self, chain_idx: usize) -> Result<&String, &str> {
+        println!(">> {:?}", self.chain_id_by_index);
+
+        if chain_idx < self.chain_id_by_index.len() { return Ok(&self.chain_id_by_index[chain_idx])}
+        else {return Err("Incorrect chain index") }
+    }
+
+    /// Set a new chain ID string for one of the chains of this system.
+    ///
+    /// ```
+    /// # use surpass::SurpassAlphaSystem;
+    /// # let mut system = SurpassAlphaSystem::new(&[5, 5], 100.0);
+    /// // by default the first chain is named as "A"
+    /// assert_eq!(system.chain_id(0).unwrap(), &String::from("A"));
+    /// system.set_chain_id(0, "XYZ");
+    /// assert_eq!(system.chain_id(0).unwrap(), &String::from("XYZ"));
+    /// system.set_chain_id(0, "ZYX");
+    /// assert_eq!(system.chain_id(0).unwrap(), &String::from("ZYX"));
+    /// ```
+    pub fn set_chain_id(&mut self, chain_idx: usize, chain_id: &str) {
+        self.chain_id_by_index[chain_idx] = String::from(chain_id);
     }
 
     pub fn distance_squared(&self, i: usize, j: usize) -> f64 {
@@ -111,29 +148,26 @@ impl SurpassAlphaSystem {
 
     pub fn distance(&self, i: usize, j: usize) -> f64 { self.distance_squared(i, j).sqrt() }
 
-        // pub fn create_random(nres: usize, nchains: usize) -> SurpassAlphaSystem {}
-
     pub fn from_pdb_structure(strctr: &Structure, box_length: f64) -> SurpassAlphaSystem {
 
         let mut chain_sizes: Vec<usize> = vec![];
         for chain_id in strctr.chain_ids().iter() {
             chain_sizes.push(strctr.chain_residue_ids(chain_id).len());
         }
-        let mut surpass_model = SurpassAlphaSystem::new_empty(&chain_sizes, box_length);
+        let mut surpass_model = SurpassAlphaSystem::new(&chain_sizes, box_length);
+        for (i, cid) in strctr.chain_ids().iter().enumerate() {
+            surpass_model.set_chain_id(i, cid);
+        }
 
         let is_ca = IsCA;
         let mut i_atom = 0;
         for ai in strctr.atoms().iter().filter(|&a| is_ca.check(a)) {
-            if !surpass_model.chains_map.contains_key(&ai.chain_id) {
-                surpass_model.chains_map.insert(ai.chain_id.clone(), surpass_model.chains_map.len());
-            }
-            surpass_model.chain_ids.push(*(surpass_model.chains_map.get(&ai.chain_id).unwrap()) as u16);
             surpass_model.cax[i_atom] = real_to_int!(surpass_model.int_to_real, ai.pos.x);
             surpass_model.cay[i_atom] = real_to_int!(surpass_model.int_to_real, ai.pos.y);
             surpass_model.caz[i_atom] = real_to_int!(surpass_model.int_to_real, ai.pos.z);
             i_atom += 1;
         }
-        assert_eq!(surpass_model.chains_map.len(), chain_sizes.len());
+        assert_eq!(surpass_model.chain_id_by_index.len(), chain_sizes.len());
 
         return surpass_model;
     }
@@ -142,6 +176,19 @@ impl SurpassAlphaSystem {
         
         let strctr = load_pdb_file(fname)?;
         return Ok(Self::from_pdb_structure(&strctr, box_length));
+    }
+
+    pub fn to_pdb_file(&self, fname: &str, if_append: bool) {
+
+        let mut stream = out_writer(&fname, if_append);
+        for i in 0..self.count_atoms() {
+            stream.write(format!("ATOM   {:4} {} GLY {}{:4}    {:8.3}{:8.3}{:8.3}  1.00  1.00           C\n",
+                                 i, " CA ", &self.chain_id(self.chain(i) as usize).unwrap(), i,
+                                 int_to_real!(self.int_to_real, self.cax[i]),
+                                 int_to_real!(self.int_to_real, self.cay[i]),
+                                 int_to_real!(self.int_to_real, self.caz[i])).as_bytes()).expect("Error ocurred while writing PDB content!");
+
+        }
     }
 
     pub fn hinge_move(&mut self) {}
