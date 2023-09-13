@@ -213,9 +213,15 @@ impl Structure {
     /// Provides mutable access to atoms of this  [`Structure`](Structure)
     pub fn atoms_mut(&mut self) -> &mut Vec<PdbAtom> { &mut self.atoms }
 
+    /// Creates a vector that holds string identifiers for all chains of this [`Structure`](Structure)
+    ///
+    /// The vector is sorted alphabetically, regardless the order of chains in this [`Structure`](Structure)
     pub fn chain_ids(&self) -> Vec<String> {
         let uniq: HashSet<&String> = self.atoms.iter().map(|a| &a.chain_id).collect();
-        Vec::from_iter(uniq.iter().map(|s| *s).cloned())
+        let mut output = Vec::from_iter(uniq.iter().map(|s| *s).cloned())
+        output.sort();
+
+        return output;
     }
 
     /// Returns atoms of a given chain
