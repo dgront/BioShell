@@ -218,7 +218,7 @@ impl Structure {
     /// The vector is sorted alphabetically, regardless the order of chains in this [`Structure`](Structure)
     pub fn chain_ids(&self) -> Vec<String> {
         let uniq: HashSet<&String> = self.atoms.iter().map(|a| &a.chain_id).collect();
-        let mut output = Vec::from_iter(uniq.iter().map(|s| *s).cloned())
+        let mut output = Vec::from_iter(uniq.iter().map(|s| *s).cloned());
         output.sort();
 
         return output;
