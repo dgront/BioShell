@@ -1,15 +1,5 @@
 use crate::calc::{Matrix3x3, Vec3};
 
-// pub fn create_stub_(r: &[f64], planar: &[f64], output_chain: &mut [Vec3]) {
-//
-//     if r.len() != 3|| planar.len()  != 3 || output_chain.len() != 3 {
-//         panic!("build_stub() function requires 3-element slices for distances, angles and positions")
-//     }
-//     output_chain[1].set3(r[1] + output_chain[0].x, output_chain[0].y, output_chain[0].z);
-//     let angle = std::f64::consts::PI - planar[2];
-//     output_chain[2].set3(r[2]*angle.cos() + output_chain[1].x,
-//                          r[2]*angle.sin() + output_chain[1].y, output_chain[1].z );
-// }
 
 pub fn create_stub(a: &Vec3, r_ab: f64, r_bc: f64, a_abc: f64, b: &mut Vec3, c: &mut Vec3) {
 
