@@ -17,6 +17,12 @@ ATOM     35  CA  TYR B   3      -7.173  -2.314   2.811  1.00  0.08           C
 ATOM     56  CA  LYS B   4      -3.922  -3.881   4.044  1.00  0.10           C
 ATOM     78  CA  LEU B   5      -0.651  -2.752   2.466  1.00  0.11           C";
 
+macro_rules! assert_delta {
+    ($x:expr, $y:expr, $d:expr) => {
+        assert!(($x-$y).abs() < $d, "a = {}, b = {}", $x, $y)
+    }
+}
+
 #[test]
 fn system_from_pdb() {
 
@@ -29,15 +35,15 @@ fn system_from_pdb() {
     assert_eq!(*model.chain_id(1).unwrap(), String::from("B"));
 
     // --- check coordinates
-    assert!((model.cax(0) + 13.296).abs() < 0.001);
-    assert!((model.cay(0) - 0.028).abs() < 0.001);
-    assert!((model.caz(0) - 3.924).abs() < 0.001);
-    assert!((model.cax(10) + 0.651).abs() < 0.001);
-    assert!((model.cay(10) + 2.752).abs() < 0.001);
-    assert!((model.caz(10) - 2.466).abs() < 0.001);
+    assert_delta!(model.int_to_real(model.cax[0]), -13.296, 0.001);
+    assert_delta!(model.int_to_real(model.cay[0]), 0.028, 0.001);
+    assert_delta!(model.int_to_real(model.caz[0]), 3.924, 0.001);
+    assert_delta!(model.int_to_real(model.cax[10]), -0.651, 0.001);
+    assert_delta!(model.int_to_real(model.cay[10]), -2.752, 0.001);
+    assert_delta!(model.int_to_real(model.caz[10]), 2.466, 0.001);
 
     // --- compute the distance between two atoms
-    assert!((model.distance(0, 1) - 3.812) < 0.01);
+    assert_delta!(model.distance(0, 1), 3.812, 0.01);
 }
 
 #[test]

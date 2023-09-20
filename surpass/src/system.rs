@@ -11,16 +11,17 @@ use bioshell_io::out_writer;
 ///
 #[derive(Clone)]
 pub struct SurpassAlphaSystem {
+    pub cax: Vec<i32>,
+    pub cay: Vec<i32>,
+    pub caz: Vec<i32>,
+    pub sgx: Vec<i32>,
+    pub sgy: Vec<i32>,
+    pub sgz: Vec<i32>,
     chain_indexes: Vec<u16>,
-    cax: Vec<i32>,
-    cay: Vec<i32>,
-    caz: Vec<i32>,
-    sgx: Vec<i32>,
-    sgy: Vec<i32>,
-    sgz: Vec<i32>,
     chain_id_by_index: Vec<String>,
     int_to_real: f64,
-    int_to_real_2: f64
+    int_to_real_2: f64,
+    model_id: usize
 }
 
 /// Converts real coordinate to its integer representation.
@@ -40,7 +41,7 @@ macro_rules! real_to_int {
 ///  - `int_to_real_factor` - factor that converts integer coordinates into real ones in Angstroms
 ///  - `ix` - the integer coordinate value to be converted to f64
 macro_rules! int_to_real {
-    ($int_to_real_factor:expr, $ix:expr) =>   {
+    ($int_to_real_factor: expr, $ix: expr) =>   {
         { $ix as f64 * $int_to_real_factor }
     }
 }
@@ -56,23 +57,22 @@ impl SurpassAlphaSystem {
         let mut s = SurpassAlphaSystem{
             chain_indexes: vec![0; n_atoms], cax: vec![0; n_atoms], cay: vec![0; n_atoms], caz: vec![0; n_atoms],
             sgx: vec![0; n_atoms], sgy: vec![0; n_atoms], sgz: vec![0; n_atoms],
-            chain_id_by_index: vec![String::from("A");n_chains], int_to_real: l, int_to_real_2: l*l
+            chain_id_by_index: vec![String::from("A");n_chains], int_to_real: l, int_to_real_2: l*l,
+            model_id: 0
         };
         // ---------- Initialize coordinates
-        let r = vec![3.8; n_atoms];
-        let mut planar: Vec<f64> = Vec::with_capacity(n_atoms);
-        let mut dihedral: Vec<f64> = Vec::with_capacity(n_atoms);
         let mut rnd = thread_rng();
-        for i in 0..n_atoms {
-            planar.push(rnd.gen_range(90.0_f64.to_radians()..170.0_f64.to_radians()));
-            dihedral.push(rnd.gen_range(-180.0_f64.to_radians()..180.0_f64.to_radians()));
-        }
+        let r = vec![3.8; n_atoms];
+        let mut planar: Vec<f64> = vec![rnd.gen_range(90.0_f64.to_radians()..170.0_f64.to_radians()); n_atoms];
+        let mut dihedral: Vec<f64> = vec![rnd.gen_range(-180.0_f64.to_radians()..180.0_f64.to_radians()); n_atoms];
+        // for _ in 0..n_atoms {
+        //     planar.push(rnd.gen_range(90.0_f64.to_radians()..170.0_f64.to_radians()));
+        //     dihedral.push(rnd.gen_range(-180.0_f64.to_radians()..180.0_f64.to_radians()));
+        // }
         let mut coords = vec![Vec3::default(); n_atoms];
         restore_linear_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &mut coords[0..n_atoms]);
         for i in 0..n_atoms {
-            s.cax[i] = real_to_int!(s.int_to_real, coords[i].x);
-            s.cay[i] = real_to_int!(s.int_to_real, coords[i].y);
-            s.caz[i] = real_to_int!(s.int_to_real, coords[i].z);
+            s.vec3_to_ca(i,&coords[i]);
         }
         // ---------- Assign atoms to chains
         let mut atoms_total = 0;
@@ -85,17 +85,26 @@ impl SurpassAlphaSystem {
         return s;
     }
 
+    #[inline(always)]
+    pub fn int_to_real(&self, v: i32) -> f64 { self.int_to_real * v as f64 }
+
+    #[inline(always)]
+    pub fn real_to_int(&self, v: f64) -> i32 { (v / self.int_to_real) as i32}
+
     /// Returns the number of atoms in this system (of all its chains)
     pub fn count_atoms(&self) -> usize { self.cax.len() }
 
-    /// X coordinate of i-th CA atom
-    pub fn cax(&self, i: usize) -> f64 { int_to_real!(self.int_to_real, self.cax[i]) }
+    pub fn ca_to_vec3(&self, pos: usize) -> Vec3 {
+        Vec3::new(self.int_to_real(self.cax[pos]),
+                  self.int_to_real(self.cay[pos]),
+                  self.int_to_real(self.caz[pos]))
+    }
 
-    /// X coordinate of i-th CA atom
-    pub fn cay(&self, i: usize) -> f64 { int_to_real!(self.int_to_real, self.cay[i]) }
-
-    /// X coordinate of i-th CA atom
-    pub fn caz(&self, i: usize) -> f64 { int_to_real!(self.int_to_real, self.caz[i]) }
+    pub fn vec3_to_ca(&mut self, pos: usize, v: &Vec3) {
+        self.cax[pos] = self.real_to_int(v.x);
+        self.cay[pos] = self.real_to_int(v.y);
+        self.caz[pos] = self.real_to_int(v.z);
+    }
 
     /// Index of a chain a given atom belongs to.
     ///
@@ -161,9 +170,9 @@ impl SurpassAlphaSystem {
         let is_ca = IsCA;
         let mut i_atom = 0;
         for ai in strctr.atoms().iter().filter(|&a| is_ca.check(a)) {
-            surpass_model.cax[i_atom] = real_to_int!(surpass_model.int_to_real, ai.pos.x);
-            surpass_model.cay[i_atom] = real_to_int!(surpass_model.int_to_real, ai.pos.y);
-            surpass_model.caz[i_atom] = real_to_int!(surpass_model.int_to_real, ai.pos.z);
+            surpass_model.cax[i_atom] = surpass_model.real_to_int(ai.pos.x);
+            surpass_model.cay[i_atom] = surpass_model.real_to_int(ai.pos.y);
+            surpass_model.caz[i_atom] = surpass_model.real_to_int(ai.pos.z);
             i_atom += 1;
         }
         assert_eq!(surpass_model.chain_id_by_index.len(), chain_sizes.len());
@@ -180,14 +189,16 @@ impl SurpassAlphaSystem {
     pub fn to_pdb_file(&self, fname: &str, if_append: bool) {
 
         let mut stream = out_writer(&fname, if_append);
+        stream.write(format!("MODEL{:6}\n", self.model_id).as_bytes());
         for i in 0..self.count_atoms() {
             stream.write(format!("ATOM   {:4} {} GLY {}{:4}    {:8.3}{:8.3}{:8.3}  1.00  1.00           C\n",
                                  i, " CA ", &self.chain_id(self.chain(i) as usize).unwrap(), i,
-                                 int_to_real!(self.int_to_real, self.cax[i]),
-                                 int_to_real!(self.int_to_real, self.cay[i]),
-                                 int_to_real!(self.int_to_real, self.caz[i])).as_bytes()).expect("Error ocurred while writing PDB content!");
+                                 self.int_to_real(self.cax[i]),
+                                 self.int_to_real(self.cay[i]),
+                                 self.int_to_real(self.caz[i])).as_bytes()).expect("Error ocurred while writing PDB content!");
 
         }
+        stream.write("ENDMDL\n".as_bytes());
     }
 
     pub fn hinge_move(&mut self) {}
