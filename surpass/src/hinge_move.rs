@@ -1,59 +1,21 @@
-use std::ops::Range;
 use rand::{Rng, thread_rng};
 use bioshell_pdb::calc::{Rototranslation, Vec3};
-use crate::SurpassAlphaSystem;
-
-#[derive(Clone, Debug)]
-pub struct MoveProposal<const N: usize> {
-    pub first_moved_pos: usize,
-    pub moved_cax: [i32; N],
-    pub moved_cay: [i32; N],
-    pub moved_caz: [i32; N],
-}
-
-impl<const N: usize> MoveProposal<N> {
-
-    /// Creates new placeholder for proposed move coordinates, which are all set to 0.
-    pub fn new() -> MoveProposal<N> {
-        MoveProposal{
-            first_moved_pos: 0,
-            moved_cax: [0; N],
-            moved_cay: [0; N],
-            moved_caz: [0; N]
-        }
-    }
-
-    pub fn apply(&self, model: &mut SurpassAlphaSystem) {
-        let mut i_chain = self.first_moved_pos;
-        for i_moved in 0..N {
-            model.cax[i_chain] = self.moved_cax[i_moved];
-            model.cay[i_chain] = self.moved_cay[i_moved];
-            model.caz[i_chain] = self.moved_caz[i_moved];
-            i_chain += 1;
-        }
-    }
-
-}
-
+use crate::{MoveProposal, Mover, SurpassAlphaSystem};
 
 pub struct HingeMove<const HINGE_MOVE_SIZE: usize> {
     max_angle: f64,
     max_range_allowed: f64
 }
 
-impl<const HINGE_MOVE_SIZE: usize> HingeMove<HINGE_MOVE_SIZE> {
-    pub fn new(max_angle: f64, max_range_allowed: f64) -> HingeMove<HINGE_MOVE_SIZE> {
-        HingeMove{ max_angle, max_range_allowed }
-    }
-
-    pub fn propose(&self, system: &SurpassAlphaSystem, proposal: &mut MoveProposal<HINGE_MOVE_SIZE>) {
+impl<const HINGE_MOVE_SIZE: usize> Mover<HINGE_MOVE_SIZE> for HingeMove<HINGE_MOVE_SIZE> {
+    fn propose(&self, system: &SurpassAlphaSystem, proposal: &mut MoveProposal<HINGE_MOVE_SIZE>) {
 
         let mut rng = thread_rng();
         // --- pick end points randomly
         let mut moved_from = 0;
         let mut moved_to = HINGE_MOVE_SIZE + 1;
         loop {
-            moved_from = rng.gen_range(0..system.count_atoms() - HINGE_MOVE_SIZE - 1);
+            moved_from = rng.gen_range(1..system.count_atoms() - HINGE_MOVE_SIZE);
             moved_to = moved_from + HINGE_MOVE_SIZE - 1;
             if system.chain(moved_from) == system.chain(moved_to) { break };
         }
@@ -61,6 +23,14 @@ impl<const HINGE_MOVE_SIZE: usize> HingeMove<HINGE_MOVE_SIZE> {
 
         self.compute_move(system, moved_from, angle, proposal);
     }
+}
+
+impl<const HINGE_MOVE_SIZE: usize> HingeMove<HINGE_MOVE_SIZE> {
+
+    pub fn new(max_angle: f64, max_range_allowed: f64) -> HingeMove<HINGE_MOVE_SIZE> {
+        HingeMove{ max_angle, max_range_allowed }
+    }
+
 
     /// Computes moved coordinates by applying the appropriate rotation.
     ///
@@ -96,30 +66,6 @@ impl<const HINGE_MOVE_SIZE: usize> HingeMove<HINGE_MOVE_SIZE> {
             proposal.moved_cay[i_moved] = system.real_to_int(v.y);
             proposal.moved_caz[i_moved] = system.real_to_int(v.z);
             i_chain += 1;
-        }
-    }
-}
-
-
-
-pub struct IsothermalProtocol {
-    temperature: f64,
-    inner_steps: usize,
-    outer_steps: usize,
-}
-
-impl IsothermalProtocol {
-    pub fn run(&self, system: &mut SurpassAlphaSystem) {
-        let mover = HingeMove::new(30.0_f64.to_radians(), 60.0_f64.to_radians());
-        let mut prp: MoveProposal<8> = MoveProposal::new();
-        for o in 0..self.outer_steps {
-            for i in 0..self.inner_steps {
-                // --- propose a move
-                mover.propose(&system, &mut prp);
-                // --- evaluate deltaE
-                // --- check Metropolis criterion
-                // --- apply the move if successful (40% chance)
-            }
         }
     }
 }

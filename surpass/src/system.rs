@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::ops::Range;
 use rand::{Rng, thread_rng};
 use bioshell_pdb::{load_pdb_file, Structure};
 use bioshell_pdb::calc::Vec3;
@@ -17,6 +18,7 @@ pub struct SurpassAlphaSystem {
     pub sgx: Vec<i32>,
     pub sgy: Vec<i32>,
     pub sgz: Vec<i32>,
+    atoms_for_chain: Vec<Range<usize>>,
     chain_indexes: Vec<u16>,
     chain_id_by_index: Vec<String>,
     int_to_real: f64,
@@ -57,8 +59,8 @@ impl SurpassAlphaSystem {
         let mut s = SurpassAlphaSystem{
             chain_indexes: vec![0; n_atoms], cax: vec![0; n_atoms], cay: vec![0; n_atoms], caz: vec![0; n_atoms],
             sgx: vec![0; n_atoms], sgy: vec![0; n_atoms], sgz: vec![0; n_atoms],
-            chain_id_by_index: vec![String::from("A");n_chains], int_to_real: l, int_to_real_2: l*l,
-            model_id: 0
+            atoms_for_chain: vec![0..0; n_atoms], chain_id_by_index: vec![String::from("A");n_chains],
+            int_to_real: l, int_to_real_2: l*l, model_id: 0
         };
         // ---------- Initialize coordinates
         let mut rnd = thread_rng();
@@ -80,6 +82,7 @@ impl SurpassAlphaSystem {
         for (ic,nc) in chain_lengths.iter().enumerate() {
             for i in 0..*nc { s.chain_indexes[i+ atoms_total] = ic as u16; }
             s.chain_id_by_index[ic] = codes[ic].to_string();
+            s.atoms_for_chain[ic] = atoms_total..atoms_total+nc;
             atoms_total += nc;
         }
         return s;
@@ -111,6 +114,11 @@ impl SurpassAlphaSystem {
     /// # Arguments
     ///  -  `i` - atom index
     pub fn chain(&self, i: usize) -> u16 { self.chain_indexes[i] }
+
+    /// Returns a range of atom indexes for a given chain of this system
+    pub fn chain_atom(&self, ic: usize) -> &Range<usize> {
+            &self.atoms_for_chain[ic]
+    }
 
     /// Returns the number of chains in this system
     pub fn count_chains(&self) -> usize { self.chain_id_by_index.len() }
@@ -205,4 +213,22 @@ impl SurpassAlphaSystem {
     pub fn tail_move(&mut self) {}
 }
 
+/// Creates a system that contains a single chain in an extended conformation
+///
+/// The newly created system will contain a single chain of `n_res` residues, placed in the middle of a cubic periodic box
+/// of length `box_length`. All planar and dihedral angles are set to 120 and 180 degrees, respectively
+pub fn extended_chain(n_res: usize, box_length: f64) -> SurpassAlphaSystem {
+    let mut model = SurpassAlphaSystem::new(&[n_res], box_length);
+    // ---------- Initialize internal coordinates
+    let r= vec![3.8; n_res];
+    let planar = vec![120.0_f64.to_radians(); n_res];
+    let dihedral = vec![180.0_f64.to_radians(); n_res];
+    let mut coords = vec![Vec3::default(); n_res];
+    restore_linear_chain(&r, &planar, &dihedral, &mut coords);
+    for i in 0..n_res {
+        model.vec3_to_ca(i, &coords[i]);
+    }
+
+    return model;
+}
 
