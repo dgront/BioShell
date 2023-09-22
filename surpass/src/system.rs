@@ -43,12 +43,8 @@ impl SurpassAlphaSystem {
         // ---------- Initialize coordinates
         let mut rnd = thread_rng();
         let r = vec![3.8; n_atoms];
-        let mut planar: Vec<f64> = vec![rnd.gen_range(90.0_f64.to_radians()..170.0_f64.to_radians()); n_atoms];
-        let mut dihedral: Vec<f64> = vec![rnd.gen_range(-180.0_f64.to_radians()..180.0_f64.to_radians()); n_atoms];
-        // for _ in 0..n_atoms {
-        //     planar.push(rnd.gen_range(90.0_f64.to_radians()..170.0_f64.to_radians()));
-        //     dihedral.push(rnd.gen_range(-180.0_f64.to_radians()..180.0_f64.to_radians()));
-        // }
+        let mut planar: Vec<f64> = (0..n_atoms).map(|_| rnd.gen_range(90.0_f64.to_radians()..170.0_f64.to_radians())).collect();
+        let mut dihedral: Vec<f64> = (0..n_atoms).map(|_| rnd.gen_range(-180.0_f64.to_radians()..190.0_f64.to_radians())).collect();
         let mut coords = vec![Vec3::default(); n_atoms];
         restore_linear_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &mut coords[0..n_atoms]);
         for i in 0..n_atoms {
@@ -70,7 +66,9 @@ impl SurpassAlphaSystem {
     pub fn int_to_real(&self, v: i32) -> f64 { self.int_to_real * v as f64 }
 
     #[inline(always)]
-    pub fn real_to_int(&self, v: f64) -> i32 { (v / self.int_to_real) as i32 }
+    pub fn real_to_int(&self, v: f64) -> i32 {
+        (v / self.int_to_real).rem_euclid((i32::MAX as f64) + 1.0) as i32
+    }
 
     /// Returns the number of atoms in this system (of all its chains)
     pub fn count_atoms(&self) -> usize { self.cax.len() }
@@ -186,9 +184,6 @@ impl SurpassAlphaSystem {
         }
         stream.write("ENDMDL\n".as_bytes());
     }
-
-    pub fn hinge_move(&mut self) {}
-    pub fn tail_move(&mut self) {}
 }
 
 /// Creates a system that contains a single chain in an extended conformation
