@@ -28,3 +28,7 @@ bioshell-pdb = { path = "../bioshell-pdb" }
 # ---------- Logging
 log = "0.4.0"
 env_logger = "0.9.0"
+
+[[bin]]
+name = "surpass"
+path = "surpass.rs"

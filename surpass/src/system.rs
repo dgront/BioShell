@@ -26,28 +26,6 @@ pub struct SurpassAlphaSystem {
     model_id: usize
 }
 
-/// Converts real coordinate to its integer representation.
-///
-/// # Arguments
-///  - `int_to_real_factor` - factor that converts integer coordinates into real ones in Angstroms
-///  - `x` - the f64 coordinate value to be converted to i32
-macro_rules! real_to_int {
-    ($int_to_real_factor:expr, $x:expr) => {
-        { ($x / $int_to_real_factor) as i32 }
-    }
-}
-
-/// converts real coordinate to its integer representation.
-///
-/// # Arguments
-///  - `int_to_real_factor` - factor that converts integer coordinates into real ones in Angstroms
-///  - `ix` - the integer coordinate value to be converted to f64
-macro_rules! int_to_real {
-    ($int_to_real_factor: expr, $ix: expr) =>   {
-        { $ix as f64 * $int_to_real_factor }
-    }
-}
-
 impl SurpassAlphaSystem {
 
     pub fn new(chain_lengths: &[usize], box_length: f64) -> SurpassAlphaSystem {
@@ -92,7 +70,7 @@ impl SurpassAlphaSystem {
     pub fn int_to_real(&self, v: i32) -> f64 { self.int_to_real * v as f64 }
 
     #[inline(always)]
-    pub fn real_to_int(&self, v: f64) -> i32 { (v / self.int_to_real) as i32}
+    pub fn real_to_int(&self, v: f64) -> i32 { (v / self.int_to_real) as i32 }
 
     /// Returns the number of atoms in this system (of all its chains)
     pub fn count_atoms(&self) -> usize { self.cax.len() }
