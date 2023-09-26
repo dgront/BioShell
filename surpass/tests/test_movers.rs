@@ -39,6 +39,7 @@ mod test_movers {
         make_predefined_hinge_move_N::<8>();
     }
 
+    #[allow(non_snake_case)]
     fn make_predefined_hinge_move_N<const HINGE_MOVE_SIZE: usize>() {
         // --- a single chain of 10 atoms; HINGE_MOVE_SIZE of them will be moved
         let mut model = SurpassAlphaSystem::new(&[10], 100.0);

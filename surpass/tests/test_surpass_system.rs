@@ -51,3 +51,35 @@ fn build_new_system() {
     let model = SurpassAlphaSystem::new(&[10, 10, 10, 10], 100.0);
     model.to_pdb_file("s.pdb", false);
 }
+
+#[test]
+fn test_coords_operations() {
+    let mut model = SurpassAlphaSystem::new(&[3], 100.0);
+
+    model.cax[2] = model.real_to_int(6.0);
+    assert_delta!(model.int_to_real(model.cax[2]), 6.0, 0.00001);
+    // --- set X coordinate beyond the box
+    model.cax[2] = model.real_to_int(51.0);
+    assert_delta!(model.int_to_real(model.cax[2]), -49.0, 0.00001);
+    // --- set X coordinate inside the box but close to the negative end
+    model.cax[2] = model.real_to_int(-49.0);
+    assert_delta!(model.int_to_real(model.cax[2]), -49.0, 0.00001);
+    // --- set X coordinate outside the box on the negative side
+    model.cax[2] = model.real_to_int(-51.0);
+    assert_delta!(model.int_to_real(model.cax[2]), 49.0, 0.00001);
+}
+
+#[test]
+fn test_diatance_evaluation() {
+    let mut model = SurpassAlphaSystem::new(&[3], 100.0);
+    for i in 0..3 {
+        model.cax[i] = model.real_to_int(0.0);
+        model.cay[i] = model.real_to_int(0.0);
+        model.caz[i] = model.real_to_int(0.0);
+    }
+    model.cax[2] = model.real_to_int(6.0);
+    model.cax[1] = model.real_to_int(3.0);
+    model.cay[1] = model.real_to_int(4.0);
+    assert_delta!(model.distance(0,1), 5.0, 0.00001);
+    assert_delta!(model.distance(2,1), 5.0, 0.00001);
+}

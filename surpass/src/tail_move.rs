@@ -54,9 +54,9 @@ impl TailMove {
         let roto = Rototranslation::around_axis(&axis_from, &axis_to, angle);
 
         roto.apply_mut(&mut moved);
-        proposal.moved_cax[0] = system.real_to_int(moved.x);
-        proposal.moved_cay[0] = system.real_to_int(moved.y);
-        proposal.moved_caz[0] = system.real_to_int(moved.z);
+        proposal.cax[0] = system.real_to_int(moved.x);
+        proposal.cay[0] = system.real_to_int(moved.y);
+        proposal.caz[0] = system.real_to_int(moved.z);
         proposal.first_moved_pos = i_moved;
     }
 }

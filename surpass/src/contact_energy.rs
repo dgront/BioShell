@@ -1,8 +1,6 @@
-use crate::{MoveProposal, SurpassAlphaSystem};
+use crate::{MoveProposal, SurpassAlphaSystem, SurpassEnergy};
 
-pub trait SurpassEnergy<const N: usize> {
-    fn evaluate_delta(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N>) -> f64;
-}
+
 
 struct CaContactEnergy {
     e_cont: f64,
@@ -49,8 +47,13 @@ macro_rules! energy_for_distance {
         else { 0.0 }
     }
 }
-impl<const N: usize> SurpassEnergy<N> for CaContactEnergy {
-    fn evaluate_delta(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N>) -> f64 {
+impl SurpassEnergy for CaContactEnergy {
+
+    fn evaluate(&self, conf: &SurpassAlphaSystem) -> f64 {
+        todo!()
+    }
+
+    fn evaluate_delta<const N: usize>(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N>) -> f64 {
 
         let mut en_chain = 0.0;
         let mut en_proposed = 0.0;
@@ -59,13 +62,13 @@ impl<const N: usize> SurpassEnergy<N> for CaContactEnergy {
         for i_moved in 0..N {
             for i_partner in 0..(move_prop.first_moved_pos-1) {
                 en_proposed += 'energy_after: {
-                    let dx = (move_prop.moved_cax[i_moved] - conf.cax[i_partner]) as f64;
+                    let dx = (move_prop.cax[i_moved] - conf.cax[i_partner]) as f64;
                     sum_d2 = dx * dx;
                     if sum_d2 > self.i_max_2 { break 'energy_after 0.0 }
-                    let dy = (move_prop.moved_cay[i_moved] - conf.cay[i_partner]) as f64;
+                    let dy = (move_prop.cay[i_moved] - conf.cay[i_partner]) as f64;
                     sum_d2 += dy * dy;
                     if sum_d2 > self.i_max_2 { break 'energy_after 0.0 }
-                    let dz = (move_prop.moved_caz[i_moved] - conf.caz[i_partner]) as f64;
+                    let dz = (move_prop.caz[i_moved] - conf.caz[i_partner]) as f64;
                     sum_d2 += dz * dz;
                     energy_for_distance!(self, sum_d2)
                 };

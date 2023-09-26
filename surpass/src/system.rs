@@ -67,7 +67,7 @@ impl SurpassAlphaSystem {
 
     #[inline(always)]
     pub fn real_to_int(&self, v: f64) -> i32 {
-        (v / self.int_to_real).rem_euclid((i32::MAX as f64) + 1.0) as i32
+        (v / self.int_to_real).rem_euclid((u32::MAX as f64) + 1.0)  as u32 as i32
     }
 
     /// Returns the number of atoms in this system (of all its chains)

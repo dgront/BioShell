@@ -62,9 +62,9 @@ impl<const HINGE_MOVE_SIZE: usize> HingeMove<HINGE_MOVE_SIZE> {
                    system.int_to_real(system.cay[i_chain]),
                    system.int_to_real(system.caz[i_chain]));
             roto.apply_mut(&mut v);
-            proposal.moved_cax[i_moved] = system.real_to_int( v.x);
-            proposal.moved_cay[i_moved] = system.real_to_int(v.y);
-            proposal.moved_caz[i_moved] = system.real_to_int(v.z);
+            proposal.cax[i_moved] = system.real_to_int( v.x);
+            proposal.cay[i_moved] = system.real_to_int(v.y);
+            proposal.caz[i_moved] = system.real_to_int(v.z);
             i_chain += 1;
         }
     }
