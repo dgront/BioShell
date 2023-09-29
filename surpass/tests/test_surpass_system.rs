@@ -46,10 +46,18 @@ fn system_from_pdb() {
     assert_delta!(model.distance(0, 1), 3.812, 0.01);
 }
 
+/// Make a system of 4 chains and check whether atoms are correctly assigned to chains
 #[test]
-fn build_new_system() {
+fn test_4_chains() {
     let model = SurpassAlphaSystem::new(&[10, 10, 10, 10], 100.0);
-    model.to_pdb_file("s.pdb", false);
+    for i in 0..4 {
+        assert_eq!(model.chain_atoms(i).start, i*10);
+        assert_eq!(model.chain_atoms(i).end, (i+1)*10);
+        for j in i*10..(i+1)*10 {
+            assert_eq!(model.chain(j), i as u16);
+        }
+    }
+    // model.to_pdb_file("s.pdb", false);
 }
 
 #[test]

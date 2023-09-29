@@ -27,6 +27,7 @@ macro_rules! assert_delta {
 #[cfg(test)]
 mod test_movers {
     use bioshell_pdb::calc::Vec3;
+    use bioshell_pdb::load_pdb_file;
     use surpass::{extended_chain, MovedTermini, Mover, TailMove};
     use super::*;
 
@@ -116,11 +117,30 @@ mod test_movers {
             tail.propose(&model, &mut tail_prop);
             tail_prop.apply(&mut model);
             // model.to_pdb_file("tra.pdb", true);
+            check_bond_lengths(&model, 3.8);
         }
 
         for i in 0..N {
             let v = model.ca_to_vec3(i);
             assert_vec3_ne!(v, coords[i], 0.1, format!("atom {} should move",i));
         }
+    }
+
+    fn check_bond_lengths(system: &SurpassAlphaSystem, d: f64) {
+        for i in 1..system.count_atoms() {
+            assert_delta!(system.distance(i-1, i), d, 0.01);
+        }
+    }
+
+    #[test]
+    fn move_for_pdb() {
+        let strctr = load_pdb_file("tests/test_inputs/failing-14.pdb").unwrap();
+        let mut model = SurpassAlphaSystem::from_pdb_structure(&strctr, 50.0);
+        let hinge_mover: HingeMove<4> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+        let mut hinge_prop: MoveProposal<4> = MoveProposal::new();
+
+        hinge_mover.compute_move(&model, 15, -0.6646631249884941, &mut hinge_prop);
+        hinge_prop.apply(&mut model);
+        check_bond_lengths(&model, 3.8);
     }
 }

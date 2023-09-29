@@ -26,6 +26,11 @@ pub struct SurpassAlphaSystem {
     model_id: usize
 }
 
+macro_rules! closest_coordinate {
+    ($self: expr, $cvec: expr, $pos: expr, $ref_pos: expr) => {
+        ($cvec[$pos].wrapping_sub($cvec[$ref_pos]) as f64 + $cvec[$ref_pos] as f64) * $self.int_to_real
+    }
+}
 impl SurpassAlphaSystem {
 
     pub fn new(chain_lengths: &[usize], box_length: f64) -> SurpassAlphaSystem {
@@ -43,8 +48,8 @@ impl SurpassAlphaSystem {
         // ---------- Initialize coordinates
         let mut rnd = thread_rng();
         let r = vec![3.8; n_atoms];
-        let mut planar: Vec<f64> = (0..n_atoms).map(|_| rnd.gen_range(90.0_f64.to_radians()..170.0_f64.to_radians())).collect();
-        let mut dihedral: Vec<f64> = (0..n_atoms).map(|_| rnd.gen_range(-180.0_f64.to_radians()..190.0_f64.to_radians())).collect();
+        let planar: Vec<f64> = (0..n_atoms).map(|_| rnd.gen_range(120.0_f64.to_radians()..170.0_f64.to_radians())).collect();
+        let dihedral: Vec<f64> = (0..n_atoms).map(|_| rnd.gen_range(-180.0_f64.to_radians()..190.0_f64.to_radians())).collect();
         let mut coords = vec![Vec3::default(); n_atoms];
         restore_linear_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &mut coords[0..n_atoms]);
         for i in 0..n_atoms {
@@ -73,10 +78,28 @@ impl SurpassAlphaSystem {
     /// Returns the number of atoms in this system (of all its chains)
     pub fn count_atoms(&self) -> usize { self.cax.len() }
 
+    /// Returns real coordinates of a C-alpha atom.
+    ///
+    /// Coordinates of a `pos` alpha carbon are converted from their integer representation
+    /// to `f64` values and returned as a [`Vec3`](bioshell_pdb::calc::vec3) struct.
     pub fn ca_to_vec3(&self, pos: usize) -> Vec3 {
         Vec3::new(self.int_to_real(self.cax[pos]),
                   self.int_to_real(self.cay[pos]),
                   self.int_to_real(self.caz[pos]))
+    }
+
+    /// Returns real coordinates of an image of a C-alpha atom that is the closest to a given atom.
+    ///
+    /// This method finds the periodic image of a `pos` C-alpha atom that is the closes to the
+    /// `ref_pos` C-alpha atom  and returns its coordinates as a [`Vec3`](bioshell_pdb::calc::vec3) struct.
+    pub fn ca_to_nearest_vec3(&self, pos: usize, ref_pos: usize) -> Vec3 {
+
+        // let mut x = self.cax[pos].wrapping_sub(self.cax[ref_pos]) as f64 + self.cax[ref_pos] as f64;
+        // x = x * self.int_to_real;
+
+        Vec3::new(closest_coordinate!(self, self.cax, pos, ref_pos),
+                  closest_coordinate!(self, self.cay, pos, ref_pos),
+                  closest_coordinate!(self, self.caz, pos, ref_pos))
     }
 
     pub fn vec3_to_ca(&mut self, pos: usize, v: &Vec3) {
@@ -92,7 +115,7 @@ impl SurpassAlphaSystem {
     pub fn chain(&self, i: usize) -> u16 { self.chain_indexes[i] }
 
     /// Returns a range of atom indexes for a given chain of this system
-    pub fn chain_atom(&self, ic: usize) -> &Range<usize> {
+    pub fn chain_atoms(&self, ic: usize) -> &Range<usize> {
             &self.atoms_for_chain[ic]
     }
 

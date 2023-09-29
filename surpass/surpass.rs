@@ -3,7 +3,7 @@ use std::env;
 use clap::{Parser};
 
 use bioshell_pdb::{Structure, load_pdb_file};
-use surpass::{HingeMove, MoveProposal, Mover, SurpassAlphaSystem, TailMove};
+use surpass::{ExcludedVolume, HingeMove, MoveProposal, Mover, SurpassAlphaSystem, SurpassEnergy, TailMove};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -54,18 +54,53 @@ fn main() {
     // --- save the starting conformation, reset the trajectory file
     system.to_pdb_file("tra.pdb", false);
 
+    let excl_vol = ExcludedVolume::new(&system, 4.0, 1.0);
+    println!("{}", excl_vol.evaluate(&system));
     for _outer in 0..args.outer_cycles {
         for _inner in 0..args.inner_cycles {
             for _tail in 0..n_chains*2 {
                 tail_mover.propose(&mut system, &mut tail_prop);
-                tail_prop.apply(&mut system);
+                #[cfg(debug_assertions)]
+                check_bond_lengths(&mut system, &tail_prop, 3.8);
+                if excl_vol.evaluate_delta(&system, &tail_prop) < 0.1 {
+                    tail_prop.apply(&mut system);
+                }
+                // println!("{}", excl_vol.evaluate(&system));
             }
             for _hinge in 0..n_chains*(n_res-2) {
                 hinge_mover.propose(&mut system, &mut hinge_prop);
-                hinge_prop.apply(&mut system);
+                #[cfg(debug_assertions)]
+                check_bond_lengths(&mut system, &hinge_prop, 3.8);
+                if excl_vol.evaluate_delta(&system, &hinge_prop) < 0.1 {
+                    hinge_prop.apply(&mut system);
+                }
+                println!("{}", excl_vol.evaluate(&system));
             }
         }
         // --- append a current conformation to the trajectory file
         system.to_pdb_file("tra.pdb", true);
     }
+}
+
+fn check_bond_lengths<const N: usize>(system: &mut SurpassAlphaSystem, mp: &MoveProposal<N>, d: f64) {
+    let mut backup: MoveProposal<N> = MoveProposal::new();
+    backup.first_moved_pos = mp.first_moved_pos;
+    backup.backup(system);
+    mp.apply(system);
+    for i in 0..system.count_atoms()-1 {
+        let dd = system.distance(i+1, i);
+        if (dd-d).abs() > 0.01 {
+            system.to_pdb_file("after.pdb", false);
+            let av = system.ca_to_vec3(i+1);
+            let prev_av = system.ca_to_vec3(i);
+            backup.apply(system);
+            let bv = system.ca_to_vec3(i+1);
+            let prev_bv = system.ca_to_vec3(i);
+            system.to_pdb_file("before.pdb", false);
+
+            panic!("Broken bond between {} and {}, current length is: {}\nPos. before: {} {}\nPos. after: {} {}\n",
+                   i-1, i, dd, &prev_bv, &bv, &prev_av, &av);
+        }
+    }
+    backup.apply(system);
 }

@@ -34,4 +34,13 @@ impl<const N: usize> MoveProposal<N> {
         }
     }
 
+    pub fn backup(&mut self, model: &SurpassAlphaSystem) {
+        let mut i_chain = self.first_moved_pos;
+        for i_moved in 0..N {
+            self.cax[i_moved] = model.cax[i_chain];
+            self.cay[i_moved] = model.cay[i_chain];
+            self.caz[i_moved] = model.caz[i_chain];
+            i_chain += 1;
+        }
+    }
 }

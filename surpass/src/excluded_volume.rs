@@ -14,6 +14,21 @@ impl ExcludedVolume {
 
         ExcludedVolume{ e_penalty: e_rep, r_rep, i_rep_2}
     }
+
+    /// Returns the excluded volume distance that is currently used
+    pub fn repulsion_cutoff(&self) -> f64 { self.r_rep }
+
+    /// Returns the excluded volume penalty value that is currently used
+    pub fn repulsion_energy(&self) -> f64 { self.e_penalty }
+
+    /// Sets the new value for the excluded volume distance.
+    ///
+    /// A reference to the simulated `system` must be provided since the [`ExcludedVolume`] class
+    /// needs to convert a double distance value to its integer representation.
+    pub fn set_repulsion_cutoff(&mut self, system: &SurpassAlphaSystem, rcut: f64) {
+        self.r_rep = rcut;
+        self.i_rep_2 = system.real_to_int(rcut) as f64 * system.real_to_int(rcut) as f64;;
+    }
 }
 
 macro_rules! excluded_volume_kernel {
@@ -51,19 +66,19 @@ impl SurpassEnergy for ExcludedVolume {
         let mut en_proposed = 0.0;
         let mut i_chain = move_prop.first_moved_pos;
         for i_moved in 0..N {
-            for i_partner in 0..(move_prop.first_moved_pos-1) {
-                excluded_volume_kernel!(self, i_partner, conf, i_moved, move_prop, en_proposed);
-                excluded_volume_kernel!(self, i_partner, conf, i_chain, conf, en_chain);
-                i_chain += 1;
+            for i_partner in 0..(move_prop.first_moved_pos as i32 - 1) {
+                excluded_volume_kernel!(self, i_partner as usize, conf, i_moved, move_prop, en_proposed);
+                excluded_volume_kernel!(self, i_partner as usize, conf, i_chain, conf, en_chain);
             }
+            i_chain += 1;
         }
         let mut i_chain = move_prop.first_moved_pos;
         for i_moved in 0..N {
             for i_partner in (move_prop.first_moved_pos+2)..conf.count_atoms() {
                 excluded_volume_kernel!(self, i_partner, conf, i_moved, move_prop, en_proposed);
                 excluded_volume_kernel!(self, i_partner, conf, i_chain, conf, en_chain);
-                i_chain += 1;
             }
+            i_chain += 1;
         }
 
         return en_proposed - en_chain;

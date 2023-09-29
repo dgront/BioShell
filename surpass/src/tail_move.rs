@@ -39,15 +39,19 @@ impl TailMove {
     pub fn compute_move(&self, system: &SurpassAlphaSystem, which_chain: usize, which_tail: MovedTermini,
                         angle: f64, proposal: &mut MoveProposal<1>) {
 
-        let r = system.chain_atom(which_chain);
-        let (axis_from, axis_to, mut moved, i_moved) = match which_tail {
+        let r = system.chain_atoms(which_chain);
+        let (axis_from, axis_to, mut moved, i_moved, i_referenced) = match which_tail {
             CTerminal => {
-                (system.ca_to_vec3(r.end-3), system.ca_to_vec3(r.end-2),
-                 system.ca_to_vec3(r.end-1), r.end-1)
+                (system.ca_to_nearest_vec3(r.end-3, r.end-2),
+                 system.ca_to_vec3(r.end-2),
+                 system.ca_to_nearest_vec3(r.end-1, r.end-2),
+                 r.end-1, r.end - 2)
             }
             NTerminal => {
-                (system.ca_to_vec3(r.start + 1), system.ca_to_vec3(r.start + 2),
-                 system.ca_to_vec3(r.start), r.start)
+                (system.ca_to_vec3(r.start + 1),
+                 system.ca_to_nearest_vec3(r.start+2, r.start+1),
+                 system.ca_to_nearest_vec3(r.start, r.start+1),
+                 r.start, r.start + 1)
             }
         };
         // --- prepare rototranslation

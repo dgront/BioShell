@@ -1,3 +1,4 @@
+use log::{debug, info};
 use rand::{Rng, thread_rng};
 use bioshell_pdb::calc::{Rototranslation, Vec3};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
@@ -12,15 +13,15 @@ impl<const HINGE_MOVE_SIZE: usize> Mover<HINGE_MOVE_SIZE> for HingeMove<HINGE_MO
 
         let mut rng = thread_rng();
         // --- pick end points randomly
-        let mut moved_from = 0;
-        let mut moved_to = HINGE_MOVE_SIZE + 1;
+        let mut moved_from;
+        let mut moved_to;
         loop {
             moved_from = rng.gen_range(1..system.count_atoms() - HINGE_MOVE_SIZE);
             moved_to = moved_from + HINGE_MOVE_SIZE - 1;
             if system.chain(moved_from) == system.chain(moved_to) { break };
         }
         let angle = rng.gen_range(-self.max_angle..self.max_angle);
-
+        debug!("hinge move of {}:{} by {}", moved_from, moved_from+HINGE_MOVE_SIZE-1, angle);
         self.compute_move(system, moved_from, angle, proposal);
     }
 }
@@ -51,16 +52,14 @@ impl<const HINGE_MOVE_SIZE: usize> HingeMove<HINGE_MOVE_SIZE> {
         // -------------------------
         // --- prepare rototranslation
         let start_vector: Vec3 = system.ca_to_vec3(moved_from - 1);
-        let end_vector: Vec3 = system.ca_to_vec3(moved_from + HINGE_MOVE_SIZE);
+        let end_vector: Vec3 = system.ca_to_nearest_vec3(moved_from + HINGE_MOVE_SIZE, moved_from - 1);
         let roto = Rototranslation::around_axis(&start_vector, &end_vector, angle);
         // --- rotate atoms around the axis and copy outcome to a proposal
         proposal.first_moved_pos = moved_from;
-        let mut v= Vec3::default();
+        let mut v: Vec3;
         let mut i_chain = moved_from;
         for i_moved in 0..HINGE_MOVE_SIZE {
-            v.set3(system.int_to_real(system.cax[i_chain]),
-                   system.int_to_real(system.cay[i_chain]),
-                   system.int_to_real(system.caz[i_chain]));
+            v = system.ca_to_nearest_vec3(i_chain, moved_from - 1);
             roto.apply_mut(&mut v);
             proposal.cax[i_moved] = system.real_to_int( v.x);
             proposal.cay[i_moved] = system.real_to_int(v.y);
