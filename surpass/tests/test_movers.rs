@@ -93,7 +93,7 @@ mod test_movers {
 
     #[test]
     fn move_chain() {
-        const N: usize = 20;
+        const N: usize = 10;
 
         let mut model = SurpassAlphaSystem::new(&[N], 1000.0);
         // ---------- Initialize internal coordinates
@@ -111,7 +111,7 @@ mod test_movers {
         let mut hinge_prop: MoveProposal<4> = MoveProposal::new();
         let mut tail_prop: MoveProposal<1> = MoveProposal::new();
         // model.to_pdb_file("tra.pdb", false);
-        for i in 0..10000 {
+        for i in 0..100000 {
             hinge.propose(&model, &mut hinge_prop);
             hinge_prop.apply(&mut model);
             tail.propose(&model, &mut tail_prop);
