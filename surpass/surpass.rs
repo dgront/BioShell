@@ -54,10 +54,10 @@ fn main() {
     // --- save the starting conformation, reset the trajectory file
     system.to_pdb_file("tra.pdb", false);
 
-    let excl_vol = ExcludedVolume::new(&system, 4.0, 1.0);
+    let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
     println!("{}", excl_vol.evaluate(&system));
-    for _outer in 0..args.outer_cycles {
-        for _inner in 0..args.inner_cycles {
+    for outer in 0..args.outer_cycles {
+        for inner in 0..args.inner_cycles {
             for _tail in 0..n_chains*2 {
                 tail_mover.propose(&mut system, &mut tail_prop);
                 #[cfg(debug_assertions)]
@@ -71,15 +71,16 @@ fn main() {
                 hinge_mover.propose(&mut system, &mut hinge_prop);
                 #[cfg(debug_assertions)]
                 check_bond_lengths(&mut system, &hinge_prop, 3.8);
-                if excl_vol.evaluate_delta(&system, &hinge_prop) < 0.1 {
+                let delta_e = excl_vol.evaluate_delta(&system, &hinge_prop);
+                if delta_e < 0.1 {
                     hinge_prop.apply(&mut system);
                     let en_after = excl_vol.evaluate(&system);
                     #[cfg(debug_assertions)]
-                    check_delta_en(en_before, en_after, excl_vol.evaluate_delta(&system, &hinge_prop));
+                    check_delta_en(en_before, en_after, delta_e);
                 }
-                println!("{}", excl_vol.evaluate(&system));
             }
         }
+        println!("{} {}", outer, excl_vol.evaluate(&system));
         // --- append a current conformation to the trajectory file
         system.to_pdb_file("tra.pdb", true);
     }
@@ -91,6 +92,7 @@ fn check_bond_lengths<const N: usize>(system: &mut SurpassAlphaSystem, mp: &Move
     backup.backup(system);
     mp.apply(system);
     for i in 0..system.count_atoms()-1 {
+        if system.chain(i) != system.chain(i+1) { continue }
         let dd = system.distance(i+1, i);
         if (dd-d).abs() > 0.01 {
             system.to_pdb_file("after.pdb", false);
@@ -102,7 +104,7 @@ fn check_bond_lengths<const N: usize>(system: &mut SurpassAlphaSystem, mp: &Move
             system.to_pdb_file("before.pdb", false);
 
             panic!("Broken bond between {} and {}, current length is: {}\nPos. before: {} {}\nPos. after: {} {}\n",
-                   i-1, i, dd, &prev_bv, &bv, &prev_av, &av);
+                   i, i+1, dd, &prev_bv, &bv, &prev_av, &av);
         }
     }
     backup.apply(system);

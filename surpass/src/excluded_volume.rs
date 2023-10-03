@@ -5,8 +5,6 @@ pub struct ExcludedVolume {
     e_penalty: f64,
     r_rep: f64,
     i_rep_2: f64,
-    /// minimium |i-j| where excluded volume is evaluated; delta_ij=2 excludes just direct neighbors in a chain
-    delta_ij: i32
 }
 
 impl ExcludedVolume {
@@ -14,7 +12,7 @@ impl ExcludedVolume {
         let mut i_rep_2 = system.real_to_int(r_rep) as f64;
         i_rep_2 *= i_rep_2;
 
-        ExcludedVolume{ e_penalty: e_rep, r_rep, i_rep_2, delta_ij:2}
+        ExcludedVolume{ e_penalty: e_rep, r_rep, i_rep_2}
     }
 
     /// Returns the excluded volume distance that is currently used
@@ -54,8 +52,8 @@ macro_rules! excluded_volume_kernel {
 impl SurpassEnergy for ExcludedVolume {
     fn evaluate(&self, conf: &SurpassAlphaSystem) -> f64 {
         let mut e_total = 0.0;
-        for i in self.delta_ij..conf.count_atoms() as i32 {
-            for j in 0..i-self.delta_ij + 1 {
+        for i in 1..conf.count_atoms() as i32 {
+            for j in 0..i {
                 excluded_volume_kernel!(self, i as usize, conf, j as usize, conf, e_total);
                 // println!("{} {} {}", i, j, e_total);
             }
@@ -69,7 +67,7 @@ impl SurpassEnergy for ExcludedVolume {
         let mut en_proposed = 0.0;
         let mut i_chain = move_prop.first_moved_pos as i32;
         for i_moved in 0..N {
-            for i_partner in 0..0.max(i_chain - self.delta_ij + 1) {
+            for i_partner in 0..move_prop.first_moved_pos as i32 {
                 excluded_volume_kernel!(self, i_partner as usize, conf, i_moved, move_prop, en_proposed);
                 excluded_volume_kernel!(self, i_partner as usize, conf, i_chain as usize, conf, en_chain);
                 // println!("{} {} {}   {} {}", i_partner, i_moved, i_chain, en_chain, en_proposed);
@@ -78,7 +76,7 @@ impl SurpassEnergy for ExcludedVolume {
         }
         let mut i_chain = move_prop.first_moved_pos as i32;
         for i_moved in 0..N {
-            for i_partner in (conf.count_atoms() as i32).min(i_chain+self.delta_ij)..conf.count_atoms() as i32 {
+            for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_atoms() as i32 {
                 excluded_volume_kernel!(self, i_partner as usize, conf, i_moved, move_prop, en_proposed);
                 excluded_volume_kernel!(self, i_partner as usize, conf, i_chain as usize, conf, en_chain);
                 // println!("{} {} {}   {} {}", i_partner, i_moved, i_chain, en_chain, en_proposed);

@@ -94,9 +94,6 @@ impl SurpassAlphaSystem {
     /// `ref_pos` C-alpha atom  and returns its coordinates as a [`Vec3`](bioshell_pdb::calc::vec3) struct.
     pub fn ca_to_nearest_vec3(&self, pos: usize, ref_pos: usize) -> Vec3 {
 
-        // let mut x = self.cax[pos].wrapping_sub(self.cax[ref_pos]) as f64 + self.cax[ref_pos] as f64;
-        // x = x * self.int_to_real;
-
         Vec3::new(closest_coordinate!(self, self.cax, pos, ref_pos),
                   closest_coordinate!(self, self.cay, pos, ref_pos),
                   closest_coordinate!(self, self.caz, pos, ref_pos))

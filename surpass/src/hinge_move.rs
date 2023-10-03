@@ -18,7 +18,7 @@ impl<const HINGE_MOVE_SIZE: usize> Mover<HINGE_MOVE_SIZE> for HingeMove<HINGE_MO
         loop {
             moved_from = rng.gen_range(1..system.count_atoms() - HINGE_MOVE_SIZE);
             moved_to = moved_from + HINGE_MOVE_SIZE - 1;
-            if system.chain(moved_from) == system.chain(moved_to) { break };
+            if system.chain(moved_from-1) == system.chain(moved_to+1) { break };
         }
         let angle = rng.gen_range(-self.max_angle..self.max_angle);
         debug!("hinge move of {}:{} by {}", moved_from, moved_from+HINGE_MOVE_SIZE-1, angle);
