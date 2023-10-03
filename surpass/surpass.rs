@@ -65,14 +65,17 @@ fn main() {
                 if excl_vol.evaluate_delta(&system, &tail_prop) < 0.1 {
                     tail_prop.apply(&mut system);
                 }
-                // println!("{}", excl_vol.evaluate(&system));
             }
             for _hinge in 0..n_chains*(n_res-2) {
+                let en_before = excl_vol.evaluate(&system);
                 hinge_mover.propose(&mut system, &mut hinge_prop);
                 #[cfg(debug_assertions)]
                 check_bond_lengths(&mut system, &hinge_prop, 3.8);
                 if excl_vol.evaluate_delta(&system, &hinge_prop) < 0.1 {
                     hinge_prop.apply(&mut system);
+                    let en_after = excl_vol.evaluate(&system);
+                    #[cfg(debug_assertions)]
+                    check_delta_en(en_before, en_after, excl_vol.evaluate_delta(&system, &hinge_prop));
                 }
                 println!("{}", excl_vol.evaluate(&system));
             }
@@ -103,4 +106,10 @@ fn check_bond_lengths<const N: usize>(system: &mut SurpassAlphaSystem, mp: &Move
         }
     }
     backup.apply(system);
+}
+
+fn check_delta_en(en_before: f64, en_after: f64, delta: f64) {
+    if (en_after-en_before-delta).abs() > 0.001 {
+        panic!("Incorrect energy change: global {} vs delta {}\n", en_after-en_before, delta);
+    }
 }
