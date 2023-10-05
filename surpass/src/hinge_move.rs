@@ -44,7 +44,7 @@ impl<const HINGE_MOVE_SIZE: usize> HingeMove<HINGE_MOVE_SIZE> {
     ///  * `proposal` - object used to store the resulting (rotated) coordinates
     pub fn compute_move(&self, system: &SurpassAlphaSystem, moved_from: usize, angle: f64, proposal: &mut MoveProposal<HINGE_MOVE_SIZE>) {
 
-        // -------------------------
+        // ------ Working example ----
         // Moving 8 atoms indexed from 1 to 8 right-exclusive (i.e. moved_from = 1) assumes:
         //  - whole window is 10 atoms long
         //  - pivot positions are 0 and 9

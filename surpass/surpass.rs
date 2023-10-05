@@ -7,13 +7,13 @@ use surpass::{ExcludedVolume, HingeMove, MoveProposal, Mover, SurpassAlphaSystem
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
-/// Gaussian Mixture Model (GMM) estimation
-/// say gmm -h to see options
+/// Surpass-alpha model for coarse grained simulations of proteins
+/// say surpass -h to see options
 struct Args {
-    /// file with N-dimensional input observations: N columns of real values
+    /// starting conformation in the PDB format
     #[clap(short, long, default_value = "", short='f')]
     infile: String,
-    /// number of N-dimensional normal distributions to be inferred
+    /// number of chains of the simulated system
     #[clap(short, long, default_value = "1", short='c')]
     n_chains: usize,
     /// number of atoms in every chain of the system; the total number of residues is n_chains x n_res_in_chain
@@ -56,6 +56,7 @@ fn main() {
 
     let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
     println!("{}", excl_vol.evaluate(&system));
+    let mut _en_before: f64; // --- for debugging
     for outer in 0..args.outer_cycles {
         for inner in 0..args.inner_cycles {
             for _tail in 0..n_chains*2 {
@@ -67,16 +68,18 @@ fn main() {
                 }
             }
             for _hinge in 0..n_chains*(n_res-2) {
-                let en_before = excl_vol.evaluate(&system);
                 hinge_mover.propose(&mut system, &mut hinge_prop);
-                #[cfg(debug_assertions)]
-                check_bond_lengths(&mut system, &hinge_prop, 3.8);
                 let delta_e = excl_vol.evaluate_delta(&system, &hinge_prop);
                 if delta_e < 0.1 {
+                    #[cfg(debug_assertions)] {
+                        _en_before = excl_vol.evaluate(&system);
+                        check_bond_lengths(&mut system, &hinge_prop, 3.8);
+                    }
                     hinge_prop.apply(&mut system);
-                    let en_after = excl_vol.evaluate(&system);
-                    #[cfg(debug_assertions)]
-                    check_delta_en(en_before, en_after, delta_e);
+                    #[cfg(debug_assertions)] {
+                        let en_after = excl_vol.evaluate(&system);
+                        check_delta_en(_en_before, en_after, delta_e);
+                    }
                 }
             }
         }
