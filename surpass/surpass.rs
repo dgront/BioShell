@@ -3,7 +3,7 @@ use std::env;
 use clap::{Parser};
 
 use bioshell_pdb::{Structure, load_pdb_file};
-use surpass::{ExcludedVolume, HingeMove, MoveProposal, Mover, SurpassAlphaSystem, SurpassEnergy, TailMove};
+use surpass::{CaContactEnergy, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -55,7 +55,13 @@ fn main() {
     system.to_pdb_file("tra.pdb", false);
 
     let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
-    println!("{}", excl_vol.evaluate(&system));
+    let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol.repulsion_cutoff(), excl_vol);
+
+    // let cntcts = CaContactEnergy::new(&system, 10.0, -1.0, 3.7, 4.0, 5.0);
+    // let energy: NonBondedEnergy<CaContactEnergy> = NonBondedEnergy::new(&system, 3.7, cntcts);
+
+
+    println!("initial energy: {}", energy.evaluate(&system));
     let mut _en_before: f64; // --- for debugging
     for outer in 0..args.outer_cycles {
         for inner in 0..args.inner_cycles {
@@ -63,27 +69,27 @@ fn main() {
                 tail_mover.propose(&mut system, &mut tail_prop);
                 #[cfg(debug_assertions)]
                 check_bond_lengths(&mut system, &tail_prop, 3.8);
-                if excl_vol.evaluate_delta(&system, &tail_prop) < 0.1 {
+                if energy.evaluate_delta(&system, &tail_prop) < 0.1 {
                     tail_prop.apply(&mut system);
                 }
             }
             for _hinge in 0..n_chains*(n_res-2) {
                 hinge_mover.propose(&mut system, &mut hinge_prop);
-                let delta_e = excl_vol.evaluate_delta(&system, &hinge_prop);
+                let delta_e = energy.evaluate_delta(&system, &hinge_prop);
                 if delta_e < 0.1 {
                     #[cfg(debug_assertions)] {
-                        _en_before = excl_vol.evaluate(&system);
+                        _en_before = energy.evaluate(&system);
                         check_bond_lengths(&mut system, &hinge_prop, 3.8);
                     }
                     hinge_prop.apply(&mut system);
                     #[cfg(debug_assertions)] {
-                        let en_after = excl_vol.evaluate(&system);
+                        let en_after = energy.evaluate(&system);
                         check_delta_en(_en_before, en_after, delta_e);
                     }
                 }
             }
         }
-        println!("{} {}", outer, excl_vol.evaluate(&system));
+        println!("{} {}", outer, energy.evaluate(&system));
         // --- append a current conformation to the trajectory file
         system.to_pdb_file("tra.pdb", true);
     }

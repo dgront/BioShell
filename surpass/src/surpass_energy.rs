@@ -5,3 +5,8 @@ pub trait SurpassEnergy {
     fn evaluate(&self, conf: &SurpassAlphaSystem) -> f64;
     fn evaluate_delta<const N: usize>(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N>) -> f64;
 }
+
+/// Defines the non-bonded energy kernel that evaluates energy between two atoms
+pub trait NonBondedEnergyKernel {
+    fn energy_for_distance_squared(&self, i2: f64) -> f64;
+}
