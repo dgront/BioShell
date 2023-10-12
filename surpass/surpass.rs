@@ -59,11 +59,11 @@ fn main() {
     // --- save the starting conformation, reset the trajectory file
     system.to_pdb_file("tra.pdb", false);
 
-    // let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
-    // let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol.repulsion_cutoff(), excl_vol);
+    let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
+    let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol.repulsion_cutoff(), excl_vol);
 
-    let cntcts = CaContactEnergy::new(&system, 10.0, -1.0, 3.7, 4.0, 5.0);
-    let energy: NonBondedEnergy<CaContactEnergy> = NonBondedEnergy::new(&system, 3.7, cntcts);
+    // let cntcts = CaContactEnergy::new(&system, 10.0, -1.0, 3.7, 4.0, 5.0);
+    // let energy: NonBondedEnergy<CaContactEnergy> = NonBondedEnergy::new(&system, cntcts);
 
     let mut rnd = SmallRng::seed_from_u64(42);
 

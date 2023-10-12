@@ -1,7 +1,8 @@
+use rand::Rng;
 use crate::SurpassAlphaSystem;
 
 pub trait Mover<const N_MOVED: usize> {
-    fn propose(&self, system: &SurpassAlphaSystem, proposal: &mut MoveProposal<N_MOVED>);
+    fn propose<R: Rng>(&self, system: &SurpassAlphaSystem, rndgen: &mut R, proposal: &mut MoveProposal<N_MOVED>);
 }
 
 #[derive(Clone, Debug)]

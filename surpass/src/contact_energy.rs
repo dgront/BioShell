@@ -1,6 +1,5 @@
+use log::debug;
 use crate::{NonBondedEnergyKernel, SurpassAlphaSystem};
-
-
 
 pub struct CaContactEnergy {
     e_cont: f64,
@@ -32,11 +31,13 @@ impl NonBondedEnergyKernel for CaContactEnergy {
     fn energy_for_distance_squared(&self, i2: f64) -> f64 {
         if i2 >= self.i_max_2 { 0.0 }
         else {
-            if i2 < self.i_rep_2 { self.r_rep}
+            if i2 < self.i_rep_2 { self.e_rep}
             else {
                 if i2 > self.i_min_2 { self.e_cont }
                 else { 0.0 }
             }
         }
     }
+
+    fn distance_cutoff(&self) -> f64 { self.r_max }
 }

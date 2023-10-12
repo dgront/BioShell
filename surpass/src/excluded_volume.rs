@@ -38,4 +38,6 @@ impl NonBondedEnergyKernel for ExcludedVolume {
         if i2 < self.i_rep_2 { self.e_penalty }
         else { 0.0 }
     }
+
+    fn distance_cutoff(&self) -> f64 { self.r_rep }
 }

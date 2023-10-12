@@ -7,8 +7,8 @@ pub struct NonBondedEnergy<E: NonBondedEnergyKernel> {
 }
 
 impl<E: NonBondedEnergyKernel> NonBondedEnergy<E> {
-    pub fn new(system: &SurpassAlphaSystem, cutoff: f64, energy_kernel: E) -> NonBondedEnergy<E> {
-        let mut i_rep_2 = system.real_to_int(cutoff) as f64;
+    pub fn new(system: &SurpassAlphaSystem, energy_kernel: E) -> NonBondedEnergy<E> {
+        let mut i_rep_2 = system.real_to_int(energy_kernel.distance_cutoff()) as f64;
         i_rep_2 *= i_rep_2;
 
         NonBondedEnergy{ i_cutoff_2: i_rep_2, energy_kernel}
@@ -26,7 +26,6 @@ macro_rules! pairwise_energy {
             if sum_d2 > $self.i_cutoff_2 { break 'energy_after 0.0 }
             let dz = ($i_coords.caz[$i].wrapping_sub($j_coords.caz[$j])) as f64;
             sum_d2 += dz * dz;
-
             $self.energy_kernel.energy_for_distance_squared(sum_d2)
         };
     }
@@ -38,7 +37,6 @@ impl<E: NonBondedEnergyKernel> SurpassEnergy for NonBondedEnergy<E> {
         for i in 1..conf.count_atoms() as i32 {
             for j in 0..i {
                 pairwise_energy!(self, i as usize, conf, j as usize, conf, e_total);
-                // println!("{} {} {}", i, j, e_total);
             }
         }
         return e_total;
@@ -53,7 +51,7 @@ impl<E: NonBondedEnergyKernel> SurpassEnergy for NonBondedEnergy<E> {
             for i_partner in 0..move_prop.first_moved_pos as i32 {
                 pairwise_energy!(self, i_partner as usize, conf, i_moved, move_prop, en_proposed);
                 pairwise_energy!(self, i_partner as usize, conf, i_chain as usize, conf, en_chain);
-                // println!("{} {} {}   {} {}", i_partner, i_moved, i_chain, en_chain, en_proposed);
+                // eprintln!("{} {} {}   {} {}", i_partner, i_moved, i_chain, en_chain, en_proposed);
             }
             i_chain += 1;
         }
@@ -62,7 +60,7 @@ impl<E: NonBondedEnergyKernel> SurpassEnergy for NonBondedEnergy<E> {
             for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_atoms() as i32 {
                 pairwise_energy!(self, i_partner as usize, conf, i_moved, move_prop, en_proposed);
                 pairwise_energy!(self, i_partner as usize, conf, i_chain as usize, conf, en_chain);
-                // println!("{} {} {}   {} {}", i_partner, i_moved, i_chain, en_chain, en_proposed);
+                // eprintln!("{} {} {}   {} {}", i_partner, i_moved, i_chain, en_chain, en_proposed);
             }
             i_chain += 1;
         }
