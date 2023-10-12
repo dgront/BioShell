@@ -1,6 +1,6 @@
 use std::io::Write;
 use std::ops::Range;
-use rand::{Rng, thread_rng};
+use rand::{Rng};
 use bioshell_pdb::{load_pdb_file, Structure};
 use bioshell_pdb::calc::Vec3;
 use bioshell_pdb::nerf::restore_linear_chain;
@@ -45,25 +45,7 @@ impl SurpassAlphaSystem {
             atoms_for_chain: vec![0..0; n_atoms], chain_id_by_index: vec![String::from("A");n_chains],
             int_to_real: l, int_to_real_2: l*l, model_id: 0
         };
-        // ---------- Initialize coordinates
-        let mut rnd = thread_rng();
-        let r = vec![3.8; n_atoms];
-        let planar: Vec<f64> = (0..n_atoms).map(|_| rnd.gen_range(120.0_f64.to_radians()..170.0_f64.to_radians())).collect();
-        let dihedral: Vec<f64> = (0..n_atoms).map(|_| rnd.gen_range(-180.0_f64.to_radians()..190.0_f64.to_radians())).collect();
-        let mut coords = vec![Vec3::default(); n_atoms];
-        restore_linear_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &mut coords[0..n_atoms]);
-        for i in 0..n_atoms {
-            s.vec3_to_ca(i,&coords[i]);
-        }
-        // ---------- Assign atoms to chains
-        let mut atoms_total = 0;
-        let codes: Vec<char> = ('A'..'Z').collect();
-        for (ic,nc) in chain_lengths.iter().enumerate() {
-            for i in 0..*nc { s.chain_indexes[i+ atoms_total] = ic as u16; }
-            s.chain_id_by_index[ic] = codes[ic].to_string();
-            s.atoms_for_chain[ic] = atoms_total..atoms_total+nc;
-            atoms_total += nc;
-        }
+
         return s;
     }
 
@@ -182,6 +164,30 @@ impl SurpassAlphaSystem {
         assert_eq!(surpass_model.chain_id_by_index.len(), chain_sizes.len());
 
         return surpass_model;
+    }
+
+    pub fn make_random<R: Rng>(chain_lengths: &[usize], box_length: f64, rnd_gen: &mut R) -> SurpassAlphaSystem {
+        let mut s = SurpassAlphaSystem::new(chain_lengths, box_length);
+        let n_atoms = s.count_atoms();
+        // ---------- Initialize coordinates
+        let r = vec![3.8; n_atoms];
+        let planar: Vec<f64> = (0..n_atoms).map(|_| rnd_gen.gen_range(120.0_f64.to_radians()..170.0_f64.to_radians())).collect();
+        let dihedral: Vec<f64> = (0..n_atoms).map(|_| rnd_gen.gen_range(-180.0_f64.to_radians()..190.0_f64.to_radians())).collect();
+        let mut coords = vec![Vec3::default(); n_atoms];
+        restore_linear_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &mut coords[0..n_atoms]);
+        for i in 0..n_atoms {
+            s.vec3_to_ca(i,&coords[i]);
+        }
+        // ---------- Assign atoms to chains
+        let mut atoms_total = 0;
+        let codes: Vec<char> = ('A'..'Z').collect();
+        for (ic,nc) in chain_lengths.iter().enumerate() {
+            for i in 0..*nc { s.chain_indexes[i+ atoms_total] = ic as u16; }
+            s.chain_id_by_index[ic] = codes[ic].to_string();
+            s.atoms_for_chain[ic] = atoms_total..atoms_total+nc;
+            atoms_total += nc;
+        }
+        return s;
     }
 
     pub fn from_pdb_file(fname: &str, box_length: f64) -> Result<SurpassAlphaSystem, ParseError> {

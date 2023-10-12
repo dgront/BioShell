@@ -1,6 +1,8 @@
 use std::env;
 
 use clap::{Parser};
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
 use surpass::{CaContactEnergy, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
@@ -17,10 +19,10 @@ struct Args {
     #[clap(short, long, default_value = "1", short='c')]
     n_chains: usize,
     /// number of atoms in every chain of the system; the total number of residues is n_chains x n_res_in_chain
-    #[clap(long, default_value = "100", short='r')]
+    #[clap(long, default_value = "10", short='r')]
     n_res_in_chain: usize,
     /// number of inner Monte Carlo cycles
-    #[clap(long, default_value = "100", short='i')]
+    #[clap(long, default_value = "10", short='i')]
     inner_cycles: usize,
     /// number of inner Monte Carlo cycles
     #[clap(long, default_value = "100", short='o')]
@@ -43,8 +45,11 @@ fn main() {
     // let mut strctr = load_pdb_file(&args[1]).unwrap();
 
     let n_res = args.n_res_in_chain;
+    if n_res < 4 { panic!("Simulated chain must be at leat 4 residues long!") }
     let n_chains = args.n_chains;
-    let mut system = SurpassAlphaSystem::new(&vec![n_res; n_chains], args.box_size);
+    if n_res < 4 { panic!("Simulated system must contain at least one chain!") }
+    let mut rnd = SmallRng::seed_from_u64(42);
+    let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], args.box_size, &mut rnd);
 
     let hinge_mover: HingeMove<4> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
     let tail_mover: TailMove = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
@@ -54,11 +59,13 @@ fn main() {
     // --- save the starting conformation, reset the trajectory file
     system.to_pdb_file("tra.pdb", false);
 
-    let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
-    let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol.repulsion_cutoff(), excl_vol);
+    // let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
+    // let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol.repulsion_cutoff(), excl_vol);
 
-    // let cntcts = CaContactEnergy::new(&system, 10.0, -1.0, 3.7, 4.0, 5.0);
-    // let energy: NonBondedEnergy<CaContactEnergy> = NonBondedEnergy::new(&system, 3.7, cntcts);
+    let cntcts = CaContactEnergy::new(&system, 10.0, -1.0, 3.7, 4.0, 5.0);
+    let energy: NonBondedEnergy<CaContactEnergy> = NonBondedEnergy::new(&system, 3.7, cntcts);
+
+    let mut rnd = SmallRng::seed_from_u64(42);
 
 
     println!("initial energy: {}", energy.evaluate(&system));
@@ -66,7 +73,7 @@ fn main() {
     for outer in 0..args.outer_cycles {
         for inner in 0..args.inner_cycles {
             for _tail in 0..n_chains*2 {
-                tail_mover.propose(&mut system, &mut tail_prop);
+                tail_mover.propose(&mut system, &mut rnd, &mut tail_prop);
                 #[cfg(debug_assertions)]
                 check_bond_lengths(&mut system, &tail_prop, 3.8);
                 if energy.evaluate_delta(&system, &tail_prop) < 0.1 {
@@ -74,7 +81,7 @@ fn main() {
                 }
             }
             for _hinge in 0..n_chains*(n_res-2) {
-                hinge_mover.propose(&mut system, &mut hinge_prop);
+                hinge_mover.propose(&mut system, &mut rnd, &mut hinge_prop);
                 let delta_e = energy.evaluate_delta(&system, &hinge_prop);
                 if delta_e < 0.1 {
                     #[cfg(debug_assertions)] {

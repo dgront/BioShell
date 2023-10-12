@@ -1,6 +1,6 @@
 use std::fmt;
 use log::debug;
-use rand::{Rng, thread_rng};
+use rand::{Rng};
 use bioshell_pdb::calc::{Rototranslation, Vec3};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
 use crate::tail_move::MovedTermini::{CTerminal, NTerminal};
@@ -25,17 +25,16 @@ impl fmt::Display for MovedTermini {
 }
 
 impl Mover<1> for TailMove {
-    fn propose(&self, system: &SurpassAlphaSystem, proposal: &mut MoveProposal<1>) {
+    fn propose<R: Rng>(&self, system: &SurpassAlphaSystem, rnd_gen: &mut R, proposal: &mut MoveProposal<1>) {
 
-        let mut rng = thread_rng();
         // --- pick a chain randomly
-        let i_chain = rng.gen_range(0..system.count_chains());
+        let i_chain = rnd_gen.gen_range(0..system.count_chains());
         // --- pick either end
-        let which_tail = match rng.gen::<bool>() {
+        let which_tail = match rnd_gen.gen::<bool>() {
             true => {NTerminal}
             false => {CTerminal}
         };
-        let angle = rng.gen_range(-self.max_angle..self.max_angle);
+        let angle = rnd_gen.gen_range(-self.max_angle..self.max_angle);
 
         self.compute_move(system, i_chain, which_tail, angle, proposal);
     }

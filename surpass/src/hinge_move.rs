@@ -1,5 +1,5 @@
 use log::{debug, info};
-use rand::{Rng, thread_rng};
+use rand::{Rng};
 use bioshell_pdb::calc::{Rototranslation, Vec3};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
 
@@ -9,18 +9,17 @@ pub struct HingeMove<const HINGE_MOVE_SIZE: usize> {
 }
 
 impl<const HINGE_MOVE_SIZE: usize> Mover<HINGE_MOVE_SIZE> for HingeMove<HINGE_MOVE_SIZE> {
-    fn propose(&self, system: &SurpassAlphaSystem, proposal: &mut MoveProposal<HINGE_MOVE_SIZE>) {
+    fn propose<R: Rng>(&self, system: &SurpassAlphaSystem, rnd_gen: &mut R, proposal: &mut MoveProposal<HINGE_MOVE_SIZE>) {
 
-        let mut rng = thread_rng();
         // --- pick end points randomly
         let mut moved_from;
         let mut moved_to;
         loop {
-            moved_from = rng.gen_range(1..system.count_atoms() - HINGE_MOVE_SIZE);
+            moved_from = rnd_gen.gen_range(1..system.count_atoms() - HINGE_MOVE_SIZE);
             moved_to = moved_from + HINGE_MOVE_SIZE - 1;
             if system.chain(moved_from-1) == system.chain(moved_to+1) { break };
         }
-        let angle = rng.gen_range(-self.max_angle..self.max_angle);
+        let angle = rnd_gen.gen_range(-self.max_angle..self.max_angle);
         debug!("hinge move of {}:{} by {}", moved_from, moved_from+HINGE_MOVE_SIZE-1, angle);
         self.compute_move(system, moved_from, angle, proposal);
     }
