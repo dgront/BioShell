@@ -1,3 +1,5 @@
+use std::fmt;
+use log::debug;
 use rand::{Rng, thread_rng};
 use bioshell_pdb::calc::{Rototranslation, Vec3};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
@@ -11,6 +13,15 @@ pub struct TailMove {
 pub enum MovedTermini {
     NTerminal,
     CTerminal
+}
+
+impl fmt::Display for MovedTermini {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MovedTermini::NTerminal => write!(f, "NTerminal"),
+            MovedTermini::CTerminal => write!(f, "CTerminal"),
+        }
+    }
 }
 
 impl Mover<1> for TailMove {
@@ -54,6 +65,8 @@ impl TailMove {
                  r.start, r.start + 1)
             }
         };
+        debug!("{} tail move of {}", which_tail, i_moved);
+
         // --- prepare rototranslation
         let roto = Rototranslation::around_axis(&axis_from, &axis_to, angle);
 
