@@ -52,7 +52,7 @@ fn main() {
     let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], args.box_size, &mut rnd);
 
     let hinge_mover: HingeMove<4> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let tail_mover: TailMove = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+    let tail_mover: TailMove<1> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
     let mut hinge_prop: MoveProposal<4> = MoveProposal::new();
     let mut tail_prop: MoveProposal<1> = MoveProposal::new();
 
@@ -60,13 +60,12 @@ fn main() {
     system.to_pdb_file("tra.pdb", false);
 
     let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
-    let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol.repulsion_cutoff(), excl_vol);
+    let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol);
 
     // let cntcts = CaContactEnergy::new(&system, 10.0, -1.0, 3.7, 4.0, 5.0);
     // let energy: NonBondedEnergy<CaContactEnergy> = NonBondedEnergy::new(&system, cntcts);
 
     let mut rnd = SmallRng::seed_from_u64(42);
-
 
     println!("initial energy: {}", energy.evaluate(&system));
     let mut _en_before: f64; // --- for debugging

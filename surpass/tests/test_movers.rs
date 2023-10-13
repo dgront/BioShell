@@ -26,6 +26,8 @@ macro_rules! assert_delta {
 
 #[cfg(test)]
 mod test_movers {
+    use rand::rngs::SmallRng;
+    use rand::SeedableRng;
     use bioshell_pdb::calc::Vec3;
     use bioshell_pdb::load_pdb_file;
     use surpass::{extended_chain, MovedTermini, Mover, TailMove};
@@ -43,7 +45,8 @@ mod test_movers {
     #[allow(non_snake_case)]
     fn make_predefined_hinge_move_N<const HINGE_MOVE_SIZE: usize>() {
         // --- a single chain of 10 atoms; HINGE_MOVE_SIZE of them will be moved
-        let mut model = SurpassAlphaSystem::new(&[10], 100.0);
+        let mut rnd = SmallRng::seed_from_u64(42);
+        let mut model = SurpassAlphaSystem::make_random(&[10], 100.0, &mut rnd);
         // ---------- Initialize internal coordinates
         let r= [1.0; 10];
         let planar = [90.0_f64.to_radians(); 10];
@@ -75,7 +78,7 @@ mod test_movers {
     #[test]
     fn make_predefined_tail_move() {
         let mut model = extended_chain(4, 100.0);
-        let tail: TailMove = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+        let tail: TailMove<1> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
         let mut tail_prop = MoveProposal::new();
         let n_before = model.ca_to_vec3(0);
         let c_before = model.ca_to_vec3(3);
@@ -94,8 +97,9 @@ mod test_movers {
     #[test]
     fn move_chain() {
         const N: usize = 10;
+        let mut rnd = SmallRng::seed_from_u64(42);
 
-        let mut model = SurpassAlphaSystem::new(&[N], 1000.0);
+        let mut model = SurpassAlphaSystem::make_random(&[N], 1000.0, &mut rnd);
         // ---------- Initialize internal coordinates
         let r= [3.8; N];
         let planar = [120.0_f64.to_radians(); N];
@@ -107,14 +111,14 @@ mod test_movers {
         }
 
         let hinge: HingeMove<4> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-        let tail: TailMove = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+        let tail: TailMove<1> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
         let mut hinge_prop: MoveProposal<4> = MoveProposal::new();
         let mut tail_prop: MoveProposal<1> = MoveProposal::new();
         // model.to_pdb_file("tra.pdb", false);
         for i in 0..100000 {
-            hinge.propose(&model, &mut hinge_prop);
+            hinge.propose(&model, &mut rnd, &mut hinge_prop);
             hinge_prop.apply(&mut model);
-            tail.propose(&model, &mut tail_prop);
+            tail.propose(&model, &mut rnd, &mut tail_prop);
             tail_prop.apply(&mut model);
             // model.to_pdb_file("tra.pdb", true);
             check_bond_lengths(&model, 3.8);

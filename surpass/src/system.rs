@@ -45,6 +45,15 @@ impl SurpassAlphaSystem {
             atoms_for_chain: vec![0..0; n_atoms], chain_id_by_index: vec![String::from("A");n_chains],
             int_to_real: l, int_to_real_2: l*l, model_id: 0
         };
+        // ---------- Assign atoms to chains
+        let mut atoms_total = 0;
+        let codes: Vec<char> = ('A'..'Z').collect();
+        for (ic,nc) in chain_lengths.iter().enumerate() {
+            for i in 0..*nc { s.chain_indexes[i+ atoms_total] = ic as u16; }
+            s.chain_id_by_index[ic] = codes[ic].to_string();
+            s.atoms_for_chain[ic] = atoms_total..atoms_total+nc;
+            atoms_total += nc;
+        }
 
         return s;
     }
@@ -178,15 +187,7 @@ impl SurpassAlphaSystem {
         for i in 0..n_atoms {
             s.vec3_to_ca(i,&coords[i]);
         }
-        // ---------- Assign atoms to chains
-        let mut atoms_total = 0;
-        let codes: Vec<char> = ('A'..'Z').collect();
-        for (ic,nc) in chain_lengths.iter().enumerate() {
-            for i in 0..*nc { s.chain_indexes[i+ atoms_total] = ic as u16; }
-            s.chain_id_by_index[ic] = codes[ic].to_string();
-            s.atoms_for_chain[ic] = atoms_total..atoms_total+nc;
-            atoms_total += nc;
-        }
+
         return s;
     }
 

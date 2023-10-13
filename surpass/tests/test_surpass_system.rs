@@ -1,8 +1,10 @@
 
 use std::io::BufReader;
 use std::string::String;
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
 use bioshell_pdb::load_pdb_reader;
-use surpass::SurpassAlphaSystem;
+use surpass::{extended_chain, SurpassAlphaSystem};
 
 #[allow(non_upper_case_globals)]
 const pdb_txt: &str = "ATOM      2  CA  MET A   1     -13.296   0.028   3.924  1.00  0.43           C
@@ -49,7 +51,9 @@ fn system_from_pdb() {
 /// Make a system of 4 chains and check whether atoms are correctly assigned to chains
 #[test]
 fn test_4_chains() {
-    let model = SurpassAlphaSystem::new(&[10, 10, 10, 10], 100.0);
+
+    let mut rnd = SmallRng::from_entropy();
+    let model = SurpassAlphaSystem::make_random(&[10, 10, 10, 10], 100.0, &mut rnd);
     for i in 0..4 {
         assert_eq!(model.chain_atoms(i).start, i*10);
         assert_eq!(model.chain_atoms(i).end, (i+1)*10);
@@ -58,6 +62,17 @@ fn test_4_chains() {
         }
     }
     // model.to_pdb_file("s.pdb", false);
+}
+
+#[test]
+fn test_extended_chain() {
+    let mut rnd = SmallRng::from_entropy();
+    let model = extended_chain(10, 100.0);
+    assert_eq!(model.chain_atoms(0).start, 0);
+    assert_eq!(model.chain_atoms(0).end, 10);
+    for j in 0..10 {
+        assert_eq!(model.chain(j), 0);
+    }
 }
 
 #[test]
