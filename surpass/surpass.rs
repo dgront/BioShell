@@ -22,11 +22,14 @@ struct Args {
     #[clap(long, default_value = "10", short='r')]
     n_res_in_chain: usize,
     /// number of inner Monte Carlo cycles
-    #[clap(long, default_value = "10", short='i')]
-    inner_cycles: usize,
-    /// number of inner Monte Carlo cycles
     #[clap(long, default_value = "100", short='o')]
     outer_cycles: usize,
+    /// number of inner Monte Carlo cycles
+    #[clap(long, default_value = "10", short='i')]
+    inner_cycles: usize,
+    /// inner cycle scaling factor: the number of Monte Carlo cycles simulated for each inner MC cycle
+    #[clap(long, default_value = "10", short='s')]
+    cycle_factor: usize,
     /// simulation box size in Angstroms
     #[clap(long, default_value = "10000.0", short='b')]
     box_size: f64,
@@ -71,36 +74,39 @@ fn main() {
     let mut _en_before: f64; // --- for debugging
     for outer in 0..args.outer_cycles {
         for inner in 0..args.inner_cycles {
-            for _tail in 0..n_chains*2 {
-                tail_mover.propose(&mut system, &mut rnd, &mut tail_prop);
-                #[cfg(debug_assertions)]
-                check_bond_lengths(&mut system, &tail_prop, 3.8);
-                if energy.evaluate_delta(&system, &tail_prop) < 0.1 {
-                    tail_prop.apply(&mut system);
-                }
-            }
-            for _hinge in 0..n_chains*(n_res-2) {
-                hinge_mover.propose(&mut system, &mut rnd, &mut hinge_prop);
-                let delta_e = energy.evaluate_delta(&system, &hinge_prop);
-                if delta_e < 0.1 {
-                    #[cfg(debug_assertions)] {
-                        _en_before = energy.evaluate(&system);
-                        check_bond_lengths(&mut system, &hinge_prop, 3.8);
-                    }
-                    hinge_prop.apply(&mut system);
-                    #[cfg(debug_assertions)] {
-                        let en_after = energy.evaluate(&system);
-                        check_delta_en(_en_before, en_after, delta_e);
+            for _cycle in 0..args.cycle_factor {
+                for _tail in 0..n_chains*2 {
+                    tail_mover.propose(&mut system, &mut rnd, &mut tail_prop);
+                    #[cfg(debug_assertions)]
+                    check_bond_lengths(&mut system, &tail_prop, 3.8);
+                    if energy.evaluate_delta(&system, &tail_prop) < 0.1 {
+                        tail_prop.apply(&mut system);
                     }
                 }
-            }
-        }
-        println!("{} {}", outer, energy.evaluate(&system));
+                for _hinge in 0..n_chains*(n_res-2) {
+                    hinge_mover.propose(&mut system, &mut rnd, &mut hinge_prop);
+                    let delta_e = energy.evaluate_delta(&system, &hinge_prop);
+                    if delta_e < 0.1 {
+                        #[cfg(debug_assertions)] {
+                            _en_before = energy.evaluate(&system);
+                            check_bond_lengths(&mut system, &hinge_prop, 3.8);
+                        }
+                        hinge_prop.apply(&mut system);
+                        #[cfg(debug_assertions)] {
+                            let en_after = energy.evaluate(&system);
+                            check_delta_en(_en_before, en_after, delta_e);
+                        }
+                    }
+                }
+            }       // --- single inner MC cycle done
+            println!("{} {} {}", outer, inner, energy.evaluate(&system));
+        }           // --- single outer MC cycle done (all inner MC cycles finished)
         // --- append a current conformation to the trajectory file
         system.to_pdb_file("tra.pdb", true);
-    }
+    }   // --- end of the simulation: all outer MC cycles done
 }
 
+#[allow(dead_code)]
 fn check_bond_lengths<const N: usize>(system: &mut SurpassAlphaSystem, mp: &MoveProposal<N>, d: f64) {
     let mut backup: MoveProposal<N> = MoveProposal::new();
     backup.first_moved_pos = mp.first_moved_pos;
@@ -124,7 +130,7 @@ fn check_bond_lengths<const N: usize>(system: &mut SurpassAlphaSystem, mp: &Move
     }
     backup.apply(system);
 }
-
+#[allow(dead_code)]
 fn check_delta_en(en_before: f64, en_after: f64, delta: f64) {
     if (en_after-en_before-delta).abs() > 0.001 {
         panic!("Incorrect energy change: global {} vs delta {}\n", en_after-en_before, delta);
