@@ -60,7 +60,7 @@ fn test_excluded_volume_N() {
 fn run_test_excluded_volume_N<const N: usize>() {
     // --- make a system of N atoms
     let mut model = SurpassAlphaSystem::new(&[N], 100.0);
-    // --- put all atoms in 0.0,0
+    // --- put all atoms in 0, 0, 0
     for i in 0..N {
         model.cax[i] = model.real_to_int(0.0);
         model.cay[i] = model.real_to_int(0.0);
@@ -69,8 +69,7 @@ fn run_test_excluded_volume_N<const N: usize>() {
 
     let excl_vol_kernel = ExcludedVolume::new(&model, 5.0, 100.0);
     let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&model,  excl_vol_kernel);
-
-    assert_delta!(energy.evaluate(&model), ((N-2)*(N-1)) as f64 * 100.0 / 2.0, 0.00001);
+    assert_delta!(energy.evaluate(&model), ((N)*(N-1)) as f64 * 100.0 / 2.0, 0.00001);
 }
 
 #[test]
