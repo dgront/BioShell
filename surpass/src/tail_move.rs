@@ -50,29 +50,35 @@ impl<const N_MOVED: usize> TailMove<N_MOVED> {
                         angle: f64, proposal: &mut MoveProposal<N_MOVED>) {
 
         let r = system.chain_atoms(which_chain);
-        let (axis_from, axis_to, mut moved, i_moved, i_referenced) = match which_tail {
+        // --- axis_from, axis_to : vectors defining the rotation axis
+        // --- i_moved_from, i_moved_to : range of the atoms being moved: i_moved_from..i_moved_to
+        // --- i_referenced index of the atom used as the PBC reference, i.e. all other atoms are moved to the image which is the closest to i_referenced
+        let (axis_from, axis_to, i_moved_from, i_moved_to, i_referenced) = match which_tail {
             CTerminal => {
                 (system.ca_to_nearest_vec3(r.end-N_MOVED-2, r.end-N_MOVED-1),
-                 system.ca_to_vec3(r.end-2),
-                 system.ca_to_nearest_vec3(r.end-N_MOVED, r.end-N_MOVED-1),
-                 r.end-N_MOVED, r.end - N_MOVED -1)
+                 system.ca_to_vec3(r.end-N_MOVED-1),
+                 r.end - N_MOVED, r.end, r.end - N_MOVED -1)
             }
             NTerminal => {
                 (system.ca_to_vec3(r.start + N_MOVED),
                  system.ca_to_nearest_vec3(r.start+N_MOVED+1, r.start+N_MOVED),
-                 system.ca_to_nearest_vec3(r.start, r.start+N_MOVED),
-                 r.start, r.start + N_MOVED)
+                 r.start, r.start + N_MOVED, r.start + N_MOVED)
             }
         };
-        debug!("{} tail move of {}", which_tail, i_moved);
+        debug!("{} tail move of {}..{}", which_tail, i_moved_from, i_moved_to);
 
         // --- prepare rototranslation
         let roto = Rototranslation::around_axis(&axis_from, &axis_to, angle);
 
-        roto.apply_mut(&mut moved);
-        proposal.cax[0] = system.real_to_int(moved.x);
-        proposal.cay[0] = system.real_to_int(moved.y);
-        proposal.caz[0] = system.real_to_int(moved.z);
-        proposal.first_moved_pos = i_moved;
+        let mut i_pos = 0;
+        for i_moved in i_moved_from..i_moved_to {
+            let mut moved = system.ca_to_nearest_vec3(i_moved, i_referenced);
+            roto.apply_mut(&mut moved);
+            proposal.cax[i_pos] = system.real_to_int(moved.x);
+            proposal.cay[i_pos] = system.real_to_int(moved.y);
+            proposal.caz[i_pos] = system.real_to_int(moved.z);
+            i_pos += 1;
+        }
+        proposal.first_moved_pos = i_moved_from;
     }
 }

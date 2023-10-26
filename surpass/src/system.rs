@@ -69,7 +69,7 @@ impl SurpassAlphaSystem {
     /// Returns the number of atoms in this system (of all its chains)
     pub fn count_atoms(&self) -> usize { self.cax.len() }
 
-    /// Returns real coordinates of a C-alpha atom.
+    /// Returns real coordinates of a C-alpha atom in a newly created Vec3 struct.
     ///
     /// Coordinates of a `pos` alpha carbon are converted from their integer representation
     /// to `f64` values and returned as a [`Vec3`](bioshell_pdb::calc::vec3) struct.
@@ -78,16 +78,36 @@ impl SurpassAlphaSystem {
                   self.int_to_real(self.cay[pos]),
                   self.int_to_real(self.caz[pos]))
     }
+    /// Copies real coordinates of a C-alpha atom into a given Vec3 struct.
+    ///
+    /// Coordinates of a `pos` alpha carbon are converted from their integer representation
+    /// to `f64` values and stored in a given [`Vec3`](bioshell_pdb::calc::vec3) struct.
+    pub fn set_ca_to_vec3(&self, pos: usize, v: &mut Vec3) {
+        v.set3(self.int_to_real(self.cax[pos]),
+                  self.int_to_real(self.cay[pos]),
+                  self.int_to_real(self.caz[pos]));
+    }
 
     /// Returns real coordinates of an image of a C-alpha atom that is the closest to a given atom.
     ///
     /// This method finds the periodic image of a `pos` C-alpha atom that is the closes to the
-    /// `ref_pos` C-alpha atom  and returns its coordinates as a [`Vec3`](bioshell_pdb::calc::vec3) struct.
+    /// `ref_pos` C-alpha atom  and returns its coordinates as a newly created  [`Vec3`](bioshell_pdb::calc::vec3) struct.
     pub fn ca_to_nearest_vec3(&self, pos: usize, ref_pos: usize) -> Vec3 {
 
         Vec3::new(closest_coordinate!(self, self.cax, pos, ref_pos),
                   closest_coordinate!(self, self.cay, pos, ref_pos),
                   closest_coordinate!(self, self.caz, pos, ref_pos))
+    }
+
+    /// Returns real coordinates of an image of a C-alpha atom that is the closest to a given atom.
+    ///
+    /// This method finds the periodic image of a `pos` C-alpha atom that is the closes to the
+    /// `ref_pos` C-alpha atom  and stores its coordinates in a given  [`Vec3`](bioshell_pdb::calc::vec3) struct.
+    pub fn set_ca_to_nearest_vec3(&self, pos: usize, ref_pos: usize, v: &mut Vec3) {
+
+        v.set3(closest_coordinate!(self, self.cax, pos, ref_pos),
+                  closest_coordinate!(self, self.cay, pos, ref_pos),
+                  closest_coordinate!(self, self.caz, pos, ref_pos));
     }
 
     pub fn vec3_to_ca(&mut self, pos: usize, v: &Vec3) {
@@ -201,16 +221,46 @@ impl SurpassAlphaSystem {
 
         let mut stream = out_writer(&fname, if_append);
         stream.write(format!("MODEL{:6}\n", self.model_id).as_bytes());
-        for i in 0..self.count_atoms() {
+        let mut i = 1;
+        for i_chain in 0..self.count_chains() {
+            let begin_atom_idx = self.atoms_for_chain[i_chain].start;
+            let end_atom_idx = self.atoms_for_chain[i_chain].end;
+            let chain_code = &self.chain_id_by_index[i_chain];
+            let mut the_atom: Vec3 = self.ca_to_vec3(begin_atom_idx);
+            let mut i_resid = 1;
             stream.write(format!("ATOM   {:4} {} GLY {}{:4}    {:8.3}{:8.3}{:8.3}  1.00  1.00           C\n",
-                                 i, " CA ", &self.chain_id(self.chain(i) as usize).unwrap(), i,
-                                 self.int_to_real(self.cax[i]),
-                                 self.int_to_real(self.cay[i]),
-                                 self.int_to_real(self.caz[i])).as_bytes()).expect("Error ocurred while writing PDB content!");
+                                 begin_atom_idx, " CA ", chain_code, i_resid,
+                                 the_atom.x,
+                                 the_atom.y,
+                                 the_atom.z).as_bytes()).expect("Error occurred while writing PDB content!");
+            for i_atom in begin_atom_idx+1..end_atom_idx {
+                i_resid += 1;
+                self.set_ca_to_nearest_vec3(i_atom, begin_atom_idx, &mut the_atom);
+                stream.write(format!("ATOM   {:4} {} GLY {}{:4}    {:8.3}{:8.3}{:8.3}  2.00  2.00           C\n",
+                                     i_atom, " CA ", chain_code, i_resid,
+                                     the_atom.x,
+                                     the_atom.y,
+                                     the_atom.z).as_bytes()).expect("Error occurred while writing PDB content!");
+            }
 
         }
         stream.write("ENDMDL\n".as_bytes());
     }
+}
+
+pub fn cm(system: &SurpassAlphaSystem, i_chain: usize) -> Vec3 {
+
+    let begin_atom_idx = system.atoms_for_chain[i_chain].start;
+    let end_atom_idx = system.atoms_for_chain[i_chain].end;
+    let mut cm_vec: Vec3 = system.ca_to_vec3(begin_atom_idx);
+    let mut tmp_atom: Vec3 = system.ca_to_vec3(begin_atom_idx);
+    for i_atom in begin_atom_idx+1..end_atom_idx {
+        system.set_ca_to_nearest_vec3(i_atom, begin_atom_idx, &mut tmp_atom);
+        cm_vec += &tmp_atom;
+    }
+    cm_vec /= system.chain_atoms(i_chain).len() as f64;
+
+    return cm_vec;
 }
 
 /// Creates a system that contains a single chain in an extended conformation
@@ -218,6 +268,7 @@ impl SurpassAlphaSystem {
 /// The newly created system will contain a single chain of `n_res` residues, placed in the middle of a cubic periodic box
 /// of length `box_length`. All planar and dihedral angles are set to 120 and 180 degrees, respectively
 pub fn extended_chain(n_res: usize, box_length: f64) -> SurpassAlphaSystem {
+
     let mut model = SurpassAlphaSystem::new(&[n_res], box_length);
     // ---------- Initialize internal coordinates
     let r= vec![3.8; n_res];

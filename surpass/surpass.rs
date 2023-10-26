@@ -5,7 +5,9 @@ use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
-use surpass::{CaContactEnergy, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
+use surpass::{CaContactEnergy, ExcludedVolume, HingeMove, MoveProposal, Mover,
+              NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
+use surpass::{Observer, ObserveCM};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -47,6 +49,10 @@ fn main() {
     let args = Args::parse();
     // let mut strctr = load_pdb_file(&args[1]).unwrap();
 
+    // --- Observers
+    let mut cm = ObserveCM::new("cm.dat");
+
+    // --- the system
     let n_res = args.n_res_in_chain;
     if n_res < 4 { panic!("Simulated chain must be at leat 4 residues long!") }
     let n_chains = args.n_chains;
@@ -54,10 +60,13 @@ fn main() {
     let mut rnd = SmallRng::seed_from_u64(42);
     let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], args.box_size, &mut rnd);
 
+    // --- sampling: movers and proposals
     let hinge_mover: HingeMove<4> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let tail_mover: TailMove<1> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+    let tail_mover_1: TailMove<1> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
     let mut hinge_prop: MoveProposal<4> = MoveProposal::new();
-    let mut tail_prop: MoveProposal<1> = MoveProposal::new();
+    let mut tail_prop_1: MoveProposal<1> = MoveProposal::new();
+    let tail_mover_2: TailMove<2> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+    let mut tail_prop_2: MoveProposal<2> = MoveProposal::new();
 
     // --- save the starting conformation, reset the trajectory file
     system.to_pdb_file("tra.pdb", false);
@@ -75,14 +84,25 @@ fn main() {
     for outer in 0..args.outer_cycles {
         for inner in 0..args.inner_cycles {
             for _cycle in 0..args.cycle_factor {
+                // ---------- single atom tail move
                 for _tail in 0..n_chains*2 {
-                    tail_mover.propose(&mut system, &mut rnd, &mut tail_prop);
+                    tail_mover_1.propose(&mut system, &mut rnd, &mut tail_prop_1);
                     #[cfg(debug_assertions)]
-                    check_bond_lengths(&mut system, &tail_prop, 3.8);
-                    if energy.evaluate_delta(&system, &tail_prop) < 0.1 {
-                        tail_prop.apply(&mut system);
+                    check_bond_lengths(&mut system, &tail_prop_1, 3.8);
+                    if energy.evaluate_delta(&system, &tail_prop_1) < 0.1 {
+                        tail_prop_1.apply(&mut system);
                     }
                 }
+                // ---------- tail move of two residues
+                for _tail in 0..n_chains * 2 {
+                    tail_mover_2.propose(&mut system, &mut rnd, &mut tail_prop_2);
+                    #[cfg(debug_assertions)]
+                    check_bond_lengths(&mut system, &tail_prop_2, 3.8);
+                    if energy.evaluate_delta(&system, &tail_prop_2) < 0.1 {
+                        tail_prop_2.apply(&mut system);
+                    }
+                }
+                // ---------- hinge move
                 for _hinge in 0..n_chains*(n_res-2) {
                     hinge_mover.propose(&mut system, &mut rnd, &mut hinge_prop);
                     let delta_e = energy.evaluate_delta(&system, &hinge_prop);
@@ -100,6 +120,7 @@ fn main() {
                 }
             }       // --- single inner MC cycle done
             println!("{} {} {}", outer, inner, energy.evaluate(&system));
+            cm.observe(&system);
         }           // --- single outer MC cycle done (all inner MC cycles finished)
         // --- append a current conformation to the trajectory file
         system.to_pdb_file("tra.pdb", true);

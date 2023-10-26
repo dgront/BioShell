@@ -95,6 +95,38 @@ mod test_movers {
     }
 
     #[test]
+    fn make_predefined_tail_moves() {
+        make_predefined_tail_move_N::<2>();
+        make_predefined_tail_move_N::<3>();
+    }
+
+    #[allow(non_snake_case)]
+    fn make_predefined_tail_move_N<const N_MOVED: usize>() {
+        const N_RES: usize = 10;
+        let mut model = extended_chain(N_RES, 1000.0);
+        let tail: TailMove<N_MOVED> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+        let mut tail_prop = MoveProposal::new();
+        let mut backup: MoveProposal<N_MOVED> = MoveProposal::new();
+        backup.first_moved_pos = 0;
+        backup.backup(&model);
+        tail.compute_move(&mut model, 0, MovedTermini::NTerminal, 1.57, &mut tail_prop);
+        tail_prop.apply(&mut model);
+        for i in 0..N_MOVED {
+            assert_ne!(backup.cax[i]+backup.cay[i]+backup.caz[i], model.cax[i]+model.cay[i]+model.caz[i]);
+        }
+        backup.apply(&mut model);
+
+        backup.first_moved_pos = N_RES-N_MOVED;
+        backup.backup(&model);
+        tail.compute_move(&mut model, 0, MovedTermini::CTerminal, 1.57, &mut tail_prop);
+        tail_prop.apply(&mut model);
+        let offset = N_RES-N_MOVED;
+        for i in 0..N_MOVED {
+            assert_ne!(backup.cax[i]+backup.cay[i]+backup.caz[i], model.cax[i+offset]+model.cay[i+offset]+model.caz[i+offset]);
+        }
+    }
+
+    #[test]
     fn move_chain() {
         const N: usize = 10;
         let mut rnd = SmallRng::seed_from_u64(42);
@@ -115,7 +147,7 @@ mod test_movers {
         let mut hinge_prop: MoveProposal<4> = MoveProposal::new();
         let mut tail_prop: MoveProposal<1> = MoveProposal::new();
         // model.to_pdb_file("tra.pdb", false);
-        for i in 0..100000 {
+        for _i in 0..100000 {
             hinge.propose(&model, &mut rnd, &mut hinge_prop);
             hinge_prop.apply(&mut model);
             tail.propose(&model, &mut rnd, &mut tail_prop);
