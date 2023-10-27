@@ -18,7 +18,7 @@ use crate::pdb_atom_filters::{PdbAtomPredicate};
 /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
 /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
 /// # let strctr = Structure::from_iterator(atoms.iter());
-/// let res_id = ResidueId::new("A", 68, " ");
+/// let res_id = ResidueId::new("A", 68, ' ');
 /// let get_res = ByResidue::new(res_id);
 /// # let mut cnt = 0;
 /// for atom in strctr.atoms().iter().filter(|a| get_res.check(&a)) {
@@ -31,16 +31,16 @@ use crate::pdb_atom_filters::{PdbAtomPredicate};
 pub struct ResidueId {
     pub chain_id: String,
     pub res_seq: i32,
-    pub i_code: String
+    pub i_code: char
 }
 
 impl ResidueId {
     /// Creates a new [`ResidueId`](ResidueId) from its properties
-    pub fn new(chain_id: &str, res_seq: i32, i_code: &str) -> ResidueId {
+    pub fn new(chain_id: &str, res_seq: i32, i_code: char) -> ResidueId {
         ResidueId{
             chain_id: chain_id.to_string(),
             res_seq,
-            i_code: i_code.to_string()
+            i_code: i_code
         }
     }
 }
@@ -54,7 +54,7 @@ impl TryFrom<&PdbAtom> for ResidueId {
     type Error = ();
 
     fn try_from(a: &PdbAtom) -> Result<Self, Self::Error> {
-        Ok(ResidueId { chain_id: a.chain_id.clone(), res_seq: a.res_seq, i_code: a.i_code.clone() })
+        Ok(ResidueId { chain_id: a.chain_id.clone(), res_seq: a.res_seq, i_code: a.i_code })
     }
 }
 
@@ -70,14 +70,14 @@ impl PdbAtomPredicate for ResidueId {
 /// ```
 /// use bioshell_pdb::residue_id_from_ter_record;
 /// let id1 = residue_id_from_ter_record("TER    1187      LEU B  75 ");
-/// # assert_eq!(id1.i_code," ");
+/// # assert_eq!(id1.i_code, ' ');
 /// let id2 = residue_id_from_ter_record("TER    1187      LEU B  75A");
-/// # assert_eq!(id2.i_code,"A");
+/// # assert_eq!(id2.i_code, 'A');
 /// let id3 = residue_id_from_ter_record("TER    1187      LEU B  75");
 /// assert_eq!(format!("{}", id3),"B:75 ");
 /// ```
 pub fn residue_id_from_ter_record(ter_line: &str) -> ResidueId {
     let res_seq: i32 = ter_line[22..26].trim().parse().ok().unwrap();
-    let icode = if ter_line.len() > 26 {&ter_line[26..27]} else {" "};
+    let icode = if ter_line.len() > 26 { ter_line[26..27].chars().next().unwrap() } else {' '};
     return ResidueId::new(ter_line[21..22].trim(), res_seq, icode);
 }

@@ -60,7 +60,7 @@ pub fn restore_linear_chain(r: &[f64], planar: &[f64], dihedral: &[f64], output_
 /// Calculates Cartesian coordinates of a molecule from internal coordinates of its atoms.
 ///
 /// ```
-/// #use bioshell_pdb::nerf::restore_branched_chain;
+/// # use bioshell_pdb::nerf::restore_branched_chain;
 /// let r_CH: f64 = 1.05;
 /// let a_HCH: f64 = 109.471_f64.to_radians();
 /// let r = vec![0.0, r_CH, r_CH, r_CH, r_CH];
