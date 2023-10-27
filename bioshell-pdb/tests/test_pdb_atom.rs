@@ -24,9 +24,10 @@ mod tests {
     }
 
     #[test]
-    fn test_parse() {       // ATOM   2831  OE1BGLN A 294C    -27.117  12.343  28.479  1.00  9.58
+    fn test_parse() {
         let atom_line = "ATOM   2831  OE1BGLN A 294C    -27.117  12.343  28.479  1.00  9.58           O  ";
         let atom = PdbAtom::from_atom_line(atom_line);
+        assert_eq!(atom.is_hetero_atom,false);
         assert_eq!(atom.serial,2831);
         assert_eq!(atom.element, Some(String::from("O")));
         assert_eq!(atom.alt_loc, 'B');
@@ -42,6 +43,10 @@ mod tests {
         assert_eq!(atom.charge, None);
         let str = format!("{}",atom);
         assert_eq!(str, atom_line);
-        println!("{}", str);
+
+        let atom_line = "HETATM 3169  PB  BIS A 499     -10.950  43.372   1.324  1.00 18.00           P  ";
+        let atom = PdbAtom::from_atom_line(atom_line);
+        let str = format!("{}",atom);
+        assert_eq!(str, atom_line);
     }
 }

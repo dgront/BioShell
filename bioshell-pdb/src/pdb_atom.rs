@@ -126,7 +126,7 @@ impl Display for PdbAtom {
             Some(c) => {c}
         };
         if self.is_hetero_atom {
-            write!(f, "HETATM  {:>5} {:^4}{:>1}{:>3} {:>1}{:>4}{:1}   {:>8.3}{:>8.3}{:>8.3}{:>6.2}{:>6.2}          {:>2}{:2}",
+            write!(f, "HETATM{:>5} {:^4}{:>1}{:>3} {:>1}{:>4}{:1}   {:>8.3}{:>8.3}{:>8.3}{:>6.2}{:>6.2}          {:>2}{:2}",
                    self.serial, self.name, self.alt_loc, self.res_name, self.chain_id, self.res_seq,
                    self.i_code, self.pos.x, self.pos.y, self.pos.z, self.occupancy, self.temp_factor,
                    elem, chrg)
