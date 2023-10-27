@@ -5,9 +5,8 @@ use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
-use surpass::{CaContactEnergy, ExcludedVolume, HingeMove, MoveProposal, Mover,
-              NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
-use surpass::{Observer, ObserveCM};
+use surpass::{CaContactEnergy, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
+use surpass::{ObserveCM, RgSquared, ObserveToFile, REndSquared};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -35,9 +34,11 @@ struct Args {
     /// simulation box size in Angstroms
     #[clap(long, default_value = "10000.0", short='b')]
     box_size: f64,
+    /*
     /// simulation temperature
     #[clap(long, default_value = "1.0", short='t')]
     t_start: f64,
+     */
 }
 
 
@@ -48,10 +49,7 @@ fn main() {
 
     let args = Args::parse();
     // let mut strctr = load_pdb_file(&args[1]).unwrap();
-
-    // --- Observers
-    let mut cm = ObserveCM::new("cm.dat");
-
+    
     // --- the system
     let n_res = args.n_res_in_chain;
     if n_res < 4 { panic!("Simulated chain must be at leat 4 residues long!") }
@@ -67,6 +65,14 @@ fn main() {
     let mut tail_prop_1: MoveProposal<1> = MoveProposal::new();
     let tail_mover_2: TailMove<2> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
     let mut tail_prop_2: MoveProposal<2> = MoveProposal::new();
+
+    // --- Observers
+    let mut cm =
+        ObserveToFile::new("cm.dat", ObserveCM::new(&system)).expect("can't write to cm.dat");
+    let mut rend =
+        ObserveToFile::new("r2.dat", REndSquared{}).expect("can't write to r2.dat");
+    let mut rg =
+        ObserveToFile::new("rg2.dat", RgSquared{}).expect("can't write to rg2.dat");
 
     // --- save the starting conformation, reset the trajectory file
     system.to_pdb_file("tra.pdb", false);
@@ -121,6 +127,8 @@ fn main() {
             }       // --- single inner MC cycle done
             println!("{} {} {}", outer, inner, energy.evaluate(&system));
             cm.observe(&system);
+            rend.observe(&system);
+            rg.observe(&system);
         }           // --- single outer MC cycle done (all inner MC cycles finished)
         // --- append a current conformation to the trajectory file
         system.to_pdb_file("tra.pdb", true);

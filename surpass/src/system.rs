@@ -248,7 +248,7 @@ impl SurpassAlphaSystem {
     }
 }
 
-pub fn cm(system: &SurpassAlphaSystem, i_chain: usize) -> Vec3 {
+pub fn calculate_cm(system: &SurpassAlphaSystem, i_chain: usize) -> Vec3 {
 
     let begin_atom_idx = system.atoms_for_chain[i_chain].start;
     let end_atom_idx = system.atoms_for_chain[i_chain].end;
