@@ -5,7 +5,7 @@ mod tests {
     #[test]
     fn test_parse_line() {
         let line = "HELIX    1   A SER A   5  GLN A  11  1                                  7";
-        let pdb_helix = PdbHelixParser::parse_line(line).unwrap();
+        let pdb_helix = PdbHelixParser::from_helix_line(line).unwrap();
         assert_eq!(pdb_helix.serial_number_1, 1);
         assert_eq!(pdb_helix.helix_id_2, "A");
         assert_eq!(pdb_helix.init_res_name_3, "SER");
@@ -23,7 +23,7 @@ mod tests {
     #[test]
     fn test_parse_line_invalid() {
         let line = "ATOM      1  N   GLY A   1       8.374  10.880  -6.778  1.00  0.00           N  ";
-        let pdb_helix = PdbHelixParser::parse_line(line);
+        let pdb_helix = PdbHelixParser::from_helix_line(line);
         assert!(pdb_helix.is_none());
     }
 }

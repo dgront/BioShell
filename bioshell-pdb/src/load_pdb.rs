@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use crate::{PdbAtom, PdbHeader, PdbTitle, residue_id_from_ter_record, Structure};
+use crate::{PdbAtom, PdbHeader, PdbHelix, PdbTitle, residue_id_from_ter_record, Structure};
 use crate::pdb_parsing_error::ParseError;
 
 /// Reads PDB-formatted content from a buffer
@@ -48,6 +48,10 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
                 let title = PdbTitle::new(line.as_str());
                 pdb_structure.title = Some(title);
             },
+            "HELIX" => {
+                let helix = PdbHelix::from_helix_line(&line);
+                todo!();
+            }
             //"COMPND" => {},
             //"Source_" => {},
             //"SequenceOfResidue_" => {},
