@@ -14,21 +14,6 @@ pub struct PdbHelix {
 }
 
 impl PdbHelix {
-    fn get_key(&self) -> String {
-        format!(
-            "{}:{}{}-{}{}:{}{}-{}{}:{}",
-            self.ser_num,
-            self.init_chain_id,
-            self.init_seq_num,
-            self.init_i_code,
-            self.end_chain_id,
-            self.end_seq_num,
-            self.end_i_code,
-            self.helix_class,
-            self.length,
-            self.helix_id
-        )
-    }
 
     pub fn from_helix_line(line: &str) -> PdbHelix {
 
