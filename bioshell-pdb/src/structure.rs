@@ -234,10 +234,10 @@ impl Structure {
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// # let strctr = Structure::from_iterator(atoms.iter());
-    /// let chain_A_atoms = strctr.chain_atoms("A");
+    /// let chain_A_atoms = strctr.atoms_in_chain("A");
     /// # assert_eq!(chain_A_atoms.iter().count(),4);
     /// ```
-    pub fn chain_atoms(&self, chain_id: &str) -> Vec<&PdbAtom>{
+    pub fn atoms_in_chain(&self, chain_id: &str) -> Vec<&PdbAtom>{
         self.atoms.iter().filter(|&a| a.chain_id==chain_id).collect()
     }
 

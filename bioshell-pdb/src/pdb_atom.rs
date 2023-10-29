@@ -10,7 +10,7 @@ use crate::calc::Vec3;
 /// # Examples
 ///```rust
 /// use bioshell_pdb::PdbAtom;
-/// let pdb_line = "ATOM    320  CA  PHE A  43      16.101   9.057  19.587  1.00 18.18           C ";
+/// let pdb_line = "ATOM    320  CA  PHE A  43      16.101   9.057  19.587  1.00 18.18           C  ";
 /// let a = PdbAtom::from_atom_line(pdb_line);
 /// assert_eq!(a.name.as_str(), " CA ");
 /// assert_eq!(a.res_name.as_str(), "PHE");
@@ -70,7 +70,7 @@ impl PdbAtom {
     /// use bioshell_pdb::PdbAtom;
     /// let a = PdbAtom::from_atom_line("ATOM     33  CA AARG A  -3      12.353  85.696  94.456  0.50 36.67           C");
     /// assert_eq!(a.res_seq, -3);
-    /// assert_eq!(a.alt_loc, "A");
+    /// assert_eq!(a.alt_loc, 'A');
     /// assert_eq!(a.name, " CA ");
     /// assert_eq!(a.element.unwrap(), "C");
     /// let a = PdbAtom::from_atom_line("ATOM     33  CA AARG A  -3      12.353  85.696  94.456  0.50 36.67");
