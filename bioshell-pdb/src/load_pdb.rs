@@ -27,6 +27,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
     let mut pdb_structure = Structure::new();
 
     let mut atoms: Vec<PdbAtom> = vec![];
+    let mut helices: Vec<PdbHelix> = vec![];
 
     for line in reader.lines() {
         let line = line?;
@@ -50,7 +51,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
             },
             "HELIX" => {
                 let helix = PdbHelix::from_helix_line(&line);
-                todo!();
+                helices.push(helix);
             }
             //"COMPND" => {},
             //"Source_" => {},

@@ -58,6 +58,18 @@ impl TryFrom<&PdbAtom> for ResidueId {
     }
 }
 
+impl PartialEq<Self> for ResidueId {
+    /// Check whether two [`ResidueId`](ResidueId) objects are equal.
+    ///
+    /// Returns true when `seq_res`, `chain_id` and `i_code` of the two [`ResidueId`](ResidueId)s are identical
+    fn eq(&self, other: &Self) -> bool {
+        self.res_seq==other.res_seq && self.chain_id==other.chain_id && self.i_code == other.i_code
+    }
+}
+
+impl Eq for ResidueId {
+
+}
 impl PdbAtomPredicate for ResidueId {
     fn check(&self, a: &PdbAtom) -> bool {
         a.chain_id == self.chain_id && a.res_seq == self.res_seq && a.i_code == self.i_code

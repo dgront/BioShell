@@ -194,7 +194,7 @@ impl Structure {
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// # let strctr = Structure::from_iterator(atoms.iter());
-    /// let a = strctr.atom(&ResidueId::new("A", 69, " ")," CA ").unwrap();
+    /// let a = strctr.atom(&ResidueId::new("A", 69, ' ')," CA ").unwrap();
     /// assert_eq!(a.name, " CA ");
     /// # assert_eq!(a.res_seq, 69);
     /// ```
