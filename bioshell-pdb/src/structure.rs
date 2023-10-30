@@ -241,6 +241,10 @@ impl Structure {
         self.atoms.iter().filter(|&a| a.chain_id==chain_id).collect()
     }
 
+    pub fn atom_in_range(&self, first_res: &ResidueId, last_res: &ResidueId) {
+
+    }
+
     /// Creates a vector of [`ResidueId`](ResidueId) object for each residue found in a given vector of atoms
     ///
     /// ```
@@ -296,7 +300,7 @@ impl Structure {
     /// let pdb_lines = vec!["ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"];
     /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// let strctr = Structure::from_iterator(atoms.iter());
-    /// let res_type = strctr.residue_type(&ResidueId::new("A", 68, " ")).unwrap();
+    /// let res_type = strctr.residue_type(&ResidueId::new("A", 68, ' ')).unwrap();
     /// assert_eq!(res_type.code3, "ALA");
     /// assert_eq!(res_type.parent_type, StandardResidueType::ALA);
     /// ```
@@ -364,7 +368,7 @@ impl Structure {
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// # let strctr = Structure::from_iterator(atoms.iter());
-    /// let res_atoms = strctr.residue_atoms(&ResidueId::new("A", 68, " "));
+    /// let res_atoms = strctr.residue_atoms(&ResidueId::new("A", 68, ' '));
     /// # assert_eq!(res_atoms.iter().count(),2);
     /// ```
     pub fn residue_atoms(&self, residue_id: &ResidueId) -> Vec<&PdbAtom> {
