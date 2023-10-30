@@ -1,10 +1,12 @@
-//! Allows to process atoms of a [`Structure`](crate::Structure) with iterators.
+//! Provides filters to process atoms of a [`Structure`](crate::Structure) with iterators.
 //!
+//! Each predicate (i.e. a filter) provided by this module, implements [`PdbAtomPredicate`](PdbAtomPredicate) trait.
+//! The [`PdbAtomPredicate::check()`](PdbAtomPredicate::check()) method returns true if a given predicate is satisfied.
+//! This facilitates filtering [`PdbAtom`](crate::PdbAtom)s of a given [`Structure`](crate::Structure)
+//! in a standard rust way with iterator tools.
 //! Atoms of a [`Structure`](crate::Structure) may be accessed by [`Structure::atoms()`](crate::Structure::atoms())
 //! or [`Structure::atoms_mut()`](crate::Structure::atoms_mut())
-//! (immutable or mutable access, respectively) which borrow a reference to a vector of atoms.
-//! These can be processed in a standard rust way with iterator tools. A [`PdbAtomPredicate`](PdbAtomPredicate)
-//! trait defines [`check()`](PdbAtomPredicate::check()) method that returns true if a given predicate is satisfied.
+//! (immutable or mutable access, respectively), which borrow a reference to a vector of atoms.
 //!
 //! For example, [`IsBackbone`](IsBackbone) predicate may be used to filter backbone atoms:
 //! ```
@@ -87,14 +89,14 @@ impl PdbAtomPredicate for ByChain {
 ///
 /// # Examples
 /// ```
-/// # use bioshell_pdb::{PdbAtom, Structure};
-/// use bioshell_pdb::pdb_atom_filters::{ByChain, PdbAtomPredicate};
+/// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{ByResidue, PdbAtomPredicate};
 /// let mut strctr = Structure::new();
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA B  69      25.790  28.757  29.513  1.00 16.12           C"));
-/// let select_chain_A = ByChain::new("A");
-/// let atoms_A: Vec<PdbAtom> = strctr.atoms().iter().filter(|a| select_chain_A.check(a)).cloned().collect();
-/// assert_eq!(atoms_A.len(), 1);
+/// let select_ala_A = ByResidue::new(ResidueId::new("A", 69, ' '));
+/// let ala_A: Vec<PdbAtom> = strctr.atoms().iter().filter(|a| select_ala_A.check(a)).cloned().collect();
+/// assert_eq!(ala_A.len(), 1);
 /// ```
 pub struct ByResidue {res_id: ResidueId }
 
@@ -104,6 +106,45 @@ impl ByResidue {
 
 impl PdbAtomPredicate for ByResidue {
     fn check(&self, a: &PdbAtom) -> bool { self.res_id.check(a) }
+}
+
+/// Returns `true` if an atom belongs to a given residue range.
+///
+/// The range is defined by two [`ResidueId`](crate::ResidueId)s objects, both inclusive.
+/// # Examples
+/// ```
+/// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
+/// let mut strctr = Structure::new();
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  67      25.790  28.757  29.513  1.00 16.12           C"));
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"));
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  CA  ALA A  68A     25.790  28.757  29.513  1.00 16.12           C"));
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+/// let select_ala_A = ByResidueRange::new(ResidueId::new("A", 68, ' '),ResidueId::new("A", 68, 'A'));
+/// let cnt = strctr.atoms().iter().filter(|a| select_ala_A.check(a)).count();
+/// assert_eq!(cnt, 2);
+/// ```
+pub struct ByResidueRange { first_res_id: ResidueId, last_res_id: ResidueId }
+
+impl ByResidueRange {
+    pub fn new(first_res_id: ResidueId, last_res_id: ResidueId ) -> ByResidueRange {
+        ByResidueRange { first_res_id, last_res_id }
+    }
+}
+
+impl PdbAtomPredicate for ByResidueRange {
+    fn check(&self, a: &PdbAtom) -> bool {
+        if a.chain_id < self.first_res_id.chain_id || a.chain_id > self.last_res_id.chain_id { return false }
+        if a.res_seq < self.first_res_id.res_seq || a.res_seq > self.last_res_id.res_seq { return false }
+        if a.i_code == ' ' {
+            if self.first_res_id.i_code != ' ' { return false }
+        } else {
+            if a.i_code < self.first_res_id.i_code { return false }
+            if self.last_res_id.i_code == ' ' { return false }
+        }
+
+        return true;
+    }
 }
 
 /// Returns `true` if an atom belongs to a backbone.
