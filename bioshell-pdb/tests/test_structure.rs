@@ -1,5 +1,5 @@
 use std::io::BufReader;
-use bioshell_pdb::{load_pdb_reader, PdbAtom, Structure};
+use bioshell_pdb::{load_pdb_reader, PdbAtom, ResidueId, Structure};
 
 #[allow(non_upper_case_globals)]
 const lines:  [&str;9] = [
@@ -59,4 +59,14 @@ fn test_loading_from_reader() {
 
     let seq = strctr.sequence("B");
     assert_eq!(seq.to_string(), "MTYKL");
+}
+
+#[test]
+fn test_atoms_by_range() {
+
+    let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
+    let first = ResidueId::new("A", 4, ' ');
+    let last = ResidueId::new("B", 2, ' ');
+    let mut iterator = strctr.atom_in_range(first, last);
+    assert_eq!(iterator.count(), 5);
 }

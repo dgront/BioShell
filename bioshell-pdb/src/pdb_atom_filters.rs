@@ -135,12 +135,17 @@ impl ByResidueRange {
 impl PdbAtomPredicate for ByResidueRange {
     fn check(&self, a: &PdbAtom) -> bool {
         if a.chain_id < self.first_res_id.chain_id || a.chain_id > self.last_res_id.chain_id { return false }
-        if a.res_seq < self.first_res_id.res_seq || a.res_seq > self.last_res_id.res_seq { return false }
+        if (a.res_seq < self.first_res_id.res_seq && a.chain_id==self.first_res_id.chain_id)
+            || (a.res_seq > self.last_res_id.res_seq && a.chain_id==self.last_res_id.chain_id) { return false }
         if a.i_code == ' ' {
-            if self.first_res_id.i_code != ' ' { return false }
+            if self.first_res_id.i_code != ' '
+                && self.first_res_id.chain_id == a.chain_id
+                && self.first_res_id.res_seq == a.res_seq { return false }
         } else {
-            if a.i_code < self.first_res_id.i_code { return false }
-            if self.last_res_id.i_code == ' ' { return false }
+            if self.last_res_id.chain_id == a.chain_id && self.last_res_id.res_seq == a.res_seq {
+                if a.i_code < self.first_res_id.i_code { return false }
+                if self.last_res_id.i_code == ' ' { return false }
+            }
         }
 
         return true;

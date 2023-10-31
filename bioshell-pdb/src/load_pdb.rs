@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use crate::{PdbAtom, PdbHeader, PdbHelix, PdbTitle, residue_id_from_ter_record, Structure};
+use crate::{PdbAtom, PdbHeader, PdbHelix, PdbTitle, residue_id_from_ter_record, ResidueId, Structure};
+use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::ParseError;
 
 /// Reads PDB-formatted content from a buffer
@@ -65,9 +66,17 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
             _ => {},
         };
     }
-
     println!("{:} atoms loaded",atoms.len());
 
+    // ---------- Annotate secondary structure
+    let from: Vec<ResidueId> = helices.iter().map(|h| h.init_res_id()).collect();
+    let to: Vec<ResidueId> = helices.iter().map(|h| h.end_res_id()).collect();
+    for (a,b) in from.iter().zip(&to) {
+        let check = ByResidueRange::new(a.clone(),b.clone());
+        for a in &mut atoms {
+            if check.check(a) { a.secondary_struct_symbol = 'H' }
+        }
+    }
     pdb_structure.atoms = atoms;
 
     Ok(pdb_structure)

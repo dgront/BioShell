@@ -13,7 +13,7 @@ use crate::pdb_parsing_error::ParseError;
 use crate::pdb_sequence_of_residue::PdbSequenceOfResidue;
 use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
-use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain};
+use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
 use crate::ResidueId;
 
 
@@ -235,14 +235,41 @@ impl Structure {
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// # let strctr = Structure::from_iterator(atoms.iter());
     /// let chain_A_atoms = strctr.atoms_in_chain("A");
-    /// # assert_eq!(chain_A_atoms.iter().count(),4);
+    /// # assert_eq!(chain_A_atoms.count(),4);
     /// ```
-    pub fn atoms_in_chain(&self, chain_id: &str) -> Vec<&PdbAtom>{
-        self.atoms.iter().filter(|&a| a.chain_id==chain_id).collect()
+    pub fn atoms_in_chain(&self, chain_id: & str) -> Vec<&PdbAtom> {
+        self.atoms.iter().filter(move |&atm| atm.chain_id==chain_id).collect()
     }
 
-    pub fn atom_in_range(&self, first_res: &ResidueId, last_res: &ResidueId) {
-
+    /// Provide an iterator over atoms from a given range of residues
+    ///
+    /// The atoms may belong to different chains.
+    ///
+    /// # Example
+    /// ```
+    /// # use std::io::BufReader;
+    /// use bioshell_pdb::{load_pdb_reader, ResidueId};
+    /// const pdb_txt: &str =
+    /// "ATOM      2  CA  MET A   1     -13.296   0.028   3.924  1.00  0.43           C
+    /// ATOM     21  CA  THR A   2      -9.669  -0.447   4.998  1.00  0.19           C
+    /// ATOM     35  CA  TYR A   3      -7.173  -2.314   2.811  1.00  0.08           C
+    /// ATOM     56  CA  LYS A   4      -3.922  -3.881   4.044  1.00  0.10           C
+    /// ATOM     78  CA  LEU A   5      -0.651  -2.752   2.466  1.00  0.11           C
+    /// ATOM     97  CA  ILE A   6       2.338  -5.105   2.255  1.00  0.13           C
+    /// ATOM      2  CA  MET B   1     -13.296   0.028   3.924  1.00  0.43           C
+    /// ATOM     21  CA  THR B   2      -9.669  -0.447   4.998  1.00  0.19           C
+    /// ATOM     35  CA  TYR B   3      -7.173  -2.314   2.811  1.00  0.08           C
+    /// ATOM     56  CA  LYS B   4      -3.922  -3.881   4.044  1.00  0.10           C
+    /// ATOM     78  CA  LEU B   5      -0.651  -2.752   2.466  1.00  0.11           C";
+    /// let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
+    /// let first = ResidueId::new("A", 4, ' ');
+    /// let last = ResidueId::new("B", 2, ' ');
+    /// let mut iterator = strctr.atom_in_range(first, last);
+    /// assert_eq!(iterator.count(), 5);
+    /// ```
+    pub fn atom_in_range(&self, first_res: ResidueId, last_res: ResidueId) -> impl Iterator<Item = &PdbAtom> {
+        let check = ByResidueRange::new(first_res, last_res);
+        self.atoms.iter().filter(move |&a| check.check(a))
     }
 
     /// Creates a vector of [`ResidueId`](ResidueId) object for each residue found in a given vector of atoms
@@ -337,6 +364,24 @@ impl Structure {
     ///
     /// Residues listed after the `TER` record are not included in the sequence returned by this method
     pub fn sequence(&self, chain_id: &str) -> Sequence {
+        let ter_resid = self.ter_residue(chain_id);
+        let atms = self.residue_first_atoms(chain_id);
+        let mut aa: Vec<u8> = vec![];
+        for a in atms {
+            if let Some(restype) = ResidueTypeManager::get().by_code3(&a.res_name) {
+                aa.push(u8::try_from(restype.parent_type.code1()).unwrap());
+            } else {
+                aa.push(b'X');
+            }
+            if ter_resid.check(a) {break}
+        }
+        return Sequence::from_attrs(format!(":{}", chain_id), aa);
+    }
+
+    /// Provides a secondary structure of a given chain.
+    ///
+    /// Residues listed after the `TER` record are not included in the sequence returned by this method
+    pub fn secondary(&self, chain_id: &str) -> Sequence {
         let ter_resid = self.ter_residue(chain_id);
         let atms = self.residue_first_atoms(chain_id);
         let mut aa: Vec<u8> = vec![];
