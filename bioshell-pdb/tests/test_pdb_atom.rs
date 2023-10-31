@@ -19,7 +19,7 @@ mod tests {
         assert_eq!(atom.occupancy, 1.0);
         assert_eq!(atom.temp_factor, 0.0);
         assert_eq!(atom.element, Some(String::from("C")));
-        assert_eq!(atom.secondary_struct_symbol, 'C');
+        assert_eq!(atom.secondary_struct_type, 'C');
         assert_eq!(atom.charge, None);
     }
 

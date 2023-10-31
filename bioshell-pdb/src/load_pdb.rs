@@ -71,12 +71,15 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
     // ---------- Annotate secondary structure
     let from: Vec<ResidueId> = helices.iter().map(|h| h.init_res_id()).collect();
     let to: Vec<ResidueId> = helices.iter().map(|h| h.end_res_id()).collect();
-    for (a,b) in from.iter().zip(&to) {
-        let check = ByResidueRange::new(a.clone(),b.clone());
+    for i in 0..helices.len() {
+        let from = helices[i].init_res_id();
+        let to = helices[i].end_res_id();
+        let check = ByResidueRange::new(from,to);
         for a in &mut atoms {
-            if check.check(a) { a.secondary_struct_symbol = 'H' }
+            if check.check(a) { a.secondary_struct_type = helices[i].helix_class }
         }
     }
+
     pdb_structure.atoms = atoms;
 
     Ok(pdb_structure)

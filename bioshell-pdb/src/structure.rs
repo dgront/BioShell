@@ -15,6 +15,7 @@ use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
 use crate::ResidueId;
+use crate::secondary_structure::SecondaryStructure;
 
 
 /// A biomacromolecular structure composed of [`PdbAtom`](PdbAtom) objects.
@@ -381,19 +382,15 @@ impl Structure {
     /// Provides a secondary structure of a given chain.
     ///
     /// Residues listed after the `TER` record are not included in the sequence returned by this method
-    pub fn secondary(&self, chain_id: &str) -> Sequence {
+    pub fn secondary(&self, chain_id: &str) -> SecondaryStructure {
         let ter_resid = self.ter_residue(chain_id);
         let atms = self.residue_first_atoms(chain_id);
-        let mut aa: Vec<u8> = vec![];
+        let mut sec: Vec<u8> = vec![];
         for a in atms {
-            if let Some(restype) = ResidueTypeManager::get().by_code3(&a.res_name) {
-                aa.push(u8::try_from(restype.parent_type.code1()).unwrap());
-            } else {
-                aa.push(b'X');
-            }
+            sec.push(a.secondary_struct_type);
             if ter_resid.check(a) {break}
         }
-        return Sequence::from_attrs(format!(":{}", chain_id), aa);
+        return SecondaryStructure::from_attrs(sec);
     }
 
     /// Creates a vector of [`ResidueId`](ResidueId) object for each residue of a given chain

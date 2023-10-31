@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::string::String;
 use crate::calc::Vec3;
+use crate::SecondaryStructureTypes;
 
 /// Atom record as found in a single line of a PDB file.
 ///
@@ -32,7 +33,7 @@ pub struct PdbAtom {
     pub element: Option<String>,
     pub charge: Option<String>,
     pub is_hetero_atom: bool,
-    pub secondary_struct_symbol: char,
+    pub secondary_struct_type: u8,
 }
 
 impl PdbAtom {
@@ -53,7 +54,7 @@ impl PdbAtom {
             temp_factor: 0.0,
             element: Some(String::from("C")),
             is_hetero_atom: false,
-            secondary_struct_symbol: 'C',
+            secondary_struct_type: b'C',
             charge: None
         }
     }
@@ -104,8 +105,13 @@ impl PdbAtom {
             element: element,
             charge: None,
             is_hetero_atom: pdb_line.starts_with("H"),
-            secondary_struct_symbol: 'C'
+            secondary_struct_type: 12
         };
+    }
+
+    pub fn hec_code(&self) -> u8 {
+        let sec_str_type = SecondaryStructureTypes::from_pdb_class(self.secondary_struct_type as usize);
+        SecondaryStructureTypes::hec_code(&sec_str_type)
     }
 }
 

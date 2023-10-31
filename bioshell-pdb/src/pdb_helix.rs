@@ -30,7 +30,7 @@ pub struct PdbHelix {
     /// Insertion code of the terminal residue
     pub end_i_code: char,
     /// Helix class
-    pub helix_class: i32,
+    pub helix_class: u8,
     /// Comment about this helix
     pub comment: String,
     /// Length of this helix
