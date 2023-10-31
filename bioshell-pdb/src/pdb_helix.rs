@@ -2,8 +2,8 @@ use crate::ResidueId;
 
 /// Corresponds to a HELIX record.
 ///
-/// HELIX records are used to identify the position of helices in the molecule. The struct can
-/// provide the initial and the terminal residue of this helix.
+/// HELIX records are used to identify the position of helices in the molecule sequence. The struct
+/// provides also a [`ResidueId`](ResidueId) for the initial and the terminal residue of this helix.
 pub struct PdbHelix {
     /// Serial number of the helix.
     ///
