@@ -24,7 +24,7 @@ mod pdb_sequence_of_residue;
 mod pdb_source;
 mod pdb_title;
 pub mod pdb_parsing_error;
-pub mod pdb_helix;
+mod pdb_helix;
 mod pdb_sheet;
 pub mod pdb_sheet_line_parser;
 mod pdb_atom;
