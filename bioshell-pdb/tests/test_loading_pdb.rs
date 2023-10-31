@@ -15,6 +15,6 @@ mod tests {
         assert_eq!(strctr.count_residues(), 56);
         assert_eq!(strctr.count_chains(), 1);
         let sec_str = strctr.secondary("A");
-        assert_eq!(String::from("CCCCCCCCCCCCCCCCCCCCCHHHHHHHHHHHHHHHCCCCCCCCCCCCCCCCCCCC"), sec_str.to_string());
+        assert_eq!(String::from("CEEEEEECCCCCCEEEEEECCHHHHHHHHHHHHHHHCCCCCEEEEECCCCEEEEEC"), sec_str.to_string());
     }
 }

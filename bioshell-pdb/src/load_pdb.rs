@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use crate::{PdbAtom, PdbHeader, PdbHelix, PdbTitle, residue_id_from_ter_record, ResidueId, Structure};
+use crate::{PdbAtom, PdbHeader, PdbHelix, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure};
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::ParseError;
 
@@ -29,6 +29,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
 
     let mut atoms: Vec<PdbAtom> = vec![];
     let mut helices: Vec<PdbHelix> = vec![];
+    let mut strands: Vec<PdbSheet> = vec![];
 
     for line in reader.lines() {
         let line = line?;
@@ -54,6 +55,10 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
                 let helix = PdbHelix::from_helix_line(&line);
                 helices.push(helix);
             }
+            "SHEET" => {
+                let strand = PdbSheet::from_sheet_line(&line);
+                strands.push(strand);
+            }
             //"COMPND" => {},
             //"Source_" => {},
             //"SequenceOfResidue_" => {},
@@ -69,14 +74,20 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
     println!("{:} atoms loaded",atoms.len());
 
     // ---------- Annotate secondary structure
-    let from: Vec<ResidueId> = helices.iter().map(|h| h.init_res_id()).collect();
-    let to: Vec<ResidueId> = helices.iter().map(|h| h.end_res_id()).collect();
     for i in 0..helices.len() {
         let from = helices[i].init_res_id();
         let to = helices[i].end_res_id();
         let check = ByResidueRange::new(from,to);
         for a in &mut atoms {
             if check.check(a) { a.secondary_struct_type = helices[i].helix_class }
+        }
+    }
+    for i in 0..strands.len() {
+        let from = strands[i].init_res_id();
+        let to = strands[i].end_res_id();
+        let check = ByResidueRange::new(from,to);
+        for a in &mut atoms {
+            if check.check(a) { a.secondary_struct_type = SecondaryStructureTypes::Strand as u8 }
         }
     }
 
