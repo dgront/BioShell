@@ -20,7 +20,6 @@
 mod structure;
 mod pdb_header;
 mod secondary_structure;
-mod pdb_source;
 mod pdb_title;
 pub mod pdb_parsing_error;
 mod pdb_helix;
@@ -42,7 +41,6 @@ pub use assertions::*;
 pub use pdb_atom::PdbAtom;
 pub use residue_id::{ResidueId, residue_id_from_ter_record};
 pub use pdb_header::PdbHeader;
-pub use pdb_source::PdbSource;
 pub use pdb_title::PdbTitle;
 pub use pdb_helix::PdbHelix;
 pub use pdb_sheet::PdbSheet;

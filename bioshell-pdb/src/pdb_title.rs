@@ -1,4 +1,4 @@
-/// The TITLE record contains a title for a PDB entry.
+/// The `TITLE` record contains a title for a PDB entry.
 ///
 /// Typically a [`PdbTitle`](PdbTitle) struct is created by the [`load_pdb_file()`](crate::load_pdb_file()) function
 /// when it reads and parses a PDB file.

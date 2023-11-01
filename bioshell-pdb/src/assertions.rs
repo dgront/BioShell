@@ -27,11 +27,11 @@ macro_rules! assert_vec3_eq {
 ///
 /// # Example
 /// ```
-/// use bioshell_pdb::assert_vec3_eq;
+/// use bioshell_pdb::assert_vec3_ne;
 /// use bioshell_pdb::calc::Vec3;
 /// let a = Vec3::new(1.0, 2.0, 3.0);
 /// let b = Vec3::new(1.1, 2.0, 3.0);
-/// assert_vec3_ne!(a, b, 0.10, "This should not fail, the X differs by more than 0.10");
+/// assert_vec3_ne!(a, b, 0.99, "This should not fail, the X differs by more than 0.10");
 /// ```
 #[macro_export]
 macro_rules! assert_vec3_ne {

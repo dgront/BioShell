@@ -9,7 +9,6 @@ use bioshell_seq::sequence::Sequence;
 use crate::pdb_atom::PdbAtom;
 use crate::pdb_header::PdbHeader;
 use crate::pdb_parsing_error::ParseError;
-use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
 use crate::ResidueId;
@@ -90,7 +89,6 @@ use crate::secondary_structure::SecondaryStructure;
 pub struct Structure {
     pub header: Option<PdbHeader>,
     pub title: Option<PdbTitle>,
-    pub source: Option<PdbSource>,
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
 }
@@ -101,7 +99,6 @@ impl Structure {
         Self {
             header: None,
             title: None,
-            source: None,
             ter_atoms: Default::default(),
             atoms: vec![],
         }
