@@ -1,7 +1,7 @@
 use std::fmt;
 use log::debug;
 use rand::{Rng};
-use bioshell_pdb::calc::{Rototranslation, Vec3};
+use bioshell_pdb::calc::{Rototranslation};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
 use crate::tail_move::MovedTermini::{CTerminal, NTerminal};
 

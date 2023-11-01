@@ -1,3 +1,4 @@
+#[warn(unused_imports)]
 use log::{debug, info};
 use rand::{Rng};
 use bioshell_pdb::calc::{Rototranslation, Vec3};

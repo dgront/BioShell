@@ -11,13 +11,8 @@ keywords = ["bioshell"]
 members = [
     "bioshell-io",
     "bioshell-seq",
-    "bioshell-numerical",
-    "bioshell-ff",
-    "bioshell-sim",
     "bioshell-statistics",
     "bioshell-clustering",
-    "bioshell-montecarlo",
-    "bioshell-cartesians",
     "bioshell-cif",
     "bioshell-pdb",
     "bioshell-datastructures",
@@ -28,13 +23,8 @@ members = [
 bioshell-io = { path = "./bioshell-io" }
 bioshell-seq = { path = "./bioshell-seq" }
 bioshell-pdb = { path = "./bioshell-pdb" }
-bioshell-numerical = { path = "./bioshell-numerical" }
-bioshell-ff = { path = "./bioshell-ff" }
-bioshell-sim = { path = "./bioshell-sim" }
 bioshell-clustering = { path = "./bioshell-clustering" }
 bioshell-statistics = { path = "./bioshell-statistics" }
-bioshell-montecarlo = { path = "./bioshell-montecarlo" }
-bioshell-cartesians = { path = "./bioshell-cartesians" }
 bioshell-datastructures = { path = "./bioshell-datastructures"}
 bioshell-cif = { path = "./bioshell-cif" }
 surpass = { path = "./surpass" }
@@ -47,9 +37,7 @@ nalgebra = "0.31.1"
 log = "0.4.0"
 env_logger = "0.9.0"
 
-[[bin]]
-name = "surpass_alfa"
-path = "src/surpass_alfa.rs"
+#[[bin]]
 
 
 [package.metadata.docs.rs]

@@ -13,7 +13,6 @@ crate-type =["rlib"]
 
 [dependencies]
 bioshell-io = { path = "../bioshell-io" }
-bioshell-numerical = { path = "../bioshell-numerical" }
 clap = { version = "3.1.18", features = ["derive"] }
 thiserror = "1.0"
 displaydoc = "0.2"

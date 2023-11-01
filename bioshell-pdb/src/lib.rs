@@ -17,6 +17,7 @@
 //! The [`calc`](crate::calc) module provides functions to calculate structural properties,
 //! such as distances, planar or dihedral angles.
 
+#![allow(clippy::needless_return)]
 mod structure;
 mod pdb_header;
 mod secondary_structure;

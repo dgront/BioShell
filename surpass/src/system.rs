@@ -221,7 +221,6 @@ impl SurpassAlphaSystem {
 
         let mut stream = out_writer(&fname, if_append);
         stream.write(format!("MODEL{:6}\n", self.model_id).as_bytes());
-        let mut i = 1;
         for i_chain in 0..self.count_chains() {
             let begin_atom_idx = self.atoms_for_chain[i_chain].start;
             let end_atom_idx = self.atoms_for_chain[i_chain].end;

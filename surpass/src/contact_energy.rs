@@ -1,3 +1,4 @@
+#[warn(unused_imports)]
 use log::debug;
 use crate::{NonBondedEnergyKernel, SurpassAlphaSystem};
 

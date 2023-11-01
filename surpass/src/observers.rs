@@ -50,7 +50,7 @@ impl SystemObserver for ObserveCM {
 
     fn header(&self) -> String {
         let mut header = String::from("#   cm-X     cm-Y    cm-Z");
-        for i in 1..self.n_chains { header.push_str("   cm-X     cm-Y    cm-Z"); }
+        for _i in 1..self.n_chains { header.push_str("   cm-X     cm-Y    cm-Z"); }
         header.push('\n');
 
         return header;
