@@ -31,7 +31,9 @@ pub struct PdbHelix {
     pub end_seq_num: i32,
     /// Insertion code of the terminal residue
     pub end_i_code: char,
-    /// Helix class
+    /// Helix class: an integer from 1 to 12 (both inclusive)
+    ///
+    /// For the list of codes see the [official documentation of the `HELIX` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect5.html#HELIX)
     pub helix_class: u8,
     /// Comment about this helix
     pub comment: String,

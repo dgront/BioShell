@@ -7,17 +7,33 @@ use crate::ResidueId;
 ///
 /// Refer to the [official documentation of the `SHEET` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect5.html#SHEET)
 pub struct PdbSheet {
+    /// strand  number
+    ///
+    /// starts at 1 for each strand within a sheet
     pub strand: i32,
+    /// sheet  identifier
     pub sheet_id: String,
+    /// number  of strands in sheet
     pub num_strands: i32,
+    /// name of the initial residue for this strand
     pub init_res_name: String,
+    /// chain identifier of the initial residue for this strand
     pub init_chain_id: String,
+    /// sequence number of the initial residue  for this strand
     pub init_seq_num: i32,
+    /// insertion code of the initial residue  for this strand
     pub init_i_code: char,
+    /// name of the terminal residue for this strand
     pub end_res_name: String,
+    /// chain identifier of the terminal residue for this strand
     pub end_chain_id: String,
+    /// sequence number of the terminal residue  for this strand
     pub end_seq_num: i32,
+    /// insertion code of the terminal residue  for this strand
     pub end_i_code: char,
+    /// sense of strand with respect to previous strand in the sheet.
+    ///
+    /// 0 if first strand, 1 if  parallel,and -1 if anti-parallel
     pub sense: i8,
 }
 
