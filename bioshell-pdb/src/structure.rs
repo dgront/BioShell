@@ -9,7 +9,6 @@ use bioshell_seq::sequence::Sequence;
 use crate::pdb_atom::PdbAtom;
 use crate::pdb_header::PdbHeader;
 use crate::pdb_parsing_error::ParseError;
-use crate::pdb_sequence_of_residue::PdbSequenceOfResidue;
 use crate::pdb_source::PdbSource;
 use crate::pdb_title::PdbTitle;
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
@@ -92,7 +91,6 @@ pub struct Structure {
     pub header: Option<PdbHeader>,
     pub title: Option<PdbTitle>,
     pub source: Option<PdbSource>,
-    pub defined_sequence: Option<PdbSequenceOfResidue>,
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
 }
@@ -104,7 +102,6 @@ impl Structure {
             header: None,
             title: None,
             source: None,
-            defined_sequence: None,
             ter_atoms: Default::default(),
             atoms: vec![],
         }
@@ -460,8 +457,6 @@ impl Structure {
     }
 }
 
-
-
 #[test]
 fn test_first_residue_atoms() {
     let lines: [&str; 6] = [
@@ -474,9 +469,6 @@ fn test_first_residue_atoms() {
     let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     let strctr = Structure::from_iterator(atoms.iter());
 
-    for a in strctr.residue_first_atoms("A") {
-        println!("{:?}",&a);
-    }
     assert_eq!(strctr.residue_first_atoms("A").len(), 2);
     assert_eq!(strctr.residue_first_atoms("B").len(), 1);
 }

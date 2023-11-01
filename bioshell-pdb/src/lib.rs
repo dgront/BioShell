@@ -19,7 +19,6 @@
 
 mod structure;
 mod pdb_header;
-mod pdb_sequence_of_residue;
 mod secondary_structure;
 mod pdb_source;
 mod pdb_title;
