@@ -4,7 +4,7 @@ use crate::{PdbAtom, PdbHeader, PdbHelix, PdbSheet, PdbTitle, residue_id_from_te
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::ParseError;
 
-/// Reads PDB-formatted content from a buffer
+/// Reads PDB-formatted content from a buffer.
 ///
 /// This function allows reading PDB structures from `String`
 /// # Example
