@@ -20,27 +20,6 @@ macro_rules! assert_vec3_eq {
     }
 }
 
-/// Compares two [`Vec3`](crate::calc::Vec3) structs and fails when they are identical
-///
-/// This macro fails an assertion when all the coordinates of a `va`  vector are close (within a given `delta`) to
-/// the corresponding coordinate of `vb` vector.
-///
-/// # Example
-/// ```
-/// use bioshell_pdb::assert_vec3_ne;
-/// use bioshell_pdb::calc::Vec3;
-/// let a = Vec3::new(1.0, 2.0, 3.0);
-/// let b = Vec3::new(1.1, 2.0, 3.0);
-/// assert_vec3_ne!(a, b, 0.99, "This should not fail, the X differs by more than 0.10");
-/// ```
-#[macro_export]
-macro_rules! assert_vec3_ne {
-    ($va:expr, $vb:expr, $delta:expr, $msg:expr) => {
-        assert!(($va.x-$vb.x).abs() > $delta, "{} : va.x = {}, vb.x = {}", $msg, $va.x, $vb.x);
-        assert!(($va.y-$vb.y).abs() > $delta, "{} : va.y = {}, vb.y = {}", $msg, $va.y, $vb.y);
-        assert!(($va.z-$vb.z).abs() > $delta, "{} : va.z = {}, vb.z = {}", $msg, $va.z, $vb.z);
-    }
-}
 
 /// Compares two floating-point values with tolerance
 ///
