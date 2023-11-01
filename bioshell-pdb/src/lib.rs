@@ -18,7 +18,6 @@
 //! such as distances, planar or dihedral angles.
 
 mod structure;
-mod pdb_compound;
 mod pdb_header;
 mod pdb_sequence_of_residue;
 mod secondary_structure;
@@ -42,7 +41,6 @@ pub use load_pdb::*;
 
 pub use pdb_atom::PdbAtom;
 pub use residue_id::{ResidueId, residue_id_from_ter_record};
-pub use pdb_compound::PdbCompound;
 pub use pdb_header::PdbHeader;
 pub use pdb_source::PdbSource;
 pub use pdb_title::PdbTitle;

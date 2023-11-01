@@ -59,9 +59,6 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
                 let strand = PdbSheet::from_sheet_line(&line);
                 strands.push(strand);
             }
-            //"COMPND" => {},
-            //"Source_" => {},
-            //"SequenceOfResidue_" => {},
             "ATOM" => {
                 atoms.push(PdbAtom::from_atom_line(&line));
             },

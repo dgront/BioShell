@@ -7,7 +7,6 @@ use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypePropert
 use bioshell_seq::sequence::Sequence;
 
 use crate::pdb_atom::PdbAtom;
-use crate::pdb_compound::PdbCompound;
 use crate::pdb_header::PdbHeader;
 use crate::pdb_parsing_error::ParseError;
 use crate::pdb_sequence_of_residue::PdbSequenceOfResidue;
@@ -92,7 +91,6 @@ use crate::secondary_structure::SecondaryStructure;
 pub struct Structure {
     pub header: Option<PdbHeader>,
     pub title: Option<PdbTitle>,
-    pub compound: Option<PdbCompound>,
     pub source: Option<PdbSource>,
     pub defined_sequence: Option<PdbSequenceOfResidue>,
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
@@ -105,7 +103,6 @@ impl Structure {
         Self {
             header: None,
             title: None,
-            compound: None,
             source: None,
             defined_sequence: None,
             ter_atoms: Default::default(),
