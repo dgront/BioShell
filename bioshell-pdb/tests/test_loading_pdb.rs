@@ -16,5 +16,8 @@ mod tests {
         assert_eq!(strctr.count_chains(), 1);
         let sec_str = strctr.secondary("A");
         assert_eq!(String::from("CEEEEEECCCCCCEEEEEECCHHHHHHHHHHHHHHHCCCCCEEEEECCCCEEEEEC"), sec_str.to_string());
+
+        assert_eq!(strctr.title.unwrap().to_string(),
+                   String::from("A NOVEL, HIGHLY STABLE FOLD OF THE IMMUNOGLOBULIN BINDING DOMAIN OF STREPTOCOCCAL PROTEIN G"))
     }
 }
