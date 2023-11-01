@@ -54,7 +54,7 @@ impl PdbAtom {
             temp_factor: 0.0,
             element: Some(String::from("C")),
             is_hetero_atom: false,
-            secondary_struct_type: b'C',
+            secondary_struct_type: SecondaryStructureTypes::Coil as u8,
             charge: None
         }
     }

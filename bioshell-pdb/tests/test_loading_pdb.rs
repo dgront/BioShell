@@ -2,7 +2,7 @@
 mod tests {
     use std::io::BufReader;
     use std::string::String;
-    use bioshell_pdb::{load_pdb_reader, PdbAtom};
+    use bioshell_pdb::{load_pdb_reader};
 
     #[allow(non_upper_case_globals)]
     const pdb_2gb1:  &str = include_str!("./test_files/2gb1.pdb");

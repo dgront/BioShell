@@ -67,6 +67,6 @@ fn test_atoms_by_range() {
     let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
     let first = ResidueId::new("A", 4, ' ');
     let last = ResidueId::new("B", 2, ' ');
-    let mut iterator = strctr.atom_in_range(first, last);
+    let iterator = strctr.atom_in_range(first, last);
     assert_eq!(iterator.count(), 5);
 }
