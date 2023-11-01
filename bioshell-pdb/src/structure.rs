@@ -236,7 +236,7 @@ impl Structure {
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// # let strctr = Structure::from_iterator(atoms.iter());
     /// let chain_A_atoms = strctr.atoms_in_chain("A");
-    /// # assert_eq!(chain_A_atoms.count(),4);
+    /// # assert_eq!(chain_A_atoms.len(),4);
     /// ```
     pub fn atoms_in_chain(&self, chain_id: & str) -> Vec<&PdbAtom> {
         self.atoms.iter().filter(move |&atm| atm.chain_id==chain_id).collect()
@@ -250,6 +250,7 @@ impl Structure {
     /// ```
     /// # use std::io::BufReader;
     /// use bioshell_pdb::{load_pdb_reader, ResidueId};
+    /// # #[allow(non_upper_case_globals)]
     /// const pdb_txt: &str =
     /// "ATOM      2  CA  MET A   1     -13.296   0.028   3.924  1.00  0.43           C
     /// ATOM     21  CA  THR A   2      -9.669  -0.447   4.998  1.00  0.19           C

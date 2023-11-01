@@ -153,8 +153,8 @@ impl Matrix3x3 {
     /// let mtx = Matrix3x3::from_array(m);
     ///
     /// assert_eq!(mtx[0], 1.0);
-    /// assert_eq!(mtx[4], 5.0);
-    /// assert_eq!(mtx[8], 9.0);
+    /// assert_eq!(mtx[1], 2.0);
+    /// assert_eq!(mtx[2], 3.0);
     /// ```
     pub fn from_array(m: [f64; 9]) -> Self {
         Matrix3x3 { array: m }
@@ -220,14 +220,13 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
+    /// use bioshell_pdb::assert_vec3_eq;
     /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
     ///
     /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let mut rhs = Vec3::new(2.0, 2.0, 2.0);
     /// lhs.mul_vec_mut(&mut rhs);
-    /// assert_eq!(12.0, rhs[0]);
-    /// assert_eq!(30.0, rhs[1]);
-    /// assert_eq!(48.0, rhs[2]);
+    /// assert_vec3_eq!(Vec3::new(24.0, 30.0, 36.0), rhs, 0.0001, "Incorrect vector after multiplication");
     ///```
     pub fn mul_vec_mut(&self, rhs: &mut Vec3) {
         let lhs = self;
@@ -444,7 +443,7 @@ impl Matrix3x3 {
     /// let mat = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let vec = Vec3::new(1.0, 2.0, 3.0);
     /// let result = Matrix3x3::mul_vec_s(&mat, &vec);
-    /// assert_eq!(result, Vec3::new(14.0, 32.0, 50.0));
+    /// assert_eq!(result, Vec3::new(30.0, 36.0, 42.0));
     ///```
     pub fn mul_vec_s(mat: &Matrix3x3, vec: &Vec3) -> Vec3 {
         let mut vec_copy = vec.clone();

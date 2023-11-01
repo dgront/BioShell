@@ -1,11 +1,7 @@
-macro_rules! assert_delta {
-    ($x:expr, $y:expr, $d:expr) => {
-        assert!(($x-$y).abs() < $d, "a = {}, b = {}", $x, $y)
-    }
-}
 
 #[cfg(test)]
 mod test_vec3 {
+    use bioshell_pdb::assert_delta;
     use bioshell_pdb::calc::{Vec3, dihedral_angle4};
 
     #[test]

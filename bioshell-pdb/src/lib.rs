@@ -28,7 +28,7 @@ pub mod pdb_parsing_error;
 mod pdb_helix;
 mod pdb_sheet;
 mod pdb_atom;
-
+pub mod assertions;
 pub mod pdb_atom_filters;
 pub mod calc;
 pub mod nerf;

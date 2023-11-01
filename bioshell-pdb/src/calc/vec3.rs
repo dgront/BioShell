@@ -244,10 +244,11 @@ impl Vec3 {
     /// Assigns new content to this vector.
     ///
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// use bioshell_pdb::assert_delta;
+    /// use bioshell_pdb::calc::Vec3;
     /// let mut v1 = Vec3::new(1.0, 2.0, 2.0);
     /// v1.set3(3.0, 0.0, 1.0);
-    /// assert_eq!(v1.length(), 3.162278);
+    /// assert_delta!(v1.length(), 3.162278, 0.0001);
     /// ```
     pub fn set3(&mut self, x: f64, y: f64, z: f64) {
         self.x = x;
