@@ -26,7 +26,7 @@ pub mod pdb_parsing_error;
 mod pdb_helix;
 mod pdb_sheet;
 mod pdb_atom;
-pub mod assertions;
+mod assertions;
 pub mod pdb_atom_filters;
 pub mod calc;
 pub mod nerf;
@@ -37,6 +37,7 @@ mod load_pdb;
 pub use structure::Structure;
 pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
 pub use load_pdb::*;
+pub use assertions::*;
 
 pub use pdb_atom::PdbAtom;
 pub use residue_id::{ResidueId, residue_id_from_ter_record};
