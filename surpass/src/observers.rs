@@ -1,108 +1,152 @@
+use std::collections::VecDeque;
 use std::error::Error;
 use std::io::Write;
+use std::marker::PhantomData;
 use bioshell_io::out_writer;
 use bioshell_pdb::calc::Vec3;
 use crate::{calculate_cm, SurpassAlphaSystem};
 
-pub struct ObserveToFile<O> {
+pub struct RecordMeasurements<T, M: SystemMeasurement<T>> {
     fname: String,
-    observable: O
+    measurements: Vec<M>,
+    phantom: PhantomData<T>
 }
 
-impl<O: SystemObserver> ObserveToFile<O> {
-    pub fn new(fname: &str, observable: O) -> Result<ObserveToFile<O>, Box<dyn Error>> {
+impl<T: std::fmt::Display, M: SystemMeasurement<T>> RecordMeasurements<T, M> {
+    pub fn new(fname: &str, measurements: Vec<M>) -> Result<RecordMeasurements<T, M>, Box<dyn Error>> {
         let mut stream = out_writer(&fname, false);
-        stream.write(observable.header().as_bytes())?;
-        Ok(ObserveToFile{ fname: fname.to_string(), observable })
+        stream.write(b"#")?;
+        for o in &measurements {
+            stream.write(o.header().as_bytes())?;
+        }
+        stream.write(b"\n");
+        Ok(RecordMeasurements { fname: fname.to_string(), measurements, phantom: Default::default() })
     }
 
     pub fn observe(&self, system: &SurpassAlphaSystem) -> Result<(), Box<dyn Error>> {
         let mut stream = out_writer(&self.fname, true);
-        stream.write(self.observable.to_string(system).as_bytes())?;
+        for o in &self.measurements {
+            let oi = o.measure(system);
+            stream.write(format!("{:}", oi).as_bytes())?;
+        }
+        stream.write(b"\n");
         Ok(())
     }
 }
 
-pub trait SystemObserver {
-    fn to_string(&self, system: &SurpassAlphaSystem) -> String;
+/// Measures a property of a [`SurpassAlphaSystem`](SurpassAlphaSystem)
+///
+/// At each call of  the [`SystemMeasurement::measure()`](SystemMeasurement::measure()) method,
+/// a property of the current conformation of a [`SurpassAlphaSystem`](SurpassAlphaSystem) is
+/// evaluated and returned
+pub trait SystemMeasurement<T> {
+    fn measure(&self, system: &SurpassAlphaSystem) -> T;
     fn header(&self) -> String;
 }
-pub struct ObserveCM {n_chains: usize}
 
-impl ObserveCM {
-    pub fn new(system: &SurpassAlphaSystem) -> ObserveCM {
-        ObserveCM{n_chains: system.count_chains()}
-    }
+/// Center-of-Mass (CM) vector measured for a single chain of a [`SurpassAlphaSystem`](SurpassAlphaSystem)
+pub struct ChainCM {which_chain: usize}
+
+impl ChainCM {
+
+    /// Creates a new Center-of-Mass measurement for the `which_chain` chain of a system
+    pub fn new(which_chain: usize) -> ChainCM { ChainCM {which_chain} }
 }
 
-impl SystemObserver for ObserveCM {
-    fn to_string(&self, system: &SurpassAlphaSystem) -> String {
-        let mut str: Vec<String> = vec![];
+impl SystemMeasurement<Vec3> for ChainCM {
+
+    fn measure(&self, system: &SurpassAlphaSystem) -> Vec3 { calculate_cm(system, self.which_chain) }
+
+    fn header(&self) -> String { String::from("   cm-X     cm-Y    cm-Z") }
+}
+
+pub struct REndSquared {which_chain: usize}
+
+impl REndSquared {
+    pub fn new(which_chain: usize) -> REndSquared { REndSquared {which_chain} }
+}
+
+impl SystemMeasurement<f64> for REndSquared {
+    fn measure(&self, system: &SurpassAlphaSystem) -> f64 {
+        let chain_atoms = system.chain_atoms(self.which_chain);
+        system.distance_squared(chain_atoms.start, chain_atoms.end - 1)
+    }
+
+    fn header(&self) -> String { String::from("r-end-squared\n") }
+}
+
+pub struct RgSquared {which_chain: usize}
+
+impl RgSquared {
+    pub fn new(which_chain: usize) -> RgSquared { RgSquared {which_chain} }
+}
+
+impl SystemMeasurement<f64> for RgSquared {
+    fn measure(&self, system: &SurpassAlphaSystem) -> f64 {
+        let chain_atoms = system.chain_atoms(self.which_chain);
+        let cm = calculate_cm(system, self.which_chain);
+        let (mut s, mut n, mut cc) = (0.0, 0.0, 0.0);
+        let mut atom = Vec3::from_float(0.0);
+        for i_atom in chain_atoms.clone() {
+            n += 1.0;
+            system.set_ca_to_nearest_vec3(i_atom,chain_atoms.start, &mut atom);
+            cc = atom.x - cm.x;
+            s += cc * cc;
+            cc = atom.y - cm.y;
+            s += cc * cc;
+            cc = atom.z - cm.z;
+            s += cc * cc;
+        }
+
+        return s/n;
+    }
+
+    fn header(&self) -> String { String::from("gyration-radius-squared\n") }
+}
+
+pub struct CMDisplacement {
+    n_samples: usize,
+    t_max: usize,
+    displacements: Vec<f64>,
+    cm_by_chain: Vec<VecDeque<Vec3>>,
+    file_name: String
+}
+
+impl CMDisplacement {
+    pub fn new(n_chains: usize, t_max: usize, file_name: &str) -> CMDisplacement {
+        CMDisplacement{
+            cm_by_chain: vec![VecDeque::with_capacity(t_max); n_chains],
+            n_samples: 0, t_max, displacements: vec![0.0; t_max],
+            file_name: file_name.to_string(),
+        }
+    }
+
+    pub fn observe(&mut self, system: &SurpassAlphaSystem) {
         for i_chain in 0..system.count_chains() {
+            // ---------- compute the CM vector for the i-th chain
             let cm_vec = calculate_cm(system, i_chain);
-            str.push(format!("{:8.3} {:8.3} {:8.3}",cm_vec.x, cm_vec.y, cm_vec.z));
-        }
-        let mut out = str.join("  ");
-        out.push('\n');
-
-        return out;
-    }
-
-    fn header(&self) -> String {
-        let mut header = String::from("#   cm-X     cm-Y    cm-Z");
-        for _i in 1..self.n_chains { header.push_str("   cm-X     cm-Y    cm-Z"); }
-        header.push('\n');
-
-        return header;
-    }
-}
-
-pub struct REndSquared;
-
-impl SystemObserver for REndSquared {
-    fn to_string(&self, system: &SurpassAlphaSystem) -> String {
-        let mut str: Vec<String> = vec![];
-        for i_chain in 0..system.count_chains() {
-            let chain_atoms = system.chain_atoms(i_chain);
-            let r = system.distance_squared(chain_atoms.start, chain_atoms.end - 1);
-            str.push(format!("{:8.3}", r));
-        }
-        let mut out = str.join("  ");
-        out.push('\n');
-
-        return out;
-    }
-
-    fn header(&self) -> String { String::from("#  r-end-squared\n") }
-}
-
-pub struct RgSquared;
-
-impl SystemObserver for RgSquared {
-    fn to_string(&self, system: &SurpassAlphaSystem) -> String {
-        let mut str: Vec<String> = vec![];
-        for i_chain in 0..system.count_chains() {
-            let chain_atoms = system.chain_atoms(i_chain);
-            let cm = calculate_cm(system, i_chain);
-            let (mut s, mut n, mut cc) = (0.0, 0.0, 0.0);
-            let mut atom = Vec3::from_float(0.0);
-            for i_atom in chain_atoms.clone() {
-                n += 1.0;
-                system.set_ca_to_nearest_vec3(i_atom,chain_atoms.start, &mut atom);
-                cc = atom.x - cm.x;
-                s += cc * cc;
-                cc = atom.y - cm.y;
-                s += cc * cc;
-                cc = atom.z - cm.z;
-                s += cc * cc;
+            // ---------- if not all the CM vectors were collected: just push the next one to the front
+            if self.cm_by_chain[i_chain].len() < self.t_max {
+                self.cm_by_chain[i_chain].push_front(cm_vec);
+                continue;
             }
-            str.push(format!("{:8.3}", s/n));
+            // ---------- if we have enough CM vectors collected - compute displacement between the new observations and all the CMs previously recorded
+            for i_time in 0..self.t_max {
+                let d = cm_vec.distance_to(&self.cm_by_chain[i_chain][i_time]);
+                self.displacements[i_time] += d;
+            }
+            self.cm_by_chain[i_chain].pop_back();
+            self.cm_by_chain[i_chain].push_front(cm_vec);
+            self.n_samples += 1;
         }
-        let mut out = str.join("  ");
-        out.push('\n');
-
-        return out;
     }
+}
 
-    fn header(&self) -> String { String::from("#  gyration-radius-squared\n") }
+impl Drop for CMDisplacement {
+    fn drop(&mut self) {
+        let mut stream = out_writer(&self.file_name, false);
+        for i in 0..self.t_max {
+            stream.write(format!("{:4} {:}\n", i+1, self.displacements[i] / self.n_samples as f64).as_bytes());
+        }
+    }
 }

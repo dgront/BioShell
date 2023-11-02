@@ -5,8 +5,8 @@ use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
-use surpass::{CaContactEnergy, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
-use surpass::{ObserveCM, RgSquared, ObserveToFile, REndSquared};
+use surpass::{CaContactEnergy, CMDisplacement, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
+use surpass::{ChainCM, RgSquared, RecordMeasurements, REndSquared};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -67,12 +67,14 @@ fn main() {
     let mut tail_prop_2: MoveProposal<2> = MoveProposal::new();
 
     // --- Observers
+    let cm_measurements: Vec<ChainCM> = (0..system.count_chains()).map(|i|ChainCM::new(i)).collect();
     let mut cm =
-        ObserveToFile::new("cm.dat", ObserveCM::new(&system)).expect("can't write to cm.dat");
-    let mut rend =
-        ObserveToFile::new("r2.dat", REndSquared{}).expect("can't write to r2.dat");
-    let mut rg =
-        ObserveToFile::new("rg2.dat", RgSquared{}).expect("can't write to rg2.dat");
+        RecordMeasurements::new("cm.dat", cm_measurements).expect("can't write to cm.dat");
+    let r2_measurements: Vec<REndSquared> = (0..system.count_chains()).map(|i|REndSquared::new(i)).collect();
+    let mut rend = RecordMeasurements::new("r2.dat", r2_measurements).expect("can't write to r2.dat");
+    let rg_measurements: Vec<RgSquared> = (0..system.count_chains()).map(|i|RgSquared::new(i)).collect();
+    let mut rg = RecordMeasurements::new("rg.dat", rg_measurements).expect("can't write to rg.dat");
+    // let mut cmd = CMDisplacement::new(system.count_chains(), 100, "cm_displacement.dat");
 
     // --- save the starting conformation, reset the trajectory file
     system.to_pdb_file("tra.pdb", false);
@@ -127,6 +129,7 @@ fn main() {
             }       // --- single inner MC cycle done
             println!("{} {} {}", outer, inner, energy.evaluate(&system));
             cm.observe(&system);
+            // cmd.observe(&system);
             rend.observe(&system);
             rg.observe(&system);
         }           // --- single outer MC cycle done (all inner MC cycles finished)
