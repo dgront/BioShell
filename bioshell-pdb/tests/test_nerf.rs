@@ -1,8 +1,3 @@
-macro_rules! assert_delta {
-    ($x:expr, $y:expr, $d:expr) => {
-        assert!(($x-$y).abs() < $d, "a = {}, b = {}", $x, $y)
-    }
-}
 
 const ILE_PDB: [&str;8] = ["ATOM      1  N   ILE A   1       0.000   0.000   0.000  1.00  0.00           N",
     "ATOM      2  CA  ILE A   1       1.458   0.000   0.000  1.00  0.00           C",
@@ -19,7 +14,7 @@ mod nerf_test {
     use std::f64::consts::PI;
     use bioshell_pdb::calc::{Vec3, dihedral_angle4, planar_angle3};
     use bioshell_pdb::nerf::{restore_branched_chain, restore_linear_chain, restore_atom};
-    use bioshell_pdb::PdbAtom;
+    use bioshell_pdb::{assert_delta, PdbAtom};
     use crate::ILE_PDB;
 
     #[test]
