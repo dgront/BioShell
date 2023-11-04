@@ -1,12 +1,13 @@
 use std::collections::{HashMap, HashSet};
 use clap::Result;
 use std::convert::TryFrom;
+use std::ops::Range;
 
 use itertools::{Itertools};
 use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties, KNOWN_RESIDUE_TYPES};
 use bioshell_seq::sequence::Sequence;
 
-use crate::pdb_atom::PdbAtom;
+use crate::pdb_atom::{PdbAtom, same_residue_atoms};
 use crate::pdb_header::PdbHeader;
 use crate::pdb_parsing_error::ParseError;
 use crate::pdb_title::PdbTitle;
@@ -91,6 +92,7 @@ pub struct Structure {
     pub title: Option<PdbTitle>,
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
+    atoms_for_residue: HashMap<ResidueId, Range<usize>>
 }
 
 impl Structure {
@@ -101,6 +103,7 @@ impl Structure {
             title: None,
             ter_atoms: Default::default(),
             atoms: vec![],
+            atoms_for_residue: HashMap::default()
         }
     }
 
@@ -127,14 +130,23 @@ impl Structure {
 
         let mut strctr = Structure::new();
         for a in iter { strctr.atoms.push(a.clone()) }
+        strctr.sort();
+        strctr.setup_atom_ranges();
 
         return strctr;
     }
 
     /// Pushes a given [`PdbAtom`](PdbAtom) at the end of this [`Structure`](Structure)
-    /// The given atom object will be consumed in the process
+    ///
+    /// The given atom object will be consumed in the process. This method is inefficient as after
+    /// every call the internal structure of residue / chain indexes must be reconstructed.
+    /// Use [`Structure::from_iterator()`](Structure::from_iterator()) to construct a [`Structure`](Structure)
+    /// from a large number of atoms rather than try to insert the one-by-one.
     pub fn push_atom(&mut self, a: PdbAtom) {
+
         self.atoms.push(a);
+        self.sort();
+        self.setup_atom_ranges();
     }
 
     /// Counts atoms of this [`Structure`](Structure)
@@ -406,10 +418,11 @@ impl Structure {
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// # let strctr = Structure::from_iterator(atoms.iter());
     /// let res_atoms = strctr.residue_atoms(&ResidueId::new("A", 68, ' '));
-    /// # assert_eq!(res_atoms.iter().count(),2);
+    /// # assert_eq!(res_atoms.count(),2);
     /// ```
-    pub fn residue_atoms(&self, residue_id: &ResidueId) -> Vec<&PdbAtom> {
-        self.atoms.iter().filter(|&a| residue_id.check(a)).collect()
+    pub fn residue_atoms(&self, residue_id: &ResidueId) -> impl Iterator<Item = &PdbAtom> {
+        let range = self.atoms_for_residue[residue_id].clone();
+        range.map(|i| &self.atoms[i])
     }
 
     /// Returns atoms of a given residue
@@ -446,6 +459,20 @@ impl Structure {
     /// Returns true if all the atoms of this structure are sorted
     pub fn is_sorted(&self) -> bool {
         self.atoms.windows(2).all(|w| w[0] <= w[1])
+    }
+
+    pub(crate) fn setup_atom_ranges(&mut self) {
+        self.atoms_for_residue.clear();
+        let mut first_of_res: usize = 0;
+        for i_atom in 1..self.atoms.len() {
+            if ! same_residue_atoms(&self.atoms[first_of_res], &self.atoms[i_atom]) {
+                self.atoms_for_residue.insert(
+                    ResidueId::try_from(&self.atoms[first_of_res]).unwrap(), first_of_res..i_atom);
+                first_of_res = i_atom;
+            }
+        }
+        self.atoms_for_residue.insert(
+            ResidueId::try_from(&self.atoms[first_of_res]).unwrap(), first_of_res..self.atoms.len());
     }
 
     #[allow(dead_code)]

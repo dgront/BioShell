@@ -175,3 +175,17 @@ impl Display for PdbAtom {
         }
     }
 }
+/// Returns `true` if two given atoms belong to the very same residue
+///
+/// # Examples
+/// ```
+/// use bioshell_pdb::{PdbAtom, same_residue_atoms};
+/// let a1 = PdbAtom::from_atom_line("ATOM    389  CG2 VAL A  50       7.150   8.278  10.760  1.00 20.57           C");
+/// let a2 = PdbAtom::from_atom_line("ATOM    390  N   LEU A  51      10.919   9.836  12.777  1.00 10.30           N");
+/// let a3 = PdbAtom::from_atom_line("ATOM    391  CA  LEU A  51      12.088   9.803  13.653  1.00  9.53           C  ");
+/// assert!(!same_residue_atoms(&a1, &a2));
+/// assert!(same_residue_atoms(&a2, &a3));
+/// ```
+pub fn same_residue_atoms(ai: &PdbAtom, aj: &PdbAtom) -> bool {
+    ai.res_seq==aj.res_seq && ai.i_code==aj.i_code
+}

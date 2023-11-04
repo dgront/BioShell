@@ -39,7 +39,7 @@ pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
 pub use load_pdb::*;
 pub use assertions::*;
 
-pub use pdb_atom::PdbAtom;
+pub use pdb_atom::{PdbAtom, same_residue_atoms};
 pub use residue_id::{ResidueId, residue_id_from_ter_record};
 pub use pdb_header::PdbHeader;
 pub use pdb_title::PdbTitle;
