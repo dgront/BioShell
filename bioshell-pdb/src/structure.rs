@@ -245,6 +245,24 @@ impl Structure {
         self.atoms.iter().filter(move |&atm| atm.chain_id==chain_id).collect()
     }
 
+    /// Returns atoms of a given residue
+    ///
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
+    /// # let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+    /// #                     "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+    /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+    /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+    /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    /// # let strctr = Structure::from_iterator(atoms.iter());
+    /// let res_atoms = strctr.atoms_in_residue(&ResidueId::new("A", 68, ' '));
+    /// # assert_eq!(res_atoms.count(),2);
+    /// ```
+    pub fn atoms_in_residue(&self, residue_id: &ResidueId) -> impl Iterator<Item = &PdbAtom> {
+        let range = self.atoms_for_residue[residue_id].clone();
+        range.map(|i| &self.atoms[i])
+    }
+
     /// Provide an iterator over atoms from a given range of residues
     ///
     /// The atoms may belong to different chains.
@@ -405,24 +423,6 @@ impl Structure {
     pub fn chain_residue_ids(&self, chain_id: &str) -> Vec<ResidueId> {
 
         Structure::residue_ids_from_atoms(self.atoms.iter().filter(|&a| a.chain_id==chain_id))
-    }
-
-    /// Returns atoms of a given residue
-    ///
-    /// ```
-    /// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
-    /// # let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
-    /// #                     "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
-    /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
-    /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
-    /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// # let strctr = Structure::from_iterator(atoms.iter());
-    /// let res_atoms = strctr.residue_atoms(&ResidueId::new("A", 68, ' '));
-    /// # assert_eq!(res_atoms.count(),2);
-    /// ```
-    pub fn residue_atoms(&self, residue_id: &ResidueId) -> impl Iterator<Item = &PdbAtom> {
-        let range = self.atoms_for_residue[residue_id].clone();
-        range.map(|i| &self.atoms[i])
     }
 
     /// Returns atoms of a given residue

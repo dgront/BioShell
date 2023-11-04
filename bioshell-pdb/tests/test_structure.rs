@@ -81,6 +81,6 @@ fn test_atoms_by_residue() {
     let first = ResidueId::new("A", 4, ' ');
     let last = ResidueId::new("B", 2, ' ');
     let iterator = strctr.atom_in_range(first, last);
-    assert_eq!(strctr.residue_atoms(&ResidueId::new("A", 1, ' ')).count(), 19);
-    assert_eq!(strctr.residue_atoms(&ResidueId::new("A", 56, ' ')).count(), 16);
+    assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 1, ' ')).count(), 19);
+    assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 56, ' ')).count(), 16);
 }
