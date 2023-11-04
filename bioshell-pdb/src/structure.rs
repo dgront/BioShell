@@ -368,6 +368,9 @@ impl Structure {
             }
             if ter_resid.check(a) {break}
         }
+        if let Some(header) = &self.header {
+            return Sequence::from_attrs(format!("{}:{}", header.id_code, chain_id), aa);
+        }
         return Sequence::from_attrs(format!(":{}", chain_id), aa);
     }
 
@@ -435,6 +438,14 @@ impl Structure {
                 }
             }
         }
+    }
+
+    /// Sorts all the atoms of this structure.
+    pub fn sort(&mut self) { self.atoms.sort(); }
+
+    /// Returns true if all the atoms of this structure are sorted
+    pub fn is_sorted(&self) -> bool {
+        self.atoms.windows(2).all(|w| w[0] <= w[1])
     }
 
     #[allow(dead_code)]

@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 use std::string::String;
 use crate::calc::Vec3;
@@ -115,10 +116,40 @@ impl PdbAtom {
     }
 }
 
-impl PartialEq for PdbAtom {
+impl PartialEq<Self> for PdbAtom {
+    /// Returns true if two [`PdbAtom`](PdbAtom)s are equal.
+    ///
+    /// The equality of [`PdbAtom`](PdbAtom)s implies that:
+    ///   - they belong to the same chain
+    ///   - they belong to the same residue, as identified by their `res_seq` and `i_code` fields
+    ///   - their serial numbers are identical
     fn eq(&self, other: &Self) -> bool {
-        self.serial == other.serial
+
+        self.chain_id == other.chain_id && self.res_seq==other.res_seq
+            && self.i_code==self.i_code && self.serial==self.serial
     }
+}
+
+impl PartialOrd<Self> for PdbAtom {
+
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.chain_id < other.chain_id { return Some(Ordering::Less) }
+        if self.chain_id > other.chain_id { return Some(Ordering::Greater) }
+        if self.res_seq < other.res_seq { return Some(Ordering::Less) }
+        if self.res_seq > other.res_seq { return Some(Ordering::Greater) }
+        if self.i_code < other.i_code { return Some(Ordering::Less) }
+        if self.i_code > other.i_code { return Some(Ordering::Greater) }
+        if self.serial < other.serial { return Some(Ordering::Less) }
+        if self.serial > other.serial { return Some(Ordering::Greater) }
+
+        return  Some(Ordering::Equal);
+    }
+}
+
+impl Eq for PdbAtom {}
+
+impl Ord for PdbAtom {
+    fn cmp(&self, other: &Self) -> Ordering { return self.partial_cmp(&other).unwrap(); }
 }
 
 impl Display for PdbAtom {

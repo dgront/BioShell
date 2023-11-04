@@ -9,4 +9,6 @@ fn main(){
     for chain_id in strctr.chain_ids() {
         println!("{}", strctr.sequence(&chain_id));
     }
+
+    println!("Are the atoms sorted: {}", if strctr.is_sorted() {"YES"} else {"NO"});
 }
