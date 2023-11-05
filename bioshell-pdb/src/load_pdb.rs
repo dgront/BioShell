@@ -96,8 +96,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
     }
 
     pdb_structure.atoms = atoms;
-    pdb_structure.sort();
-    pdb_structure.setup_atom_ranges();
+    pdb_structure.update();
     debug!("Structure loaded in: {:?}", start.elapsed());
 
     Ok(pdb_structure)
