@@ -1,13 +1,14 @@
 use thiserror::Error;
 use crate::ResidueId;
 
+/// Errors that may appear while using the bioshell-pdb crate
 #[derive(Debug, Error)]
-pub enum ParseError {
+pub enum PDBError {
     #[error("Invalid PDB file format")]
     /// Invalid format of a PDB line
     InvalidFormat,
     #[error("I/O error: {0}")]
-    /// I/O error occured while reading a  PDB file
+    /// I/O error occurred while reading a  PDB file
     Io(#[from] std::io::Error),
     #[error("Residue not found: {res_id}")]
     /// Residue corresponding to a given `res_id` could not be located

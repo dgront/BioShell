@@ -11,8 +11,8 @@ use crate::pdb_atom::{PdbAtom, same_residue_atoms};
 use crate::pdb_header::PdbHeader;
 use crate::pdb_title::PdbTitle;
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
-use crate::pdb_parsing_error::ParseError;
-use crate::pdb_parsing_error::ParseError::{NoSuchAtom, NoSuchResidue};
+use crate::pdb_parsing_error::PDBError;
+use crate::pdb_parsing_error::PDBError::{NoSuchAtom, NoSuchResidue};
 use crate::ResidueId;
 use crate::secondary_structure::SecondaryStructure;
 
@@ -204,7 +204,7 @@ impl Structure {
     /// assert_eq!(a.name, " CA ");
     /// # assert_eq!(a.res_seq, 69);
     /// ```
-    pub fn atom(&self, res_id: &ResidueId, name: &str) -> Result<&PdbAtom, ParseError> {
+    pub fn atom(&self, res_id: &ResidueId, name: &str) -> Result<&PdbAtom, PDBError> {
         let i_residue = self.residue_pos(res_id)?;
         let range = &self.atoms_for_residueid[i_residue];
         for i in range.start..range.end {
@@ -214,7 +214,7 @@ impl Structure {
     }
 
     /// Provides mutable access to an atom
-    pub fn atom_mut(&mut self, res_id: &ResidueId, name: &str) -> Result<&mut PdbAtom, ParseError> {
+    pub fn atom_mut(&mut self, res_id: &ResidueId, name: &str) -> Result<&mut PdbAtom, PDBError> {
         let i_residue = self.residue_pos(res_id)?;
         let range = &self.atoms_for_residueid[i_residue];
         for i in range.start..range.end {
@@ -270,13 +270,13 @@ impl Structure {
     /// let res_atoms = strctr.atoms_in_residue(&ResidueId::new("A", 68, ' ')).unwrap();
     /// # assert_eq!(res_atoms.count(),2);
     /// ```
-    pub fn atoms_in_residue(&self, residue_id: &ResidueId) -> Result<impl Iterator<Item = &PdbAtom>, ParseError> {
+    pub fn atoms_in_residue(&self, residue_id: &ResidueId) -> Result<impl Iterator<Item = &PdbAtom>, PDBError> {
         match self.residue_ids.binary_search(residue_id) {
             Ok(pos) =>  {
                 let range = self.atoms_for_residueid[pos].clone();
                 Ok(range.map(|i| &self.atoms[i]))
             },
-            Err(_) => Err(ParseError::NoSuchResidue{res_id: residue_id.clone()})
+            Err(_) => Err(PDBError::NoSuchResidue{res_id: residue_id.clone()})
         }
     }
 
@@ -343,17 +343,17 @@ impl Structure {
     /// assert_eq!(res_type.code3, "ALA");
     /// assert_eq!(res_type.parent_type, StandardResidueType::ALA);
     /// ```
-    pub fn residue_type(&self, res_id: &ResidueId) -> Result<ResidueType, ParseError> {
+    pub fn residue_type(&self, res_id: &ResidueId) -> Result<ResidueType, PDBError> {
 
         // --- check if such a residue has at least one atom in this struct
         if let Some(atom) = self.atoms().iter().find(|&a| res_id.check(a)) {
             if let Some(res_type) = KNOWN_RESIDUE_TYPES.lock().unwrap().by_code3(&atom.res_name) {
                 return Ok(res_type.clone());    // --- atom exists and its residue type is known
             } else {                            // --- atom exists but its residue type is NOT known
-                return Err(ParseError::UnknownResidueType { res_type: atom.res_name.clone()});
+                return Err(PDBError::UnknownResidueType { res_type: atom.res_name.clone()});
             }
         } else {                        // --- atom doesn't exist
-            return Err(ParseError::NoSuchResidue { res_id: res_id.clone() });
+            return Err(PDBError::NoSuchResidue { res_id: res_id.clone() });
         }
     }
 
@@ -457,7 +457,7 @@ impl Structure {
 
     /// Returns the index of a residue given its [`ResidueId`](ResidueId)
     ///
-    pub(crate) fn residue_pos(&self, which_res: &ResidueId) -> Result<usize, ParseError> {
+    pub(crate) fn residue_pos(&self, which_res: &ResidueId) -> Result<usize, PDBError> {
         match self.residue_ids.binary_search(which_res) {
             Ok(pos) => Ok(pos),
             Err(_) => Err(NoSuchResidue { res_id: which_res.clone() })

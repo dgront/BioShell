@@ -1,6 +1,6 @@
 use crate::{PdbAtom, ResidueId, Structure};
 use crate::calc::dihedral_angle4;
-use crate::pdb_parsing_error::ParseError;
+use crate::pdb_parsing_error::PDBError;
 
 /// Calculate the squared distance between two atoms.
 pub fn distance_squared(ai: &PdbAtom, aj:&PdbAtom) -> f64 {
@@ -36,7 +36,7 @@ pub fn distance(ai: &PdbAtom, aj:&PdbAtom) -> f64 {
 /// let phi_val = phi(&strctr, &ResidueId::new("A", 23, ' ')).unwrap();
 /// assert_delta!(phi_val.to_degrees(), -71.925, 0.01);
 /// ```
-pub fn phi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, ParseError> {
+pub fn phi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, PDBError> {
     let i_residue = strctr.residue_pos(which_res)?;
     if i_residue == 0 { return Ok(0.0); }
     let prev_res = strctr.residue_ids[i_residue-1].clone();
@@ -63,7 +63,7 @@ pub fn phi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, ParseError>
 /// let psi_val = psi(&strctr, &ResidueId::new("A", 23, ' ')).unwrap();
 /// assert_delta!(psi_val.to_degrees(), -31.158, 0.01);
 /// ```
-pub fn psi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, ParseError> {
+pub fn psi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, PDBError> {
     let i_residue = strctr.residue_pos(which_res)?;
     if i_residue == strctr.atoms_for_residueid.len() - 1 { return Ok(0.0); }
     let next_res = strctr.residue_ids[i_residue + 1].clone();
