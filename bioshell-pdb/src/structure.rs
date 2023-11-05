@@ -9,9 +9,10 @@ use bioshell_seq::sequence::Sequence;
 
 use crate::pdb_atom::{PdbAtom, same_residue_atoms};
 use crate::pdb_header::PdbHeader;
-use crate::pdb_parsing_error::ParseError;
 use crate::pdb_title::PdbTitle;
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
+use crate::pdb_parsing_error::ParseError;
+use crate::pdb_parsing_error::ParseError::{NoSuchAtom, NoSuchResidue};
 use crate::ResidueId;
 use crate::secondary_structure::SecondaryStructure;
 
@@ -93,7 +94,7 @@ pub struct Structure {
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
     pub(crate) residue_ids: Vec<ResidueId>,
-    pub(crate) atoms_for_residue: HashMap<ResidueId, Range<usize>>
+    pub(crate) atoms_for_residueid: Vec<Range<usize>>
 }
 
 impl Structure {
@@ -105,7 +106,8 @@ impl Structure {
             ter_atoms: Default::default(),
             atoms: vec![],
             residue_ids: vec![],
-            atoms_for_residue: HashMap::default()
+            atoms_for_residueid: vec![],
+            // atoms_for_residue: HashMap::default()
         }
     }
 
@@ -146,8 +148,7 @@ impl Structure {
     pub fn push_atom(&mut self, a: PdbAtom) {
 
         self.atoms.push(a);
-        self.sort();
-        self.setup_atom_ranges();
+        self.update();
     }
 
     /// Counts atoms of this [`Structure`](Structure)
@@ -203,13 +204,23 @@ impl Structure {
     /// assert_eq!(a.name, " CA ");
     /// # assert_eq!(a.res_seq, 69);
     /// ```
-    pub fn atom(&self, res_id: &ResidueId, name: &str) -> Option<&PdbAtom> {
-        self.atoms.iter().find(|&a| res_id.check(a) && a.name == name)
+    pub fn atom(&self, res_id: &ResidueId, name: &str) -> Result<&PdbAtom, ParseError> {
+        let i_residue = self.residue_pos(res_id)?;
+        let range = &self.atoms_for_residueid[i_residue];
+        for i in range.start..range.end {
+            if self.atoms[i].name == name { return Ok(&self.atoms[i]) }
+        }
+        return Err(NoSuchAtom { atom_name: name.to_string(), res_id: res_id.clone() });
     }
 
     /// Provides mutable access to an atom
-    pub fn atom_mut(&mut self, res_id: &ResidueId, name: &str) -> Option<&mut PdbAtom> {
-        self.atoms.iter_mut().find(|a| res_id.check(a) && a.name == name)
+    pub fn atom_mut(&mut self, res_id: &ResidueId, name: &str) -> Result<&mut PdbAtom, ParseError> {
+        let i_residue = self.residue_pos(res_id)?;
+        let range = &self.atoms_for_residueid[i_residue];
+        for i in range.start..range.end {
+            if self.atoms[i].name == name { return Ok(&mut self.atoms[i]) }
+        }
+        return Err(NoSuchAtom { atom_name: name.to_string(), res_id: res_id.clone() });
     }
 
     /// Provides immutable access to atoms of this [`Structure`](Structure)
@@ -256,12 +267,17 @@ impl Structure {
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// # let strctr = Structure::from_iterator(atoms.iter());
-    /// let res_atoms = strctr.atoms_in_residue(&ResidueId::new("A", 68, ' '));
+    /// let res_atoms = strctr.atoms_in_residue(&ResidueId::new("A", 68, ' ')).unwrap();
     /// # assert_eq!(res_atoms.count(),2);
     /// ```
-    pub fn atoms_in_residue(&self, residue_id: &ResidueId) -> impl Iterator<Item = &PdbAtom> {
-        let range = self.atoms_for_residue[residue_id].clone();
-        range.map(|i| &self.atoms[i])
+    pub fn atoms_in_residue(&self, residue_id: &ResidueId) -> Result<impl Iterator<Item = &PdbAtom>, ParseError> {
+        match self.residue_ids.binary_search(residue_id) {
+            Ok(pos) =>  {
+                let range = self.atoms_for_residueid[pos].clone();
+                Ok(range.map(|i| &self.atoms[i]))
+            },
+            Err(_) => Err(ParseError::NoSuchResidue{res_id: residue_id.clone()})
+        }
     }
 
     /// Provide an iterator over atoms from a given range of residues
@@ -361,16 +377,19 @@ impl Structure {
     /// Residues listed after the `TER` record are not included in the sequence returned by this method
     pub fn sequence(&self, chain_id: &str) -> Sequence {
         let ter_resid = self.ter_residue(chain_id);
-        let atms = self.residue_first_atoms(chain_id);
         let mut aa: Vec<u8> = vec![];
-        for a in atms {
-            if let Some(restype) = ResidueTypeManager::get().by_code3(&a.res_name) {
-                aa.push(u8::try_from(restype.parent_type.code1()).unwrap());
-            } else {
-                aa.push(b'X');
+        for i_res in 0..self.residue_ids.len() {
+            if self.residue_ids[i_res].chain_id == chain_id {
+                let resname = &self.atoms[self.atoms_for_residueid[i_res].start].res_name;
+                if let Some(restype) = ResidueTypeManager::get().by_code3(resname) {
+                    aa.push(u8::try_from(restype.parent_type.code1()).unwrap());
+                } else {
+                    aa.push(b'X');
+                }
+                if self.residue_ids[i_res]==ter_resid { break }
             }
-            if ter_resid.check(a) {break}
         }
+
         if let Some(header) = &self.header {
             return Sequence::from_attrs(format!("{}:{}", header.id_code, chain_id), aa);
         }
@@ -382,12 +401,14 @@ impl Structure {
     /// Residues listed after the `TER` record are not included in the sequence returned by this method
     pub fn secondary(&self, chain_id: &str) -> SecondaryStructure {
         let ter_resid = self.ter_residue(chain_id);
-        let atms = self.residue_first_atoms(chain_id);
         let mut sec: Vec<u8> = vec![];
-        for a in atms {
-            sec.push(a.secondary_struct_type);
-            if ter_resid.check(a) {break}
+        for i_res in 0..self.residue_ids.len() {
+            if self.residue_ids[i_res].chain_id == chain_id {
+                sec.push(self.atoms[self.atoms_for_residueid[i_res].start].secondary_struct_type);
+            }
+            if self.residue_ids[i_res]==ter_resid { break }
         }
+
         return SecondaryStructure::from_attrs(sec);
     }
 
@@ -434,12 +455,19 @@ impl Structure {
         self.atoms.windows(2).all(|w| w[0] <= w[1])
     }
 
+    /// Returns the index of a residue given its [`ResidueId`](ResidueId)
+    ///
+    pub(crate) fn residue_pos(&self, which_res: &ResidueId) -> Result<usize, ParseError> {
+        match self.residue_ids.binary_search(which_res) {
+            Ok(pos) => Ok(pos),
+            Err(_) => Err(NoSuchResidue { res_id: which_res.clone() })
+        }
+    }
+
     /// Updates the internal structure of the struct
     ///
     /// This method should be called after any change to the atoms of this Structure
     pub(crate) fn update(&mut self) {
-        // --- update residue_ids
-        self.residue_ids = Structure::residue_ids_from_atoms(self.atoms.iter());
         // --- sort atoms, just in case
         self.sort();
         // --- assign atom range for every residue
@@ -448,34 +476,24 @@ impl Structure {
     }
 
     pub(crate) fn setup_atom_ranges(&mut self) {
-        self.atoms_for_residue.clear();
+        self.atoms_for_residueid.clear();
         let mut first_of_res: usize = 0;
+        let mut res_id = ResidueId::try_from(&self.atoms[0]).unwrap();
         for i_atom in 1..self.atoms.len() {
             if ! same_residue_atoms(&self.atoms[first_of_res], &self.atoms[i_atom]) {
-                self.atoms_for_residue.insert(
-                    ResidueId::try_from(&self.atoms[first_of_res]).unwrap(), first_of_res..i_atom);
+                self.atoms_for_residueid.push(first_of_res..i_atom);
+                self.residue_ids.push(res_id);
                 first_of_res = i_atom;
+                res_id = ResidueId::try_from(&self.atoms[first_of_res]).unwrap();
             }
         }
-        self.atoms_for_residue.insert(
-            ResidueId::try_from(&self.atoms[first_of_res]).unwrap(), first_of_res..self.atoms.len());
+        self.atoms_for_residueid.push(first_of_res..self.atoms.len());
+        self.residue_ids.push(res_id);
     }
 
     #[allow(dead_code)]
     /// Borrows the very last atom of this [`Structure`]
     fn last_atom(&self) -> &PdbAtom { &self.atoms[self.atoms.len()-1] }
-
-    /// Borrows the first atom from each residue of this [`Structure`]
-    fn residue_first_atoms(&self, chain_id: &str) -> Vec<&PdbAtom> {
-        let same_res = SameResidue {};
-        let mut ats: Vec<&PdbAtom> = self.atoms().windows(2)
-                .filter(|a| !same_res.check(&a[0], &a[1]))
-                .filter(|a| &a[0].chain_id==chain_id && &a[1].chain_id==chain_id)
-                .map(|a| &a[1]).collect();
-        ats.insert(0,self.atoms.iter().find(|&a| a.chain_id==chain_id).unwrap());
-
-        return ats;
-    }
 
     /// Creates a vector of [`ResidueId`](ResidueId) object for each residue found in a given vector of atoms
     ///
@@ -514,21 +532,5 @@ impl Structure {
         // --- return empty vector if there are no atoms in the given iterator
         return Vec::new();
     }
-}
-
-#[test]
-fn test_first_residue_atoms() {
-    let lines: [&str; 6] = [
-        "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
-        "ATOM    518  CB  ALA A  68      25.155  27.554  29.987  1.00 21.91           C",
-        "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C",
-        "ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C",
-        "ATOM    515  CA  ALA B  68      25.790  28.757  29.513  1.00 16.12           C",
-        "ATOM    518  CB  ALA B  68      25.155  27.554  29.987  1.00 21.91           C"];
-    let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    let strctr = Structure::from_iterator(atoms.iter());
-
-    assert_eq!(strctr.residue_first_atoms("A").len(), 2);
-    assert_eq!(strctr.residue_first_atoms("B").len(), 1);
 }
 
