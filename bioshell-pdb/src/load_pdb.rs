@@ -1,8 +1,10 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::time::Instant;
+use log::{debug, info};
 use crate::{PdbAtom, PdbHeader, PdbHelix, PdbSheet, PdbTitle, residue_id_from_ter_record, SecondaryStructureTypes, Structure};
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
-use crate::pdb_parsing_error::ParseError;
+use crate::pdb_parsing_error::PDBError;
 
 /// Reads PDB-formatted content from a buffer.
 ///
@@ -23,8 +25,9 @@ use crate::pdb_parsing_error::ParseError;
 /// let seq = strctr.sequence("A");
 /// assert_eq!(seq.to_string(), "MTYKLI");
 /// ```
-pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
+pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
 
+    let start = Instant::now();
     let mut pdb_structure = Structure::new();
 
     let mut atoms: Vec<PdbAtom> = vec![];
@@ -69,10 +72,13 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
             "HETATM" => {
                 atoms.push(PdbAtom::from_atom_line(&line));
             },
+            "ENDMDL" => {
+                break;
+            },
             _ => {},
         };
     }
-    println!("{:} atoms loaded",atoms.len());
+    debug!("{:} atoms loaded",atoms.len());
 
     // ---------- Annotate secondary structure
     for i in 0..helices.len() {
@@ -93,13 +99,15 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, ParseError> {
     }
 
     pdb_structure.atoms = atoms;
+    pdb_structure.update();
+    debug!("Structure loaded in: {:?}", start.elapsed());
 
     Ok(pdb_structure)
 }
 
 /// Reads a [`Structure`](Structure) from a PDB file
 ///
-pub fn load_pdb_file(file_name: &str) -> Result<Structure, ParseError> {
+pub fn load_pdb_file(file_name: &str) -> Result<Structure, PDBError> {
     let file = File::open(file_name)?;
     let reader = BufReader::new(file);
     return load_pdb_reader(reader);

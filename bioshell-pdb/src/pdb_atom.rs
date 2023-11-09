@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 use std::string::String;
 use crate::calc::Vec3;
@@ -115,10 +116,40 @@ impl PdbAtom {
     }
 }
 
-impl PartialEq for PdbAtom {
+impl PartialEq<Self> for PdbAtom {
+    /// Returns true if two [`PdbAtom`](PdbAtom)s are equal.
+    ///
+    /// The equality of [`PdbAtom`](PdbAtom)s implies that:
+    ///   - they belong to the same chain
+    ///   - they belong to the same residue, as identified by their `res_seq` and `i_code` fields
+    ///   - their serial numbers are identical
     fn eq(&self, other: &Self) -> bool {
-        self.serial == other.serial
+
+        self.chain_id == other.chain_id && self.res_seq==other.res_seq
+            && self.i_code==self.i_code && self.serial==self.serial
     }
+}
+
+impl PartialOrd<Self> for PdbAtom {
+
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.chain_id < other.chain_id { return Some(Ordering::Less) }
+        if self.chain_id > other.chain_id { return Some(Ordering::Greater) }
+        if self.res_seq < other.res_seq { return Some(Ordering::Less) }
+        if self.res_seq > other.res_seq { return Some(Ordering::Greater) }
+        if self.i_code < other.i_code { return Some(Ordering::Less) }
+        if self.i_code > other.i_code { return Some(Ordering::Greater) }
+        if self.serial < other.serial { return Some(Ordering::Less) }
+        if self.serial > other.serial { return Some(Ordering::Greater) }
+
+        return  Some(Ordering::Equal);
+    }
+}
+
+impl Eq for PdbAtom {}
+
+impl Ord for PdbAtom {
+    fn cmp(&self, other: &Self) -> Ordering { return self.partial_cmp(&other).unwrap(); }
 }
 
 impl Display for PdbAtom {
@@ -143,4 +174,18 @@ impl Display for PdbAtom {
                    elem, chrg)
         }
     }
+}
+/// Returns `true` if two given atoms belong to the very same residue
+///
+/// # Examples
+/// ```
+/// use bioshell_pdb::{PdbAtom, same_residue_atoms};
+/// let a1 = PdbAtom::from_atom_line("ATOM    389  CG2 VAL A  50       7.150   8.278  10.760  1.00 20.57           C");
+/// let a2 = PdbAtom::from_atom_line("ATOM    390  N   LEU A  51      10.919   9.836  12.777  1.00 10.30           N");
+/// let a3 = PdbAtom::from_atom_line("ATOM    391  CA  LEU A  51      12.088   9.803  13.653  1.00  9.53           C  ");
+/// assert!(!same_residue_atoms(&a1, &a2));
+/// assert!(same_residue_atoms(&a2, &a3));
+/// ```
+pub fn same_residue_atoms(ai: &PdbAtom, aj: &PdbAtom) -> bool {
+    ai.res_seq==aj.res_seq && ai.i_code==aj.i_code
 }

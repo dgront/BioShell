@@ -18,6 +18,10 @@ clap = { version = "3.1.18", features = ["derive"] }
 thiserror = "1.0.26"
 itertools = "0.11.0"
 rand = { version = "0.8.5", features = [ "small_rng" ] }
-rand_distr = {}   # for NormalDistribution, used by random_point_nearby()
+rand_distr = {}
+log = "0.4.17"
+env_logger = "0.9.3"   # for logging
 
-#[[bin]]
+[[bin]]
+name = "pdb_tool"
+path = "src/bin/pdb_tool.rs"

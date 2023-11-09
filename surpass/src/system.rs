@@ -5,7 +5,7 @@ use bioshell_pdb::{load_pdb_file, Structure};
 use bioshell_pdb::calc::Vec3;
 use bioshell_pdb::nerf::restore_linear_chain;
 use bioshell_pdb::pdb_atom_filters::{IsCA, PdbAtomPredicate};
-use bioshell_pdb::pdb_parsing_error::ParseError;
+use bioshell_pdb::pdb_parsing_error::PDBError;
 use bioshell_io::out_writer;
 
 /// SURPASS-alpha system holds coordinates of all atoms
@@ -211,7 +211,7 @@ impl SurpassAlphaSystem {
         return s;
     }
 
-    pub fn from_pdb_file(fname: &str, box_length: f64) -> Result<SurpassAlphaSystem, ParseError> {
+    pub fn from_pdb_file(fname: &str, box_length: f64) -> Result<SurpassAlphaSystem, PDBError> {
         
         let strctr = load_pdb_file(fname)?;
         return Ok(Self::from_pdb_structure(&strctr, box_length));

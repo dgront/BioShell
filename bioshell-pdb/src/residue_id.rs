@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+use std::cmp::Ordering::Equal;
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -27,7 +29,7 @@ use crate::pdb_atom_filters::{PdbAtomPredicate};
 /// }
 /// # assert_eq!(cnt, 2);
 /// ```
-#[derive(Clone, Debug, Eq)]
+#[derive(Clone, Debug, Eq, Hash, Ord)]
 pub struct ResidueId {
     pub chain_id: String,
     pub res_seq: i32,
@@ -68,6 +70,17 @@ impl PartialEq for ResidueId {
     }
 }
 
+impl PartialOrd for ResidueId {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.chain_id < other.chain_id { return Some(Ordering::Less) }
+        if self.chain_id > other.chain_id { return Some(Ordering::Greater) }
+        if self.res_seq < other.res_seq { return Some(Ordering::Less) }
+        if self.res_seq > other.res_seq { return Some(Ordering::Greater) }
+        if self.i_code < other.i_code { return Some(Ordering::Less) }
+        if self.i_code > other.i_code { return Some(Ordering::Greater) }
+        return Some(Equal);
+    }
+}
 
 impl PdbAtomPredicate for ResidueId {
     fn check(&self, a: &PdbAtom) -> bool {

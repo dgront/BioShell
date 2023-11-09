@@ -2,8 +2,8 @@
 
 
 ## What is BioShell?
-BioShell project, started in 2006) has been a command line toolkit for  structural bioinformatics.
-Over time it has also provided Coarse Grained simulations of proteins
+BioShell project, started in 2006, has been a command line toolkit for  structural bioinformatics.
+Over time, it has also provided Coarse Grained simulations of proteins
 
 ## WARNING
 The fourth version of the BioShell package is still in the _very_ early stage of development.
@@ -14,14 +14,12 @@ the BioShell v.3 package.
 ## Project structure
 Curretnly the BioShell v.4 project has been divided into the following crates:
 
- - **bioshell-core**: core BioShell's functionality
- - **bioshell-sim**: base traits (interfaces) defining molecular simulation engine 
- - **bioshell-montecarlo**: Monte Carlo sampling schemes
- - **bioshell-statistics**: statistical utilities used in bioinformatics applications as well as during simulations
- - **bioshell-numerical**: data structures (such as a 3D vector) and numerical utilities that operate on them 
+ - **bioshell-seq**: works with biological sequences
+ - **bioshell-pdb**: a library to work on with crystallographic Protein DataBank files. It can parse PDB files and perform calculations on macromolecular structures.
+ - **bioshell-cif**: reads CIF files
+ - **bioshell-statistics**: statistical utilities 
  - **bioshell-clustering**: clustering methods, such as K-means and OPTICS
- - **bioshell-cartesians**: provides structs necessary for modeling Cartesian systems, such as polymers, argon fluid, etc.
- - **bioshell-ff**: provides molecular force fields
+ - **bioshell-io**: I/O utilities
 
 ## Building
 You need to install `rust` toolchain to compile the package. You can:
