@@ -75,7 +75,8 @@ fn main() {
     let rg_measurements: Vec<RgSquared> = (0..system.count_chains()).map(|i|RgSquared::new(i)).collect();
     let mut rg = RecordMeasurements::new("rg.dat", rg_measurements).expect("can't write to rg.dat");
     let t_max = args.outer_cycles * args.inner_cycles / 1000;
-    let mut cmd = CMDisplacement::new(system.count_chains(), t_max, "cm_displacement.dat");
+    let mut cmd = CMDisplacement::new(system.box_length(),
+                        system.count_chains(), t_max, "cm_displacement.dat");
 
     // --- save the starting conformation, reset the trajectory file
     // system.to_pdb_file("tra.pdb", false);
@@ -128,7 +129,7 @@ fn main() {
                     }
                 }
             }       // --- single inner MC cycle done (all cycle_factor MC cycles finished)
-            println!("{} {} {}", outer, inner, energy.evaluate(&system));
+            // println!("{} {} {}", outer, inner, energy.evaluate(&system));
             cm.observe(&system);
             cmd.observe(&system);
             rend.observe(&system);

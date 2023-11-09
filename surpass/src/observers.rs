@@ -105,6 +105,7 @@ impl SystemMeasurement<f64> for RgSquared {
 }
 
 pub struct CMDisplacement {
+    box_length: f64,
     n_samples: usize,
     t_max: usize,
     displacements: Vec<f64>,
@@ -112,10 +113,19 @@ pub struct CMDisplacement {
     file_name: String
 }
 
+macro_rules! closest_dx_squared {
+    ($coord_a: expr, $coord_b: expr, $box_len: expr) => {
+        {
+            let mut dx = ($coord_a - $coord_b).abs();
+            if dx > $box_len/2.0 { dx = $box_len - dx}
+            dx*dx
+        }
+    }
+}
 impl CMDisplacement {
-    pub fn new(n_chains: usize, t_max: usize, file_name: &str) -> CMDisplacement {
+    pub fn new(box_length: f64, n_chains: usize, t_max: usize, file_name: &str) -> CMDisplacement {
         CMDisplacement{
-            cm_by_chain: vec![VecDeque::with_capacity(t_max); n_chains],
+            box_length, cm_by_chain: vec![VecDeque::with_capacity(t_max); n_chains],
             n_samples: 0, t_max, displacements: vec![0.0; t_max],
             file_name: file_name.to_string(),
         }
@@ -132,8 +142,10 @@ impl CMDisplacement {
             }
             // ---------- if we have enough CM vectors collected - compute displacement between the new observations and all the CMs previously recorded
             for i_time in 0..self.t_max {
-                let d = cm_vec.distance_to(&self.cm_by_chain[i_chain][i_time]);
-                self.displacements[i_time] += d;
+                let dx = closest_dx_squared!(cm_vec.x, self.cm_by_chain[i_chain][i_time].x, self.box_length);
+                let dy = closest_dx_squared!(cm_vec.y, self.cm_by_chain[i_chain][i_time].y, self.box_length);
+                let dz = closest_dx_squared!(cm_vec.z, self.cm_by_chain[i_chain][i_time].z, self.box_length);
+                self.displacements[i_time] += dx + dy + dz;
             }
             self.cm_by_chain[i_chain].pop_back();
             self.cm_by_chain[i_chain].push_front(cm_vec);

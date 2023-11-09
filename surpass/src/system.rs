@@ -23,6 +23,7 @@ pub struct SurpassAlphaSystem {
     chain_id_by_index: Vec<String>,
     int_to_real: f64,
     int_to_real_2: f64,
+    box_length: f64,
     model_id: usize
 }
 
@@ -43,7 +44,7 @@ impl SurpassAlphaSystem {
             chain_indexes: vec![0; n_atoms], cax: vec![0; n_atoms], cay: vec![0; n_atoms], caz: vec![0; n_atoms],
             sgx: vec![0; n_atoms], sgy: vec![0; n_atoms], sgz: vec![0; n_atoms],
             atoms_for_chain: vec![0..0; n_atoms], chain_id_by_index: vec![String::from("A");n_chains],
-            int_to_real: l, int_to_real_2: l*l, model_id: 0
+            int_to_real: l, int_to_real_2: l*l, box_length, model_id: 0
         };
         // ---------- Assign atoms to chains
         let mut atoms_total = 0;
@@ -65,6 +66,8 @@ impl SurpassAlphaSystem {
     pub fn real_to_int(&self, v: f64) -> i32 {
         (v / self.int_to_real).rem_euclid((u32::MAX as f64) + 1.0)  as u32 as i32
     }
+
+    pub fn box_length(&self) -> f64 { self.box_length }
 
     /// Returns the number of atoms in this system (of all its chains)
     pub fn count_atoms(&self) -> usize { self.cax.len() }
