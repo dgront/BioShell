@@ -74,10 +74,11 @@ fn main() {
     let mut rend = RecordMeasurements::new("r2.dat", r2_measurements).expect("can't write to r2.dat");
     let rg_measurements: Vec<RgSquared> = (0..system.count_chains()).map(|i|RgSquared::new(i)).collect();
     let mut rg = RecordMeasurements::new("rg.dat", rg_measurements).expect("can't write to rg.dat");
-    // let mut cmd = CMDisplacement::new(system.count_chains(), 100, "cm_displacement.dat");
+    let t_max = args.outer_cycles * args.inner_cycles / 1000;
+    let mut cmd = CMDisplacement::new(system.count_chains(), t_max, "cm_displacement.dat");
 
     // --- save the starting conformation, reset the trajectory file
-    system.to_pdb_file("tra.pdb", false);
+    // system.to_pdb_file("tra.pdb", false);
 
     let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
     let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol);
@@ -126,15 +127,15 @@ fn main() {
                         }
                     }
                 }
-            }       // --- single inner MC cycle done
+            }       // --- single inner MC cycle done (all cycle_factor MC cycles finished)
             println!("{} {} {}", outer, inner, energy.evaluate(&system));
             cm.observe(&system);
-            // cmd.observe(&system);
+            cmd.observe(&system);
             rend.observe(&system);
             rg.observe(&system);
         }           // --- single outer MC cycle done (all inner MC cycles finished)
         // --- append a current conformation to the trajectory file
-        system.to_pdb_file("tra.pdb", true);
+        // system.to_pdb_file("tra.pdb", true);
     }   // --- end of the simulation: all outer MC cycles done
 }
 
