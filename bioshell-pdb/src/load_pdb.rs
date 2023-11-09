@@ -72,6 +72,9 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             "HETATM" => {
                 atoms.push(PdbAtom::from_atom_line(&line));
             },
+            "ENDMDL" => {
+                break;
+            },
             _ => {},
         };
     }
