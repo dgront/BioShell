@@ -22,4 +22,6 @@ rand_distr = {}
 log = "0.4.17"
 env_logger = "0.9.3"   # for logging
 
-#[[bin]]
+[[bin]]
+name = "pdb_tool"
+path = "src/bin/pdb_tool.rs"
