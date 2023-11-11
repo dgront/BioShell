@@ -21,14 +21,6 @@ impl ExcludedVolume {
     /// Returns the excluded volume penalty value that is currently used
     pub fn repulsion_energy(&self) -> f64 { self.e_penalty }
 
-    /// Sets the new value for the excluded volume distance.
-    ///
-    /// A reference to the simulated `system` must be provided since the [`ExcludedVolume`] class
-    /// needs to convert a double distance value to its integer representation.
-    pub fn set_repulsion_cutoff(&mut self, system: &SurpassAlphaSystem, rcut: f64) {
-        self.r_rep = rcut;
-        self.i_rep_2 = system.real_to_int(rcut) as f64 * system.real_to_int(rcut) as f64;
-    }
 }
 
 impl NonBondedEnergyKernel for ExcludedVolume {
