@@ -1,4 +1,5 @@
 use std::env;
+use std::time::Instant;
 
 use clap::{Parser};
 use rand::rngs::SmallRng;
@@ -87,6 +88,8 @@ fn main() {
     // let cntcts = CaContactEnergy::new(&system, 10.0, -1.0, 3.7, 4.0, 5.0);
     // let energy: NonBondedEnergy<CaContactEnergy> = NonBondedEnergy::new(&system, cntcts);
 
+    let start = Instant::now();
+
     let mut rnd = SmallRng::seed_from_u64(42);
 
     println!("initial energy: {}", energy.evaluate(&system));
@@ -129,7 +132,7 @@ fn main() {
                     }
                 }
             }       // --- single inner MC cycle done (all cycle_factor MC cycles finished)
-            // println!("{} {} {}", outer, inner, energy.evaluate(&system));
+            println!("{} {} {} {:?}", outer, inner, energy.evaluate(&system), start.elapsed());
             cm.observe(&system);
             cmd.observe(&system);
             rend.observe(&system);

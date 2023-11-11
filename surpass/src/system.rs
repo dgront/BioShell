@@ -203,7 +203,7 @@ impl SurpassAlphaSystem {
         let n_atoms = s.count_atoms();
         // ---------- Initialize coordinates
         let r = vec![3.8; n_atoms];
-        let planar: Vec<f64> = (0..n_atoms).map(|_| rnd_gen.gen_range(120.0_f64.to_radians()..170.0_f64.to_radians())).collect();
+        let planar: Vec<f64> = (0..n_atoms).map(|_| rnd_gen.gen_range(150.0_f64.to_radians()..170.0_f64.to_radians())).collect();
         let dihedral: Vec<f64> = (0..n_atoms).map(|_| rnd_gen.gen_range(-180.0_f64.to_radians()..190.0_f64.to_radians())).collect();
         let mut coords = vec![Vec3::default(); n_atoms];
         restore_linear_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &mut coords[0..n_atoms]);
