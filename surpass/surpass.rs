@@ -2,12 +2,15 @@ use std::env;
 use std::time::Instant;
 
 use clap::{Parser};
+use log::debug;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
 use surpass::{CaContactEnergy, CMDisplacement, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
 use surpass::{ChainCM, RgSquared, RecordMeasurements, REndSquared};
+#[allow(unused_imports)]                // NonBondedEnergyDebug can be un-commented to test non-bonded energy if the debug check fails
+use surpass::{NonBondedEnergyDebug};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -84,6 +87,7 @@ fn main() {
 
     let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
     let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol);
+    // let mut energy: NonBondedEnergyDebug<ExcludedVolume> = NonBondedEnergyDebug::new(&system, excl_vol);
 
     // let cntcts = CaContactEnergy::new(&system, 10.0, -1.0, 3.7, 4.0, 5.0);
     // let energy: NonBondedEnergy<CaContactEnergy> = NonBondedEnergy::new(&system, cntcts);
@@ -127,12 +131,17 @@ fn main() {
                         hinge_prop.apply(&mut system);
                         #[cfg(debug_assertions)] {
                             let en_after = energy.evaluate(&system);
-                            check_delta_en(_en_before, en_after, delta_e);
+                            if (en_after - _en_before - delta_e).abs() > 0.001 {
+                                energy.report(&mut system, &hinge_prop);
+                                panic!("Incorrect energy change: global {} vs delta {}\n", en_after-_en_before, delta_e);
+                            }
                         }
                     }
                 }
             }       // --- single inner MC cycle done (all cycle_factor MC cycles finished)
             println!("{} {} {} {:?}", outer, inner, energy.evaluate(&system), start.elapsed());
+            let bond_err = system.adjust_bond_length(3.8);
+            debug!("bond lengths corrected, maximum violation was: {}", bond_err);
             cm.observe(&system);
             cmd.observe(&system);
             rend.observe(&system);

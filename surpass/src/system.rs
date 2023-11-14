@@ -67,7 +67,40 @@ impl SurpassAlphaSystem {
         (v / self.int_to_real).rem_euclid((u32::MAX as f64) + 1.0)  as u32 as i32
     }
 
+    /// The length of a simulation box
     pub fn box_length(&self) -> f64 { self.box_length }
+
+    /// Adjusts all bonds for the given length.
+    ///
+    /// Every bond will get shortened or extended along ist direction to match the given new length.
+    /// This procedure doesn't alter any planar or dihedral angle. Every chain is treated separately,
+    /// which means that every first atom of each chain will remain at its original position.
+    /// A whole chain may be longer or shorter, depending on the circumstances.
+    ///
+    /// The intended use of this method is to correct bond lengths which after numerous rotational
+    /// Monte Carlo moves may slightly diverge from their assumed length.
+    pub fn adjust_bond_length(&mut self, new_length: f64) -> f64 {
+        let mut mav_violation = 0.0;
+        for i_chain in 0..self.count_chains() {
+            let from_to = self.atoms_for_chain[i_chain].clone();
+            let mut old_previous = self.ca_to_vec3(from_to.start);
+            let mut updated_previous = self.ca_to_vec3(from_to.start);
+            let mut current = Vec3::default();
+            for i_res in from_to.start+1..from_to.end {
+                self.set_ca_to_nearest_vec3(i_res, i_res-1, &mut current);
+                current -= &old_previous;
+                mav_violation = (current.length()-new_length).abs().max(mav_violation);
+                current.normalize();
+                current *= new_length;
+                current += &updated_previous;
+                self.set_ca_to_nearest_vec3(i_res, i_res-1, &mut old_previous);
+                self.vec3_to_ca(i_res, &current);
+                updated_previous.set(&current);
+            }
+        }
+
+        return mav_violation;
+    }
 
     /// Returns the number of atoms in this system (of all its chains)
     pub fn count_atoms(&self) -> usize { self.cax.len() }

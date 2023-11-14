@@ -30,6 +30,7 @@ macro_rules! pairwise_energy {
         };
     }
 }
+pub(crate) use pairwise_energy;
 
 impl<E: NonBondedEnergyKernel> SurpassEnergy for NonBondedEnergy<E> {
     fn evaluate(&self, conf: &SurpassAlphaSystem) -> f64 {

@@ -1,9 +1,10 @@
-
 use std::io::BufReader;
 use std::string::String;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
+use bioshell_pdb::calc::{planar_angle3, Vec3};
 use bioshell_pdb::load_pdb_reader;
+use bioshell_pdb::nerf::restore_linear_chain;
 use surpass::{extended_chain, SurpassAlphaSystem};
 
 #[allow(non_upper_case_globals)]
@@ -105,4 +106,37 @@ fn test_diatance_evaluation() {
     model.cay[1] = model.real_to_int(4.0);
     assert_delta!(model.distance(0,1), 5.0, 0.00001);
     assert_delta!(model.distance(2,1), 5.0, 0.00001);
+}
+
+#[test]
+fn test_bond_adjustments() {
+    let atom_each_chain = 10;
+    let new_bond_length = 7.0;
+    const n_chains: usize = 2;
+    let n_atoms = atom_each_chain * n_chains;
+    let mut system = SurpassAlphaSystem::new(&[atom_each_chain; n_chains], 1000.0);
+    // ---------- Initialize coordinates
+    let mut r = vec![3.8; n_atoms];
+    let planar: Vec<f64> = (0..n_atoms).map(|_| 120.0_f64.to_radians()).collect();
+    let dihedral: Vec<f64> = (0..n_atoms).map(|_| 180.0_f64.to_radians()).collect();
+    let mut coords = vec![Vec3::default(); n_atoms];
+    for i in 1..n_chains {
+        r[i* atom_each_chain] = 10.0;
+    }
+    restore_linear_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &mut coords[0..n_atoms]);
+    for i in 0..n_atoms {
+        system.vec3_to_ca(i,&coords[i]);
+    }
+    system.to_pdb_file("staring.pdb", false);
+    system.adjust_bond_length(new_bond_length);
+    system.to_pdb_file("adjusted.pdb", false);
+    for ichain in 0..n_chains {
+        for ires in 2..atom_each_chain {
+            let a = system.ca_to_vec3(ichain* atom_each_chain + ires-2);
+            let b = system.ca_to_vec3(ichain* atom_each_chain + ires-1);
+            let c = system.ca_to_vec3(ichain* atom_each_chain + ires);
+            assert_delta!(120.0, planar_angle3(&a, &b, &c).to_degrees(), 0.0001);
+            assert_delta!(new_bond_length, b.distance_to(&a), 0.0001);
+        }
+    }
 }
