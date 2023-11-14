@@ -1,5 +1,5 @@
 use std::fmt;
-use log::debug;
+use log::trace;
 use rand::{Rng};
 use bioshell_pdb::calc::{Rototranslation};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
@@ -65,7 +65,7 @@ impl<const N_MOVED: usize> TailMove<N_MOVED> {
                  r.start, r.start + N_MOVED, r.start + N_MOVED)
             }
         };
-        debug!("{} tail move of {}..{}", which_tail, i_moved_from, i_moved_to);
+        trace!("{} tail move of {}..{}", which_tail, i_moved_from, i_moved_to);
 
         // --- prepare rototranslation
         let roto = Rototranslation::around_axis(&axis_from, &axis_to, angle);

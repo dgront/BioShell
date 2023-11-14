@@ -1,5 +1,5 @@
 #[warn(unused_imports)]
-use log::{debug, info};
+use log::{trace};
 use rand::{Rng};
 use bioshell_pdb::calc::{Rototranslation, Vec3};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
@@ -21,7 +21,7 @@ impl<const HINGE_MOVE_SIZE: usize> Mover<HINGE_MOVE_SIZE> for HingeMove<HINGE_MO
             if system.chain(moved_from-1) == system.chain(moved_to+1) { break };
         }
         let angle = rnd_gen.gen_range(-self.max_angle..self.max_angle);
-        debug!("hinge move of {}:{} by {}", moved_from, moved_from+HINGE_MOVE_SIZE-1, angle);
+        trace!("hinge move of {}:{} by {}", moved_from, moved_from+HINGE_MOVE_SIZE-1, angle);
         self.compute_move(system, moved_from, angle, proposal);
     }
 }
