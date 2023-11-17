@@ -49,19 +49,19 @@ impl<const N_MOVED: usize> TailMove<N_MOVED> {
     pub fn compute_move(&self, system: &SurpassAlphaSystem, which_chain: usize, which_tail: MovedTermini,
                         angle: f64, proposal: &mut MoveProposal<N_MOVED>) {
 
-        let r = system.chain_atoms(which_chain);
+        let r = system.chain_residues(which_chain);
         // --- axis_from, axis_to : vectors defining the rotation axis
         // --- i_moved_from, i_moved_to : range of the atoms being moved: i_moved_from..i_moved_to
         // --- i_referenced index of the atom used as the PBC reference, i.e. all other atoms are moved to the image which is the closest to i_referenced
         let (axis_from, axis_to, i_moved_from, i_moved_to, i_referenced) = match which_tail {
             CTerminal => {
-                (system.ca_to_nearest_vec3(r.end-N_MOVED-2, r.end-N_MOVED-1),
-                 system.ca_to_vec3(r.end-N_MOVED-1),
+                (system.atom_to_nearest_vec3(r.end-N_MOVED-2, r.end-N_MOVED-1),
+                 system.atom_to_vec3(r.end-N_MOVED-1),
                  r.end - N_MOVED, r.end, r.end - N_MOVED -1)
             }
             NTerminal => {
-                (system.ca_to_vec3(r.start + N_MOVED),
-                 system.ca_to_nearest_vec3(r.start+N_MOVED+1, r.start+N_MOVED),
+                (system.atom_to_vec3(r.start + N_MOVED),
+                 system.atom_to_nearest_vec3(r.start+N_MOVED+1, r.start+N_MOVED),
                  r.start, r.start + N_MOVED, r.start + N_MOVED)
             }
         };
@@ -72,7 +72,7 @@ impl<const N_MOVED: usize> TailMove<N_MOVED> {
 
         let mut i_pos = 0;
         for i_moved in i_moved_from..i_moved_to {
-            let mut moved = system.ca_to_nearest_vec3(i_moved, i_referenced);
+            let mut moved = system.atom_to_nearest_vec3(i_moved, i_referenced);
             roto.apply_mut(&mut moved);
             proposal.cax[i_pos] = system.real_to_int(moved.x);
             proposal.cay[i_pos] = system.real_to_int(moved.y);

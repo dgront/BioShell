@@ -16,18 +16,18 @@ fn test_excluded_volume_5() {
     let mut model = SurpassAlphaSystem::new(&[5], 100.0);
     // --- put all atoms in 0.0,0
     for i in 0..5 {
-        model.cax[i] = model.real_to_int(0.0);
-        model.cay[i] = model.real_to_int(0.0);
-        model.caz[i] = model.real_to_int(0.0);
+        model.bbx[i] = model.real_to_int(0.0);
+        model.bby[i] = model.real_to_int(0.0);
+        model.bbz[i] = model.real_to_int(0.0);
     }
     // --- move atoms 1 and 3 far away so they don't interact
-    model.cax[1] = model.real_to_int(40.0);
-    model.cax[3] = model.real_to_int(-40.0);
+    model.bbx[1] = model.real_to_int(40.0);
+    model.bbx[3] = model.real_to_int(-40.0);
 
     // --- set the stage with atoms 4 and 2 - just beyond the interaction cutoff
-    model.cax[4] = model.real_to_int(6.0);
-    model.cax[2] = model.real_to_int(3.0);
-    model.cay[2] = model.real_to_int(4.01);
+    model.bbx[4] = model.real_to_int(6.0);
+    model.bbx[2] = model.real_to_int(3.0);
+    model.bby[2] = model.real_to_int(4.01);
 
     // --- propose a move that causes two clashes
     let mut mp: MoveProposal<1> = MoveProposal::new();
@@ -42,7 +42,7 @@ fn test_excluded_volume_5() {
 
     assert_delta!(energy.evaluate(&model), 0.0, 0.00001);
     // --- move the atom 2 to make two clashes
-    model.cay[2] = model.real_to_int(3.99);
+    model.bby[2] = model.real_to_int(3.99);
     assert_delta!(energy.evaluate(&model), 200.0, 0.00001);
 }
 
@@ -62,9 +62,9 @@ fn run_test_excluded_volume_N<const N: usize>() {
     let mut model = SurpassAlphaSystem::new(&[N], 100.0);
     // --- put all atoms in 0, 0, 0
     for i in 0..N {
-        model.cax[i] = model.real_to_int(0.0);
-        model.cay[i] = model.real_to_int(0.0);
-        model.caz[i] = model.real_to_int(0.0);
+        model.bbx[i] = model.real_to_int(0.0);
+        model.bby[i] = model.real_to_int(0.0);
+        model.bbz[i] = model.real_to_int(0.0);
     }
 
     let excl_vol_kernel = ExcludedVolume::new(&model, 5.0, 100.0);
@@ -80,7 +80,7 @@ fn test_cacontacts_kernel() {
     let e = [10.0, 10.0, 10.0, 0.0, 0.0, -1.0, -1.0, 0.0];
     for i in 0..d.len() {
         let di = system.real_to_int(d[i]) as f64;
-        let en = cntcts.energy_for_distance_squared(di*di);
+        let en = cntcts.energy_for_residue_pair(di*di);
         assert_delta!(en, e[i], 0.000001);
     }
 }

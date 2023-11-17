@@ -35,7 +35,7 @@ pub(crate) use pairwise_energy;
 impl<E: NonBondedEnergyKernel> SurpassEnergy for NonBondedEnergy<E> {
     fn evaluate(&self, conf: &SurpassAlphaSystem) -> f64 {
         let mut e_total = 0.0;
-        for i in 1..conf.count_atoms() as i32 {
+        for i in 1..conf.count_residues() as i32 {
             for j in 0..i {
                 pairwise_energy!(self, i as usize, conf, j as usize, conf, e_total);
             }
@@ -58,7 +58,7 @@ impl<E: NonBondedEnergyKernel> SurpassEnergy for NonBondedEnergy<E> {
         }
         let mut i_chain = move_prop.first_moved_pos as i32;
         for i_moved in 0..N {
-            for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_atoms() as i32 {
+            for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_residues() as i32 {
                 pairwise_energy!(self, i_partner as usize, conf, i_moved, move_prop, en_proposed);
                 pairwise_energy!(self, i_partner as usize, conf, i_chain as usize, conf, en_chain);
                 // eprintln!("{} {} {}   {} {}", i_partner, i_moved, i_chain, en_chain, en_proposed);

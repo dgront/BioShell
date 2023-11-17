@@ -59,14 +59,14 @@ mod test_movers {
 
         let mover: HingeMove<HINGE_MOVE_SIZE> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
         let mut mp = MoveProposal::new();
-        let v0_before = model.ca_to_vec3(0);
-        let v1_before = model.ca_to_vec3(1);
-        let last_before = model.ca_to_vec3(HINGE_MOVE_SIZE+1);
+        let v0_before = model.atom_to_vec3(0);
+        let v1_before = model.atom_to_vec3(1);
+        let last_before = model.atom_to_vec3(HINGE_MOVE_SIZE+1);
         mover.compute_move(&model, 1, std::f64::consts::PI / 2.0, &mut mp);
         mp.apply(&mut model);
-        let v0_after = model.ca_to_vec3(0);
-        let v1_after = model.ca_to_vec3(1);
-        let last_after = model.ca_to_vec3(HINGE_MOVE_SIZE+1);
+        let v0_after = model.atom_to_vec3(0);
+        let v1_after = model.atom_to_vec3(1);
+        let last_after = model.atom_to_vec3(HINGE_MOVE_SIZE+1);
 
         assert_vec3_eq!(v0_before, v0_after, 0.00001, "first CA");
         assert_vec3_eq!(last_before, last_after, 0.00001, "last CA");
@@ -80,17 +80,17 @@ mod test_movers {
         let mut model = extended_chain(4, 100.0);
         let tail: TailMove<1> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
         let mut tail_prop = MoveProposal::new();
-        let n_before = model.ca_to_vec3(0);
-        let c_before = model.ca_to_vec3(3);
+        let n_before = model.atom_to_vec3(0);
+        let c_before = model.atom_to_vec3(3);
         tail.compute_move(&mut model, 0, MovedTermini::NTerminal, 1.57, &mut tail_prop);
         tail_prop.apply(&mut model);
-        let n_after = model.ca_to_vec3(0);
-        let c_after = model.ca_to_vec3(3);
+        let n_after = model.atom_to_vec3(0);
+        let c_after = model.atom_to_vec3(3);
         assert_vec3_ne!(n_before, n_after, 1.5, "N-teminal should move");
         assert_vec3_eq!(c_before, c_after, 0.00001, "C-teminal should NOT move");
         tail.compute_move(&mut model, 0, MovedTermini::CTerminal, 1.57, &mut tail_prop);
         tail_prop.apply(&mut model);
-        let c_after = model.ca_to_vec3(3);
+        let c_after = model.atom_to_vec3(3);
         assert_vec3_ne!(c_before, c_after, 1.5, "C-teminal should move");
     }
 
@@ -112,7 +112,7 @@ mod test_movers {
         tail.compute_move(&mut model, 0, MovedTermini::NTerminal, 1.57, &mut tail_prop);
         tail_prop.apply(&mut model);
         for i in 0..N_MOVED {
-            assert_ne!(backup.cax[i]+backup.cay[i]+backup.caz[i], model.cax[i]+model.cay[i]+model.caz[i]);
+            assert_ne!(backup.cax[i]+backup.cay[i]+backup.caz[i], model.bbx[i]+model.bby[i]+model.bbz[i]);
         }
         backup.apply(&mut model);
 
@@ -122,7 +122,7 @@ mod test_movers {
         tail_prop.apply(&mut model);
         let offset = N_RES-N_MOVED;
         for i in 0..N_MOVED {
-            assert_ne!(backup.cax[i]+backup.cay[i]+backup.caz[i], model.cax[i+offset]+model.cay[i+offset]+model.caz[i+offset]);
+            assert_ne!(backup.cax[i]+backup.cay[i]+backup.caz[i], model.bbx[i+offset]+model.bby[i+offset]+model.bbz[i+offset]);
         }
     }
 
@@ -157,13 +157,13 @@ mod test_movers {
         }
 
         for i in 0..N {
-            let v = model.ca_to_vec3(i);
+            let v = model.atom_to_vec3(i);
             assert_vec3_ne!(v, coords[i], 0.1, format!("atom {} should move",i));
         }
     }
 
     fn check_bond_lengths(system: &SurpassAlphaSystem, d: f64) {
-        for i in 1..system.count_atoms() {
+        for i in 1..system.count_residues() {
             assert_delta!(system.distance(i-1, i), d, 0.01);
         }
     }

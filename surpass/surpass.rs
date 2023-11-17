@@ -158,16 +158,16 @@ fn check_bond_lengths<const N: usize>(system: &mut SurpassAlphaSystem, mp: &Move
     backup.first_moved_pos = mp.first_moved_pos;
     backup.backup(system);
     mp.apply(system);
-    for i in 0..system.count_atoms()-1 {
+    for i in 0..system.count_residues()-1 {
         if system.chain(i) != system.chain(i+1) { continue }
         let dd = system.distance(i+1, i);
         if (dd-d).abs() > 0.01 {
             system.to_pdb_file("after.pdb", false);
-            let av = system.ca_to_vec3(i+1);
-            let prev_av = system.ca_to_vec3(i);
+            let av = system.atom_to_vec3(i+1);
+            let prev_av = system.atom_to_vec3(i);
             backup.apply(system);
-            let bv = system.ca_to_vec3(i+1);
-            let prev_bv = system.ca_to_vec3(i);
+            let bv = system.atom_to_vec3(i+1);
+            let prev_bv = system.atom_to_vec3(i);
             system.to_pdb_file("before.pdb", false);
 
             panic!("Broken bond between {} and {}, current length is: {}\nPos. before: {} {}\nPos. after: {} {}\n",

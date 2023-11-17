@@ -28,9 +28,9 @@ impl<const N: usize> MoveProposal<N> {
     pub fn apply(&self, model: &mut SurpassAlphaSystem) {
         let mut i_chain = self.first_moved_pos;
         for i_moved in 0..N {
-            model.cax[i_chain] = self.cax[i_moved];
-            model.cay[i_chain] = self.cay[i_moved];
-            model.caz[i_chain] = self.caz[i_moved];
+            model.bbx[i_chain] = self.cax[i_moved];
+            model.bby[i_chain] = self.cay[i_moved];
+            model.bbz[i_chain] = self.caz[i_moved];
             i_chain += 1;
         }
     }
@@ -38,9 +38,9 @@ impl<const N: usize> MoveProposal<N> {
     pub fn backup(&mut self, model: &SurpassAlphaSystem) {
         let mut i_chain = self.first_moved_pos;
         for i_moved in 0..N {
-            self.cax[i_moved] = model.cax[i_chain];
-            self.cay[i_moved] = model.cay[i_chain];
-            self.caz[i_moved] = model.caz[i_chain];
+            self.cax[i_moved] = model.bbx[i_chain];
+            self.cay[i_moved] = model.bby[i_chain];
+            self.caz[i_moved] = model.bbz[i_chain];
             i_chain += 1;
         }
     }

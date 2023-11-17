@@ -38,12 +38,12 @@ fn system_from_pdb() {
     assert_eq!(*model.chain_id(1).unwrap(), String::from("B"));
 
     // --- check coordinates
-    assert_delta!(model.int_to_real(model.cax[0]), -13.296, 0.001);
-    assert_delta!(model.int_to_real(model.cay[0]), 0.028, 0.001);
-    assert_delta!(model.int_to_real(model.caz[0]), 3.924, 0.001);
-    assert_delta!(model.int_to_real(model.cax[10]), -0.651, 0.001);
-    assert_delta!(model.int_to_real(model.cay[10]), -2.752, 0.001);
-    assert_delta!(model.int_to_real(model.caz[10]), 2.466, 0.001);
+    assert_delta!(model.int_to_real(model.bbx[0]), -13.296, 0.001);
+    assert_delta!(model.int_to_real(model.bby[0]), 0.028, 0.001);
+    assert_delta!(model.int_to_real(model.bbz[0]), 3.924, 0.001);
+    assert_delta!(model.int_to_real(model.bbx[10]), -0.651, 0.001);
+    assert_delta!(model.int_to_real(model.bby[10]), -2.752, 0.001);
+    assert_delta!(model.int_to_real(model.bbz[10]), 2.466, 0.001);
 
     // --- compute the distance between two atoms
     assert_delta!(model.distance(0, 1), 3.812, 0.01);
@@ -56,8 +56,8 @@ fn test_4_chains() {
     let mut rnd = SmallRng::from_entropy();
     let model = SurpassAlphaSystem::make_random(&[10, 10, 10, 10], 100.0, &mut rnd);
     for i in 0..4 {
-        assert_eq!(model.chain_atoms(i).start, i*10);
-        assert_eq!(model.chain_atoms(i).end, (i+1)*10);
+        assert_eq!(model.chain_residues(i).start, i*10);
+        assert_eq!(model.chain_residues(i).end, (i+1)*10);
         for j in i*10..(i+1)*10 {
             assert_eq!(model.chain(j), i as u16);
         }
@@ -69,8 +69,8 @@ fn test_4_chains() {
 fn test_extended_chain() {
     let mut rnd = SmallRng::from_entropy();
     let model = extended_chain(10, 100.0);
-    assert_eq!(model.chain_atoms(0).start, 0);
-    assert_eq!(model.chain_atoms(0).end, 10);
+    assert_eq!(model.chain_residues(0).start, 0);
+    assert_eq!(model.chain_residues(0).end, 10);
     for j in 0..10 {
         assert_eq!(model.chain(j), 0);
     }
@@ -80,30 +80,30 @@ fn test_extended_chain() {
 fn test_coords_operations() {
     let mut model = SurpassAlphaSystem::new(&[3], 100.0);
 
-    model.cax[2] = model.real_to_int(6.0);
-    assert_delta!(model.int_to_real(model.cax[2]), 6.0, 0.00001);
+    model.bbx[2] = model.real_to_int(6.0);
+    assert_delta!(model.int_to_real(model.bbx[2]), 6.0, 0.00001);
     // --- set X coordinate beyond the box
-    model.cax[2] = model.real_to_int(51.0);
-    assert_delta!(model.int_to_real(model.cax[2]), -49.0, 0.00001);
+    model.bbx[2] = model.real_to_int(51.0);
+    assert_delta!(model.int_to_real(model.bbx[2]), -49.0, 0.00001);
     // --- set X coordinate inside the box but close to the negative end
-    model.cax[2] = model.real_to_int(-49.0);
-    assert_delta!(model.int_to_real(model.cax[2]), -49.0, 0.00001);
+    model.bbx[2] = model.real_to_int(-49.0);
+    assert_delta!(model.int_to_real(model.bbx[2]), -49.0, 0.00001);
     // --- set X coordinate outside the box on the negative side
-    model.cax[2] = model.real_to_int(-51.0);
-    assert_delta!(model.int_to_real(model.cax[2]), 49.0, 0.00001);
+    model.bbx[2] = model.real_to_int(-51.0);
+    assert_delta!(model.int_to_real(model.bbx[2]), 49.0, 0.00001);
 }
 
 #[test]
 fn test_diatance_evaluation() {
     let mut model = SurpassAlphaSystem::new(&[3], 100.0);
     for i in 0..3 {
-        model.cax[i] = model.real_to_int(0.0);
-        model.cay[i] = model.real_to_int(0.0);
-        model.caz[i] = model.real_to_int(0.0);
+        model.bbx[i] = model.real_to_int(0.0);
+        model.bby[i] = model.real_to_int(0.0);
+        model.bbz[i] = model.real_to_int(0.0);
     }
-    model.cax[2] = model.real_to_int(6.0);
-    model.cax[1] = model.real_to_int(3.0);
-    model.cay[1] = model.real_to_int(4.0);
+    model.bbx[2] = model.real_to_int(6.0);
+    model.bbx[1] = model.real_to_int(3.0);
+    model.bby[1] = model.real_to_int(4.0);
     assert_delta!(model.distance(0,1), 5.0, 0.00001);
     assert_delta!(model.distance(2,1), 5.0, 0.00001);
 }
@@ -132,9 +132,9 @@ fn test_bond_adjustments() {
     system.to_pdb_file("adjusted.pdb", false);
     for ichain in 0..n_chains {
         for ires in 2..atom_each_chain {
-            let a = system.ca_to_vec3(ichain* atom_each_chain + ires-2);
-            let b = system.ca_to_vec3(ichain* atom_each_chain + ires-1);
-            let c = system.ca_to_vec3(ichain* atom_each_chain + ires);
+            let a = system.atom_to_vec3(ichain* atom_each_chain + ires-2);
+            let b = system.atom_to_vec3(ichain* atom_each_chain + ires-1);
+            let c = system.atom_to_vec3(ichain* atom_each_chain + ires);
             assert_delta!(120.0, planar_angle3(&a, &b, &c).to_degrees(), 0.0001);
             assert_delta!(new_bond_length, b.distance_to(&a), 0.0001);
         }

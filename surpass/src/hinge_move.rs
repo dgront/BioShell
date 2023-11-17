@@ -16,7 +16,7 @@ impl<const HINGE_MOVE_SIZE: usize> Mover<HINGE_MOVE_SIZE> for HingeMove<HINGE_MO
         let mut moved_from;
         let mut moved_to;
         loop {
-            moved_from = rnd_gen.gen_range(1..system.count_atoms() - HINGE_MOVE_SIZE);
+            moved_from = rnd_gen.gen_range(1..system.count_residues() - HINGE_MOVE_SIZE);
             moved_to = moved_from + HINGE_MOVE_SIZE - 1;
             if system.chain(moved_from-1) == system.chain(moved_to+1) { break };
         }
@@ -51,15 +51,15 @@ impl<const HINGE_MOVE_SIZE: usize> HingeMove<HINGE_MOVE_SIZE> {
         //  - rotated range is 1..9
         // -------------------------
         // --- prepare rototranslation
-        let start_vector: Vec3 = system.ca_to_vec3(moved_from - 1);
-        let end_vector: Vec3 = system.ca_to_nearest_vec3(moved_from + HINGE_MOVE_SIZE, moved_from - 1);
+        let start_vector: Vec3 = system.atom_to_vec3(moved_from - 1);
+        let end_vector: Vec3 = system.atom_to_nearest_vec3(moved_from + HINGE_MOVE_SIZE, moved_from - 1);
         let roto = Rototranslation::around_axis(&start_vector, &end_vector, angle);
         // --- rotate atoms around the axis and copy outcome to a proposal
         proposal.first_moved_pos = moved_from;
         let mut v: Vec3;
         let mut i_chain = moved_from;
         for i_moved in 0..HINGE_MOVE_SIZE {
-            v = system.ca_to_nearest_vec3(i_chain, moved_from - 1);
+            v = system.atom_to_nearest_vec3(i_chain, moved_from - 1);
             roto.apply_mut(&mut v);
             proposal.cax[i_moved] = system.real_to_int( v.x);
             proposal.cay[i_moved] = system.real_to_int(v.y);

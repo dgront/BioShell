@@ -13,7 +13,7 @@ impl<E: NonBondedEnergyKernel> NonBondedEnergyDebug<E> {
     pub fn new(system: &SurpassAlphaSystem, energy_kernel: E) -> NonBondedEnergyDebug<E> {
         let mut i_rep_2 = system.real_to_int(energy_kernel.distance_cutoff()) as f64;
         i_rep_2 *= i_rep_2;
-        let n_atoms = system.count_atoms();
+        let n_atoms = system.count_residues();
         let global_energy_map = vec![vec![0.0; n_atoms]; n_atoms];
         let delta_energy_map = vec![vec![0.0; n_atoms]; n_atoms];
         NonBondedEnergyDebug{ i_cutoff_2: i_rep_2, energy_kernel, global_energy_map, delta_energy_map }
@@ -21,12 +21,12 @@ impl<E: NonBondedEnergyKernel> NonBondedEnergyDebug<E> {
 
     pub fn evaluate(&mut self, conf: &SurpassAlphaSystem) -> f64 {
 
-        for i in 0..conf.count_atoms() {
+        for i in 0..conf.count_residues() {
             self.global_energy_map[i].fill(0.0);
         }
 
         let mut e_total = 0.0;
-        for i in 1..conf.count_atoms() as i32 {
+        for i in 1..conf.count_residues() as i32 {
             for j in 0..i {
                 let old_en = e_total;
                 pairwise_energy!(self, i as usize, conf, j as usize, conf, e_total);
@@ -41,7 +41,7 @@ impl<E: NonBondedEnergyKernel> NonBondedEnergyDebug<E> {
 
     pub fn evaluate_delta<const N: usize>(&mut self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N>) -> f64 {
 
-        for i in 0..conf.count_atoms() {
+        for i in 0..conf.count_residues() {
             self.delta_energy_map[i].fill(0.0);
         }
 
@@ -67,7 +67,7 @@ impl<E: NonBondedEnergyKernel> NonBondedEnergyDebug<E> {
         }
         let mut i_chain = move_prop.first_moved_pos as i32;
         for i_moved in 0..N {
-            for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_atoms() as i32 {
+            for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_residues() as i32 {
                 let mut ep = 0.0;
                 pairwise_energy!(self, i_partner as usize, conf, i_moved, move_prop, ep);
                 en_proposed += ep;
