@@ -7,7 +7,7 @@ use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
-use surpass::{CaContactEnergy, CMDisplacement, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
+use surpass::{C_N, C_O, CA_C, CaContactEnergy, CMDisplacement, ExcludedVolume, HingeMove, MoveProposal, Mover, N_CA, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
 use surpass::{ChainCM, RgSquared, RecordMeasurements, REndSquared};
 #[allow(unused_imports)]                // NonBondedEnergyDebug can be un-commented to test non-bonded energy if the debug check fails
 use surpass::{NonBondedEnergyDebug};
@@ -63,12 +63,12 @@ fn main() {
     let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], args.box_size, &mut rnd);
 
     // --- sampling: movers and proposals
-    let hinge_mover: HingeMove<4> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let tail_mover_1: TailMove<1> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let mut hinge_prop: MoveProposal<4> = MoveProposal::new();
-    let mut tail_prop_1: MoveProposal<1> = MoveProposal::new();
-    let tail_mover_2: TailMove<2> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let mut tail_prop_2: MoveProposal<2> = MoveProposal::new();
+    let hinge_mover: HingeMove<4, { 4 * 4 }> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+    let tail_mover_1: TailMove<1, 4> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+    let mut hinge_prop: MoveProposal<4, { 4 * 4 }> = MoveProposal::new();
+    let mut tail_prop_1: MoveProposal<1, 4> = MoveProposal::new();
+    let tail_mover_2: TailMove<2, { 2 * 4 }> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+    let mut tail_prop_2: MoveProposal<2, { 2 * 4 }> = MoveProposal::new();
 
     // --- Observers
     let cm_measurements: Vec<ChainCM> = (0..system.count_chains()).map(|i|ChainCM::new(i)).collect();
@@ -105,7 +105,7 @@ fn main() {
                 for _tail in 0..n_chains*2 {
                     tail_mover_1.propose(&mut system, &mut rnd, &mut tail_prop_1);
                     #[cfg(debug_assertions)]
-                    check_bond_lengths(&mut system, &tail_prop_1, 3.8);
+                    check_bond_lengths(&mut system, &tail_prop_1);
                     if energy.evaluate_delta(&system, &tail_prop_1) < 0.1 {
                         tail_prop_1.apply(&mut system);
                     }
@@ -114,7 +114,7 @@ fn main() {
                 for _tail in 0..n_chains * 2 {
                     tail_mover_2.propose(&mut system, &mut rnd, &mut tail_prop_2);
                     #[cfg(debug_assertions)]
-                    check_bond_lengths(&mut system, &tail_prop_2, 3.8);
+                    check_bond_lengths(&mut system, &tail_prop_2);
                     if energy.evaluate_delta(&system, &tail_prop_2) < 0.1 {
                         tail_prop_2.apply(&mut system);
                     }
@@ -126,13 +126,13 @@ fn main() {
                     if delta_e < 0.1 {
                         #[cfg(debug_assertions)] {
                             _en_before = energy.evaluate(&system);
-                            check_bond_lengths(&mut system, &hinge_prop, 3.8);
+                            check_bond_lengths(&mut system, &hinge_prop);
                         }
                         hinge_prop.apply(&mut system);
                         #[cfg(debug_assertions)] {
                             let en_after = energy.evaluate(&system);
                             if (en_after - _en_before - delta_e).abs() > 0.001 {
-                                energy.report(&mut system, &hinge_prop);
+                                // energy.report(&mut system, &hinge_prop);
                                 panic!("Incorrect energy change: global {} vs delta {}\n", en_after-_en_before, delta_e);
                             }
                         }
@@ -153,29 +153,44 @@ fn main() {
 }
 
 #[allow(dead_code)]
-fn check_bond_lengths<const N: usize>(system: &mut SurpassAlphaSystem, mp: &MoveProposal<N>, d: f64) {
-    let mut backup: MoveProposal<N> = MoveProposal::new();
+fn check_bond_lengths<const N_RESIDUES: usize, const N_ATOMS: usize>(system: &mut SurpassAlphaSystem, mp: &MoveProposal<N_RESIDUES, N_ATOMS>) {
+    let mut backup: MoveProposal<N_RESIDUES, N_ATOMS> = MoveProposal::new();
     backup.first_moved_pos = mp.first_moved_pos;
     backup.backup(system);
     mp.apply(system);
-    for i in 0..system.count_residues()-1 {
-        if system.chain(i) != system.chain(i+1) { continue }
-        let dd = system.distance(i+1, i);
-        if (dd-d).abs() > 0.01 {
-            system.to_pdb_file("after.pdb", false);
-            let av = system.atom_to_vec3(i+1);
-            let prev_av = system.atom_to_vec3(i);
-            backup.apply(system);
-            let bv = system.atom_to_vec3(i+1);
-            let prev_bv = system.atom_to_vec3(i);
-            system.to_pdb_file("before.pdb", false);
-
-            panic!("Broken bond between {} and {}, current length is: {}\nPos. before: {} {}\nPos. after: {} {}\n",
-                   i, i+1, dd, &prev_bv, &bv, &prev_av, &av);
+    let true_bond_lengths = [C_N, N_CA, CA_C, C_O];
+    for i_residue in 0..system.count_residues()-1 {
+        let mut idx = i_residue*4;
+        // --- check C-N bond only when both atoms are of the same chain; also, the first residue doesn't have preceding C
+        if system.chain(i_residue) == system.chain(i_residue +1) && i_residue > 0 {
+            check_single_bond(system, idx-1, idx, true_bond_lengths[0], &backup);
+        }
+        for i_atom in 1..4 {
+            idx += 1;
+            check_single_bond(system, idx-1, idx, true_bond_lengths[i_atom], &backup);
         }
     }
     backup.apply(system);
 }
+
+fn check_single_bond<const N_RESIDUES: usize, const N_ATOMS: usize>(system: &mut SurpassAlphaSystem,
+            i_atom: usize, j_atom: usize, d_expected: f64, backup: &MoveProposal<N_RESIDUES, N_ATOMS>) {
+    let d_observed = system.distance(i_atom, j_atom);
+    let i_residue = i_atom / 4;
+    if (d_observed - d_expected).abs() > 0.01 {
+        system.to_pdb_file("after.pdb", false);
+        let av = system.atom_to_vec3(i_residue + 1);
+        let prev_av = system.atom_to_vec3(i_residue);
+        backup.apply(system);
+        let bv = system.atom_to_vec3(i_residue + 1);
+        let prev_bv = system.atom_to_vec3(i_residue);
+        system.to_pdb_file("before.pdb", false);
+
+        panic!("Broken bond between {} and {} of {}, current length is: {}\nPos. before: {} {}\nPos. after: {} {}\n",
+               i_atom, j_atom, i_residue, d_observed, &prev_bv, &bv, &prev_av, &av);
+    }
+}
+
 #[allow(dead_code)]
 fn check_delta_en(en_before: f64, en_after: f64, delta: f64) {
     if (en_after-en_before-delta).abs() > 0.001 {

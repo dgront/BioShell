@@ -80,7 +80,7 @@ fn test_cacontacts_kernel() {
     let e = [10.0, 10.0, 10.0, 0.0, 0.0, -1.0, -1.0, 0.0];
     for i in 0..d.len() {
         let di = system.real_to_int(d[i]) as f64;
-        let en = cntcts.energy_for_residue_pair(di*di);
+        let en = cntcts.energy_for_distance_squared(di*di);
         assert_delta!(en, e[i], 0.000001);
     }
 }

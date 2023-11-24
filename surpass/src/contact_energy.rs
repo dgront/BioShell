@@ -29,7 +29,7 @@ impl CaContactEnergy {
 impl NonBondedEnergyKernel for CaContactEnergy {
 
     #[inline(always)]
-    fn energy_for_residue_pair(&self, i2: f64) -> f64 {
+    fn energy_for_distance_squared(&self, i2: f64) -> f64 {
         if i2 >= self.i_max_2 { 0.0 }
         else {
             if i2 < self.i_rep_2 { self.e_rep}

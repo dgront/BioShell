@@ -1,4 +1,4 @@
-use crate::{MoveProposal, NonBondedEnergyKernel, SurpassAlphaSystem, SurpassEnergy};
+use crate::{MoveProposal, NonBondedEnergyKernel, SurpassAlphaSystem, SurpassAtomTypes, SurpassEnergy};
 
 
 pub struct NonBondedEnergy<E: NonBondedEnergyKernel> {
@@ -17,14 +17,16 @@ impl<E: NonBondedEnergyKernel> NonBondedEnergy<E> {
 
 macro_rules! pairwise_energy {
     ($self: expr, $i: expr, $i_coords: expr, $j: expr, $j_coords: expr, $en_total: expr) => {
+        let ca_i = $i*4 + SurpassAtomTypes::CA as usize;
+        let ca_j = $j*4 + SurpassAtomTypes::CA as usize;
         $en_total += 'energy_after: {
-            let dx = ($i_coords.cax[$i].wrapping_sub($j_coords.cax[$j])) as f64;
+            let dx = ($i_coords.bbx[ca_i].wrapping_sub($j_coords.bbx[ca_j])) as f64;
             let mut sum_d2 = dx * dx;
             if sum_d2 > $self.i_cutoff_2 { break 'energy_after 0.0 }
-            let dy = ($i_coords.cay[$i].wrapping_sub($j_coords.cay[$j])) as f64;
+            let dy = ($i_coords.bby[ca_i].wrapping_sub($j_coords.bby[ca_j])) as f64;
             sum_d2 += dy * dy;
             if sum_d2 > $self.i_cutoff_2 { break 'energy_after 0.0 }
-            let dz = ($i_coords.caz[$i].wrapping_sub($j_coords.caz[$j])) as f64;
+            let dz = ($i_coords.bbz[ca_i].wrapping_sub($j_coords.bbz[ca_j])) as f64;
             sum_d2 += dz * dz;
             $self.energy_kernel.energy_for_distance_squared(sum_d2)
         };
@@ -43,12 +45,12 @@ impl<E: NonBondedEnergyKernel> SurpassEnergy for NonBondedEnergy<E> {
         return e_total;
     }
 
-    fn evaluate_delta<const N: usize>(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N>) -> f64 {
+    fn evaluate_delta<const N_RESIDUES: usize, const N_ATOMS: usize>(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N_RESIDUES, N_ATOMS>) -> f64 {
 
         let mut en_chain = 0.0;
         let mut en_proposed = 0.0;
         let mut i_chain = move_prop.first_moved_pos as i32;
-        for i_moved in 0..N {
+        for i_moved in 0..N_RESIDUES {
             for i_partner in 0..move_prop.first_moved_pos as i32 {
                 pairwise_energy!(self, i_partner as usize, conf, i_moved, move_prop, en_proposed);
                 pairwise_energy!(self, i_partner as usize, conf, i_chain as usize, conf, en_chain);
@@ -57,8 +59,8 @@ impl<E: NonBondedEnergyKernel> SurpassEnergy for NonBondedEnergy<E> {
             i_chain += 1;
         }
         let mut i_chain = move_prop.first_moved_pos as i32;
-        for i_moved in 0..N {
-            for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_residues() as i32 {
+        for i_moved in 0..N_RESIDUES {
+            for i_partner in (move_prop.first_moved_pos + N_RESIDUES) as i32 ..conf.count_residues() as i32 {
                 pairwise_energy!(self, i_partner as usize, conf, i_moved, move_prop, en_proposed);
                 pairwise_energy!(self, i_partner as usize, conf, i_chain as usize, conf, en_chain);
                 // eprintln!("{} {} {}   {} {}", i_partner, i_moved, i_chain, en_chain, en_proposed);

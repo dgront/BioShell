@@ -19,13 +19,13 @@ impl fmt::Display for MovedTermini {
     }
 }
 
-pub struct TailMove<const N_MOVED: usize> {
+pub struct TailMove<const N_MOVED: usize, const N_ATOMS_MOVED: usize> {
     max_angle: f64,
     max_range_allowed: f64
 }
 
-impl<const N_MOVED: usize> Mover<N_MOVED> for TailMove<N_MOVED> {
-    fn propose<R: Rng>(&self, system: &SurpassAlphaSystem, rnd_gen: &mut R, proposal: &mut MoveProposal<N_MOVED>) {
+impl<const N_MOVED: usize, const N_ATOMS_MOVED: usize> Mover<N_MOVED, N_ATOMS_MOVED> for TailMove<N_MOVED, N_ATOMS_MOVED> {
+    fn propose<R: Rng>(&self, system: &SurpassAlphaSystem, rnd_gen: &mut R, proposal: &mut MoveProposal<N_MOVED, N_ATOMS_MOVED>) {
 
         // --- pick a chain randomly
         let i_chain = rnd_gen.gen_range(0..system.count_chains());
@@ -40,14 +40,14 @@ impl<const N_MOVED: usize> Mover<N_MOVED> for TailMove<N_MOVED> {
     }
 }
 
-impl<const N_MOVED: usize> TailMove<N_MOVED> {
+impl<const N_MOVED: usize, const N_ATOMS_MOVED: usize> TailMove<N_MOVED, N_ATOMS_MOVED> {
 
-    pub fn new(max_angle: f64, max_range_allowed: f64) -> TailMove<N_MOVED> {
+    pub fn new(max_angle: f64, max_range_allowed: f64) -> TailMove<N_MOVED, N_ATOMS_MOVED> {
         TailMove{ max_angle, max_range_allowed }
     }
 
     pub fn compute_move(&self, system: &SurpassAlphaSystem, which_chain: usize, which_tail: MovedTermini,
-                        angle: f64, proposal: &mut MoveProposal<N_MOVED>) {
+                        angle: f64, proposal: &mut MoveProposal<N_MOVED, N_ATOMS_MOVED>) {
 
         let r = system.chain_residues(which_chain);
         // --- axis_from, axis_to : vectors defining the rotation axis
@@ -55,14 +55,14 @@ impl<const N_MOVED: usize> TailMove<N_MOVED> {
         // --- i_referenced index of the atom used as the PBC reference, i.e. all other atoms are moved to the image which is the closest to i_referenced
         let (axis_from, axis_to, i_moved_from, i_moved_to, i_referenced) = match which_tail {
             CTerminal => {
-                (system.atom_to_nearest_vec3(r.end-N_MOVED-2, r.end-N_MOVED-1),
-                 system.atom_to_vec3(r.end-N_MOVED-1),
-                 r.end - N_MOVED, r.end, r.end - N_MOVED -1)
+                (system.atom_to_nearest_vec3((r.end - N_MOVED - 2) * 4, (r.end - N_MOVED - 1) * 4),
+                 system.atom_to_vec3((r.end - N_MOVED - 1) * 4),
+                 (r.end - N_MOVED) * 4, r.end * 4, (r.end - N_MOVED - 1) * 4)
             }
             NTerminal => {
-                (system.atom_to_vec3(r.start + N_MOVED),
-                 system.atom_to_nearest_vec3(r.start+N_MOVED+1, r.start+N_MOVED),
-                 r.start, r.start + N_MOVED, r.start + N_MOVED)
+                (system.atom_to_vec3((r.start + N_MOVED) * 4),
+                 system.atom_to_nearest_vec3((r.start + N_MOVED + 1) * 4, (r.start + N_MOVED) * 4),
+                 r.start * 4, (r.start + N_MOVED) * 4, (r.start + N_MOVED) * 4)
             }
         };
         trace!("{} tail move of {}..{}", which_tail, i_moved_from, i_moved_to);
@@ -71,13 +71,16 @@ impl<const N_MOVED: usize> TailMove<N_MOVED> {
         let roto = Rototranslation::around_axis(&axis_from, &axis_to, angle);
 
         let mut i_pos = 0;
-        for i_moved in i_moved_from..i_moved_to {
-            let mut moved = system.atom_to_nearest_vec3(i_moved, i_referenced);
-            roto.apply_mut(&mut moved);
-            proposal.cax[i_pos] = system.real_to_int(moved.x);
-            proposal.cay[i_pos] = system.real_to_int(moved.y);
-            proposal.caz[i_pos] = system.real_to_int(moved.z);
-            i_pos += 1;
+        for i_resid in i_moved_from..i_moved_to {
+            for i_atom in 0..4 {
+                let i_moved = i_resid * 4 + i_atom;
+                let mut moved = system.atom_to_nearest_vec3(i_moved, i_referenced);
+                roto.apply_mut(&mut moved);
+                proposal.bbx[i_pos] = system.real_to_int(moved.x);
+                proposal.bby[i_pos] = system.real_to_int(moved.y);
+                proposal.bbz[i_pos] = system.real_to_int(moved.z);
+                i_pos += 1;
+            }
         }
         proposal.first_moved_pos = i_moved_from;
     }

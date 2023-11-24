@@ -3,11 +3,27 @@ use std::ops::Range;
 use rand::{Rng};
 use bioshell_pdb::{load_pdb_file, Structure};
 use bioshell_pdb::calc::Vec3;
-use bioshell_pdb::nerf::restore_linear_chain;
+use bioshell_pdb::nerf::{restore_branched_chain, restore_linear_chain};
 use bioshell_pdb::pdb_atom_filters::{IsCA, PdbAtomPredicate};
 use bioshell_pdb::PDBError;
 use bioshell_io::out_writer;
 
+pub const N_CA: f64 = 1.458001;
+pub const CA_C: f64 = 1.523258;
+pub const C_O: f64 = 1.231015;
+pub const C_N: f64 = 1.328685;
+pub const N_CA_C: f64 = 110.0;
+pub const CA_C_N: f64 = 114.0;
+pub const C_N_CA: f64 = 123.0;
+pub const CA_C_O: f64 = 121.0;
+#[repr(i8)]
+pub enum SurpassAtomTypes {
+    N = 0,
+    CA = 1,
+    C = 2,
+    O = 3,
+    SC = 4
+}
 
 /// SURPASS-alpha system holds coordinates of all atoms
 ///
@@ -39,12 +55,13 @@ impl SurpassAlphaSystem {
 
         // ---------- Create an empty system
         let l = box_length / 2.0 / (i32::MAX as f64);
-        let n_atoms = chain_lengths.iter().sum();
+        let n_residues = chain_lengths.iter().sum();
+        let n_atoms = n_residues * 4;
         let n_chains = chain_lengths.len();
         let mut s = SurpassAlphaSystem{
             chain_indexes: vec![0; n_atoms], bbx: vec![0; n_atoms], bby: vec![0; n_atoms], bbz: vec![0; n_atoms],
-            sgx: vec![0; n_atoms], sgy: vec![0; n_atoms], sgz: vec![0; n_atoms],
-            residues_for_chain: vec![0..0; n_atoms], chain_id_by_index: vec![String::from("A"); n_chains],
+            sgx: vec![0; n_residues], sgy: vec![0; n_residues], sgz: vec![0; n_residues],
+            residues_for_chain: vec![0..0; n_residues], chain_id_by_index: vec![String::from("A"); n_chains],
             int_to_real: l, int_to_real_2: l*l, box_length, model_id: 0
         };
         // ---------- Assign atoms to chains
@@ -106,7 +123,7 @@ impl SurpassAlphaSystem {
     /// Returns the number of atoms in this system (of all its chains)
     pub fn count_residues(&self) -> usize { self.bbx.len() }
 
-    /// Returns real coordinates of a C-alpha atom in a newly created Vec3 struct.
+    /// Returns real coordinates of a backbone atom in a newly created Vec3 struct.
     ///
     /// Coordinates of a `pos` alpha carbon are converted from their integer representation
     /// to `f64` values and returned as a [`Vec3`](bioshell_pdb::calc::vec3) struct.
@@ -115,7 +132,7 @@ impl SurpassAlphaSystem {
                   self.int_to_real(self.bby[pos]),
                   self.int_to_real(self.bbz[pos]))
     }
-    /// Copies real coordinates of a C-alpha atom into a given Vec3 struct.
+    /// Copies real coordinates of a backbone atom into a given Vec3 struct.
     ///
     /// Coordinates of a `pos` alpha carbon are converted from their integer representation
     /// to `f64` values and stored in a given [`Vec3`](bioshell_pdb::calc::vec3) struct.
@@ -125,7 +142,7 @@ impl SurpassAlphaSystem {
                self.int_to_real(self.bbz[pos]));
     }
 
-    /// Returns real coordinates of an image of a C-alpha atom that is the closest to a given atom.
+    /// Returns real coordinates of an image of a backbone atom that is the closest to a given atom.
     ///
     /// This method finds the periodic image of a `pos` C-alpha atom that is the closes to the
     /// `ref_pos` C-alpha atom  and returns its coordinates as a newly created  [`Vec3`](bioshell_pdb::calc::vec3) struct.
@@ -136,7 +153,7 @@ impl SurpassAlphaSystem {
                   closest_coordinate!(self, self.bbz, pos, ref_pos))
     }
 
-    /// Returns real coordinates of an image of a C-alpha atom that is the closest to a given atom.
+    /// Returns real coordinates of an image of a backbone atom that is the closest to a given atom.
     ///
     /// This method finds the periodic image of a `pos` C-alpha atom that is the closes to the
     /// `ref_pos` C-alpha atom  and stores its coordinates in a given  [`Vec3`](bioshell_pdb::calc::vec3) struct.
@@ -194,13 +211,13 @@ impl SurpassAlphaSystem {
         self.chain_id_by_index[chain_idx] = String::from(chain_id);
     }
 
-    pub fn distance_squared(&self, i: usize, j: usize) -> f64 {
+    pub fn distance_squared(&self, i_atom: usize, j_atom: usize) -> f64 {
 
-        let mut r = self.bbx[i].wrapping_sub(self.bbx[j]);
+        let mut r = self.bbx[i_atom].wrapping_sub(self.bbx[j_atom]);
         let mut r2 = r as f64 * r as f64;
-        r = self.bby[i].wrapping_sub(self.bby[j]);
+        r = self.bby[i_atom].wrapping_sub(self.bby[j_atom]);
         r2 += r as f64 * r as f64;
-        r = self.bbz[i].wrapping_sub(self.bbz[j]);
+        r = self.bbz[i_atom].wrapping_sub(self.bbz[j_atom]);
         r2 += r as f64 * r as f64;
 
         return r2 * self.int_to_real_2;
@@ -234,13 +251,31 @@ impl SurpassAlphaSystem {
 
     pub fn make_random<R: Rng>(chain_lengths: &[usize], box_length: f64, rnd_gen: &mut R) -> SurpassAlphaSystem {
         let mut s = SurpassAlphaSystem::new(chain_lengths, box_length);
-        let n_atoms = s.count_residues();
-        // ---------- Initialize coordinates
-        let r = vec![3.8; n_atoms];
-        let planar: Vec<f64> = (0..n_atoms).map(|_| rnd_gen.gen_range(150.0_f64.to_radians()..170.0_f64.to_radians())).collect();
-        let dihedral: Vec<f64> = (0..n_atoms).map(|_| rnd_gen.gen_range(-180.0_f64.to_radians()..190.0_f64.to_radians())).collect();
+        let n_residues = s.count_residues();
+        let n_atoms = n_residues * 4;
+        // ---------- Initialize internal coordinates
+        let mut r = vec![0.0; n_atoms];
+        let mut planar: Vec<f64> = vec![0.0; n_atoms];
+        let mut dihedral: Vec<f64> = vec![0.0; n_atoms];
+        let mut bb_topology: Vec<[usize;4]> = vec![];
+        for i in 0..n_residues {
+            let idx = i * 4;
+            r[idx] = C_N;
+            r[idx+1] = N_CA;
+            r[idx+2] = CA_C;
+            r[idx+3] = C_O;
+            planar[idx] = CA_C_N.to_radians();
+            planar[idx+1] = C_N_CA.to_radians();
+            planar[idx+2] = N_CA_C.to_radians();
+            planar[idx+3] = CA_C_O.to_radians();
+            dihedral[idx] = 180.0_f64.to_radians(); // omega
+            dihedral[idx+1] = -180.0_f64.to_radians(); // Phi
+            dihedral[idx+2] = 180.0_f64.to_radians(); // Psi
+            dihedral[idx+3] = 180.0_f64.to_radians(); // flat
+            // bb_topology.push([]);
+        }
         let mut coords = vec![Vec3::default(); n_atoms];
-        restore_linear_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &mut coords[0..n_atoms]);
+        restore_branched_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &bb_topology.as_slice(),&mut coords[0..n_atoms]);
         for i in 0..n_atoms {
             s.vec3_to_ca(i,&coords[i]);
         }
