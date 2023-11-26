@@ -1,9 +1,6 @@
 #[cfg(test)]
-mod nerf_test {
-    use std::f64::consts::PI;
-    use bioshell_pdb::calc::{Vec3, dihedral_angle4, planar_angle3};
-    // use bioshell_pdb::nerf::{Kine};
-    use bioshell_pdb::{assert_delta, PdbAtom};
+mod kinematic_tree_tests {
+    use bioshell_pdb::{assert_delta};
     use bioshell_pdb::nerf::{InternalAtomDefinition, KinematicAtomTree};
 
     #[test]
