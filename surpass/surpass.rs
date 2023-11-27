@@ -7,7 +7,7 @@ use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
-use surpass::{CaContactEnergy, CMDisplacement, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
+use surpass::{CaContactEnergy, CMDisplacement, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, REndVector, SurpassAlphaSystem, SurpassEnergy, TailMove};
 use surpass::{ChainCM, RgSquared, RecordMeasurements, REndSquared};
 #[allow(unused_imports)]                // NonBondedEnergyDebug can be un-commented to test non-bonded energy if the debug check fails
 use surpass::{NonBondedEnergyDebug};
@@ -76,6 +76,10 @@ fn main() {
         RecordMeasurements::new("cm.dat", cm_measurements).expect("can't write to cm.dat");
     let r2_measurements: Vec<REndSquared> = (0..system.count_chains()).map(|i|REndSquared::new(i)).collect();
     let mut rend = RecordMeasurements::new("r2.dat", r2_measurements).expect("can't write to r2.dat");
+
+    let r2vec_measurements: Vec<REndVector> = (0..system.count_chains()).map(|i|REndVector::new(i)).collect();
+    let mut r_end_vec = RecordMeasurements::new("r_end_vec.dat", r2vec_measurements).expect("can't write to r_end_vec.dat");
+
     let rg_measurements: Vec<RgSquared> = (0..system.count_chains()).map(|i|RgSquared::new(i)).collect();
     let mut rg = RecordMeasurements::new("rg.dat", rg_measurements).expect("can't write to rg.dat");
     let t_max = args.outer_cycles * args.inner_cycles / 1000;
@@ -145,6 +149,7 @@ fn main() {
             cm.observe(&system);
             cmd.observe(&system);
             rend.observe(&system);
+            r_end_vec.observe(&system);
             rg.observe(&system);
         }           // --- single outer MC cycle done (all inner MC cycles finished)
         // --- append a current conformation to the trajectory file
