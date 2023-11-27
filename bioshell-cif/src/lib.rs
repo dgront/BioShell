@@ -165,7 +165,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: &mut R) -> Vec<CifData> {
                 current_loop = CifLoop{ column_names: vec![], data_rows: vec![] };
                 is_loop_open = true;
             } else {
-                current_loop.add_data_row(split_into_strings(ls));
+                current_loop.add_data_row(split_into_strings(ls, false));
             }
         }
     }
