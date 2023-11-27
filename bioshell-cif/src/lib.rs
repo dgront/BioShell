@@ -3,6 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader};
+use std::path::Iter;
 use log::{debug, info};
 
 use bioshell_io::split_into_strings;
@@ -41,6 +42,11 @@ impl CifLoop {
         }
         self.data_rows.push(row);
     }
+
+    /// Non-mutable iterator over rows of this loop block.
+    pub fn rows(&self) -> impl Iterator<Item = &Vec<String>> {
+        return self.data_rows.iter();
+    }
 }
 
 impl Display for CifLoop {
@@ -74,7 +80,7 @@ impl CifData {
     /// use std::io::BufReader;
     /// use bioshell_cif::read_cif_buffer;
     /// let cif_block = "data_first_block";
-    /// let mut reader = BufReader::new(alignment.as_bytes());
+    /// let mut reader = BufReader::new(cif_block.as_bytes());
     /// let data_blocks = read_cif_buffer(&mut reader);
     /// assert_eq!(data_blocks.len(), 1);
     /// assert_eq!(data_blocks[0].name(),"first_block");
