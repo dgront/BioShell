@@ -19,4 +19,7 @@ pub enum PDBError {
     #[error("Residue type not registered: {res_type}")]
     /// Unknown 3-letter residue code: `res_type`
     UnknownResidueType {res_type: String},
+    #[error("TER record has incorrect format: {ter_line}")]
+    /// A TER record line has incorrect format: `ter_line`
+    IncorrectlyFormattedTER {ter_line: String},
 }

@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
 use log::{debug, info};
-use crate::{PdbAtom, PdbHeader, PdbHelix, PdbSheet, PdbTitle, residue_id_from_ter_record, SecondaryStructureTypes, Structure};
+use crate::{PdbAtom, PdbHeader, PdbHelix, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure};
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::PDBError;
 
@@ -37,14 +37,19 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     for line in reader.lines() {
         let line = line?;
 
+        if line.len() < 6 { continue }  // --- remove empty lines or those without a valid record
         // Check that the line has a valid PDB record type
-        let record_type = &line[0..6];
-        let record = record_type.trim();
+        let record = line[0..6].trim();
         match record {
             "TER" => {
-                let ter_res = residue_id_from_ter_record(&line);
-                let ter_chain = ter_res.chain_id.clone();
-                pdb_structure.ter_atoms.insert(ter_chain, ter_res);
+                if let Ok(ter_res) = residue_id_from_ter_record(&line) {
+                    let ter_chain = ter_res.chain_id.clone();
+                    pdb_structure.ter_atoms.insert(ter_chain, ter_res);
+                } else {                    // --- assign that TER to the very last atom of the current chain
+                    if let Some(last_atom) = atoms.last() {
+                        pdb_structure.ter_atoms.insert(last_atom.chain_id.clone(), ResidueId::try_from(last_atom).unwrap());
+                    }
+                }
             }
             "HEADER" => {
                 let header = PdbHeader::new(&line);
@@ -52,7 +57,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             },
             "TITLE" => {
                 if pdb_structure.title == None {
-                    pdb_structure.title = Some(PdbTitle::new(line.as_str()));
+                    pdb_structure.title = Some(PdbTitle::new(&line));
                 } else {
                     let title = pdb_structure.title.as_mut().unwrap();
                     title.append(&line);
