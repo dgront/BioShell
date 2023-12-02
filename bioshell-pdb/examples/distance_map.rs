@@ -1,11 +1,10 @@
 use std::env;
-use clap::error::ContextKind::Usage;
 use bioshell_pdb::{load_pdb_file, PdbAtom};
 use bioshell_pdb::calc::distance;
 use bioshell_pdb::pdb_atom_filters::{AlwaysPass, IsBackbone, IsCA, PdbAtomPredicate};
 
-fn atom_descr(a: &PdbAtom) -> String {
-    format!("{} {} {:4} {}",a.chain_id, a.res_name, a.res_seq, a.name)
+fn describe_atom(a: &PdbAtom) -> String {
+    format!("{} {} {:4} {}", a.chain_id, a.res_name, a.res_seq, a.name)
 }
 
 const USAGE: &str = "Simple program to compute a matrix of inter-atomic distances for a given PDB file
@@ -15,7 +14,7 @@ const USAGE: &str = "Simple program to compute a matrix of inter-atomic distance
 fn main() {
     let args: Vec<String> = env::args().collect();
     let mut selector: Box<dyn PdbAtomPredicate> = Box::new(AlwaysPass);
-    let mut fname = "";
+    let fname: &str;
     match args.len() {
         1 => { panic!("No input PDB file given") }
         2 => { fname = &args[1] }
@@ -30,15 +29,14 @@ fn main() {
         _ => { panic!("Too many arguments; run `distance_map -h` for help") }
     };
     if fname == "--help" || fname == "-h" {
-        println!("{:?}", Usage);
+        println!("{:?}", USAGE);
         return;
     }
-    let mut strctr = load_pdb_file(&fname).unwrap();
-
+    let strctr = load_pdb_file(&fname).unwrap();
     for ai in strctr.atoms().iter().filter(|&a|selector.check(a)) {
         for aj in strctr.atoms().iter().filter(|&a|selector.check(a)) {
-            if ai.res_seq == aj.res_seq && ai.i_code==aj.i_code { break }
-            println!("{} {} : {}", atom_descr(ai), atom_descr(aj), distance(ai, aj));
+            if ai.res_seq == aj.res_seq && ai.i_code==aj.i_code && ai.chain_id==aj.chain_id { break }
+            println!("{} {} : {:.3}", describe_atom(ai), describe_atom(aj), distance(ai, aj));
         }
     }
 }
