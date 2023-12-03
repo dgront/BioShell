@@ -8,11 +8,13 @@ license = "Apache-2.0"
 keywords = ["bioshell"]
 
 [lib]
-crate-type =["rlib", "cdylib"]
+crate-type = ["rlib", "cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-bioshell-seq= { path = "../bioshell-seq" }
+bioshell-seq = { path = "../bioshell-seq" }
+bioshell-cif = { path = "../bioshell-cif" }
+bioshell-io  = { path = "../bioshell-io" } 	# for split_into_strings() and I/O functions
 
 clap = { version = "3.1.18", features = ["derive"] }
 thiserror = "1.0.26"

@@ -22,4 +22,7 @@ pub enum PDBError {
     #[error("TER record has incorrect format: {ter_line}")]
     /// A TER record line has incorrect format: `ter_line`
     IncorrectlyFormattedTER {ter_line: String},
+    #[error("Can't find a file with input parameters: {fname} - check your BIOSHEL_DB_PATH system variable")]
+    /// Missing parameters' file, that should be found in a BioShell's database
+    MissingBioShellFile {fname: String},
 }
