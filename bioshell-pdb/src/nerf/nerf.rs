@@ -91,12 +91,50 @@ pub fn restore_branched_chain(r: &[f64], planar: &[f64], dihedral: &[f64], topol
     // --- rebuild the stub
     let mut b = Vec3::default();
     let mut v = Vec3::default();
-    let [k, l, m] = topology[2][0..3] else { unreachable!(); };
+    let [k, l, m] = topology[2][1..4] else { unreachable!(); };
     create_stub(&output_chain[k], r[1], r[2], planar[2], &mut b, &mut v);
     output_chain[l].set(&b);
     output_chain[m].set(&v);
 
     for iatom in 3..output_chain.len() {
+        let [i, j, k, l] = topology[iatom];
+        restore_atom(&output_chain[i], &output_chain[j], &output_chain[k],
+                     r[iatom], planar[iatom], dihedral[iatom], &mut v);
+        output_chain[l].set(&v);
+    }
+}
+
+/// Calculates Cartesian coordinates of a molecule from internal coordinates of its atoms.
+///
+/// This function allows restoring atoms in a user-defined order
+/// # Arguments
+///  * `r` - array of bond lengths
+///  * `planar` - array of planar angles
+///  * `dihedral` - array of dihedral angles in radians
+///  * `topology` - array that provides indexes of atoms
+///  * `output_chain` - array of [`Vec3`] objects where the recovered Cartesian coordinates will be stored;
+///    **Note**: reconstruction starts from the second atom (i.e. `output_chain[1]`) while
+///    `output_chain[0]` is used as the starting point.
+///  * `restoring_order` - order in which Cartesian coordinates evaluated
+///
+pub fn restore_branched_chain_in_order(r: &[f64], planar: &[f64], dihedral: &[f64], topology: &[[usize;4]],
+                              restoring_order: &Vec<usize>, output_chain: &mut [Vec3]) {
+
+    if r.len() != planar.len() || r.len() != dihedral.len() || r.len() != output_chain.len() {
+        panic!("Inconsistent size of r ({}), alpha ({}), dihedral ({}) and output_chain ({})",
+               r.len(), planar.len(), dihedral.len(), output_chain.len())
+    }
+
+    // --- rebuild the stub
+    let mut b = Vec3::default();
+    let mut v = Vec3::default();
+    let [k, l, m] = topology[2][1..4] else { unreachable!(); };
+    create_stub(&output_chain[k], r[1], r[2], planar[2], &mut b, &mut v);
+    output_chain[l].set(&b);
+    output_chain[m].set(&v);
+
+    for index in 3..output_chain.len() {
+        let iatom = restoring_order[index];
         let [i, j, k, l] = topology[iatom];
         restore_atom(&output_chain[i], &output_chain[j], &output_chain[k],
                      r[iatom], planar[iatom], dihedral[iatom], &mut v);

@@ -1,0 +1,260 @@
+use std::collections::HashMap;
+use bioshell_cif::{CifData};
+use bioshell_io::split_into_strings;
+use crate::PDBError;
+use crate::PDBError::InternalAtomDefinitionError;
+
+/// Defines the relative location of an atom used by `InternalAtomDefinition`
+#[derive(Clone)]
+pub enum RelaviveResidueLocator {
+    /// atom is located in the residue preceding the reconstructed one
+    Previous,
+    /// atom is located in the residue being reconstructed
+    This,
+    /// atom is located in the residue following the reconstructed one
+    Next
+}
+
+impl TryFrom<&str> for RelaviveResidueLocator {
+    type Error = PDBError;
+
+    /// Returns a ``RelaviveResidueLocator`` for its string name
+    ///
+    /// # Example
+    /// ```rust
+    /// use bioshell_pdb::nerf::RelaviveResidueLocator;
+    /// assert_eq!(RelaviveResidueLocator::try_from("Next").unwrap(), RelaviveResidueLocator::Next);
+    /// assert_eq!(RelaviveResidueLocator::try_from("next").unwrap(), RelaviveResidueLocator::Next);
+    /// ```
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "This" => Ok(RelaviveResidueLocator::This),
+            "Next" => Ok(RelaviveResidueLocator::Next),
+            "Prev" => Ok(RelaviveResidueLocator::Previous),
+            "this" => Ok(RelaviveResidueLocator::This),
+            "next" => Ok(RelaviveResidueLocator::Next),
+            "prev" => Ok(RelaviveResidueLocator::Previous),
+            _ => {Err(InternalAtomDefinitionError{ error: "Can't find a RelativeResidueLocator for the string".to_string() })
+            }
+        }
+    }
+}
+
+impl TryFrom<&RelaviveResidueLocator> for i8 {
+    type Error = PDBError;
+
+    /// Provides integer offset for an enum value.
+    ///
+    /// This method returns `-1`, `0` or `1` for the `Previous`, `This` and `Next` residue, respectively
+    fn try_from(value: &RelaviveResidueLocator) -> Result<Self, Self::Error> {
+        match value {
+            RelaviveResidueLocator::This => Ok(0),
+            RelaviveResidueLocator::Next => Ok(1),
+            RelaviveResidueLocator::Previous => Ok(-1),
+        }
+    }
+}
+
+/// Defines an atom by providing it's internal coordinates and the reference frame.
+///
+/// The three atoms: `a`, `b` and `c` are used to construct a reference frame for an atom `d`.
+/// The position of the `d` atom is defined by three internal coordinates:
+///    * `r` - distance between `c` and `d`
+///    * `planar` - planar angle between `b`, `c` and `d`
+///    * `dihedral` - dihedral angle between `a`, `b`, `c` and `d`
+/// ```text
+///         c----d
+///        /
+///       /
+/// a----b
+/// ```
+/// The three atoms: `a`, `b` and `c` are referred by their names.
+#[derive(Clone)]
+pub struct InternalAtomDefinition {
+    /// Name of the atom this struct defines, i.e. the name of the atom `d`
+    pub name: String,
+    /// Name of the atom at `a` position
+    pub a_name: String,
+    /// Name of the atom at `b` position
+    pub b_name: String,
+    /// Name of the atom at `c` position
+    pub c_name: String,
+    /// relative index defining the residue the `a` atom belongs to
+    ///
+    /// Use `This` or `Prev`  to say that the `a` atom belongs to this or to the previous residue
+    pub a_residue: RelaviveResidueLocator,
+    /// relative index defining the residue the `b` atom belongs to
+    pub b_residue: RelaviveResidueLocator,
+    /// relative index defining the residue the `c` atom belongs to
+    pub c_residue: RelaviveResidueLocator,
+    /// relative index defining the residue the `d` atom belongs to
+    ///
+    /// Use `This` or `Next`  to say that the `d` atom belongs to this or to the next residue
+    pub d_residue: RelaviveResidueLocator,
+    /// the distance between `c` and `d` atoms
+    pub r: f64,
+    /// the planar angle between `b`, `c` and `d` atoms
+    pub planar: f64,
+    /// the dihedral angle between `a`, `b`, `c` and `d` atoms
+    pub dihedral: f64
+}
+
+impl InternalAtomDefinition {
+    /// Creates a new  [`InternalAtomDefinition`](InternalAtomDefinition) struct by filling all its fields
+    pub fn from_properties(name: &str, a_locator: RelaviveResidueLocator, a_name: &str,
+            b_locator: RelaviveResidueLocator, b_name: &str,
+            c_locator: RelaviveResidueLocator, c_name: &str, d_locator: RelaviveResidueLocator,
+            r: f64, planar_radians: f64, dihedral_radians: f64) -> InternalAtomDefinition {
+
+        return InternalAtomDefinition{
+            name: name.to_string(), a_name: a_name.to_string(),
+            b_name: b_name.to_string(), c_name: c_name.to_string(),
+            a_residue: a_locator,
+            b_residue: b_locator,
+            c_residue: c_locator,
+            d_residue: d_locator,
+            r, planar: planar_radians, dihedral: dihedral_radians,
+        };
+    }
+
+    /// Creates an [`InternalAtomDefinition`](InternalAtomDefinition) struct from a single line in the CIF format.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bioshell_pdb::nerf::InternalAtomDefinition;
+    /// let def = InternalAtomDefinition::from_cif_line("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  ' 1.328685 114.0  180.0 psi");
+    /// let def_ok = def.ok().unwrap();
+    /// assert_eq!(def_ok.a_name, " N  ".to_string());
+    /// assert_eq!(def_ok.name, " N  ".to_string());
+    /// ```
+    pub fn from_cif_line(line: &str) -> Result<InternalAtomDefinition,PDBError> {
+        let tokens: Vec<String> = split_into_strings(line, true);
+        return InternalAtomDefinition::from_strings(&tokens);
+    }
+
+    /// Creates an [`InternalAtomDefinition`](InternalAtomDefinition) struct from its properties.
+    ///
+    /// This method assumes all values to be Strings and parses them accordingly
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use bioshell_io::split_into_strings;
+    /// use bioshell_pdb::nerf::InternalAtomDefinition;
+    /// let tokens = split_into_strings("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  ' 1.328685 114.0  180.0 psi", false);
+    /// let def = InternalAtomDefinition::from_strings(&tokens);
+    /// let def_ok = def.ok().unwrap();
+    /// assert_eq!(def_ok.a_name, " N  ".to_string());
+    /// assert_eq!(def_ok.name, " O  ".to_string());
+    /// ```
+    pub fn from_strings(tokens: &Vec<String>) -> Result<InternalAtomDefinition,PDBError> {
+        let _res_name = &tokens[0];
+        let a_residue = RelaviveResidueLocator::try_from(tokens[1].as_str());
+        let a_name = &tokens[2];
+        let b_residue = RelaviveResidueLocator::try_from(tokens[3].as_str());
+        let b_name = &tokens[4];
+        let c_residue = RelaviveResidueLocator::try_from(tokens[5].as_str());
+        let c_name = &tokens[6];
+        let d_residue = RelaviveResidueLocator::try_from(tokens[7].as_str());
+        let d_name = &tokens[8];
+        let r = match tokens[9].parse::<f64>() {
+            Ok(r) => r,
+            Err(_) => return Err(InternalAtomDefinitionError { error: "Can't parse bond length".to_string() })
+        };
+        let planar = match tokens[10].parse::<f64>() {
+            Ok(p) => p.to_radians(),
+            Err(_) => return Err(InternalAtomDefinitionError { error: "Can't parse planar angle".to_string() })
+        };
+        let dihedral = match tokens[11].parse::<f64>() {
+            Ok(d) => d.to_radians(),
+            Err(_) => return Err(InternalAtomDefinitionError { error: "Can't parse dihedral angle".to_string() })
+        };
+        let _dihedral_name = &tokens[12];
+        return Ok(InternalAtomDefinition{
+            name: unquoted_substr(d_name).to_string(),
+            a_name: unquoted_substr(a_name).to_string(),
+            b_name: unquoted_substr(b_name).to_string(),
+            c_name: unquoted_substr(c_name).to_string(),
+            a_residue: a_residue?,
+            b_residue: b_residue?,
+            c_residue: c_residue?,
+            d_residue: d_residue?,
+            r, planar, dihedral,
+        });
+    }
+}
+
+/// Removes quotation marks from either end of a string.
+///
+/// Any other possible quotation marks are left intact
+fn unquoted_substr(s:&str) -> &str {
+    let from = if s.starts_with('\'') || s.starts_with('"') {1} else {0} as usize;
+    let to = if s.ends_with('\'') || s.ends_with('"') {s.len()-1} else {s.len()};
+
+    return &s[from..to];
+}
+
+/// Knows how to build a residue or a molecule from it's internal definition.
+///
+/// # Example
+/// ```rust
+/// use std::io::BufReader;
+/// use bioshell_cif::read_cif_buffer;
+/// use bioshell_pdb::nerf::InternalCoordinatesDatabase;
+/// const GLY_BACKBONE_CIF: &str = "data_GLY
+/// loop_
+/// _res_name
+/// _atom_a_residue_locator
+/// _atom_a_name
+/// _atom_b_name
+/// _atom_c_name
+/// _atom_d_name
+/// _atom_d_residue_locator
+/// _c_d_bond_length
+/// _b_c_d_planar_angle
+/// _a_b_c_d_dihedral_angle
+/// _dihedral_angle_name
+/// 'GLY' prev ' N  ' ' CA ' ' C  ' ' N  ' this 1.328685 114.0  180.0 psi
+/// 'GLY' this ' CA ' ' C  ' ' N  ' ' CA ' this 1.458001 123.0  180.0 omega
+/// 'GLY' this ' C  ' ' N  ' ' CA ' ' C  ' this 1.523258 110.0 -180.0 phi
+/// 'GLY' this ' N  ' ' CA ' ' C  ' ' N  ' next 1.328685 114.0  180.0 psi
+/// 'GLY' next ' N  ' ' CA ' ' C  ' ' O  ' this 1.231015 121.0  180.0 -";
+///
+/// let mut cif_reader = BufReader::new(GLY_BACKBONE_CIF.as_bytes());
+/// let data_blocks = read_cif_buffer(&mut cif_reader);
+/// let mut idb = InternalCoordinatesDatabase::new();
+/// idb.load_from_cif_data(data_blocks);
+/// let gly_def = idb.get_definition("GLY");
+/// assert!(gly_def.is_some());
+/// let gly_def = gly_def.unwrap();
+/// assert_eq!(gly_def.len(), 5);
+/// ```
+pub struct InternalCoordinatesDatabase {
+    map: HashMap<String, Vec<InternalAtomDefinition>>
+}
+
+impl InternalCoordinatesDatabase {
+
+    /// Creates a new, empty database
+    pub fn new() -> InternalCoordinatesDatabase { InternalCoordinatesDatabase{ map: Default::default() } }
+
+    /// Loads all residue definitions from a buffer of CIF-formatted data
+    pub fn load_from_cif_data(&mut self, data: Vec<CifData>) {
+        for block in data {
+            if let Some(loop_block) = block.loop_blocks().next() {
+                let name = block.name();
+                let vec = self.map.entry(name.clone()).or_insert(vec![]);
+                for row in loop_block.rows() {
+                    let def = InternalAtomDefinition::from_strings(row);
+                    let def = def.ok().unwrap();
+                    vec.push(def);
+                }
+            }
+        }
+    }
+
+    pub fn get_definition(&self, residue_name: &str) -> Option<&Vec<InternalAtomDefinition>> {
+        return self.map.get(residue_name);
+    }
+}

@@ -3,7 +3,6 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader};
-use std::path::Iter;
 use log::{debug, info};
 
 use bioshell_io::split_into_strings;
