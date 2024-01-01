@@ -4,14 +4,14 @@ use bioshell_io::split_into_strings;
 use crate::PDBError;
 use crate::PDBError::InternalAtomDefinitionError;
 
-/// Defines the relative location of an atom used by `InternalAtomDefinition`
+/// Defines which residue an atom used by ``InternalAtomDefinition`` comes from
 #[derive(Clone)]
 pub enum RelaviveResidueLocator {
-    /// atom is located in the residue preceding the reconstructed one
+    /// the atom is located in the residue preceding the reconstructed one
     Previous,
-    /// atom is located in the residue being reconstructed
+    /// the atom is located in the residue being reconstructed
     This,
-    /// atom is located in the residue following the reconstructed one
+    /// the atom is located in the residue following the reconstructed one
     Next
 }
 
@@ -68,7 +68,18 @@ impl TryFrom<&RelaviveResidueLocator> for i8 {
 ///       /
 /// a----b
 /// ```
-/// The three atoms: `a`, `b` and `c` are referred by their names.
+/// The three atoms: `a`, `b` and `c` are referred by their names and ``RelaviveResidueLocator`` enums.
+/// Dihedral angle should be defined according to the IUPAC definition, which states that:
+/// > *In a Newman projection the torsion angle is the angle (having an absolute value between 0° and 180°)
+/// > between bonds to two specified (fiducial) groups, one from the atom nearer (proximal) to the observer
+/// > and the other from the further (distal) atom. The torsion angle between groups A and D is then considered
+/// > to be positive if the bond A-B is rotated in a clockwise direction through less than 180° in order that
+/// > it may eclipse the bond C-D: a negative torsion angle requires rotation in the opposite sense.*
+///
+/// Each of the four [`RelaviveResidueLocator`](RelaviveResidueLocator) parameters can take values
+/// [`This`](RelaviveResidueLocator::This), [`Previous`](RelaviveResidueLocator::Previous) or [`Next`](RelaviveResidueLocator::Next),
+/// when an atom belongs to the residue being reconstructed, the preceding or the following one, respectively.
+///
 #[derive(Clone)]
 pub struct InternalAtomDefinition {
     /// Name of the atom this struct defines, i.e. the name of the atom `d`
@@ -80,16 +91,12 @@ pub struct InternalAtomDefinition {
     /// Name of the atom at `c` position
     pub c_name: String,
     /// relative index defining the residue the `a` atom belongs to
-    ///
-    /// Use `This` or `Prev`  to say that the `a` atom belongs to this or to the previous residue
     pub a_residue: RelaviveResidueLocator,
     /// relative index defining the residue the `b` atom belongs to
     pub b_residue: RelaviveResidueLocator,
     /// relative index defining the residue the `c` atom belongs to
     pub c_residue: RelaviveResidueLocator,
     /// relative index defining the residue the `d` atom belongs to
-    ///
-    /// Use `This` or `Next`  to say that the `d` atom belongs to this or to the next residue
     pub d_residue: RelaviveResidueLocator,
     /// the distance between `c` and `d` atoms
     pub r: f64,
@@ -202,33 +209,38 @@ fn unquoted_substr(s:&str) -> &str {
 /// use std::io::BufReader;
 /// use bioshell_cif::read_cif_buffer;
 /// use bioshell_pdb::nerf::InternalCoordinatesDatabase;
-/// const GLY_BACKBONE_CIF: &str = "data_GLY
+/// // --- The following CIF-formatted text provides an example definition format
+/// const GLY_HEAVY_CIF: &str = "data_GLY
 /// loop_
 /// _res_name
 /// _atom_a_residue_locator
 /// _atom_a_name
+/// _atom_b_residue_locator
 /// _atom_b_name
+/// _atom_c_residue_locator
 /// _atom_c_name
-/// _atom_d_name
 /// _atom_d_residue_locator
+/// _atom_d_name
 /// _c_d_bond_length
 /// _b_c_d_planar_angle
 /// _a_b_c_d_dihedral_angle
 /// _dihedral_angle_name
-/// 'GLY' prev ' N  ' ' CA ' ' C  ' ' N  ' this 1.328685 114.0  180.0 psi
-/// 'GLY' this ' CA ' ' C  ' ' N  ' ' CA ' this 1.458001 123.0  180.0 omega
-/// 'GLY' this ' C  ' ' N  ' ' CA ' ' C  ' this 1.523258 110.0 -180.0 phi
-/// 'GLY' this ' N  ' ' CA ' ' C  ' ' N  ' next 1.328685 114.0  180.0 psi
-/// 'GLY' next ' N  ' ' CA ' ' C  ' ' O  ' this 1.231015 121.0  180.0 -";
-///
-/// let mut cif_reader = BufReader::new(GLY_BACKBONE_CIF.as_bytes());
+/// 'GLY' prev ' N  ' prev ' CA ' prev ' C  ' this ' N  ' 1.328685 114.0  180.0 psi
+/// 'GLY' prev ' CA ' prev ' C  ' this ' N  ' this ' CA ' 1.458001 123.0  180.0 omega
+/// 'GLY' prev ' C  ' this ' N  ' this ' CA ' this ' C  ' 1.523258 110.0 -180.0 phi
+/// 'GLY' next ' N  ' this ' CA ' this ' C  ' this ' O  ' 1.231015 121.0  180.0 -
+/// #";
+/// // --- Read a CIF block and parse it
+/// let mut cif_reader = BufReader::new(GLY_HEAVY_CIF.as_bytes());
 /// let data_blocks = read_cif_buffer(&mut cif_reader);
+/// // --- Initialize empty database and upload the GLY monomer definition from a CIF block
 /// let mut idb = InternalCoordinatesDatabase::new();
 /// idb.load_from_cif_data(data_blocks);
+/// // --- Now it's possible to fetch the definition of GLY residue from a database
 /// let gly_def = idb.get_definition("GLY");
 /// assert!(gly_def.is_some());
 /// let gly_def = gly_def.unwrap();
-/// assert_eq!(gly_def.len(), 5);
+/// assert_eq!(gly_def.len(), 4);
 /// ```
 pub struct InternalCoordinatesDatabase {
     map: HashMap<String, Vec<InternalAtomDefinition>>
@@ -254,6 +266,7 @@ impl InternalCoordinatesDatabase {
         }
     }
 
+    /// Provides a definition for all atoms of a requested monomer
     pub fn get_definition(&self, residue_name: &str) -> Option<&Vec<InternalAtomDefinition>> {
         return self.map.get(residue_name);
     }
