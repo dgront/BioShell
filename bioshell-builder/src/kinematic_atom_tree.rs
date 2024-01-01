@@ -1,15 +1,22 @@
 use std::collections::HashSet;
 use std::ops::Range;
-use crate::calc::Vec3;
-use crate::nerf::{InternalAtomDefinition, RelaviveResidueLocator, restore_branched_chain_in_order};
-use crate::PDBError;
+use bioshell_pdb::calc::Vec3;
+use crate::{BuilderError, InternalAtomDefinition, RelaviveResidueLocator};
+use crate::nerf::{restore_branched_chain_in_order};
+use crate::BuilderError::{DefinedAtomNotFound, ResidueNotDefined};
 
 struct ResidueAtomsDefinition {
     atoms_def: Vec<InternalAtomDefinition>,
 }
 
 impl ResidueAtomsDefinition {
-    /// Definition of an atom given by its index
+
+    /// Returns the 3-letter code name of this residue.
+    pub fn res_name(&self) -> &String {
+        &self.atoms_def[0].res_name
+    }
+
+    /// Provides the definition of an atom given by its index
     pub fn atom_definition(&self, atom_index: usize) -> &InternalAtomDefinition { &self.atoms_def[atom_index] }
 
     /// Index of an atom given its name, starts from 0.
@@ -25,8 +32,10 @@ impl ResidueAtomsDefinition {
     /// Appends a new atom definition to this residue
     pub fn add_atom(&mut self, atom_def: &InternalAtomDefinition) { self.atoms_def.push(atom_def.clone())}
 
-    /// Creates a new, empty residue.
-    pub fn new() -> ResidueAtomsDefinition { ResidueAtomsDefinition{ atoms_def: vec![] } }
+    /// Creates a new, empty residue of a given name.
+    pub fn new(name: &str) -> ResidueAtomsDefinition {
+        ResidueAtomsDefinition{ atoms_def: vec![] }
+    }
 
     /// Number of atoms defined for this residue
     pub fn len(&self) -> usize { self.atoms_def.len() }
@@ -62,16 +71,21 @@ impl KinematicAtomTree {
         }
     }
 
+    /// Counts atoms of this polymer
     pub fn count_atoms(&mut self) -> usize {
         if !self.is_compiled { self.build_internal_data(); }
         self.names.len()
     }
+
+    /// Counts residues of this polymer
     pub fn count_residues(&mut self) -> usize { self.defined_residues.len() }
 
     pub fn atoms_for_residue(&mut self, residue_index: usize) -> &Range<usize> {
         if !self.is_compiled { self.build_internal_data(); }
         &self.residue_atoms[residue_index]
     }
+
+    /// Returns a name for an atom given its index
     pub fn atom_name(&mut self, atom_index: usize) -> &String {
         if !self.is_compiled { self.build_internal_data(); }
         &self.names[atom_index]
@@ -79,7 +93,7 @@ impl KinematicAtomTree {
 
     pub fn add_atom(&mut self, atom: &InternalAtomDefinition, residue_index: usize) {
         while self.defined_residues.len() <= residue_index {
-            self.defined_residues.push(ResidueAtomsDefinition::new() );
+            self.defined_residues.push(ResidueAtomsDefinition::new("") );
         }
         self.defined_residues[residue_index].add_atom(atom);
     }
@@ -91,9 +105,9 @@ impl KinematicAtomTree {
         }
     }
 
-    pub fn patch_residue(&mut self, residue_index: usize, residue_definition: &Vec<InternalAtomDefinition>) -> Result<(), PDBError> {
+    pub fn patch_residue(&mut self, residue_index: usize, residue_definition: &Vec<InternalAtomDefinition>) -> Result<(), BuilderError> {
         if residue_index >= self.defined_residues.len() {
-            return Err(PDBError::ResidueNotDefined { residue_index: residue_index })
+            return Err(ResidueNotDefined { residue_index: residue_index })
         }
 
         for atom_def in residue_definition {
@@ -107,18 +121,18 @@ impl KinematicAtomTree {
     }
 
     fn atom_index(&self, current_residue_index: usize, relative_residue_location: &RelaviveResidueLocator,
-                  atom_name: &str) -> Result<usize, PDBError> {
+                  atom_name: &str) -> Result<usize, BuilderError> {
         let the_residue = match relative_residue_location {
             RelaviveResidueLocator::Previous => { current_residue_index - 1 }
             RelaviveResidueLocator::This => { current_residue_index }
             RelaviveResidueLocator::Next => { current_residue_index + 1 }
         };
         if the_residue >= self.defined_residues.len() {
-            return Err(PDBError::ResidueNotDefined { residue_index: the_residue })
+            return Err(ResidueNotDefined { residue_index: the_residue })
         }
         let atom_local_index = self.defined_residues[the_residue].atom_index(atom_name);
         if atom_local_index.is_none() {
-            return Err(PDBError::DefinedAtomNotFound { residue_index: the_residue, atom_name: atom_name.to_string() })
+            return Err(DefinedAtomNotFound { residue_index: the_residue, atom_name: atom_name.to_string() })
         }
         let mut atoms_total = 0;
         if the_residue > 0 {
@@ -140,7 +154,7 @@ impl KinematicAtomTree {
     }
 
     /// Run setup_residue_ranges() method before calling this one!
-    fn build_internal_data(&mut self) -> Result<(), PDBError> {
+    fn build_internal_data(&mut self) -> Result<(), BuilderError> {
         let n_atoms: usize = self.defined_residues.iter().map(|v| v.len()).sum();
         self.r.resize(n_atoms, 0.0);
         self.planar.resize(n_atoms, 0.0);
@@ -210,7 +224,7 @@ impl KinematicAtomTree {
 
 
     /// Restores Cartesian coordinates of all the atoms of this tree
-    pub fn restore_atoms(&mut self) -> Result<Vec<Vec3>,PDBError> {
+    pub fn restore_atoms(&mut self) -> Result<Vec<Vec3>, BuilderError> {
         let result = self.build_internal_data();
         if result.is_err() { return Err(result.unwrap_err())}
         let mut result = vec![Vec3::from_float(0.0); self.reference_atoms.len()];

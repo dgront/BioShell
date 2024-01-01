@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use bioshell_cif::{CifData};
 use bioshell_io::split_into_strings;
-use crate::PDBError;
-use crate::PDBError::InternalAtomDefinitionError;
+use crate::BuilderError;
+use crate::BuilderError::InternalAtomDefinitionError;
 
 /// Defines which residue an atom used by ``InternalAtomDefinition`` comes from
 #[derive(Clone)]
@@ -16,13 +16,13 @@ pub enum RelaviveResidueLocator {
 }
 
 impl TryFrom<&str> for RelaviveResidueLocator {
-    type Error = PDBError;
+    type Error = BuilderError;
 
     /// Returns a ``RelaviveResidueLocator`` for its string name
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::nerf::RelaviveResidueLocator;
+    /// use bioshell_builder::RelaviveResidueLocator;
     /// assert_eq!(RelaviveResidueLocator::try_from("Next").unwrap(), RelaviveResidueLocator::Next);
     /// assert_eq!(RelaviveResidueLocator::try_from("next").unwrap(), RelaviveResidueLocator::Next);
     /// ```
@@ -41,7 +41,7 @@ impl TryFrom<&str> for RelaviveResidueLocator {
 }
 
 impl TryFrom<&RelaviveResidueLocator> for i8 {
-    type Error = PDBError;
+    type Error = BuilderError;
 
     /// Provides integer offset for an enum value.
     ///
@@ -82,6 +82,8 @@ impl TryFrom<&RelaviveResidueLocator> for i8 {
 ///
 #[derive(Clone)]
 pub struct InternalAtomDefinition {
+    /// Name of a residue this atom belongs to
+    pub res_name: String,
     /// Name of the atom this struct defines, i.e. the name of the atom `d`
     pub name: String,
     /// Name of the atom at `a` position
@@ -108,12 +110,13 @@ pub struct InternalAtomDefinition {
 
 impl InternalAtomDefinition {
     /// Creates a new  [`InternalAtomDefinition`](InternalAtomDefinition) struct by filling all its fields
-    pub fn from_properties(name: &str, a_locator: RelaviveResidueLocator, a_name: &str,
+    pub fn from_properties(res_name: &str, name: &str, a_locator: RelaviveResidueLocator, a_name: &str,
             b_locator: RelaviveResidueLocator, b_name: &str,
             c_locator: RelaviveResidueLocator, c_name: &str, d_locator: RelaviveResidueLocator,
             r: f64, planar_radians: f64, dihedral_radians: f64) -> InternalAtomDefinition {
 
         return InternalAtomDefinition{
+            res_name: res_name.to_string(),
             name: name.to_string(), a_name: a_name.to_string(),
             b_name: b_name.to_string(), c_name: c_name.to_string(),
             a_residue: a_locator,
@@ -129,13 +132,13 @@ impl InternalAtomDefinition {
     /// # Examples
     ///
     /// ```rust
-    /// use bioshell_pdb::nerf::InternalAtomDefinition;
+    /// use bioshell_builder::InternalAtomDefinition;
     /// let def = InternalAtomDefinition::from_cif_line("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  ' 1.328685 114.0  180.0 psi");
     /// let def_ok = def.ok().unwrap();
     /// assert_eq!(def_ok.a_name, " N  ".to_string());
     /// assert_eq!(def_ok.name, " N  ".to_string());
     /// ```
-    pub fn from_cif_line(line: &str) -> Result<InternalAtomDefinition,PDBError> {
+    pub fn from_cif_line(line: &str) -> Result<InternalAtomDefinition, BuilderError> {
         let tokens: Vec<String> = split_into_strings(line, true);
         return InternalAtomDefinition::from_strings(&tokens);
     }
@@ -147,16 +150,16 @@ impl InternalAtomDefinition {
     /// # Examples
     ///
     /// ```rust
+    /// use bioshell_builder::InternalAtomDefinition;
     /// use bioshell_io::split_into_strings;
-    /// use bioshell_pdb::nerf::InternalAtomDefinition;
     /// let tokens = split_into_strings("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  ' 1.328685 114.0  180.0 psi", false);
     /// let def = InternalAtomDefinition::from_strings(&tokens);
     /// let def_ok = def.ok().unwrap();
     /// assert_eq!(def_ok.a_name, " N  ".to_string());
     /// assert_eq!(def_ok.name, " O  ".to_string());
     /// ```
-    pub fn from_strings(tokens: &Vec<String>) -> Result<InternalAtomDefinition,PDBError> {
-        let _res_name = &tokens[0];
+    pub fn from_strings(tokens: &Vec<String>) -> Result<InternalAtomDefinition, BuilderError> {
+        let res_name = &tokens[0];
         let a_residue = RelaviveResidueLocator::try_from(tokens[1].as_str());
         let a_name = &tokens[2];
         let b_residue = RelaviveResidueLocator::try_from(tokens[3].as_str());
@@ -179,6 +182,7 @@ impl InternalAtomDefinition {
         };
         let _dihedral_name = &tokens[12];
         return Ok(InternalAtomDefinition{
+            res_name: unquoted_substr(res_name).to_string(),
             name: unquoted_substr(d_name).to_string(),
             a_name: unquoted_substr(a_name).to_string(),
             b_name: unquoted_substr(b_name).to_string(),
@@ -207,8 +211,8 @@ fn unquoted_substr(s:&str) -> &str {
 /// # Example
 /// ```rust
 /// use std::io::BufReader;
+/// use bioshell_builder::InternalCoordinatesDatabase;
 /// use bioshell_cif::read_cif_buffer;
-/// use bioshell_pdb::nerf::InternalCoordinatesDatabase;
 /// // --- The following CIF-formatted text provides an example definition format
 /// const GLY_HEAVY_CIF: &str = "data_GLY
 /// loop_

@@ -1,4 +1,4 @@
-use crate::calc::{Matrix3x3, Vec3};
+use bioshell_pdb::calc::{Matrix3x3, Vec3};
 
 /// Creates a three-atom stub where a fourth atom may be placed into.
 pub fn create_stub(a: &Vec3, r_ab: f64, r_bc: f64, a_abc: f64, b: &mut Vec3, c: &mut Vec3) {

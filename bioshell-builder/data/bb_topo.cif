@@ -1,0 +1,39 @@
+data_bb_
+loop_
+_res_name
+_atom_a_residue_locator
+_atom_a_name
+_atom_b_residue_locator
+_atom_b_name
+_atom_c_residue_locator
+_atom_c_name
+_atom_d_residue_locator
+_atom_d_name
+_c_d_bond_length
+_b_c_d_planar_angle
+_a_b_c_d_dihedral_angle
+_dihedral_angle_name
+'bb ' prev ' N  ' prev ' CA ' prev ' C  ' this ' N  ' 1.328685 114.0  180.0 psi
+'bb ' prev ' CA ' prev ' C  ' this ' N  ' this ' CA ' 1.458001 123.0  180.0 omega
+'bb ' prev ' C  ' this ' N  ' this ' CA ' this ' C  ' 1.523258 110.0 -180.0 phi
+'bb ' next ' N  ' this ' CA ' this ' C  ' this ' O  ' 1.231015 121.0  180.0 -
+#
+
+data_patch_CTerm
+loop_
+_res_name
+_atom_a_residue_locator
+_atom_a_name
+_atom_b_residue_locator
+_atom_b_name
+_atom_c_residue_locator
+_atom_c_name
+_atom_d_residue_locator
+_atom_d_name
+_c_d_bond_length
+_b_c_d_planar_angle
+_a_b_c_d_dihedral_angle
+_dihedral_angle_name
+'CTerm' this ' OXT' this ' CA ' this ' C  ' this ' O  ' 1.231015 121.0  180.0 -
+'CTerm' this ' N  ' this ' CA ' this ' C  ' this ' OXT' 1.2      116.5  180.0 psi
+#
