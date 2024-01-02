@@ -1,11 +1,9 @@
 #[cfg(test)]
 mod kinematic_tree_tests {
     use std::io::BufReader;
-    use std::ops::Range;
-    use itertools::assert_equal;
+    use bioshell_builder::{InternalCoordinatesDatabase, KinematicAtomTree};
     use bioshell_cif::read_cif_buffer;
     use bioshell_pdb::{assert_delta};
-    use bioshell_pdb::nerf::{InternalCoordinatesDatabase, KinematicAtomTree};
     #[test]
     fn build_backbone() {
         // --- build the database of internal monomers' definitions

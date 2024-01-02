@@ -85,10 +85,27 @@ impl KinematicAtomTree {
         &self.residue_atoms[residue_index]
     }
 
-    /// Returns a name for an atom given its index
+    pub fn residue_for_atom(&self, atom_index: usize) -> usize {
+        for i_res in 0..self.residue_atoms.len() {
+            if atom_index >= self.residue_atoms[i_res].start && atom_index < self.residue_atoms[i_res].end {
+                return i_res;
+            }
+        }
+        panic!("Atom index out of bounds");
+    }
+
+    /// Provides a name for an atom given its index
     pub fn atom_name(&mut self, atom_index: usize) -> &String {
         if !self.is_compiled { self.build_internal_data(); }
         &self.names[atom_index]
+    }
+
+    ///  Provides a name for a residue given its index.
+    ///
+    /// Note that the index of a residue for a given atom may be found by calling
+    /// [`residue_for_atom()`](KinematicAtomTree::residue_for_atom) method.
+    pub fn residue_name(&mut self, residue_index: usize)  -> &String {
+        return self.defined_residues[residue_index].res_name();
     }
 
     pub fn add_atom(&mut self, atom: &InternalAtomDefinition, residue_index: usize) {

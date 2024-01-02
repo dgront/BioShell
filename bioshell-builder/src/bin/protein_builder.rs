@@ -36,11 +36,13 @@ fn build(aa_codes: Vec<String>, chain_id: &str) -> Result<Vec<PdbAtom>, BuilderE
     bb_builder.patch_residue(1, &cterm_def);
     let atoms = bb_builder.restore_atoms()?;
 
-    let mut serial = 1;
+    let mut serial: i32 = 1;
     for v in atoms {
+        let res_seq = bb_builder.residue_for_atom((serial - 1) as usize);
         let mut a = PdbAtom::new();
         a.serial = serial;
         a.pos = v;
+        a.res_name = bb_builder.residue_name(res_seq).clone();
         a.chain_id = chain_id.to_string();
         a.name = bb_builder.atom_name(serial as usize).clone();
         output.push(a);
