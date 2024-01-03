@@ -10,6 +10,7 @@ keywords = ["bioshell"]
 [workspace]
 members = [
     "bioshell-io",
+    "bioshell-builder",
     "bioshell-seq",
     "bioshell-statistics",
     "bioshell-clustering",
@@ -22,6 +23,7 @@ members = [
 [dependencies]
 bioshell-io = { path = "./bioshell-io" }
 bioshell-seq = { path = "./bioshell-seq" }
+bioshell-builder = { path = "./bioshell-builder" }
 bioshell-pdb = { path = "./bioshell-pdb" }
 bioshell-clustering = { path = "./bioshell-clustering" }
 bioshell-statistics = { path = "./bioshell-statistics" }

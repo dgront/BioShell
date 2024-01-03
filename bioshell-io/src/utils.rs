@@ -147,17 +147,37 @@ pub fn open_file(filename: &str) -> Box<dyn BufRead> {
 }
 
 /// Splits a string by a whitespace into strings that can contain a whitespace within
-pub fn split_into_strings(s: &str) -> Vec<String> {
+///
+/// Unlike the `split_whitespace()` method of the `str` type from the Rust type, this function
+/// takes quotation marks (both single and double) into account; a quoted string that includes white space
+/// characters is returned as a single token. The second parameter of the function determines whether
+/// the quotation mark are removed from a substring token or not.
+///
+/// # Examples
+///
+/// ```rust
+/// use bioshell_io::split_into_strings;
+/// let tokens_easy = split_into_strings("The quick brown fox jumps over the lazy dog", false);
+/// assert_eq!(tokens_easy.len(), 9);
+/// let tokens_quoted = split_into_strings("The 'quick brown fox' jumps over the 'lazy dog'", false);
+/// assert_eq!(tokens_quoted.len(), 6);
+/// assert_eq!(tokens_quoted[1], "'quick brown fox'");
+/// let tokens_quoted = split_into_strings("The 'quick brown fox' jumps over the 'lazy dog'", true);
+/// assert_eq!(tokens_quoted[1], "quick brown fox");
+/// ```
+pub fn split_into_strings(s: &str, if_remove_quotes: bool) -> Vec<String> {
     let mut wrapped = false;
 
     s.split(|c| {
-        if c == '"' {
+        if c == '"' || c == '\'' {
             wrapped = !wrapped;
         }
         c == ' ' && !wrapped
     })
-        // .map(|s| s.replace("\"", "")) // remove the quotation marks from the sub-strings
-        .map(|s|s.to_string())
+        .map(|s|
+            if if_remove_quotes {s.replace("\"", "").replace("\'", "")}
+            else {s.to_string()}
+        ) // remove the quotation marks from the sub-strings
         .filter(|s| s.len() > 0)
         .collect()
 }

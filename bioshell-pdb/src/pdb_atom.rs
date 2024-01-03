@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
+use std::hash::{Hash};
 use std::string::String;
 use crate::calc::Vec3;
 use crate::SecondaryStructureTypes;

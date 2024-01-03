@@ -1,8 +1,8 @@
 [package]
-name = "bioshell-pdb"
+name = "bioshell-builder"
 version = "4.0.0-dev"
 edition = "2021"
-description = "Provides struct that holds biomacromolecular structures, loaded from a PDB or mmCIF file"
+description = "Build a macromolecular structure from sequence"
 homepage = "https://bioshell.pl"
 license = "Apache-2.0"
 keywords = ["bioshell"]
@@ -13,6 +13,7 @@ path = "src/lib.rs"
 
 [dependencies]
 bioshell-seq = { path = "../bioshell-seq" }
+bioshell-pdb = { path = "../bioshell-pdb" }
 bioshell-cif = { path = "../bioshell-cif" }
 bioshell-io  = { path = "../bioshell-io" } 	# for split_into_strings() and I/O functions
 
@@ -25,5 +26,5 @@ log = "0.4.17"
 env_logger = "0.9.3"   # for logging
 
 [[bin]]
-name = "pdb_tool"
-path = "src/bin/pdb_tool.rs"
+name = "protein_builder"
+path = "src/bin/protein_builder.rs"
