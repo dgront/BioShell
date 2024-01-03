@@ -20,7 +20,7 @@ mod kinematic_tree_tests {
         bb_builder.add_residue(&bb_def);
         let cterm_def = db.get_definition("patch_CTerm").unwrap();
         bb_builder.patch_residue(1, &cterm_def);
-        let atoms = bb_builder.restore_atoms();
+        let atoms = bb_builder.build_coordinates();
         assert!(atoms.is_ok());
         let atoms = atoms.ok().unwrap();
         assert_eq!(atoms.len(), 9);
@@ -45,14 +45,15 @@ _atom_c_residue_locator
 _atom_c_name
 _atom_d_residue_locator
 _atom_d_name
+_atom_d_element
 _c_d_bond_length
 _b_c_d_planar_angle
 _a_b_c_d_dihedral_angle
 _dihedral_angle_name
-'bb ' prev ' N  ' prev ' CA ' prev ' C  ' this ' N  ' 1.328685 114.0  180.0 psi
-'bb ' prev ' CA ' prev ' C  ' this ' N  ' this ' CA ' 1.458001 123.0  180.0 omega
-'bb ' prev ' C  ' this ' N  ' this ' CA ' this ' C  ' 1.523258 110.0 -180.0 phi
-'bb ' next ' N  ' this ' CA ' this ' C  ' this ' O  ' 1.231015 121.0  180.0 -
+'bb ' prev ' N  ' prev ' CA ' prev ' C  ' this ' N  ' N  1.328685 114.0  180.0 psi
+'bb ' prev ' CA ' prev ' C  ' this ' N  ' this ' CA ' C  1.458001 123.0  180.0 omega
+'bb ' prev ' C  ' this ' N  ' this ' CA ' this ' C  ' C  1.523258 110.0 -180.0 phi
+'bb ' next ' N  ' this ' CA ' this ' C  ' this ' O  ' O  1.231015 120.0  180.0 -
 #
 ";
 
@@ -67,12 +68,13 @@ _atom_c_residue_locator
 _atom_c_name
 _atom_d_residue_locator
 _atom_d_name
+_atom_d_element
 _c_d_bond_length
 _b_c_d_planar_angle
 _a_b_c_d_dihedral_angle
 _dihedral_angle_name
-'CTerm' this ' N  ' this ' CA ' this ' C  ' this ' OXT' 1.2      116.5  180.0 psi
-'CTerm' this ' OXT' this ' CA ' this ' C  ' this ' O  ' 1.231015 121.0  180.0 -
+'CTerm' this ' N  ' this ' CA ' this ' C  ' this ' OXT' O  1.2      116.5  180.0 psi
+'CTerm' this ' OXT' this ' CA ' this ' C  ' this ' O  ' O  1.231015 121.0  180.0 -
 #
 ";
 

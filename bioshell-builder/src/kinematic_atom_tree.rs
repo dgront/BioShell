@@ -1,9 +1,10 @@
 use std::collections::HashSet;
 use std::ops::Range;
 use bioshell_pdb::calc::Vec3;
+use bioshell_pdb::PdbAtom;
 use crate::{BuilderError, InternalAtomDefinition, RelaviveResidueLocator};
 use crate::nerf::{restore_branched_chain_in_order};
-use crate::BuilderError::{DefinedAtomNotFound, ResidueNotDefined};
+use crate::BuilderError::{DefinedAtomNotFound, DihedralAngleNotFound, ResidueNotDefined};
 
 struct ResidueAtomsDefinition {
     atoms_def: Vec<InternalAtomDefinition>,
@@ -48,6 +49,8 @@ pub struct KinematicAtomTree {
     planar: Vec<f64>,
     dihedral: Vec<f64>,
     names: Vec<String>,
+    elements: Vec<String>,
+    dihedral_names: Vec<String>,
     reference_atoms: Vec<[usize;4]>,
     building_order: Vec<usize>,
     residue_atoms: Vec<Range<usize>>,
@@ -64,6 +67,8 @@ impl KinematicAtomTree {
             planar: vec![],
             dihedral: vec![],
             names: Default::default(),
+            elements: vec![],
+            dihedral_names: vec![],
             reference_atoms: vec![],
             building_order: vec![],
             residue_atoms: vec![],
@@ -100,12 +105,44 @@ impl KinematicAtomTree {
         &self.names[atom_index]
     }
 
+    /// Provides a chemical element for an atom given its index
+    pub fn atom_element(&mut self, atom_index: usize) -> &String {
+        if !self.is_compiled { self.build_internal_data(); }
+        &self.elements[atom_index]
+    }
+
     ///  Provides a name for a residue given its index.
     ///
     /// Note that the index of a residue for a given atom may be found by calling
     /// [`residue_for_atom()`](KinematicAtomTree::residue_for_atom) method.
     pub fn residue_name(&mut self, residue_index: usize)  -> &String {
         return self.defined_residues[residue_index].res_name();
+    }
+
+    /// Provides a dihedral angle value given the name of that angle.
+    ///
+    /// The dihedral angle name must match the name used by [`InternalAtomDefinition`](InternalAtomDefinition) of the respective atom.
+    /// Returns None when the requested dihedral angle hasn't been defined for  given re
+    pub fn named_dihedral(&self, residue_index: usize, dihedral_name: &str) -> Option<f64> {
+        for i_atom in self.residue_atoms[residue_index].start..self.residue_atoms[residue_index].end {
+            if self.dihedral_names[i_atom] == dihedral_name {
+                return Some(self.dihedral[i_atom]);
+            }
+        }
+        return None;
+    }
+
+    /// Sets a new value for a dihedral angle given the name of that angle.
+    ///
+    /// The dihedral angle name must match the name used by [`InternalAtomDefinition`](InternalAtomDefinition) of the respective atom.
+    pub fn set_named_dihedral(&mut self, residue_index: usize, dihedral_name: &str, value: f64) -> Result<(), BuilderError> {
+        for i_atom in self.residue_atoms[residue_index].start..self.residue_atoms[residue_index].end {
+            if self.dihedral_names[i_atom] == dihedral_name {
+                self.dihedral[i_atom] = value;
+                return Ok(());
+            }
+        }
+        return Err(DihedralAngleNotFound { residue_index, dihedral_name: dihedral_name.to_string() })
     }
 
     pub fn add_atom(&mut self, atom: &InternalAtomDefinition, residue_index: usize) {
@@ -176,6 +213,8 @@ impl KinematicAtomTree {
         self.r.resize(n_atoms, 0.0);
         self.planar.resize(n_atoms, 0.0);
         self.names.resize(n_atoms, Default::default());
+        self.elements.resize(n_atoms, Default::default());
+        self.dihedral_names.resize(n_atoms, Default::default());
         self.dihedral.resize(n_atoms, 0.0);
         self.reference_atoms.resize(n_atoms, [0, 0, 0, 0]);
         let mut i_atom: usize = 0;
@@ -189,6 +228,8 @@ impl KinematicAtomTree {
                 self.planar[i_atom] = atom.planar;
                 self.dihedral[i_atom] = atom.dihedral;
                 self.names[i_atom] = atom.name.clone();
+                self.dihedral_names[i_atom] = atom.dihedral_name.clone();
+                self.elements[i_atom] = atom.element.clone();
                 match i_atom {
                     0 => self.reference_atoms[i_atom] = [0, 0, 0, 0],
                     1 => self.reference_atoms[i_atom] = [0, 0, 0, 1],
@@ -241,7 +282,7 @@ impl KinematicAtomTree {
 
 
     /// Restores Cartesian coordinates of all the atoms of this tree
-    pub fn restore_atoms(&mut self) -> Result<Vec<Vec3>, BuilderError> {
+    pub fn build_coordinates(&mut self) -> Result<Vec<Vec3>, BuilderError> {
         let result = self.build_internal_data();
         if result.is_err() { return Err(result.unwrap_err())}
         let mut result = vec![Vec3::from_float(0.0); self.reference_atoms.len()];
@@ -249,6 +290,27 @@ impl KinematicAtomTree {
                                         &self.building_order, &mut result);
 
         return Ok(result);
+    }
+
+    /// Restores Cartesian coordinates of all the atoms of this tree
+    pub fn build_atoms(&mut self, chain_id: &str) -> Result<Vec<PdbAtom>, BuilderError> {
+        let _ = self.build_internal_data()?;
+        let mut vectors = vec![Vec3::from_float(0.0); self.reference_atoms.len()];
+        restore_branched_chain_in_order(&self.r, &self.planar, &self.dihedral, &self.reference_atoms,
+                                        &self.building_order, &mut vectors);
+
+        let mut atoms = vec![PdbAtom::new(); self.reference_atoms.len()];
+        for i in 0..atoms.len() {
+            let res_seq = self.residue_for_atom(i);
+            let mut a = PdbAtom::new();
+            a.serial = (i + 1) as i32;
+            a.pos = vectors[i];
+            a.res_name = self.residue_name(res_seq).clone();
+            a.chain_id = chain_id.to_string();
+            a.name = self.atom_name(i).clone();
+        }
+
+        return Ok(atoms);
     }
 }
 

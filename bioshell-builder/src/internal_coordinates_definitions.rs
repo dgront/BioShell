@@ -1,6 +1,9 @@
+use std::io;
+use std::fs::{self};
 use std::collections::HashMap;
-use bioshell_cif::{CifData};
-use bioshell_io::split_into_strings;
+use log::{info, error};
+use bioshell_cif::{CifData, read_cif_buffer};
+use bioshell_io::{open_file, split_into_strings};
 use crate::BuilderError;
 use crate::BuilderError::InternalAtomDefinitionError;
 
@@ -86,6 +89,8 @@ pub struct InternalAtomDefinition {
     pub res_name: String,
     /// Name of the atom this struct defines, i.e. the name of the atom `d`
     pub name: String,
+    /// Name of the atomic element for the atom `d`
+    pub element: String,
     /// Name of the atom at `a` position
     pub a_name: String,
     /// Name of the atom at `b` position
@@ -105,25 +110,29 @@ pub struct InternalAtomDefinition {
     /// the planar angle between `b`, `c` and `d` atoms
     pub planar: f64,
     /// the dihedral angle between `a`, `b`, `c` and `d` atoms
-    pub dihedral: f64
+    pub dihedral: f64,
+    /// Name of this dihedral name, such as `Phi`, `Psi` or `Chi3`
+    pub dihedral_name: String
 }
 
 impl InternalAtomDefinition {
     /// Creates a new  [`InternalAtomDefinition`](InternalAtomDefinition) struct by filling all its fields
-    pub fn from_properties(res_name: &str, name: &str, a_locator: RelaviveResidueLocator, a_name: &str,
+    pub fn from_properties(res_name: &str, name: &str, element: &str, a_locator: RelaviveResidueLocator, a_name: &str,
             b_locator: RelaviveResidueLocator, b_name: &str,
             c_locator: RelaviveResidueLocator, c_name: &str, d_locator: RelaviveResidueLocator,
-            r: f64, planar_radians: f64, dihedral_radians: f64) -> InternalAtomDefinition {
+            r: f64, planar_radians: f64, dihedral_radians: f64, dihedral_name: &str) -> InternalAtomDefinition {
 
         return InternalAtomDefinition{
             res_name: res_name.to_string(),
-            name: name.to_string(), a_name: a_name.to_string(),
+            name: name.to_string(), element: element.to_string(),
+            a_name: a_name.to_string(),
             b_name: b_name.to_string(), c_name: c_name.to_string(),
             a_residue: a_locator,
             b_residue: b_locator,
             c_residue: c_locator,
             d_residue: d_locator,
             r, planar: planar_radians, dihedral: dihedral_radians,
+            dihedral_name: dihedral_name.to_string()
         };
     }
 
@@ -152,7 +161,7 @@ impl InternalAtomDefinition {
     /// ```rust
     /// use bioshell_builder::InternalAtomDefinition;
     /// use bioshell_io::split_into_strings;
-    /// let tokens = split_into_strings("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  ' 1.328685 114.0  180.0 psi", false);
+    /// let tokens = split_into_strings("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  ' N  1.328685 114.0  180.0 psi", false);
     /// let def = InternalAtomDefinition::from_strings(&tokens);
     /// let def_ok = def.ok().unwrap();
     /// assert_eq!(def_ok.a_name, " N  ".to_string());
@@ -168,22 +177,24 @@ impl InternalAtomDefinition {
         let c_name = &tokens[6];
         let d_residue = RelaviveResidueLocator::try_from(tokens[7].as_str());
         let d_name = &tokens[8];
-        let r = match tokens[9].parse::<f64>() {
+        let d_element = &tokens[9];
+        let r = match tokens[10].parse::<f64>() {
             Ok(r) => r,
             Err(_) => return Err(InternalAtomDefinitionError { error: "Can't parse bond length".to_string() })
         };
-        let planar = match tokens[10].parse::<f64>() {
+        let planar = match tokens[11].parse::<f64>() {
             Ok(p) => p.to_radians(),
             Err(_) => return Err(InternalAtomDefinitionError { error: "Can't parse planar angle".to_string() })
         };
-        let dihedral = match tokens[11].parse::<f64>() {
+        let dihedral = match tokens[12].parse::<f64>() {
             Ok(d) => d.to_radians(),
             Err(_) => return Err(InternalAtomDefinitionError { error: "Can't parse dihedral angle".to_string() })
         };
-        let _dihedral_name = &tokens[12];
+        let dihedral_name = &tokens[13];
         return Ok(InternalAtomDefinition{
             res_name: unquoted_substr(res_name).to_string(),
             name: unquoted_substr(d_name).to_string(),
+            element: d_element.to_string(),
             a_name: unquoted_substr(a_name).to_string(),
             b_name: unquoted_substr(b_name).to_string(),
             c_name: unquoted_substr(c_name).to_string(),
@@ -192,6 +203,7 @@ impl InternalAtomDefinition {
             c_residue: c_residue?,
             d_residue: d_residue?,
             r, planar, dihedral,
+            dihedral_name: dihedral_name.clone()
         });
     }
 }
@@ -225,14 +237,15 @@ fn unquoted_substr(s:&str) -> &str {
 /// _atom_c_name
 /// _atom_d_residue_locator
 /// _atom_d_name
+/// _atom_d_element
 /// _c_d_bond_length
 /// _b_c_d_planar_angle
 /// _a_b_c_d_dihedral_angle
 /// _dihedral_angle_name
-/// 'GLY' prev ' N  ' prev ' CA ' prev ' C  ' this ' N  ' 1.328685 114.0  180.0 psi
-/// 'GLY' prev ' CA ' prev ' C  ' this ' N  ' this ' CA ' 1.458001 123.0  180.0 omega
-/// 'GLY' prev ' C  ' this ' N  ' this ' CA ' this ' C  ' 1.523258 110.0 -180.0 phi
-/// 'GLY' next ' N  ' this ' CA ' this ' C  ' this ' O  ' 1.231015 121.0  180.0 -
+/// 'GLY' prev ' N  ' prev ' CA ' prev ' C  ' this ' N  ' N  1.328685 114.0  180.0 psi
+/// 'GLY' prev ' CA ' prev ' C  ' this ' N  ' this ' CA ' C  1.458001 123.0  180.0 omega
+/// 'GLY' prev ' C  ' this ' N  ' this ' CA ' this ' C  ' C  1.523258 110.0 -180.0 phi
+/// 'GLY' next ' N  ' this ' CA ' this ' C  ' this ' O  ' O  1.231015 121.0  180.0 -
 /// #";
 /// // --- Read a CIF block and parse it
 /// let mut cif_reader = BufReader::new(GLY_HEAVY_CIF.as_bytes());
@@ -255,6 +268,29 @@ impl InternalCoordinatesDatabase {
     /// Creates a new, empty database
     pub fn new() -> InternalCoordinatesDatabase { InternalCoordinatesDatabase{ map: Default::default() } }
 
+    pub fn from_cif_directory(path: &str) -> Result<InternalCoordinatesDatabase, io::Error> {
+
+        let mut out = InternalCoordinatesDatabase::new();
+        info!("Looking for CIF monomer files in: {:?}", &path);
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(ext) =  path.extension() {
+                    if ext == "cif" || ext == "CIF" {
+                        let fname = path.to_str().unwrap();
+                        info!("Reading a file in CIF format: {}", &fname);
+                        let mut cif_reader = open_file(fname);
+                        let data_blocks = read_cif_buffer(&mut cif_reader);
+                        out.load_from_cif_data(data_blocks);
+                    }
+                }
+            }
+        }
+
+        return Ok(out);
+    }
+
     /// Loads all residue definitions from a buffer of CIF-formatted data
     pub fn load_from_cif_data(&mut self, data: Vec<CifData>) {
         for block in data {
@@ -263,8 +299,10 @@ impl InternalCoordinatesDatabase {
                 let vec = self.map.entry(name.clone()).or_insert(vec![]);
                 for row in loop_block.rows() {
                     let def = InternalAtomDefinition::from_strings(row);
-                    let def = def.ok().unwrap();
-                    vec.push(def);
+                    match def {
+                        Ok(block) => { vec.push(block) }
+                        Err(err) => { error!("{}",err.to_string()) }
+                    };
                 }
             }
         }

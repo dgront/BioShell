@@ -4,12 +4,9 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum BuilderError {
 
-    #[error("Can't find a file with input parameters: {fname} - check your BIOSHEL_DB_PATH system variable")]
-    /// Missing parameters' file, that should be found in a BioShell's database
-    MissingDataFile {fname: String},
 
     #[error("Error while creating an InternalAtomDefinition struct")]
-    /// Can't create `InternalAtomDefinition`
+    /// Can't parse `InternalAtomDefinition` data; make sure the line has proper columns
     InternalAtomDefinitionError {error: String},
     #[error("Can't find atom named: {atom_name}. Has it been defined in the residue {residue_index}?")]
     /// Can't find an atom defined for a given residue
@@ -17,4 +14,10 @@ pub enum BuilderError {
     #[error("Can't find a residue {residue_index}?")]
     /// Can't find a residue for a given index
     ResidueNotDefined {residue_index: usize},
+    #[error("Can't find dihedral angle named: {dihedral_name}. Has it been defined in the residue {residue_index}?")]
+    /// Can't find a named dihedral angle.
+    ///
+    /// Make sure its name is properly spelled and it has actually been defined in the respective InternalAtomDefinition entry
+    DihedralAngleNotFound {residue_index: usize, dihedral_name: String},
+
 }
