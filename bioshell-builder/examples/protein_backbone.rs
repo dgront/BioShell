@@ -29,14 +29,7 @@ fn main() -> Result<(), BuilderError>{
     }
     bb_builder.patch_residue(N_RESIDUES-1, &cterm_def)?;
     let atoms = bb_builder.build_atoms("A")?;
-
-    // for iatom in 0..atoms.len() {
-    //     let res_seq = bb_builder.residue_for_atom((iatom));
-    //     let elem = bb_builder.atom_element(iatom).clone();
-    //     println!("ATOM   {:4} {} GLY {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           {:2}",
-    //              iatom + 1, &bb_builder.atom_name(iatom),
-    //              "A", res_seq, &atoms[iatom].x, &atoms[iatom].y, &atoms[iatom].z, elem);
-    // }
+    for a in atoms { println!("{}", a); }
 
     return Ok(());
 }
