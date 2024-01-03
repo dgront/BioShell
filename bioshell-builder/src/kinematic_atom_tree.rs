@@ -123,7 +123,8 @@ impl KinematicAtomTree {
     ///
     /// The dihedral angle name must match the name used by [`InternalAtomDefinition`](InternalAtomDefinition) of the respective atom.
     /// Returns None when the requested dihedral angle hasn't been defined for  given re
-    pub fn named_dihedral(&self, residue_index: usize, dihedral_name: &str) -> Option<f64> {
+    pub fn named_dihedral(&mut self, residue_index: usize, dihedral_name: &str) -> Option<f64> {
+        if !self.is_compiled { self.build_internal_data(); }
         for i_atom in self.residue_atoms[residue_index].start..self.residue_atoms[residue_index].end {
             if self.dihedral_names[i_atom] == dihedral_name {
                 return Some(self.dihedral[i_atom]);
@@ -136,6 +137,7 @@ impl KinematicAtomTree {
     ///
     /// The dihedral angle name must match the name used by [`InternalAtomDefinition`](InternalAtomDefinition) of the respective atom.
     pub fn set_named_dihedral(&mut self, residue_index: usize, dihedral_name: &str, value: f64) -> Result<(), BuilderError> {
+        if !self.is_compiled { self.build_internal_data()?; }
         for i_atom in self.residue_atoms[residue_index].start..self.residue_atoms[residue_index].end {
             if self.dihedral_names[i_atom] == dihedral_name {
                 self.dihedral[i_atom] = value;
@@ -150,6 +152,7 @@ impl KinematicAtomTree {
             self.defined_residues.push(ResidueAtomsDefinition::new("") );
         }
         self.defined_residues[residue_index].add_atom(atom);
+        self.is_compiled = false;
     }
 
     pub fn add_residue(&mut self, residue_definition: &Vec<InternalAtomDefinition>) {
@@ -157,6 +160,7 @@ impl KinematicAtomTree {
         for atom in residue_definition {
             self.add_atom(atom, residue_index);
         }
+        self.is_compiled = false;
     }
 
     pub fn patch_residue(&mut self, residue_index: usize, residue_definition: &Vec<InternalAtomDefinition>) -> Result<(), BuilderError> {
@@ -171,6 +175,7 @@ impl KinematicAtomTree {
                 self.defined_residues[residue_index].add_atom(atom_def);
             }
         }
+        self.is_compiled = false;
         return Ok(());
     }
 
@@ -216,6 +221,7 @@ impl KinematicAtomTree {
         self.elements.resize(n_atoms, Default::default());
         self.dihedral_names.resize(n_atoms, Default::default());
         self.dihedral.resize(n_atoms, 0.0);
+        self.building_order.clear();
         self.reference_atoms.resize(n_atoms, [0, 0, 0, 0]);
         let mut i_atom: usize = 0;
         let mut i_residue: usize = 0;
@@ -273,10 +279,11 @@ impl KinematicAtomTree {
             }
         }
         for el in &waiting_list {
-                self.building_order.push(el.1);
+            self.building_order.push(el.1);
         }
 
         self.setup_residue_ranges();
+        self.is_compiled = true;
         return Ok(());
     }
 
@@ -294,7 +301,9 @@ impl KinematicAtomTree {
 
     /// Restores Cartesian coordinates of all the atoms of this tree
     pub fn build_atoms(&mut self, chain_id: &str) -> Result<Vec<PdbAtom>, BuilderError> {
-        let _ = self.build_internal_data()?;
+
+        if !self.is_compiled {let _ = self.build_internal_data()?;}
+
         let mut vectors = vec![Vec3::from_float(0.0); self.reference_atoms.len()];
         restore_branched_chain_in_order(&self.r, &self.planar, &self.dihedral, &self.reference_atoms,
                                         &self.building_order, &mut vectors);
@@ -303,6 +312,7 @@ impl KinematicAtomTree {
         for i in 0..atoms.len() {
             let res_seq = self.residue_for_atom(i);
             atoms[i].serial = (i + 1) as i32;
+            atoms[i].res_seq = res_seq as i32;
             atoms[i].pos = vectors[i];
             atoms[i].res_name = self.residue_name(res_seq).clone();
             atoms[i].chain_id = chain_id.to_string();
