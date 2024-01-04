@@ -229,3 +229,13 @@ impl Drop for CMDisplacement {
         }
     }
 }
+
+impl<M: SystemMeasurement<Vec3>> Drop for AutocorrelateVec3Measurements<M> {
+    fn drop(&mut self) {
+        let mut stream = out_writer(&self.fname, false);
+        let data = self.observed_values();
+        for i in 0..data.len() {
+            stream.write(format!("{:4} {:}\n", i + 1, data[i]).as_bytes()).expect("Can't write to a file");
+        }
+    }
+}
