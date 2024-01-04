@@ -136,7 +136,7 @@ fn main() {
                         #[cfg(debug_assertions)] {
                             let en_after = energy.evaluate(&system);
                             if (en_after - _en_before - delta_e).abs() > 0.001 {
-                                energy.report(&mut system, &hinge_prop);
+                                // energy.report(&mut system, &hinge_prop);
                                 panic!("Incorrect energy change: global {} vs delta {}\n", en_after-_en_before, delta_e);
                             }
                         }

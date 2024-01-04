@@ -24,6 +24,7 @@ num-traits = "0.2"      # for Float trait
 bioshell-statistics = { path = "../bioshell-statistics" }
 bioshell-io = { path = "../bioshell-io" }
 bioshell-pdb = { path = "../bioshell-pdb" }
+bioshell-builder = { path = "../bioshell-builder" }
 
 # ---------- Logging
 log = "0.4.0"
