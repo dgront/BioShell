@@ -6,8 +6,17 @@ use bioshell_cif::*;
 fn read_cif_file() {
     let mut reader = BufReader::new(ALA_CIF.as_bytes());
     let data_blocks = read_cif_buffer(&mut reader);
+    assert_eq!(data_blocks.len(), 1);
+    assert_eq!(data_blocks[0].loop_blocks().count(), 5);
+    // println!("{}",data_blocks[0]);
 
-    println!("{}",data_blocks[0]);
+    let mut reader = BufReader::new(BB_.as_bytes());
+    let data_blocks = read_cif_buffer(&mut reader);
+    assert_eq!(data_blocks.len(), 1);
+    assert_eq!(data_blocks[0].loop_blocks().count(), 1);
+    let a_loop = data_blocks[0].loop_blocks().next().unwrap();
+    assert_eq!(a_loop.column_names().count(), 9);
+    // println!("{}",data_blocks[0]);
 }
 
 #[allow(non_upper_case_globals)]
@@ -124,3 +133,19 @@ ALA "Create component"  1999-07-08 RCSB
 ALA "Modify descriptor" 2011-06-04 RCSB
 #"#;
 
+const BB_: &str = "data_bb_
+loop_
+_res_name
+_atom_a_name
+_atom_b_name
+_atom_c_name
+_atom_d_name
+_c_d_bond_length
+_b_c_d_planar_angle
+_a_b_c_d_dihedral_angle
+_dihedral_angle_name
+'bb ' ' N  ' ' CA ' ' C  ' ' N  ' 1.328685 114.0  180.0 psi
+'bb ' ' CA ' ' C  ' ' N  ' ' CA ' 1.458001 123.0  180.0 omega
+'bb ' ' C  ' ' N  ' ' CA ' ' C  ' 1.523258 110.0 -180.0 phi
+'bb ' ' N  ' ' CA ' ' C  ' ' O  ' 1.231015 121.0  180.0 -
+#";

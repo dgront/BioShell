@@ -29,7 +29,6 @@ mod pdb_atom;
 mod assertions;
 pub mod pdb_atom_filters;
 pub mod calc;
-pub mod nerf;
 
 mod residue_id;
 mod load_pdb;

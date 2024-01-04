@@ -62,6 +62,16 @@ pub trait PdbAtomPredicate {
     fn check(&self, a: &PdbAtom) -> bool;
 }
 
+pub struct AlwaysPass;
+
+/// Always returns `true`
+///
+/// Declare this [`PdbAtomPredicate`](PdbAtomPredicate) when you have to use one but you don't want
+/// to skip any atoms
+impl PdbAtomPredicate for AlwaysPass {
+    fn check(&self, _a: &PdbAtom) -> bool {true}
+}
+
 /// Returns `true` if an atom belongs to a certain chain.
 ///
 /// # Examples

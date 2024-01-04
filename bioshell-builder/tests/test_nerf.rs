@@ -52,7 +52,7 @@ mod nerf_test {
         let atoms: Vec<Vec3> = pdb_atoms.iter().map(|a|a.pos.clone()).collect();
 
         let _atom_names = [" N  ", " CA ", " C  ", " O  ", " CB ", " CG ", " CD1", " CD2"];
-        let ile_topo = [[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 2, 0],
+        let ile_topo = [[0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 2],
             [0, 1, 2, 3], [0, 1, 2, 4], [0, 1, 4, 5], [1, 4, 5, 6], [1, 4, 5, 7]];
 
         let mut r = vec![0.0, atoms[0].distance_to(&atoms[1]), atoms[1].distance_to(&atoms[2])];
@@ -107,7 +107,7 @@ mod nerf_test {
         let r = vec![0.0, r_NCa, r_CaC, r_CN, r_CO, r_NCa, r_CaC, r_CN, r_CO, r_NCa, r_CaC, r_CO, r_COxt];
         let a = vec![0.0, 0.0, a_NCaC, a_CaCN, a_CaCO, a_CNCa, a_NCaC, a_CaCN, a_CaCO, a_CNCa, a_NCaC, a_CaCO, a_CaCOxt];
         let t = vec![0.0, 0.0, 0.0, psi, PI, omega, phi, psi, PI, omega, phi, psi, PI];
-        let bb_topo = [[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 2, 0],
+        let bb_topo = [[0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 2],
             [0, 1, 2, 4], [4, 1, 2, 3], [1, 2, 4, 5], [2, 4, 5, 6], [4, 5, 6, 8], [8, 5,6, 7],
                                         [5, 6, 8, 9], [6, 8, 9, 10], [8, 9, 10, 12], [12, 9, 10, 11]];
 
@@ -132,7 +132,7 @@ mod nerf_test {
         let r = vec![0.0, r_CH, r_CH, r_CH, r_CH];
         let a = vec![0.0, 0.0, a_HCH, a_HCH, a_HCH];
         let t = vec![0.0, 0.0, 0.0, 120.0_f64.to_radians(), 240.0_f64.to_radians()];
-        let topo = vec![[0, 0, 0, 0], [0, 1, 0, 0], [1, 0, 2, 0], [1, 2, 0, 3], [1, 2, 0, 4]];
+        let topo = vec![[0, 0, 0, 0], [0, 0, 0, 1], [0, 1, 0, 2], [1, 2, 0, 3], [1, 2, 0, 4]];
         let mut methane = vec![Vec3::default(); 5];
         restore_branched_chain(&r, &a, &t, &topo, &mut methane);
         assert_delta!(methane[4].x, 1.400, 0.001);

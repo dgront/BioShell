@@ -41,6 +41,14 @@ impl CifLoop {
         }
         self.data_rows.push(row);
     }
+
+    /// Non-mutable iterator over rows of this loop block.
+    pub fn rows(&self) -> impl Iterator<Item = &Vec<String>> {
+        return self.data_rows.iter();
+    }
+
+    /// Non-mutable iterator over names assigned to the columns of this loop.
+    pub fn column_names(&self)  -> impl Iterator<Item = &String> { return self.column_names.iter(); }
 }
 
 impl Display for CifLoop {
@@ -74,7 +82,7 @@ impl CifData {
     /// use std::io::BufReader;
     /// use bioshell_cif::read_cif_buffer;
     /// let cif_block = "data_first_block";
-    /// let mut reader = BufReader::new(alignment.as_bytes());
+    /// let mut reader = BufReader::new(cif_block.as_bytes());
     /// let data_blocks = read_cif_buffer(&mut reader);
     /// assert_eq!(data_blocks.len(), 1);
     /// assert_eq!(data_blocks[0].name(),"first_block");
@@ -129,17 +137,25 @@ pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
     return Ok(read_cif_buffer(&mut BufReader::new(file)));
 }
 
-pub fn read_cif_buffer<R: BufRead>(buffer: &mut R) -> Vec<CifData> {
+pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
 
     let mut data_blocks: Vec<CifData> = vec![];
-    let mut current_loop = CifLoop{ column_names: vec![], data_rows: vec![] };
+    let mut current_loop: Option<CifLoop> = None;
+    // let mut current_loop = CifLoop{ column_names: vec![], data_rows: vec![] };
     let mut is_loop_open: bool = false;
 
     for line in buffer.lines() {
         if let Some(line_ok) = line.ok() {
             let ls = line_ok.trim();
             // ---------- skip empty content and comments
-            if ls.len() == 0 || ls.starts_with("#") { continue; }
+            if ls.len() == 0 || ls.starts_with("#") {
+                if is_loop_open {
+                    data_blocks.last_mut().unwrap().add_loop(current_loop.unwrap());
+                    current_loop = None;
+                }
+                is_loop_open = false;
+                continue;
+            }
 
             if ls.starts_with("data_") {        // --- start a new data block
                 let mut parts = ls.splitn(2, '_');
@@ -148,7 +164,11 @@ pub fn read_cif_buffer<R: BufRead>(buffer: &mut R) -> Vec<CifData> {
                 data_blocks.push(CifData::new(block_name));
             } else if ls.starts_with('_') {
                 if is_loop_open {         // --- Add a key to the current loop block
-                    current_loop.add_column(ls.to_string());
+                    if let Some(a_loop) = &mut current_loop {
+                        a_loop.add_column(ls.to_string());
+                    } else {
+                        panic!("Attempt to add a column with no loop open");
+                    }
                 } else {
                     if data_blocks.len() == 0 { panic!("Found data entries outside any data block!")}
                     let mut key_val = ls.split_whitespace();
@@ -160,12 +180,16 @@ pub fn read_cif_buffer<R: BufRead>(buffer: &mut R) -> Vec<CifData> {
             } else if ls.starts_with("loop_") {
                 if data_blocks.len() == 0 { panic!("Found data loop outside any data block!")}
                 if is_loop_open {
-                    data_blocks.last_mut().unwrap().add_loop(current_loop);
+                    data_blocks.last_mut().unwrap().add_loop(current_loop.unwrap());
                 }
-                current_loop = CifLoop{ column_names: vec![], data_rows: vec![] };
+                current_loop = Some(CifLoop{ column_names: vec![], data_rows: vec![] });
                 is_loop_open = true;
             } else {
-                current_loop.add_data_row(split_into_strings(ls));
+                if let Some(a_loop) = &mut current_loop {
+                    a_loop.add_data_row(split_into_strings(ls, false));
+                } else {
+                    panic!("Attempt to add a loop row with no loop open!");
+                }
             }
         }
     }
