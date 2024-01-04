@@ -312,7 +312,7 @@ impl KinematicAtomTree {
         for i in 0..atoms.len() {
             let res_seq = self.residue_for_atom(i);
             atoms[i].serial = (i + 1) as i32;
-            atoms[i].res_seq = res_seq as i32;
+            atoms[i].res_seq = res_seq as i32 + 1;
             atoms[i].pos = vectors[i];
             atoms[i].res_name = self.residue_name(res_seq).clone();
             atoms[i].chain_id = chain_id.to_string();
