@@ -3,8 +3,6 @@ use std::ops::Range;
 use rand::{Rng};
 use bioshell_pdb::{load_pdb_file, Structure};
 use bioshell_pdb::calc::Vec3;
-use bioshell_pdb::nerf::{restore_branched_chain, restore_linear_chain};
-use bioshell_pdb::pdb_atom_filters::{IsCA, PdbAtomPredicate};
 use bioshell_pdb::PDBError;
 use bioshell_io::out_writer;
 
@@ -12,10 +10,7 @@ pub const N_CA: f64 = 1.458001;
 pub const CA_C: f64 = 1.523258;
 pub const C_O: f64 = 1.231015;
 pub const C_N: f64 = 1.328685;
-pub const N_CA_C: f64 = 110.0;
-pub const CA_C_N: f64 = 114.0;
-pub const C_N_CA: f64 = 123.0;
-pub const CA_C_O: f64 = 121.0;
+
 #[repr(i8)]
 pub enum SurpassAtomTypes {
     N = 0,
@@ -23,6 +18,46 @@ pub enum SurpassAtomTypes {
     C = 2,
     O = 3,
     SC = 4
+}
+
+impl TryFrom<&str> for SurpassAtomTypes {
+    type Error = String;
+
+    /// Returns a ``SurpassAtomTypes`` for an atom name
+    ///
+    /// # Example
+    /// ```rust
+    /// use surpass::SurpassAtomTypes;
+    /// assert_eq!(SurpassAtomTypes::try_from(" CA ").unwrap(), SurpassAtomTypes::CA);
+    /// assert_eq!(SurpassAtomTypes::try_from(" N  ").unwrap(), SurpassAtomTypes::N);
+    /// ```
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            " N  " => Ok(SurpassAtomTypes::N),
+            " CA " => Ok(SurpassAtomTypes::CA),
+            " C  " => Ok(SurpassAtomTypes::C),
+            " O  " => Ok(SurpassAtomTypes::O),
+            " SC " => Ok(SurpassAtomTypes::SC),
+            _ => {Err(format!("This atom is not valid in SURPASS-bb representation: {}", value))
+            }
+        }
+    }
+}
+
+impl TryFrom<&SurpassAtomTypes> for i8 {
+    type Error = String;
+
+    /// Provides integer corresponding to an atom type
+    ///
+    fn try_from(value: &SurpassAtomTypes) -> Result<Self, Self::Error> {
+        match value {
+            SurpassAtomTypes::N => Ok(0),
+            SurpassAtomTypes::CA => Ok(1),
+            SurpassAtomTypes::C => Ok(2),
+            SurpassAtomTypes::O => Ok(3),
+            SurpassAtomTypes::SC => Ok(4),
+        }
+    }
 }
 
 /// SURPASS-alpha system holds coordinates of all atoms
@@ -61,16 +96,16 @@ impl SurpassAlphaSystem {
         let mut s = SurpassAlphaSystem{
             chain_indexes: vec![0; n_atoms], bbx: vec![0; n_atoms], bby: vec![0; n_atoms], bbz: vec![0; n_atoms],
             sgx: vec![0; n_residues], sgy: vec![0; n_residues], sgz: vec![0; n_residues],
-            residues_for_chain: vec![0..0; n_residues], chain_id_by_index: vec![String::from("A"); n_chains],
+            residues_for_chain: vec![0..0; n_chains], chain_id_by_index: vec![String::from("A"); n_chains],
             int_to_real: l, int_to_real_2: l*l, box_length, model_id: 0
         };
         // ---------- Assign atoms to chains
         let mut atoms_total = 0;
         let codes: Vec<char> = ('A'..'Z').collect();
-        for (ic,nc) in chain_lengths.iter().enumerate() {
-            for i in 0..*nc { s.chain_indexes[i+ atoms_total] = ic as u16; }
+        for (ic, nc) in chain_lengths.iter().enumerate() {
+            for i in 0..*nc { s.chain_indexes[i + atoms_total] = ic as u16; }
             s.chain_id_by_index[ic] = codes[ic].to_string();
-            s.residues_for_chain[ic] = atoms_total..atoms_total+nc;
+            s.residues_for_chain[ic] = atoms_total..atoms_total + nc;
             atoms_total += nc;
         }
 
@@ -105,14 +140,14 @@ impl SurpassAlphaSystem {
             let mut updated_previous = self.atom_to_vec3(from_to.start);
             let mut current = Vec3::default();
             for i_res in from_to.start+1..from_to.end {
-                self.set_ca_to_nearest_vec3(i_res, i_res-1, &mut current);
+                self.set_atom_to_nearest_vec3(i_res, i_res-1, &mut current);
                 current -= &old_previous;
                 mav_violation = (current.length()-new_length).abs().max(mav_violation);
                 current.normalize();
                 current *= new_length;
                 current += &updated_previous;
-                self.set_ca_to_nearest_vec3(i_res, i_res-1, &mut old_previous);
-                self.vec3_to_ca(i_res, &current);
+                self.set_atom_to_nearest_vec3(i_res, i_res-1, &mut old_previous);
+                self.vec3_to_atom(i_res, &current);
                 updated_previous.set(&current);
             }
         }
@@ -121,7 +156,7 @@ impl SurpassAlphaSystem {
     }
 
     /// Returns the number of atoms in this system (of all its chains)
-    pub fn count_residues(&self) -> usize { self.bbx.len() }
+    pub fn count_residues(&self) -> usize { self.sgx.len() }
 
     /// Returns real coordinates of a backbone atom in a newly created Vec3 struct.
     ///
@@ -157,14 +192,14 @@ impl SurpassAlphaSystem {
     ///
     /// This method finds the periodic image of a `pos` C-alpha atom that is the closes to the
     /// `ref_pos` C-alpha atom  and stores its coordinates in a given  [`Vec3`](bioshell_pdb::calc::vec3) struct.
-    pub fn set_ca_to_nearest_vec3(&self, pos: usize, ref_pos: usize, v: &mut Vec3) {
+    pub fn set_atom_to_nearest_vec3(&self, pos: usize, ref_pos: usize, v: &mut Vec3) {
 
         v.set3(closest_coordinate!(self, self.bbx, pos, ref_pos),
                closest_coordinate!(self, self.bby, pos, ref_pos),
                closest_coordinate!(self, self.bbz, pos, ref_pos));
     }
 
-    pub fn vec3_to_ca(&mut self, pos: usize, v: &Vec3) {
+    pub fn vec3_to_atom(&mut self, pos: usize, v: &Vec3) {
         self.bbx[pos] = self.real_to_int(v.x);
         self.bby[pos] = self.real_to_int(v.y);
         self.bbz[pos] = self.real_to_int(v.z);
@@ -236,52 +271,24 @@ impl SurpassAlphaSystem {
             surpass_model.set_chain_id(i, cid);
         }
 
-        let is_ca = IsCA;
         let mut i_atom = 0;
-        for ai in strctr.atoms().iter().filter(|&a| is_ca.check(a)) {
+        let first_residue_indx = strctr.atoms()[0].res_seq;
+        for ai in strctr.atoms().iter() {
+            let atom_type = SurpassAtomTypes::try_from(ai.name.as_str());
+            if atom_type.is_err() { continue}
+            let atom_type = atom_type.unwrap();
+            let idx = i8::try_from(&atom_type).unwrap();
+            let i_atom = ((ai.res_seq - first_residue_indx) * 4 + idx as i32) as usize;
+
             surpass_model.bbx[i_atom] = surpass_model.real_to_int(ai.pos.x);
             surpass_model.bby[i_atom] = surpass_model.real_to_int(ai.pos.y);
             surpass_model.bbz[i_atom] = surpass_model.real_to_int(ai.pos.z);
-            i_atom += 1;
         }
         assert_eq!(surpass_model.chain_id_by_index.len(), chain_sizes.len());
 
         return surpass_model;
     }
 
-    pub fn make_random<R: Rng>(chain_lengths: &[usize], box_length: f64, rnd_gen: &mut R) -> SurpassAlphaSystem {
-        let mut s = SurpassAlphaSystem::new(chain_lengths, box_length);
-        let n_residues = s.count_residues();
-        let n_atoms = n_residues * 4;
-        // ---------- Initialize internal coordinates
-        let mut r = vec![0.0; n_atoms];
-        let mut planar: Vec<f64> = vec![0.0; n_atoms];
-        let mut dihedral: Vec<f64> = vec![0.0; n_atoms];
-        let mut bb_topology: Vec<[usize;4]> = vec![];
-        for i in 0..n_residues {
-            let idx = i * 4;
-            r[idx] = C_N;
-            r[idx+1] = N_CA;
-            r[idx+2] = CA_C;
-            r[idx+3] = C_O;
-            planar[idx] = CA_C_N.to_radians();
-            planar[idx+1] = C_N_CA.to_radians();
-            planar[idx+2] = N_CA_C.to_radians();
-            planar[idx+3] = CA_C_O.to_radians();
-            dihedral[idx] = 180.0_f64.to_radians(); // omega
-            dihedral[idx+1] = -180.0_f64.to_radians(); // Phi
-            dihedral[idx+2] = 180.0_f64.to_radians(); // Psi
-            dihedral[idx+3] = 180.0_f64.to_radians(); // flat
-            // bb_topology.push([]);
-        }
-        let mut coords = vec![Vec3::default(); n_atoms];
-        restore_branched_chain(&r[0..n_atoms], &planar[0..n_atoms], &dihedral[0..n_atoms], &bb_topology.as_slice(),&mut coords[0..n_atoms]);
-        for i in 0..n_atoms {
-            s.vec3_to_ca(i,&coords[i]);
-        }
-
-        return s;
-    }
 
     pub fn from_pdb_file(fname: &str, box_length: f64) -> Result<SurpassAlphaSystem, PDBError> {
         
@@ -306,7 +313,7 @@ impl SurpassAlphaSystem {
                                  the_atom.z).as_bytes()).expect("Error occurred while writing PDB content!");
             for i_atom in begin_atom_idx+1..end_atom_idx {
                 i_resid += 1;
-                self.set_ca_to_nearest_vec3(i_atom, begin_atom_idx, &mut the_atom);
+                self.set_atom_to_nearest_vec3(i_atom, begin_atom_idx, &mut the_atom);
                 stream.write(format!("ATOM   {:4} {} GLY {}{:4}    {:8.3}{:8.3}{:8.3}  2.00  2.00           C\n",
                                      i_atom, " CA ", chain_code, i_resid,
                                      the_atom.x,
@@ -326,7 +333,7 @@ pub fn calculate_cm(system: &SurpassAlphaSystem, i_chain: usize) -> Vec3 {
     let mut cm_vec: Vec3 = system.atom_to_vec3(begin_atom_idx);
     let mut tmp_atom: Vec3 = system.atom_to_vec3(begin_atom_idx);
     for i_atom in begin_atom_idx+1..end_atom_idx {
-        system.set_ca_to_nearest_vec3(i_atom, begin_atom_idx, &mut tmp_atom);
+        system.set_atom_to_nearest_vec3(i_atom, begin_atom_idx, &mut tmp_atom);
         cm_vec += &tmp_atom;
     }
     cm_vec /= system.chain_residues(i_chain).len() as f64;
@@ -334,23 +341,4 @@ pub fn calculate_cm(system: &SurpassAlphaSystem, i_chain: usize) -> Vec3 {
     return cm_vec;
 }
 
-/// Creates a system that contains a single chain in an extended conformation
-///
-/// The newly created system will contain a single chain of `n_res` residues, placed in the middle of a cubic periodic box
-/// of length `box_length`. All planar and dihedral angles are set to 120 and 180 degrees, respectively
-pub fn extended_chain(n_res: usize, box_length: f64) -> SurpassAlphaSystem {
-
-    let mut model = SurpassAlphaSystem::new(&[n_res], box_length);
-    // ---------- Initialize internal coordinates
-    let r= vec![3.8; n_res];
-    let planar = vec![120.0_f64.to_radians(); n_res];
-    let dihedral = vec![180.0_f64.to_radians(); n_res];
-    let mut coords = vec![Vec3::default(); n_res];
-    restore_linear_chain(&r, &planar, &dihedral, &mut coords);
-    for i in 0..n_res {
-        model.vec3_to_ca(i, &coords[i]);
-    }
-
-    return model;
-}
 

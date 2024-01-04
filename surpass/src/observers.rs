@@ -89,7 +89,7 @@ impl SystemMeasurement<f64> for RgSquared {
         let mut atom = Vec3::from_float(0.0);
         for i_atom in chain_atoms.clone() {
             n += 1.0;
-            system.set_ca_to_nearest_vec3(i_atom,chain_atoms.start, &mut atom);
+            system.set_atom_to_nearest_vec3(i_atom,chain_atoms.start, &mut atom);
             cc = atom.x - cm.x;
             s += cc * cc;
             cc = atom.y - cm.y;

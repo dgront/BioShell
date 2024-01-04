@@ -6,7 +6,7 @@ use log::debug;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
-use bioshell_pdb::{Structure, load_pdb_file};
+use bioshell_pdb::{Structure, load_pdb_file, PDBError};
 use surpass::{C_N, C_O, CA_C, CaContactEnergy, CMDisplacement, ExcludedVolume, HingeMove, MoveProposal, Mover, N_CA, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
 use surpass::{ChainCM, RgSquared, RecordMeasurements, REndSquared};
 #[allow(unused_imports)]                // NonBondedEnergyDebug can be un-commented to test non-bonded energy if the debug check fails
@@ -18,7 +18,7 @@ use surpass::{NonBondedEnergyDebug};
 /// say surpass -h to see options
 struct Args {
     /// starting conformation in the PDB format
-    #[clap(short, long, default_value = "", short='f')]
+    #[clap(short, long, default_value = "surpass_start.pdb", short='f')]
     infile: String,
     /// number of chains of the simulated system
     #[clap(short, long, default_value = "1", short='c')]
@@ -46,21 +46,17 @@ struct Args {
 }
 
 
-fn main() {
+fn main() -> Result<(), PDBError>{
 
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     env_logger::init();
 
     let args = Args::parse();
-    // let mut strctr = load_pdb_file(&args[1]).unwrap();
-    
+
     // --- the system
-    let n_res = args.n_res_in_chain;
-    if n_res < 4 { panic!("Simulated chain must be at leat 4 residues long!") }
-    let n_chains = args.n_chains;
-    if n_res < 4 { panic!("Simulated system must contain at least one chain!") }
-    let mut rnd = SmallRng::seed_from_u64(42);
-    let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], args.box_size, &mut rnd);
+    let mut system = SurpassAlphaSystem::from_pdb_file(&args.infile, args.box_size)?;
+    let n_chains = system.count_chains();
+    let n_residues = system.count_residues();
 
     // --- sampling: movers and proposals
     let hinge_mover: HingeMove<4, { 4 * 4 }> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
@@ -104,8 +100,8 @@ fn main() {
                 // ---------- single atom tail move
                 for _tail in 0..n_chains*2 {
                     tail_mover_1.propose(&mut system, &mut rnd, &mut tail_prop_1);
-                    #[cfg(debug_assertions)]
-                    check_bond_lengths(&mut system, &tail_prop_1);
+                    // #[cfg(debug_assertions)]
+                    // check_bond_lengths(&mut system, &tail_prop_1);
                     if energy.evaluate_delta(&system, &tail_prop_1) < 0.1 {
                         tail_prop_1.apply(&mut system);
                     }
@@ -113,20 +109,20 @@ fn main() {
                 // ---------- tail move of two residues
                 for _tail in 0..n_chains * 2 {
                     tail_mover_2.propose(&mut system, &mut rnd, &mut tail_prop_2);
-                    #[cfg(debug_assertions)]
-                    check_bond_lengths(&mut system, &tail_prop_2);
+                    // #[cfg(debug_assertions)]
+                    // check_bond_lengths(&mut system, &tail_prop_2);
                     if energy.evaluate_delta(&system, &tail_prop_2) < 0.1 {
                         tail_prop_2.apply(&mut system);
                     }
                 }
                 // ---------- hinge move
-                for _hinge in 0..n_chains*(n_res-2) {
+                for _hinge in 0..n_chains*(n_residues-2) {
                     hinge_mover.propose(&mut system, &mut rnd, &mut hinge_prop);
                     let delta_e = energy.evaluate_delta(&system, &hinge_prop);
                     if delta_e < 0.1 {
                         #[cfg(debug_assertions)] {
                             _en_before = energy.evaluate(&system);
-                            check_bond_lengths(&mut system, &hinge_prop);
+                            // check_bond_lengths(&mut system, &hinge_prop);
                         }
                         hinge_prop.apply(&mut system);
                         #[cfg(debug_assertions)] {
@@ -150,6 +146,8 @@ fn main() {
         // --- append a current conformation to the trajectory file
         // system.to_pdb_file("tra.pdb", true);
     }   // --- end of the simulation: all outer MC cycles done
+
+    return Ok(());
 }
 
 #[allow(dead_code)]

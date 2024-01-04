@@ -70,17 +70,12 @@ impl<const N_MOVED: usize, const N_ATOMS_MOVED: usize> TailMove<N_MOVED, N_ATOMS
         // --- prepare rototranslation
         let roto = Rototranslation::around_axis(&axis_from, &axis_to, angle);
 
-        let mut i_pos = 0;
-        for i_resid in i_moved_from..i_moved_to {
-            for i_atom in 0..4 {
-                let i_moved = i_resid * 4 + i_atom;
-                let mut moved = system.atom_to_nearest_vec3(i_moved, i_referenced);
-                roto.apply_mut(&mut moved);
-                proposal.bbx[i_pos] = system.real_to_int(moved.x);
-                proposal.bby[i_pos] = system.real_to_int(moved.y);
-                proposal.bbz[i_pos] = system.real_to_int(moved.z);
-                i_pos += 1;
-            }
+        for i_atom_moving in i_moved_from..i_moved_to {
+            let mut moved = system.atom_to_nearest_vec3(i_atom_moving, i_referenced);
+            roto.apply_mut(&mut moved);
+            proposal.bbx[i_atom_moving-i_moved_from] = system.real_to_int(moved.x);
+            proposal.bby[i_atom_moving-i_moved_from] = system.real_to_int(moved.y);
+            proposal.bbz[i_atom_moving-i_moved_from] = system.real_to_int(moved.z);
         }
         proposal.first_moved_pos = i_moved_from;
     }
