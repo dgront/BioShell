@@ -59,7 +59,7 @@ fn main() {
     
     // --- the system
     let n_res = args.n_res_in_chain;
-    if n_res < 4 { panic!("Simulated chain must be at leat 4 residues long!") }
+    if n_res < 4 { panic!("Simulated chain must be at least 4 residues long!") }
     let n_chains = args.n_chains;
     if n_res < 4 { panic!("Simulated system must contain at least one chain!") }
     let mut rnd = SmallRng::from_entropy();
@@ -83,10 +83,12 @@ fn main() {
     let r2_measurements: Vec<REndSquared> = (0..system.count_chains()).map(|i|REndSquared::new(i)).collect();
     let mut rend = RecordMeasurements::new("r2.dat", r2_measurements).expect("can't write to r2.dat");
 
-    // let r2vec_measurements: Vec<REndVector> = (0..system.count_chains()).map(|i|REndVector::new(i)).collect();
-    // let mut r_end_vec = RecordMeasurements::new("r_end_vec.dat", r2vec_measurements).expect("can't write to r_end_vec.dat");
-    let r_end_vec = REndVector::new(0);
-    let mut r_end_autocorr = AutocorrelateVec3Measurements::new(r_end_vec, 1000, "r_end_auto.dat");
+    let r2vec_measurements: Vec<REndVector> = (0..system.count_chains()).map(|i|REndVector::new(i)).collect();
+    let mut r_end_vec = RecordMeasurements::new("r_end_vec.dat", r2vec_measurements).expect("can't write to r_end_vec.dat");
+
+    // let r_end_vec = REndVector::new(0);
+    // let mut r_end_autocorr = AutocorrelateVec3Measurements::new(r_end_vec, 1000, "r_end_auto.dat");
+
     let rg_measurements: Vec<RgSquared> = (0..system.count_chains()).map(|i|RgSquared::new(i)).collect();
     let mut rg = RecordMeasurements::new("rg.dat", rg_measurements).expect("can't write to rg.dat");
     let t_max = args.outer_cycles * args.inner_cycles / 1000;
@@ -156,8 +158,8 @@ fn main() {
             cm.observe(&system);
             cmd.observe(&system);
             rend.observe(&system);
-            // r_end_vec.observe(&system);
-            r_end_autocorr.observe(&system);
+            r_end_vec.observe(&system);
+            // r_end_autocorr.observe(&system);
             rg.observe(&system);
         }           // --- single outer MC cycle done (all inner MC cycles finished)
         // --- append a current conformation to the trajectory file
