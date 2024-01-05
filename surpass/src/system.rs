@@ -80,26 +80,29 @@ impl SurpassAlphaSystem {
     /// The intended use of this method is to correct bond lengths which after numerous rotational
     /// Monte Carlo moves may slightly diverge from their assumed length.
     pub fn adjust_bond_length(&mut self, new_length: f64) -> f64 {
-        let mut mav_violation = 0.0;
+        let mut max_violation = 0.0;
+        let mut versors: Vec<Vec3> = vec![];
+        let mut vp = Vec3::default();  // --- previous vector
         for i_chain in 0..self.count_chains() {
+            versors.clear();
             let from_to = self.atoms_for_chain[i_chain].clone();
-            let mut old_previous = self.ca_to_vec3(from_to.start);
-            let mut updated_previous = self.ca_to_vec3(from_to.start);
-            let mut current = Vec3::default();
             for i_res in from_to.start+1..from_to.end {
-                self.set_ca_to_nearest_vec3(i_res, i_res-1, &mut current);
-                current -= &old_previous;
-                mav_violation = (current.length()-new_length).abs().max(mav_violation);
-                current.normalize();
-                current *= new_length;
-                current += &updated_previous;
-                self.set_ca_to_nearest_vec3(i_res, i_res-1, &mut old_previous);
-                self.vec3_to_ca(i_res, &current);
-                updated_previous.set(&current);
+                let mut vc = self.ca_to_nearest_vec3(i_res, i_res-1);
+                self.set_ca_to_vec3(i_res-1,&mut vp);
+                vc -= &vp;
+                max_violation = (vc.length()-new_length).abs().max(max_violation);
+                vc.normalize();
+                vc *= new_length;
+                versors.push(vc);
+            }
+            self.set_ca_to_vec3(from_to.start, &mut vp);
+            for i_res in from_to.start+1..from_to.end {
+                vp += &versors[i_res - from_to.start - 1];
+                self.vec3_to_ca(i_res, &vp);
             }
         }
 
-        return mav_violation;
+        return max_violation;
     }
 
     /// Returns the number of atoms in this system (of all its chains)

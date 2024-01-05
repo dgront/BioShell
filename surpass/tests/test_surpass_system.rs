@@ -4,7 +4,7 @@ use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use bioshell_pdb::calc::{planar_angle3, Vec3};
 use bioshell_pdb::load_pdb_reader;
-use bioshell_pdb::nerf::restore_linear_chain;
+use bioshell_builder::nerf::restore_linear_chain;
 use surpass::{extended_chain, SurpassAlphaSystem};
 
 #[allow(non_upper_case_globals)]
@@ -91,6 +91,10 @@ fn test_coords_operations() {
     // --- set X coordinate outside the box on the negative side
     model.cax[2] = model.real_to_int(-51.0);
     assert_delta!(model.int_to_real(model.cax[2]), 49.0, 0.00001);
+
+    let mut model = SurpassAlphaSystem::new(&[3], 50.0);
+    model.cax[2] = model.real_to_int(-27.4);
+    assert!(model.cax[2] > 0);
 }
 
 #[test]

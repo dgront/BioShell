@@ -92,13 +92,13 @@ fn main() {
     let rg_measurements: Vec<RgSquared> = (0..system.count_chains()).map(|i|RgSquared::new(i)).collect();
     let mut rg = RecordMeasurements::new("rg.dat", rg_measurements).expect("can't write to rg.dat");
     let t_max = args.outer_cycles * args.inner_cycles / 1000;
-    let mut cmd = CMDisplacement::new(system.box_length(),
-                        system.count_chains(), t_max, "cm_displacement.dat");
+    // let mut cmd = CMDisplacement::new(system.box_length(),
+    //                     system.count_chains(), t_max, "cm_displacement.dat");
 
     // --- save the starting conformation, reset the trajectory file
-    system.to_pdb_file("tra.pdb", false);
+    // system.to_pdb_file("tra.pdb", false);
 
-    let excl_vol = ExcludedVolume::new(&system, 3.7, 1.0);
+    let excl_vol = ExcludedVolume::new(&system, 3.7, 100.0);
     let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol);
     // let mut energy: NonBondedEnergyDebug<ExcludedVolume> = NonBondedEnergyDebug::new(&system, excl_vol);
 
@@ -107,7 +107,6 @@ fn main() {
 
     let start = Instant::now();
 
-    let mut rnd = SmallRng::seed_from_u64(42);
 
     println!("initial energy: {}", energy.evaluate(&system));
     let mut _en_before: f64; // --- for debugging
@@ -142,10 +141,10 @@ fn main() {
                             check_bond_lengths(&mut system, &hinge_prop, 3.8);
                         }
                         hinge_prop.apply(&mut system);
+
                         #[cfg(debug_assertions)] {
                             let en_after = energy.evaluate(&system);
                             if (en_after - _en_before - delta_e).abs() > 0.001 {
-                                // energy.report(&mut system, &hinge_prop);
                                 panic!("Incorrect energy change: global {} vs delta {}\n", en_after-_en_before, delta_e);
                             }
                         }
@@ -154,16 +153,17 @@ fn main() {
             }       // --- single inner MC cycle done (all cycle_factor MC cycles finished)
             println!("{} {} {} {:?}", outer, inner, energy.evaluate(&system), start.elapsed());
             let bond_err = system.adjust_bond_length(3.8);
-            debug!("bond lengths corrected, maximum violation was: {}", bond_err);
+            debug!("bond lengths corrected, maximum violation was: {}", &bond_err);
+
             cm.observe(&system);
-            cmd.observe(&system);
+            // cmd.observe(&system);
             rend.observe(&system);
             r_end_vec.observe(&system);
             // r_end_autocorr.observe(&system);
             rg.observe(&system);
         }           // --- single outer MC cycle done (all inner MC cycles finished)
         // --- append a current conformation to the trajectory file
-        system.to_pdb_file("tra.pdb", true);
+        // system.to_pdb_file("tra.pdb", true);
     }   // --- end of the simulation: all outer MC cycles done
 }
 
