@@ -77,6 +77,15 @@ impl<M: SystemMeasurement<Vec3>> AutocorrelateVec3Measurements<M> {
     }
 
     pub fn n_observations(&self) -> usize { self.n_samples }
+
+    pub fn write(&mut self) {
+        let mut stream = out_writer(&self.fname, false);
+        let data = self.observed_values();
+        stream.write(format!("# n_samples: {}\n", self.n_samples).as_bytes()).expect("Can't write to a file");
+        for i in 0..data.len() {
+            stream.write(format!("{:4} {:}\n", i + 1, data[i]/data[0]).as_bytes()).expect("Can't write to a file");
+        }
+    }
 }
 
 
@@ -231,11 +240,5 @@ impl Drop for CMDisplacement {
 }
 
 impl<M: SystemMeasurement<Vec3>> Drop for AutocorrelateVec3Measurements<M> {
-    fn drop(&mut self) {
-        let mut stream = out_writer(&self.fname, false);
-        let data = self.observed_values();
-        for i in 0..data.len() {
-            stream.write(format!("{:4} {:}\n", i + 1, data[i]).as_bytes()).expect("Can't write to a file");
-        }
-    }
+    fn drop(&mut self) { self.write(); }
 }
