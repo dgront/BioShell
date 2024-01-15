@@ -1,3 +1,5 @@
+//! Implementation of the Natural Reference Frame (NeRF) algorithm that is used to reconstruct Cartesian positions from internal coordinates
+//!
 use bioshell_pdb::calc::{Matrix3x3, Vec3};
 
 /// Creates a three-atom stub where a fourth atom may be placed into.
