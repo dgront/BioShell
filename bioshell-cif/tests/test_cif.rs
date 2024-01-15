@@ -19,6 +19,34 @@ fn read_cif_file() {
     // println!("{}",data_blocks[0]);
 }
 
+#[test]
+fn test_loop_formatter() {
+    let cif_block = "data_some_name
+    loop_
+    _first_column
+    _second_column
+    'value A' 1
+    'value B' 2
+    'value C' 2
+
+    ";
+    let expected = "loop_
+_first_column
+_second_column
+'value A' 1
+'value B' 2
+'value C' 2
+
+";
+    let mut reader = BufReader::new(cif_block.as_bytes());
+    let data_blocks = read_cif_buffer(&mut reader);
+    assert_eq!(data_blocks.len(), 1);
+    assert_eq!(data_blocks[0].name(),"some_name");
+    let a_loop = data_blocks[0].loop_blocks().next().unwrap();
+    let out = format!("{}", a_loop);
+
+    assert_eq!(out, expected);
+}
 #[allow(non_upper_case_globals)]
 static ALA_CIF: &'static str = r#"data_ALA
 #

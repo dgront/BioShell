@@ -1,3 +1,25 @@
+//! Reads and writes data in CIF format.
+//!
+//! A CIF file stores data blocks. Each data block in turn contains name-value data items and loop blocks.
+//!
+//! # Example CIF-formatted file:
+//! ``` text
+//! data_some_name
+//! _name_1            value_1
+//! _name_2            value_2
+//! loop_
+//! _first_column
+//! _second_column
+//! 'value A' 1
+//! 'value B' 2
+//! 'value C' 2
+//! ```
+//!
+//! This example CIF entry contains a single block, named ``some_name`` (the mandatory ``data_``
+//! prefix is not a [art of that name). That block in turn holds two key-value entries and a loop block.
+//! The official specification of the CIF format can be found on
+//! [this page](https://www.iucr.org/resources/cif/spec/version1.1/cifsyntax)
+//!
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
@@ -8,9 +30,11 @@ use log::{debug, info};
 use bioshell_io::split_into_strings;
 
 /// Represents a single `data_` block of a CIF file.
+///
+/// A single data block may contain entries given as key-value pairs as well as loop blocks.
 pub struct CifData {
     name: String,
-    entries: HashMap<String, String>,
+    data_items: HashMap<String, String>,
     loops: Vec<CifLoop>
 }
 
@@ -53,17 +77,41 @@ impl CifLoop {
 
 impl Display for CifLoop {
     /// Writes a [`CifLoop`](CifLoop) block in the CIF format.
+    ///
+    /// # Example
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_cif::read_cif_buffer;
+    /// let cif_block = "data_some_name
+    /// loop_
+    /// _first_column
+    /// _second_column
+    /// 'value A' 1
+    /// 'value B' 2
+    /// 'value C' 2
+    /// #
+    /// ";
+    /// let mut reader = BufReader::new(cif_block.as_bytes());
+    /// let data_blocks = read_cif_buffer(&mut reader);
+    /// assert_eq!(data_blocks.len(), 1);
+    /// assert_eq!(data_blocks[0].name(),"some_name");
+    /// let a_loop = data_blocks[0].loop_blocks().next().unwrap();
+    /// let out = format!("{}", a_loop);
+    /// println!("{}", out);
+    /// ```
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "loop_").ok();
         for coln in &self.column_names {
             writeln!(f, "{}", coln).ok();
         }
         for row in &self.data_rows {
-            for val in row {
-                write!(f, " {}",val).ok();
+            write!(f, "{}", &row[0]).ok();
+            for val in &row[1..] {
+                write!(f, " {}", val).ok();
             }
             writeln!(f, "").ok();
         }
+        writeln!(f, "").ok();   // --- new line after a loop block
         Ok(())
     }
 }
@@ -71,7 +119,7 @@ impl Display for CifLoop {
 impl CifData {
     pub fn new(name:String) -> CifData {
         return CifData{
-            name, entries: HashMap::new(), loops: vec![]
+            name, data_items: HashMap::new(), loops: vec![]
         };
     }
 
@@ -89,15 +137,14 @@ impl CifData {
     /// ```
     pub fn name(&self) -> &String { &self.name }
 
-    pub fn insert(&mut self, key: String, value: String) {
-        self.entries.insert(key, value);
-    }
-
-    /// Add a new empty loop to this block
-    pub fn new_loop(&mut self) { self.loops.push(CifLoop{ column_names: vec![], data_rows: vec![] })}
-
     /// Add a given loop to this block
     pub fn add_loop(&mut self, a_loop: CifLoop) { self.loops.push(a_loop)}
+
+    /// Read access to data items of this block
+    pub fn data_items(&self) -> &HashMap<String, String> { &self.data_items }
+
+    /// Mutable access to data items of this block
+    pub fn data_items_mut(&mut self) -> &mut HashMap<String, String> { &mut self.data_items }
 
     /// Get an iterator of references to loop-blocks.
     pub fn loop_blocks(&self) -> impl DoubleEndedIterator<Item = &CifLoop> + '_ {
@@ -114,7 +161,7 @@ impl Display for CifData {
     /// Writes a [`CifData`](CifData) block in the CIF format.
     /// All loop-blocks contained in this block will also be displayed.
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for (key, val) in &self.entries {
+        for (key, val) in &self.data_items {
             writeln!(f, "{} {}", key, val).ok();
         }
         writeln!(f,"").ok();
@@ -171,11 +218,12 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
                     }
                 } else {
                     if data_blocks.len() == 0 { panic!("Found data entries outside any data block!")}
+                    let last_block = data_blocks.last_mut().unwrap();
                     let mut key_val = ls.split_whitespace();
                     let key = key_val.nth(0).unwrap();
                     let mut val: String = "".to_string();
                     for s in &mut key_val { val += &s.to_string(); }
-                    data_blocks.last_mut().unwrap().insert(key.to_string(), val);
+                    last_block.data_items_mut().insert(key.to_string(), val);
                 }
             } else if ls.starts_with("loop_") {
                 if data_blocks.len() == 0 { panic!("Found data loop outside any data block!")}
