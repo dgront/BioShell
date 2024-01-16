@@ -161,8 +161,13 @@ impl Display for CifData {
     /// Writes a [`CifData`](CifData) block in the CIF format.
     /// All loop-blocks contained in this block will also be displayed.
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let max_key_length = self.data_items.keys()
+            .map(|key| key.len())
+            .fold(0, |max_length, key_length| key_length.max(max_length));
+
+        writeln!(f,"data_{}", self.name()).ok();
         for (key, val) in &self.data_items {
-            writeln!(f, "{} {}", key, val).ok();
+            writeln!(f, "{:width$} {}", key, val, width = max_key_length).ok();
         }
         writeln!(f,"").ok();
         for a_loop in &self.loops {
@@ -219,11 +224,13 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
                 } else {
                     if data_blocks.len() == 0 { panic!("Found data entries outside any data block!")}
                     let last_block = data_blocks.last_mut().unwrap();
-                    let mut key_val = ls.split_whitespace();
-                    let key = key_val.nth(0).unwrap();
-                    let mut val: String = "".to_string();
-                    for s in &mut key_val { val += &s.to_string(); }
-                    last_block.data_items_mut().insert(key.to_string(), val);
+                    let mut key_val = split_into_strings(ls, false);
+                    if key_val.len() != 2 {
+                        panic!("{}", format!("A single data item line should contain exactly two tokens: a key and its value; {} values found in the line:{}",
+                                       key_val.len(), &ls));
+                    }
+
+                    last_block.data_items_mut().insert(key_val[0].clone(), key_val[1].clone());
                 }
             } else if ls.starts_with("loop_") {
                 if data_blocks.len() == 0 { panic!("Found data loop outside any data block!")}
