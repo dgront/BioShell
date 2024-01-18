@@ -72,6 +72,29 @@ _second_column
 
     assert_eq!(out, expected);
 }
+
+#[test]
+fn build_cif_loop() {
+    let mut data_loop = CifLoop::new(&["_symmetry_equiv_pos_site_id"]);
+    assert_eq!(data_loop.count_columns(), 1);
+    data_loop.add_column("_symmetry_equiv_pos_as_xyz");
+    assert_eq!(data_loop.count_columns(), 2);
+    data_loop.add_data_row(vec!["1", "x,y,z"].iter().map(|&s| s.to_string()).collect());
+    data_loop.add_data_row(vec!["2", "x,y,z"].iter().map(|&s| s.to_string()).collect());
+    assert_eq!(data_loop.count_rows(), 2);
+    *data_loop.entry_mut(0, "_symmetry_equiv_pos_as_xyz").unwrap() = "-x,-y,-z".to_string();
+    println!("{}", data_loop);
+    let txt = format!("{}",data_loop);
+    let expected = "loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 -x,-y,-z
+2 x,y,z
+
+";
+    assert_eq!(txt, expected);
+}
+
 #[allow(non_upper_case_globals)]
 static ALA_CIF: &'static str = r#"data_ALA
 #

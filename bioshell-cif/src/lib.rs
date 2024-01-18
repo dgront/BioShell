@@ -17,10 +17,10 @@
 //! ```
 //!
 //! This example CIF entry contains a single block, named ``some_name`` (the mandatory ``data_``
-//! prefix is not considered a part of that name). That block, loaded as a (``CifData``)[CifData]
+//! prefix is not considered a part of that name). That block, loaded as a [CifData]
 //! struct, holds two key-value entries:
 //! ``_name_1:value_1`` and ``_name_2:value_2``,  followed by a loop block.
-//! Data items stored as a loop are loaded into a (``CifLoop``)[CifLoop] struct.
+//! Data items stored as a loop are loaded into a [CifLoop] struct.
 //!
 //! The official specification of the CIF format can be found on
 //! [this page](https://www.iucr.org/resources/cif/spec/version1.1/cifsyntax)
@@ -44,6 +44,44 @@ pub struct CifData {
 }
 
 /// Represents a single `_loop` of a CIF file.
+///
+/// # Example
+///
+/// The following example shows, how to build a [CifLoop] using its API:
+/// ```
+/// use bioshell_cif::CifLoop;
+/// // --- create an empty data loop with four columns
+/// let mut data_loop = CifLoop::new(&["_atom_site_label", "_atom_site_Cartn_x",
+///         "_atom_site_Cartn_y", "_atom_site_Cartn_z"]);
+/// // --- append two rows of values
+/// data_loop.add_data_row(vec!["O1", "4.154", "5.699", "3.026"].iter().map(|&s| s.to_string()).collect());
+/// data_loop.add_data_row(vec!["C2", "5.630", "5.087", "3.246"].iter().map(|&s| s.to_string()).collect());
+/// // --- modify one of the entries of the table
+/// *data_loop.entry_mut(1, "_atom_site_Cartn_z").unwrap() = "4.246".to_string();
+/// // --- print the data loop block
+/// println!("{}", data_loop);
+/// # let out = format!("{}", data_loop);
+/// # let exp = "loop_
+/// # _atom_site_label
+/// # _atom_site_Cartn_x
+/// # _atom_site_Cartn_y
+/// # _atom_site_Cartn_z
+/// # O1 4.154 5.699 3.026
+/// # C2 5.630 5.087 4.246
+///
+/// # ";
+/// # assert_eq!(out, exp);
+/// ```
+/// The script should print the following result:
+/// ```text
+/// loop_
+/// _atom_site_label
+/// _atom_site_Cartn_x
+/// _atom_site_Cartn_y
+/// _atom_site_Cartn_z
+/// O1 4.154 5.699 3.026
+/// C2 5.630 5.087 4.246
+/// ```
 pub struct CifLoop {
     column_names: Vec<String>,
     data_rows: Vec<Vec<String>>
@@ -51,13 +89,17 @@ pub struct CifLoop {
 
 impl CifLoop {
 
+    pub fn new(data_item_names: &[&str]) -> CifLoop {
+        let cols: Vec<_> = data_item_names.iter().map(|e| e.to_string()).collect();
+        return CifLoop{ column_names: cols, data_rows: vec![] };
+    }
     /// Add a new column to this loop block.
     ///
     /// Adding columns is possible only before any data is inserted; once any data has been inserted,
     /// this method will panic.
-    pub fn add_column(&mut self, column_name: String) {
+    pub fn add_column(&mut self, column_name: &str) {
         if self.data_rows.len() > 0 { panic!("Attempted column insertion for a loop-block that already contains some data!"); }
-        self.column_names.push(column_name);
+        self.column_names.push(column_name.to_string());
     }
 
     /// Add a new row of data.
@@ -79,6 +121,26 @@ impl CifLoop {
     /// Non-mutable iterator over names assigned to the columns of this loop.
     pub fn column_names(&self)  -> impl Iterator<Item = &String> { return self.column_names.iter(); }
 
+    /// Counts rows of data stored by this loop
+    pub fn count_rows(&self) -> usize { self.data_rows.len() }
+
+    /// Counts columns (i.e. data items) stored by this loop
+    pub fn count_columns(&self) -> usize { self.column_names.len() }
+
+    /// Index of a column which holds values for a data item given its name
+    pub fn column_index(&self, data_name: &str) -> Option<usize> {
+        self.column_names.iter().position(|r| r == data_name)
+    }
+
+    /// Provides access to a data item from a given row of this loop
+    ///
+    /// This method allows change a single entry of this data loop
+    pub fn entry_mut(&mut self, row_index: usize, data_name: &str) -> Option<&mut String> {
+        return match self.column_index(data_name) {
+            None => { None }
+            Some(idx) => { Some(&mut self.data_rows[row_index][idx]) }
+        };
+    }
 }
 
 impl Display for CifLoop {
@@ -227,7 +289,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
             } else if ls.starts_with('_') {
                 if is_loop_open {         // --- Add a key to the current loop block
                     if let Some(a_loop) = &mut current_loop {
-                        a_loop.add_column(ls.to_string());
+                        a_loop.add_column(ls);
                     } else {
                         panic!("Attempt to add a column with no loop open");
                     }
