@@ -7,6 +7,7 @@
 //! data_some_name
 //! _name_1            value_1
 //! _name_2            value_2
+//!
 //! loop_
 //! _first_column
 //! _second_column
@@ -16,7 +17,11 @@
 //! ```
 //!
 //! This example CIF entry contains a single block, named ``some_name`` (the mandatory ``data_``
-//! prefix is not a [art of that name). That block in turn holds two key-value entries and a loop block.
+//! prefix is not considered a part of that name). That block, loaded as a (``CifData``)[CifData]
+//! struct, holds two key-value entries:
+//! ``_name_1:value_1`` and ``_name_2:value_2``,  followed by a loop block.
+//! Data items stored as a loop are loaded into a (``CifLoop``)[CifLoop] struct.
+//!
 //! The official specification of the CIF format can be found on
 //! [this page](https://www.iucr.org/resources/cif/spec/version1.1/cifsyntax)
 //!
@@ -38,7 +43,7 @@ pub struct CifData {
     loops: Vec<CifLoop>
 }
 
-/// Represents a single `_loop` block of a CIF file.
+/// Represents a single `_loop` of a CIF file.
 pub struct CifLoop {
     column_names: Vec<String>,
     data_rows: Vec<Vec<String>>
@@ -73,6 +78,7 @@ impl CifLoop {
 
     /// Non-mutable iterator over names assigned to the columns of this loop.
     pub fn column_names(&self)  -> impl Iterator<Item = &String> { return self.column_names.iter(); }
+
 }
 
 impl Display for CifLoop {
@@ -179,7 +185,8 @@ impl Display for CifData {
 
 /// Reads a CIF-formatted file.
 ///
-/// Returns a vector of all data blocks found.
+/// This function opens a file as a Returns a ``BufRead``, calls (``read_cif_buffer()``)[read_cif_buffer()]
+/// and returs all the data blocks it found.
 pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
 
     let file = match File::open(input_fname) {
@@ -189,6 +196,9 @@ pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
     return Ok(read_cif_buffer(&mut BufReader::new(file)));
 }
 
+/// Reads a CIF-formatted data from a buffer.
+///
+/// Returns a vector of all data blocks found.
 pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
 
     let mut data_blocks: Vec<CifData> = vec![];
