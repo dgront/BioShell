@@ -1,10 +1,12 @@
 use std::env;
 use std::path::{Path};
+use std::time::Instant;
+use log::info;
 use rand::Rng;
 use bioshell_builder::{BuilderError, InternalCoordinatesDatabase, KinematicAtomTree};
 
-const N_RESIDUES: usize = 20;
-const N_MODELS: usize = 100;
+const N_RESIDUES: usize = 100;
+const N_MODELS: usize = 1000;
 fn random_phi_psi() -> (f64, f64) {
     let mut rng = rand::thread_rng();
     (rng.gen_range(-std::f64::consts::PI..std::f64::consts::PI), rng.gen_range(-std::f64::consts::PI..std::f64::consts::PI))
@@ -43,6 +45,7 @@ fn main() -> Result<(), BuilderError>{
     // --- modify Phi, Psi angles
     let phi_psi_gen = helical_phi_psi;
 
+    let start = Instant::now();
     for i_model in 0..N_MODELS {
         println!("MODEL    {:3}", i_model + 1);
         for i in 0..N_RESIDUES {
@@ -57,6 +60,7 @@ fn main() -> Result<(), BuilderError>{
         }
         println!("ENDMDL");
     }
+    info!("{} chains built in: {:?}", N_MODELS, start.elapsed());
 
     return Ok(());
 }
