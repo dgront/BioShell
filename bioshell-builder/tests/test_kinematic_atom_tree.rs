@@ -28,11 +28,11 @@ mod kinematic_tree_tests {
         assert_eq!(&(0usize..4), bb_builder.atoms_for_residue(0));
         assert_eq!(&(4usize..9), bb_builder.atoms_for_residue(1));
 
-        for iatom in 0..9 {
-            println!("ATOM   {:4} {} GLY {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C",
-                     iatom + 1, &bb_builder.atom_name(iatom),
-                     "A", 1, &atoms[iatom].x, &atoms[iatom].y, &atoms[iatom].z);
-        }
+        // for iatom in 0..9 {
+        //     println!("ATOM   {:4} {} GLY {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           C",
+        //              iatom + 1, &bb_builder.atom_name(iatom),
+        //              "A", 1, &atoms[iatom].x, &atoms[iatom].y, &atoms[iatom].z);
+        // }
     }
     const BB_: &str = "data_bb_
 loop_

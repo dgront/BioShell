@@ -1,5 +1,16 @@
-//! Efficient and clean library for processing biomacromolecular structures.
+//! Builds 3D biomacromolecular structures.
 //!
+//! ``bioshell-builder`` crate builds a bimacromolecular structure (a polypeptide or a nucleic acid chain)
+//! from its sequence.
+//!
+//! ```
+//! use bioshell_builder::InternalCoordinatesDatabase;
+//! let library = InternalCoordinatesDatabase::from_cif_directory("./data/")
+//!     .expect("Can't load residue definitions from a given folder: './data/'");
+//! # assert!(library.count_definitions() > 0);
+//!
+//! ```
+
 
 #![allow(clippy::needless_return)]
 pub mod nerf;

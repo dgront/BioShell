@@ -1,9 +1,22 @@
 use std::env;
 use std::path::{Path};
+use std::time::Instant;
+use log::info;
 use rand::Rng;
 use bioshell_builder::{BuilderError, InternalCoordinatesDatabase, KinematicAtomTree};
 
-const N_RESIDUES: usize = 10;
+const N_RESIDUES: usize = 100;
+const N_MODELS: usize = 1000;
+fn random_phi_psi() -> (f64, f64) {
+    let mut rng = rand::thread_rng();
+    (rng.gen_range(-std::f64::consts::PI..std::f64::consts::PI), rng.gen_range(-std::f64::consts::PI..std::f64::consts::PI))
+}
+
+fn helical_phi_psi() -> (f64, f64) {
+    let mut rng = rand::thread_rng();
+    let sd = 0.36_f64.to_radians();
+    (-64.0_f64.to_radians() + rng.gen_range(-sd..sd), -41.0_f64.to_radians() + rng.gen_range(-sd..sd))
+}
 
 fn main() -> Result<(), BuilderError>{
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
@@ -29,17 +42,25 @@ fn main() -> Result<(), BuilderError>{
         bb_builder.add_residue(&bb_def);
     }
     bb_builder.patch_residue(N_RESIDUES-1, &cterm_def)?;
-    // --- randomize Phi, Psi angles
-    let mut rng = rand::thread_rng();
-    for i in 0..N_RESIDUES {
-        let phi: f64 = rng.gen_range(-std::f64::consts::PI..std::f64::consts::PI);
-        let psi: f64 = rng.gen_range(-std::f64::consts::PI..std::f64::consts::PI);
-        bb_builder.set_named_dihedral(i, "Phi", phi)?;
-        bb_builder.set_named_dihedral(i, "Psi", psi)?;
-    }
+    // --- modify Phi, Psi angles
+    let phi_psi_gen = helical_phi_psi;
 
-    let atoms = bb_builder.build_atoms("A")?;
-    for a in atoms { println!("{}", a); }
+    let start = Instant::now();
+    for i_model in 0..N_MODELS {
+        println!("MODEL    {:3}", i_model + 1);
+        for i in 0..N_RESIDUES {
+            let (phi, psi) = phi_psi_gen();
+            bb_builder.set_named_dihedral(i, "Phi", phi)?;
+            bb_builder.set_named_dihedral(i, "Psi", psi)?;
+        }
+        let atoms = bb_builder.build_atoms("A")?;
+        for mut a in atoms {
+            a.res_name = "GLY".to_string();
+            println!("{}", a);
+        }
+        println!("ENDMDL");
+    }
+    info!("{} chains built in: {:?}", N_MODELS, start.elapsed());
 
     return Ok(());
 }

@@ -8,6 +8,15 @@ use crate::BuilderError;
 use crate::BuilderError::InternalAtomDefinitionError;
 
 /// Defines which residue an atom used by ``InternalAtomDefinition`` comes from
+///
+/// A RelaviveResidueLocator value is used to say whether an atom used to define internal coordinates
+/// comes from the very same residue as the one being reconstructed, or maybe from the previous residue.
+/// E.g. the definition of an N atom defined by the following line (in the CIF format, see
+/// [`InternalCoordinatesDatabase`](InternalCoordinatesDatabase) documentation for an example entry):
+/// ``` text
+/// "ALA prev ' N  ' prev ' CA ' prev ' C  ' this ' N  ' N  1.328685 114.0  180.0 Psi"
+/// ```
+/// is based on the `N` atom of the ``previous`` residue as well as on the `CA` and `C` atoms of this residue.
 #[derive(Clone)]
 pub enum RelaviveResidueLocator {
     /// the atom is located in the residue preceding the reconstructed one
@@ -21,13 +30,15 @@ pub enum RelaviveResidueLocator {
 impl TryFrom<&str> for RelaviveResidueLocator {
     type Error = BuilderError;
 
-    /// Returns a ``RelaviveResidueLocator`` for its string name
+    /// Returns a ``RelaviveResidueLocator`` for its string name.
     ///
+    /// Three spelling variants are allowed, as shown in the example below
     /// # Example
     /// ```rust
     /// use bioshell_builder::RelaviveResidueLocator;
     /// assert_eq!(RelaviveResidueLocator::try_from("Next").unwrap(), RelaviveResidueLocator::Next);
     /// assert_eq!(RelaviveResidueLocator::try_from("next").unwrap(), RelaviveResidueLocator::Next);
+    /// assert_eq!(RelaviveResidueLocator::try_from("NEXT").unwrap(), RelaviveResidueLocator::Next);
     /// ```
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
@@ -37,6 +48,9 @@ impl TryFrom<&str> for RelaviveResidueLocator {
             "this" => Ok(RelaviveResidueLocator::This),
             "next" => Ok(RelaviveResidueLocator::Next),
             "prev" => Ok(RelaviveResidueLocator::Previous),
+            "THIS" => Ok(RelaviveResidueLocator::This),
+            "NEXT" => Ok(RelaviveResidueLocator::Next),
+            "PREV" => Ok(RelaviveResidueLocator::Previous),
             _ => {Err(InternalAtomDefinitionError{ error: "Can't find a RelativeResidueLocator for the string".to_string() })
             }
         }
@@ -138,11 +152,12 @@ impl InternalAtomDefinition {
 
     /// Creates an [`InternalAtomDefinition`](InternalAtomDefinition) struct from a single line in the CIF format.
     ///
+    /// Note: data entries must be provided in the proper order!
     /// # Examples
     ///
     /// ```rust
     /// use bioshell_builder::InternalAtomDefinition;
-    /// let def = InternalAtomDefinition::from_cif_line("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  ' 1.328685 114.0  180.0 psi");
+    /// let def = InternalAtomDefinition::from_cif_line("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  '  N  1.328685 114.0  180.0 psi");
     /// let def_ok = def.ok().unwrap();
     /// assert_eq!(def_ok.a_name, " N  ".to_string());
     /// assert_eq!(def_ok.name, " N  ".to_string());
@@ -165,7 +180,7 @@ impl InternalAtomDefinition {
     /// let def = InternalAtomDefinition::from_strings(&tokens);
     /// let def_ok = def.ok().unwrap();
     /// assert_eq!(def_ok.a_name, " N  ".to_string());
-    /// assert_eq!(def_ok.name, " O  ".to_string());
+    /// assert_eq!(def_ok.name, " N  ".to_string());
     /// ```
     pub fn from_strings(tokens: &Vec<String>) -> Result<InternalAtomDefinition, BuilderError> {
         let res_name = &tokens[0];
@@ -268,11 +283,12 @@ impl InternalCoordinatesDatabase {
     /// Creates a new, empty database
     pub fn new() -> InternalCoordinatesDatabase { InternalCoordinatesDatabase{ map: Default::default() } }
 
-    pub fn from_cif_directory(path: &str) -> Result<InternalCoordinatesDatabase, io::Error> {
+    /// Creates a database and loads all entries defined by CIF files found in a given folder
+    pub fn from_cif_directory(folder: &str) -> Result<InternalCoordinatesDatabase, io::Error> {
 
         let mut out = InternalCoordinatesDatabase::new();
-        info!("Looking for CIF monomer files in: {:?}", &path);
-        for entry in fs::read_dir(path)? {
+        info!("Looking for CIF monomer files in: {:?}", &folder);
+        for entry in fs::read_dir(folder)? {
             let entry = entry?;
             let path = entry.path();
             if path.is_file() {
@@ -291,7 +307,7 @@ impl InternalCoordinatesDatabase {
         return Ok(out);
     }
 
-    /// Loads all residue definitions from a buffer of CIF-formatted data
+    /// Loads all residue definitions from a buffer providing CIF-formatted data
     pub fn load_from_cif_data(&mut self, data: Vec<CifData>) {
         for block in data {
             if let Some(loop_block) = block.loop_blocks().next() {
@@ -312,4 +328,7 @@ impl InternalCoordinatesDatabase {
     pub fn get_definition(&self, residue_name: &str) -> Option<&Vec<InternalAtomDefinition>> {
         return self.map.get(residue_name);
     }
+
+    /// Counts the residue type definitions know to this database
+    pub fn count_definitions(&self) -> usize { self.map.len() }
 }

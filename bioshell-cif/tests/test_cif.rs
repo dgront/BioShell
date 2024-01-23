@@ -19,6 +19,82 @@ fn read_cif_file() {
     // println!("{}",data_blocks[0]);
 }
 
+#[test]
+fn test_data_formatter() {
+    let cif_block = "data_ALA
+_chem_comp.id                                    ALA
+_chem_comp.name                                  ALANINE
+_chem_comp.type                                  'L-PEPTIDE LINKING'
+_chem_comp.pdbx_type                             ATOMP
+";
+    let expected = "data_ALA
+_chem_comp.id        ALA
+_chem_comp.name      ALANINE
+_chem_comp.pdbx_type ATOMP
+_chem_comp.type      'L-PEPTIDE LINKING'
+";
+    let mut reader = BufReader::new(cif_block.as_bytes());
+    let data_blocks = read_cif_buffer(&mut reader);
+    assert_eq!(data_blocks.len(), 1);
+    assert_eq!(data_blocks[0].name(),"ALA");
+    let out = format!("{}", data_blocks[0]);
+    let mut lines: Vec<&str> = out.lines().collect::<Vec<&str>>()[1..].to_vec();
+    lines.sort();
+    let out = lines.iter().fold(String::from("data_ALA"), |a, b| a + b + "\n");
+    assert_eq!(out, expected);
+}
+
+#[test]
+fn test_loop_formatter() {
+    let cif_block = "data_some_name
+    loop_
+    _first_column
+    _second_column
+    'value A' 1
+    'value B' 2
+    'value C' 2
+
+    ";
+    let expected = "loop_
+_first_column
+_second_column
+'value A' 1
+'value B' 2
+'value C' 2
+
+";
+    let mut reader = BufReader::new(cif_block.as_bytes());
+    let data_blocks = read_cif_buffer(&mut reader);
+    assert_eq!(data_blocks.len(), 1);
+    assert_eq!(data_blocks[0].name(),"some_name");
+    let a_loop = data_blocks[0].loop_blocks().next().unwrap();
+    let out = format!("{}", a_loop);
+
+    assert_eq!(out, expected);
+}
+
+#[test]
+fn build_cif_loop() {
+    let mut data_loop = CifLoop::new(&["_symmetry_equiv_pos_site_id"]);
+    assert_eq!(data_loop.count_columns(), 1);
+    data_loop.add_column("_symmetry_equiv_pos_as_xyz");
+    assert_eq!(data_loop.count_columns(), 2);
+    data_loop.add_data_row(vec!["1", "x,y,z"].iter().map(|&s| s.to_string()).collect());
+    data_loop.add_data_row(vec!["2", "x,y,z"].iter().map(|&s| s.to_string()).collect());
+    assert_eq!(data_loop.count_rows(), 2);
+    *data_loop.entry_mut(0, "_symmetry_equiv_pos_as_xyz").unwrap() = "-x,-y,-z".to_string();
+    println!("{}", data_loop);
+    let txt = format!("{}",data_loop);
+    let expected = "loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 -x,-y,-z
+2 x,y,z
+
+";
+    assert_eq!(txt, expected);
+}
+
 #[allow(non_upper_case_globals)]
 static ALA_CIF: &'static str = r#"data_ALA
 #

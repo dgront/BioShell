@@ -317,6 +317,7 @@ impl KinematicAtomTree {
             atoms[i].res_name = self.residue_name(res_seq).clone();
             atoms[i].chain_id = chain_id.to_string();
             atoms[i].name = self.atom_name(i).clone();
+            atoms[i].element = Some(self.elements[i].clone());
         }
 
         return Ok(atoms);
