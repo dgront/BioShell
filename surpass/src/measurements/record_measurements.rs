@@ -21,6 +21,11 @@ impl<T: std::fmt::Display, M: SystemMeasurement<T>> RecordMeasurements<T, M> {
         Ok(RecordMeasurements { fname: fname.to_string(), measurements, phantom: Default::default() })
     }
 
+    pub fn add_measurement(&mut self, measurement: M) -> &mut Self {
+        self.measurements.push(measurement);
+        return &mut self;
+    }
+
     pub fn observe(&self, system: &SurpassAlphaSystem) -> Result<(), Box<dyn Error>> {
         let mut stream = out_writer(&self.fname, true);
         for o in &self.measurements {
