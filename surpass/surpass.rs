@@ -1,14 +1,16 @@
 use std::env;
+use std::f64::consts::PI;
 use std::time::Instant;
 
 use clap::{Parser};
-use log::debug;
+use log::{debug, info};
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
-use surpass::{AutocorrelateVec3Measurements, CaContactEnergy, CMDisplacement, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, REndVector, SurpassAlphaSystem, SurpassEnergy, TailMove};
-use surpass::{ChainCM, RgSquared, RecordMeasurements, REndSquared};
+
+use surpass::{CaContactEnergy, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
+use surpass::measurements::{AutocorrelateVec3Measurements, CMDisplacement, REndVector, ChainCM, RgSquared, RecordMeasurements, REndSquared};
 #[allow(unused_imports)]                // NonBondedEnergyDebug can be un-commented to test non-bonded energy if the debug check fails
 use surpass::{NonBondedEnergyDebug};
 
@@ -38,6 +40,9 @@ struct Args {
     /// simulation box size in Angstroms
     #[clap(long, default_value = "10000.0", short='b')]
     box_size: f64,
+    /// density of the system given by volume
+    #[clap(long, short='d')]
+    density: Option<f64>,
     /// simulation box size in Angstroms
     #[clap(long)]
     seed: Option<u64>,
@@ -48,6 +53,12 @@ struct Args {
      */
 }
 
+fn box_length_for_density(density: f64, bead_diameter: f64) -> f64 {
+    let r = bead_diameter / 2.0;
+    let chain_volume = 4.0/3.0 * PI * r * r * r;
+    let box_vol = chain_volume / density;
+    return box_vol.sqrt();
+}
 
 fn main() {
 
@@ -66,7 +77,13 @@ fn main() {
     if let Some(seed) = args.seed {
         rnd = SmallRng::seed_from_u64(seed);
     }
-    let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], args.box_size, &mut rnd);
+    // --- box length: density settings has priority over explicit length
+    let box_width = match args.density {
+        None => { args.box_size }
+        Some(d) => { box_length_for_density(d, 3.5) }
+    };
+    info!("box width: {}",box_width);
+    let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], box_width, &mut rnd);
 
     // --- sampling: movers and proposals
     let hinge_mover: HingeMove<4> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
