@@ -21,8 +21,8 @@ struct Args {
     #[clap(short='a', long)]
     max_sequence: bool,
     /// compute sequence identity for all sequence pairs
-    #[clap(short='i', long)]
-    sequence_identity: bool,
+    #[clap(short='i', long, action)]
+    pairwise_identity: bool,
     /// compute sequence profile
     #[clap(short='p', long)]
     profile: bool,
@@ -44,6 +44,7 @@ pub fn main() {
     let args = Args::parse();
 
     let mut msa: MSA = MSA::default();
+    // ---------- Read input MSA in the CLW (clustal-w) format
     if let Some(fname) = args.in_clw {
         let mut reader = open_file(&fname);
         let seq = StockholmIterator::from_stockholm_reader(&mut reader);
@@ -52,14 +53,14 @@ pub fn main() {
             Err(error) => panic!("Incorrect sequence(s) found in MSA: {:?}", error),
         };
     }
-    // ---------- Check is user wants to retrieve sequences by IDs
+    // ---------- Create the most probable sequence and print sequence identity between that sequence and any in the input set
     if args.max_sequence {
         let profile = SequenceProfile::new(ProfileColumnOrder::aa_standard_gapped(), &msa);
         let s = profile.most_probable_sequence();
         for si in msa.sequences() {
             let idnt = count_identical(&s, si).unwrap();
             let lenu =  len_ungapped(si);
-            println!("{} {:4} / {:4} = {:.2}%", si.id(), idnt, lenu, idnt as f64 / lenu as f64);
+            println!("{} {:4} / {:4} = {:.2}%", si.id(), idnt, lenu, idnt as f64 / lenu as f64 * 100.0);
         }
     }
 
@@ -68,6 +69,33 @@ pub fn main() {
         println!("{}",SequenceProfile::new(ProfileColumnOrder::aa_standard_gapped(), &msa));
     }
 
+    if args.pairwise_identity {
+        let max_seq_name_len: usize = msa.sequences().iter().map(|p| p.description().len()).max().unwrap_or(0).min(70);
+        println!(
+            "#{:^width$} {:^width$} {:^4} {:^4} {:^4} {:^6}",
+            "i_seq_id", "j_seq_id", "idnt", "ilen", "jlen", "perc",
+            width = max_seq_name_len
+        );
+        let mut min_id = 100.0_f64;
+        let mut max_id = 0.0_f64;
+        for si in msa.sequences() {
+            let leni = len_ungapped(si);
+            for sj in msa.sequences() {
+                if si == sj { break; }
+                let idnt = count_identical(&sj, si).unwrap();
+                let lenj = len_ungapped(sj);
+                let lenu = leni.min(lenj);
+                let seq_id = idnt as f64 / lenu as f64 * 100.0;
+                min_id = min_id.min(seq_id);
+                max_id = max_id.max(seq_id);
+                println!("{:width$} {:width$} {:4} {:4} {:4}  {:6.2}%", si.id(), sj.id(),
+                         idnt, leni, lenj, seq_id, width = max_seq_name_len);
+            }
+        }
+        println!("# min, max: {} {}", min_id, max_id);
+    }
+
+    // ---------- Convert the input MSA to FASTA format
     if let Some(fname) = args.out_fasta {
         let mut writer = out_writer(&fname, false);
         // ---------- Filter to print only selected sequences from the MSA
