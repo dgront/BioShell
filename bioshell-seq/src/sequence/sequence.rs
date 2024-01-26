@@ -7,7 +7,7 @@ use std::hash::{Hash, Hasher};
 use crate::errors::SequenceError;
 use crate::msa::MSA;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq)]
 /// Amino acid / nucleic sequence.
 ///
 /// In `Rust` a char data type takes four bytes, which is not needed for biological alphabets. Therefore
