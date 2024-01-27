@@ -258,7 +258,7 @@ impl<R: BufRead> StockholmIterator<R> {
     ///
     /// Currently the function reads only the sequences; their annotations are not loaded
     ///
-    /// For the detailed description of the format, see: https://sonnhammer.sbc.su.se/Stockholm.html
+    /// For the detailed description of the format, see: `<https://sonnhammer.sbc.su.se/Stockholm.html>`
     pub fn from_stockholm_reader(reader: &mut R) -> Vec<Sequence> {
 
         let mut out:Vec<Sequence> = Vec::new();
