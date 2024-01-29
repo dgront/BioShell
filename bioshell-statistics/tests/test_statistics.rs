@@ -1,9 +1,10 @@
 use rand_distr::{Normal, Distribution as RndDistribution};
 use rand::rngs::SmallRng;
-use rand::SeedableRng;
 use nalgebra::{DMatrix, DVector};
 use std::string::String;
 use std::fmt::Write;
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 
 use bioshell_statistics::{Distribution, Estimable, Histogram, MultiNormalDistribution, NormalDistribution, OnlineMultivariateStatistics, QuantileP2};
 
@@ -19,6 +20,30 @@ fn create_histogram() {
     assert_eq!(h.sum(), 6.0);
 }
 
+#[test]
+fn normal_histogram() {
+    let mut rng: StdRng = SeedableRng::from_seed([42; 32]);
+    let normal_distribution = Normal::new(0.0, 1.0).unwrap();
+    let mut h = Histogram::by_bin_width(0.2);
+    (0..1000).map(|_| normal_distribution.sample(&mut rng)).for_each(|x| h.insert(x));
+    let values_3sigma = h.to_vector(-3.0, 3.0);
+    assert_eq!(h.which_bin(-3.0), -15);
+    assert_eq!(h.which_bin(3.0), 15);
+    assert_eq!(values_3sigma.len(), 31);
+    let tallest = h.tallest().unwrap();
+    assert_eq!(tallest, -3);
+    assert_eq!(h.get(-3), 89.0);
+    // println!("{:?}",values_3sigma);
+}
+
+#[test]
+fn draw_histogram() {
+    let mut rng: StdRng = SeedableRng::from_seed([42; 32]);
+    let normal_distribution = Normal::new(0.0, 1.0).unwrap();
+    let mut h = Histogram::by_bin_width(0.05);
+    (0..1000000).map(|_| normal_distribution.sample(&mut rng)).for_each(|x| h.insert(x));
+    println!("{}", h.draw_horizonaly(-2.5, 2.5, 10));
+}
 /// Check if MultiNormalDistribution correctly evaluates its probability
 #[test]
 #[allow(non_snake_case)]

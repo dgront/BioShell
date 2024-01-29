@@ -55,6 +55,15 @@ impl Histogram {
     /// Says the index of a bin a given value felt into
     pub fn which_bin(&self, val:f64) -> i32 { (val / self.bin_width).floor() as i32 }
 
+    /// Returns the index of the tallest bin
+    ///
+    /// The maximum value of this histogram may be read by [`get()`] method
+    pub fn tallest(&self) -> Option<i32> {
+        self.data.iter()
+            .max_by(|(_, &value1), (_, &value2)| value1.partial_cmp(&value2).unwrap_or(std::cmp::Ordering::Equal))
+            .map(|(&key, _)| key)
+    }
+
     /// Left-hand side range of a given bin
     pub fn bin_min(&self, bin_id: i32) -> f64 { bin_id as f64 * self.bin_width }
 
@@ -85,6 +94,96 @@ impl Histogram {
         }
 
         return (self.bin_min(max_i), self.bin_max(max_i), max_v);
+    }
+
+    /// Returns observations of this histogram as a vector
+    ///
+    /// # Example
+    /// ```
+    /// # use rand::rngs::StdRng;
+    /// # use rand::{Rng, SeedableRng};
+    /// # use rand_distr::Normal;
+    /// # use rand_distr::Distribution;
+    /// use bioshell_statistics::Histogram;
+    /// let mut rng: StdRng = SeedableRng::from_seed([42; 32]);
+    /// let mut normal_distribution = Normal::new(0.0, 1.0).unwrap();
+    /// let mut h = Histogram::by_bin_width(0.2);
+    /// (0..100).map(|_| normal_distribution.sample(&mut rng)).for_each(|x| h.insert(x));
+    /// let values_3sigma = h.to_vector(-3.0, 3.0);
+    /// # assert_eq!(h.which_bin(-3.0), -15);
+    /// # assert_eq!(h.which_bin(3.0), 15);
+    /// assert_eq!(values_3sigma.len(), 31);
+    /// ```
+    pub fn to_vector(&self, min_val: f64, max_val: f64) -> Vec<f64> {
+        let min_key = self.which_bin(min_val);
+        let max_key = self.which_bin(max_val);
+            (min_key..=max_key)
+                .map(|key| self.data.get(&key).cloned().unwrap_or(0.0))
+                .collect()
+    }
+
+    /// Displays this histogram as an asci-art drawing
+    /// ```
+    /// # use rand::distributions::Distribution;
+    /// # use rand::rngs::StdRng;
+    /// # use rand::SeedableRng;
+    /// # use rand_distr::Normal;
+    /// use bioshell_statistics::Histogram;
+    ///
+    /// let expected_result =
+    /// ".................................................#...................................................
+    /// .........................................#################...........................................
+    /// .....................................##########################......................................
+    /// .................................##################################..................................
+    /// ..............................########################################...............................
+    /// ..........................###############################################............................
+    /// .......................######################################################........................
+    /// ...................##############################################################....................
+    /// ..............########################################################################...............
+    /// .......######################################################################################........
+    /// ";
+    /// let mut rng: StdRng = SeedableRng::from_seed([42; 32]);
+    /// let normal_distribution = Normal::new(0.0, 1.0).unwrap();
+    /// let mut h = Histogram::by_bin_width(0.05);
+    /// (0..1000000).map(|_| normal_distribution.sample(&mut rng)).for_each(|x| h.insert(x));
+    /// let actual = format!("{}", h.draw_horizonaly(-2.5, 2.5, 10));
+    /// assert_eq!(actual, expected_result);
+    /// ```
+    pub fn draw_horizonaly<'a>(&'a self, x_from: f64, x_to: f64, max_height: usize) -> impl fmt::Display + 'a {
+        struct Drawing<'a>(&'a Histogram, usize, f64, f64);
+        impl<'a> fmt::Display for Drawing<'a> {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                // Find the maximum bin in the histogram
+                let tallest = self.0.tallest().unwrap();
+                let max_value = self.0.get(tallest);
+
+                // Calculate the scaling factor for the bars
+                let scale_factor = self.1 as f64 / max_value;
+                // --- convert histogram to array
+                let data = self.0.to_vector(self.2, self.3);
+                // Iterate over rows (height) in reverse order to draw vertically
+                for h in (0..self.1).rev() {
+                    // Iterate over values in the data array
+                    for value in &data {
+                        // Calculate the height of the bar for the current value
+                        let bar_height = (value * scale_factor) as usize;
+
+                        // Print '#' if the current height matches the bar height
+                        if bar_height > h {
+                            write!(f, "#")?;
+                        } else {
+                            write!(f, ".")?;
+                        }
+                    }
+
+                    // Move to the next line for the next row
+                    writeln!(f)?;
+
+                }
+                Ok(())
+            }
+        }
+        Drawing(self, max_height, x_from, x_to)
     }
 }
 
