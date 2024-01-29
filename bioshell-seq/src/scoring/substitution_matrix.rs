@@ -74,7 +74,7 @@ impl SubstitutionMatrix {
     /// Provides the score for a given pair of amino acid indexes according to this [SubstitutionMatrix].
     ///
     /// Amino acid indexes may be obtained by a [aa_index()](SubstitutionMatrix::aa_index()) method call
-    pub fn score_by_index(&self, aa_index_i: u8, aa_index_j: u8) -> i32{
+    pub fn score_by_index(&self, aa_index_i: u8, aa_index_j: u8) -> i32 {
         self.score[aa_index_i as usize][aa_index_j as usize]
     }
 

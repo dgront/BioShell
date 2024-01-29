@@ -16,6 +16,7 @@ mod errors;
 pub mod chemical;
 pub mod sequence;
 pub mod scoring;
+pub mod alignment;
 pub mod msa;
 
 pub use errors::{SequenceError, ScoringError};

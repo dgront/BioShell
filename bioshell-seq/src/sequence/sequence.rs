@@ -112,6 +112,9 @@ impl Sequence {
     /// Returns a residue (e.g. an amino acid or a nucleotide) u8 code at a given position in this `Sequence`
     pub fn u8(&self, pos:usize) -> u8 { self.seq[pos] }
 
+    /// Provides ``u8`` representation of this sequence
+    pub fn as_u8(&self) -> &Vec<u8> { &self.seq }
+
     /// Creates a string representing this sequence.
     ///
     /// The returned string contains only the sequence itself without description.

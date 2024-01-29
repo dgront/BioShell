@@ -67,6 +67,8 @@
 //! assert_eq!(blosum62.score_by_index(trp_idx, ala_idx), -3);
 //! ```
 mod substitution_matrix;
+mod similarity_score;
 
 pub use substitution_matrix::*;
+pub use similarity_score::*;
 
