@@ -122,6 +122,44 @@ impl Histogram {
                 .collect()
     }
 
+    /// Returns the index of a bin that holds the smallest value observed by this histogram.
+    ///
+    /// ```
+    /// use bioshell_statistics::Histogram;
+    /// let mut h = Histogram::by_bin_width(0.5);
+    /// h.insert(1.45);
+    /// h.insert(-1.1);
+    /// assert_eq!(h.min().unwrap(), -3);
+    /// assert_eq!(h.max().unwrap(), 2);
+    /// ```
+   pub fn min(&self) -> Option<i32> {
+        self.data.keys().cloned().fold(None, |min, val| {
+            Some(match min {
+                Some(current_min) => val.min(current_min),
+                None => val,
+            })
+        })
+    }
+
+    /// Returns the index of a bin that holds the largest value observed by this histogram.
+    ///
+    /// ```
+    /// use bioshell_statistics::Histogram;
+    /// let mut h = Histogram::by_bin_width(0.5);
+    /// h.insert(1.45);
+    /// h.insert(-1.1);
+    /// assert_eq!(h.min().unwrap(), -3);
+    /// assert_eq!(h.max().unwrap(), 2);
+    /// ```
+    pub fn max(&self) -> Option<i32> {
+        self.data.keys().cloned().fold(None, |max, val| {
+            Some(match max {
+                Some(current_max) => val.max(current_max),
+                None => val,
+            })
+        })
+    }
+
     /// Displays this histogram as an asci-art drawing
     /// ```
     /// # use rand::distributions::Distribution;
@@ -131,17 +169,18 @@ impl Histogram {
     /// use bioshell_statistics::Histogram;
     ///
     /// let expected_result =
-    /// ".................................................#...................................................
-    /// .........................................#################...........................................
-    /// .....................................##########################......................................
-    /// .................................##################################..................................
-    /// ..............................########################################...............................
-    /// ..........................###############################################............................
-    /// .......................######################################################........................
-    /// ...................##############################################################....................
-    /// ..............########################################################################...............
-    /// .......######################################################################################........
+    /// "18015 .................................................#...................................................
+    /// 16013 .........................................#################...........................................
+    /// 14011 .....................................##########################......................................
+    /// 12010 .................................##################################..................................
+    /// 10008 ..............................########################################...............................
+    ///  8006 ..........................###############################################............................
+    ///  6005 .......................######################################################........................
+    ///  4003 ...................##############################################################....................
+    ///  2001 ..............########################################################################...............
+    ///     0 .......######################################################################################........
     /// ";
+    ///
     /// let mut rng: StdRng = SeedableRng::from_seed([42; 32]);
     /// let normal_distribution = Normal::new(0.0, 1.0).unwrap();
     /// let mut h = Histogram::by_bin_width(0.05);
@@ -153,32 +192,30 @@ impl Histogram {
         struct Drawing<'a>(&'a Histogram, usize, f64, f64);
         impl<'a> fmt::Display for Drawing<'a> {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                // Find the maximum bin in the histogram
+                // --- Find the maximum bin in the histogram
                 let tallest = self.0.tallest().unwrap();
                 let max_value = self.0.get(tallest);
-
-                // Calculate the scaling factor for the bars
+                let n_digits = (max_value as usize).to_string().len();
+                // --- Calculate the scaling factor for the bars
                 let scale_factor = self.1 as f64 / max_value;
                 // --- convert histogram to array
                 let data = self.0.to_vector(self.2, self.3);
-                // Iterate over rows (height) in reverse order to draw vertically
+                // --- Iterate over rows (height) in reverse order to draw vertically
                 for h in (0..self.1).rev() {
-                    // Iterate over values in the data array
+                    write!(f, "{:width$} ", (h as f64 / scale_factor) as usize, width = n_digits)?;
+                    // --- Iterate over values in the data array
                     for value in &data {
-                        // Calculate the height of the bar for the current value
+                        // --- Calculate the height of the bar for the current value
                         let bar_height = (value * scale_factor) as usize;
-
-                        // Print '#' if the current height matches the bar height
+                        // --- Print '#' if the current height matches the bar height
                         if bar_height > h {
                             write!(f, "#")?;
                         } else {
                             write!(f, ".")?;
                         }
                     }
-
-                    // Move to the next line for the next row
+                    // --- Move to the next line for the next row
                     writeln!(f)?;
-
                 }
                 Ok(())
             }
