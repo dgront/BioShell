@@ -489,6 +489,18 @@ pub fn len_ungapped(sequence: &Sequence) -> usize {
     sequence.seq.iter().filter(|&c| *c != b'-' && *c != b'_').count()
 }
 
+/// Length of a sequence string excluding gaps
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, len_ungapped_str};
+/// assert_eq!(len_ungapped_str("P-RF"), 3);
+/// assert_eq!(len_ungapped_str("__PERF_"), 4);
+/// ```
+pub fn len_ungapped_str(sequence: &str) -> usize {
+    sequence.chars().filter(|&c| c != '-' && c != '_').count()
+}
+
 /// Removes gaps from a [`Sequence`](Sequence)
 ///
 /// # Examples

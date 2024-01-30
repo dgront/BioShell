@@ -1,25 +1,22 @@
 use std::collections::HashMap;
 use std::env;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display};
 use clap::{Parser};
 use log::{info};
 
-use bioshell_seq::sequence::{Sequence, FastaIterator};
+use bioshell_seq::sequence::{Sequence, FastaIterator, count_identical, len_ungapped};
 use bioshell_io::open_file;
-use bioshell_seq::alignment::{GlobalAligner, aligned_sequences, PrintAsPairwise, AlignmentReporter, SimilarityReport};
-use bioshell_seq::scoring::{SequenceSimilarityScore, SubstitutionMatrixList};
+use bioshell_seq::alignment::{GlobalAligner, aligned_sequences, AlignmentReporter, AlignmentStatistics};
+use bioshell_seq::scoring::{SequenceSimilarityScore, SubstitutionMatrix, SubstitutionMatrixList};
 use bioshell_statistics::Histogram;
 
 #[derive(Parser, Debug)]
-#[clap(name = "needleman_wunsh")]
+#[clap(name = "analyse_family")]
 #[clap(about = "Calculates global sequence alignment of amino acid sequences", long_about = None)]
 struct Args {
     /// query sequence(s): either a FASTA string or a name of a file in FASTA format
     #[clap(long, short='q')]
     query: String,
-    /// template sequence(s): either a FASTA string or a name of a file in FASTA format
-    #[clap(long, short='t')]
-    template: Option<String>,
     /// gap opening penalty
     #[clap(long, default_value = "-10", short='o')]
     open: i32,
@@ -67,24 +64,51 @@ fn align_all_pairs<R: AlignmentReporter>(queries: &Vec<Sequence>, templates: &Ve
     }
 }
 
+struct SimilarityByQuery {
+    key_length: usize,
+    histogram_bin_width: f64,
+    similarities: HashMap<String, Histogram>
+}
+
+impl SimilarityByQuery {
+    pub fn new(key_length: usize, histogram_bin_width: f64) -> SimilarityByQuery {
+        SimilarityByQuery{ key_length: key_length, histogram_bin_width, similarities: Default::default() }
+    }
+}
+
+impl AlignmentReporter for SimilarityByQuery {
+    fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
+        let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, 32);
+
+        if !self.similarities.contains_key(&stats.query_header) {
+            self.similarities.insert(stats.query_header.clone(), Histogram::by_bin_width(self.histogram_bin_width));
+        } else {
+            let h = self.similarities.get_mut(&stats.query_header).unwrap();
+            h.insert(stats.percent_identity());
+        }
+    }
+}
+
+impl Drop for SimilarityByQuery {
+    fn drop(&mut self) {
+        for (key, histogram) in &self.similarities {
+            println!("{} min: {}, max: {}, mode: {}\n{}", key,
+                     histogram.min().unwrap() as f64 * self.histogram_bin_width,
+                     histogram.max().unwrap() as f64 * self.histogram_bin_width,
+                     histogram.tallest().unwrap() as f64 * self.histogram_bin_width,
+                     histogram.draw_horizonaly(0.0, 100.0, 10));
+        }
+    }
+}
+
 
 pub fn main() {
-
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     env_logger::init();
     let args = Args::parse();
 
     let queries = get_sequences(&args.query, "query");
 
-    if let Some(tmpl) = args.template {
-        let templates = get_sequences(&tmpl, "template");
-        align_all_pairs(&queries, &templates, SubstitutionMatrixList::BLOSUM62,
-            args.open, args.extend, false, &mut PrintAsPairwise::new(80));
-
-    } else {
-        // let mut reporter = PrintAsPairwise::new(80);
-        let mut reporter = SimilarityReport;
-        align_all_pairs(&queries, &queries, SubstitutionMatrixList::BLOSUM62,
-            args.open, args.extend, true, &mut reporter);
-    }
+    align_all_pairs(&queries, &queries, SubstitutionMatrixList::BLOSUM62,
+                    args.open, args.extend, true, &mut SimilarityByQuery::new(32, 2.5));
 }

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
-use crate::alignment::{Aligner, AlignmentPath, AlignmentStep};
-use crate::scoring::{SimilarityScore, SubstitutionMatrix};
+use crate::alignment::{AlignmentPath, AlignmentStep};
+use crate::scoring::{SimilarityScore};
 
 macro_rules! max {
     ($x: expr) => ($x);
@@ -22,7 +22,7 @@ macro_rules! max {
 /// let blosum62 = SubstitutionMatrix::load(SubstitutionMatrixList::BLOSUM62);
 /// let scoring = SequenceSimilarityScore::for_strings("AKLY", "AGKIY", blosum62);
 /// let mut aligner = GlobalAligner::new(5);
-/// aligner.align(scoring, -10, -2);
+/// aligner.align(&scoring, -10, -2);
 /// println!("{}", aligner.recent_score());
 /// ```
 pub struct GlobalAligner<T:SimilarityScore> {
@@ -134,7 +134,7 @@ impl<T:SimilarityScore> GlobalAligner<T> {
             }
             if a & 1 != 0 {
                 let n_gaps = self.E_arrows[i][j];
-                for kk in 0..n_gaps {
+                for _kk in 0..n_gaps {
                     cigar.push(AlignmentStep::Horizontal);
                     j -= 1;
                 }
@@ -142,7 +142,7 @@ impl<T:SimilarityScore> GlobalAligner<T> {
             }
             if a & 4 != 0 {
                 let n_gaps = self.F_arrows[i][j];
-                for kk in 0..n_gaps {
+                for _kk in 0..n_gaps {
                     cigar.push(AlignmentStep::Vertical);
                     i -= 1;
                 }
