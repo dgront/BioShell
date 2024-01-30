@@ -10,7 +10,7 @@ struct GlobalAlignmentTestCase {
     score: i32
 }
 
-static global_cases: [GlobalAlignmentTestCase; 2] = [
+static GLOBAL_CASES: [GlobalAlignmentTestCase; 2] = [
     GlobalAlignmentTestCase {
         query: "AR", template: "ARK",
         aligned_query: "AR-", aligned_template: "ARK",
@@ -28,10 +28,10 @@ fn test_global_aligner() {
 
     let max_seq_len = 10;
     let mut aligner = GlobalAligner::new(max_seq_len);
-    for case in &global_cases {
+    for case in &GLOBAL_CASES {
         let blosum62 = SubstitutionMatrix::load(SubstitutionMatrixList::BLOSUM62);
         let scoring = SequenceSimilarityScore::for_strings(&case.query, &case.template, blosum62);
-        let score = aligner.align(scoring, -10, -2);
+        let score = aligner.align(&scoring, -10, -2);
         let path = aligner.backtrace();
         let (ali_q, ali_t) = aligned_strings(&path, &case.query, &case.template, '-');
         assert_eq!(score, case.score);
@@ -42,7 +42,7 @@ fn test_global_aligner() {
 
         let blosum62 = SubstitutionMatrix::load(SubstitutionMatrixList::BLOSUM62);
         let scoring = SequenceSimilarityScore::for_strings(&case.template,&case.query,  blosum62);
-        let score = aligner.align(scoring, -10, -2);
+        let score = aligner.align(&scoring, -10, -2);
         let path = aligner.backtrace();
         let (ali_q, ali_t) = aligned_strings(&path, &case.template, &case.query, '-');
         assert_eq!(score, case.score);

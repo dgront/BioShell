@@ -5,8 +5,8 @@
 //!
 //! # Global sequence alignment
 mod global;
-mod aligner;
+mod alignment_path;
 
 pub use global::*;
-pub use aligner::*;
+pub use alignment_path::*;
 
