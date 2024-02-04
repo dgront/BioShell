@@ -1,7 +1,9 @@
 use std::fmt::{Display, Formatter};
 use crate::sequence::{count_identical, len_ungapped, Sequence};
 
-/// Provides staple statistics for a sequence alignment
+/// Provides staple statistics for a sequence alignment.
+///
+/// The struct is created based on two [Sequence]s that are assumed to be aligned.
 pub struct  AlignmentStatistics {
     /// identifies the query sequence
     pub query_header: String,

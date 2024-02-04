@@ -25,6 +25,7 @@ macro_rules! max {
 /// aligner.align(&scoring, -10, -2);
 /// println!("{}", aligner.recent_score());
 /// ```
+#[allow(non_snake_case)]
 pub struct GlobalAligner<T:SimilarityScore> {
     recent_score: i32,
     max_length: usize,

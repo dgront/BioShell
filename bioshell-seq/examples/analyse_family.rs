@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 use std::env;
-use std::fmt::{Display};
 use clap::{Parser};
 use log::{info};
 
-use bioshell_seq::sequence::{Sequence, FastaIterator, count_identical, len_ungapped};
+use bioshell_seq::sequence::{Sequence, FastaIterator};
 use bioshell_io::open_file;
 use bioshell_seq::alignment::{GlobalAligner, aligned_sequences, AlignmentReporter, AlignmentStatistics};
-use bioshell_seq::scoring::{SequenceSimilarityScore, SubstitutionMatrix, SubstitutionMatrixList};
+use bioshell_seq::scoring::{SequenceSimilarityScore, SubstitutionMatrixList};
 use bioshell_statistics::Histogram;
 
 #[derive(Parser, Debug)]
@@ -33,9 +32,8 @@ struct Args {
 /// as the only element of a vector.
 fn get_sequences(seq_or_fname: &String, seq_name: &str) -> Vec<Sequence> {
     if seq_or_fname.contains(".") {
-        let mut out : Vec<Sequence> = vec![];
         let reader = open_file(&seq_or_fname);
-        let mut seq_iter = FastaIterator::new(reader);
+        let seq_iter = FastaIterator::new(reader);
         return  seq_iter.collect();
     }
 
@@ -64,19 +62,18 @@ fn align_all_pairs<R: AlignmentReporter>(queries: &Vec<Sequence>, templates: &Ve
     }
 }
 
-struct SimilarityByQuery {
-    key_length: usize,
+struct SimilarityHistogramByQuery {
     histogram_bin_width: f64,
     similarities: HashMap<String, Histogram>
 }
 
-impl SimilarityByQuery {
-    pub fn new(key_length: usize, histogram_bin_width: f64) -> SimilarityByQuery {
-        SimilarityByQuery{ key_length: key_length, histogram_bin_width, similarities: Default::default() }
+impl SimilarityHistogramByQuery {
+    pub fn new(histogram_bin_width: f64) -> SimilarityHistogramByQuery {
+        SimilarityHistogramByQuery { histogram_bin_width, similarities: Default::default() }
     }
 }
 
-impl AlignmentReporter for SimilarityByQuery {
+impl AlignmentReporter for SimilarityHistogramByQuery {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
         let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, 32);
 
@@ -89,7 +86,7 @@ impl AlignmentReporter for SimilarityByQuery {
     }
 }
 
-impl Drop for SimilarityByQuery {
+impl Drop for SimilarityHistogramByQuery {
     fn drop(&mut self) {
         for (key, histogram) in &self.similarities {
             println!("{} min: {}, max: {}, mode: {}\n{}", key,
@@ -110,5 +107,5 @@ pub fn main() {
     let queries = get_sequences(&args.query, "query");
 
     align_all_pairs(&queries, &queries, SubstitutionMatrixList::BLOSUM62,
-                    args.open, args.extend, true, &mut SimilarityByQuery::new(32, 2.5));
+                    args.open, args.extend, true, &mut SimilarityHistogramByQuery::new(2.5));
 }

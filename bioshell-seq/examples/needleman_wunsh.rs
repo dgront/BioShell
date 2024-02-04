@@ -1,6 +1,5 @@
-use std::collections::HashMap;
 use std::env;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display};
 use clap::{Parser};
 use log::{info};
 
@@ -8,7 +7,6 @@ use bioshell_seq::sequence::{Sequence, FastaIterator};
 use bioshell_io::open_file;
 use bioshell_seq::alignment::{GlobalAligner, aligned_sequences, PrintAsPairwise, AlignmentReporter, SimilarityReport};
 use bioshell_seq::scoring::{SequenceSimilarityScore, SubstitutionMatrixList};
-use bioshell_statistics::Histogram;
 
 #[derive(Parser, Debug)]
 #[clap(name = "needleman_wunsh")]
@@ -36,10 +34,9 @@ struct Args {
 /// as the only element of a vector.
 fn get_sequences(seq_or_fname: &String, seq_name: &str) -> Vec<Sequence> {
     if seq_or_fname.contains(".") {
-        let mut out : Vec<Sequence> = vec![];
         let reader = open_file(&seq_or_fname);
-        let mut seq_iter = FastaIterator::new(reader);
-        return  seq_iter.collect();
+        let seq_iter = FastaIterator::new(reader);
+        return seq_iter.collect();
     }
 
     return vec![Sequence::from_str(seq_name, seq_or_fname)];
