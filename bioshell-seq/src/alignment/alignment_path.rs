@@ -168,6 +168,9 @@ pub fn aligned_strings(alignment: &AlignmentPath, query: &str, template: &str, g
 
 /// Expands two sequences into a sequence alignment based on an [AlignmentPath] object.
 ///
+/// For instance, when the two (unaligned) sequences are ``"ALIV"`` and ``"ALRIV"`` and the alignment
+/// path is ``"**-**"``, the expanded (aligned sequences) become ``"AL-IV"`` and ``"ALRIV"``
+///
 /// # Arguments
 ///
 ///  * `alignment` - [AlignmentPath] object is an abstract definition of an alignment
