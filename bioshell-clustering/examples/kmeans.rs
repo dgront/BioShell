@@ -2,10 +2,10 @@ use std::env;
 use std::iter::zip;
 use clap::{Parser};
 use log::{info};
+use bioshell_clustering::euclidean_distance_squared;
 
 use bioshell_clustering::kmeans::KMeans;
 use bioshell_io::{read_tsv};
-use bioshell_numerical::distance::euclidean_distance_squared;
 
 
 #[derive(Parser, Debug)]

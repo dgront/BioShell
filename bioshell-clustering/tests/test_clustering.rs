@@ -5,8 +5,7 @@ use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use nalgebra::{DMatrix, DVector};
 
-use bioshell_numerical::distance::euclidean_distance_squared;
-use bioshell_clustering::{NeighborsOf, CartesianPoints};
+use bioshell_clustering::{NeighborsOf, CartesianPoints, euclidean_distance_squared};
 use bioshell_clustering::optics::{Optics};
 use bioshell_clustering::em::{expectation_maximization, log_likelihood};
 use bioshell_clustering::kmeans::KMeans;
