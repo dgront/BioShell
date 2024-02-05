@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use std::env;
+use std::io::Write;
 use clap::{Parser};
 use log::{info};
 
 use bioshell_seq::sequence::{Sequence, FastaIterator};
-use bioshell_io::open_file;
+use bioshell_io::{open_file, out_writer};
 use bioshell_seq::alignment::{AlignmentReporter, AlignmentStatistics, align_all_pairs, PrintAsPairwise, SimilarityReport};
 use bioshell_seq::scoring::{SubstitutionMatrixList};
 use bioshell_statistics::Histogram;
@@ -26,8 +27,8 @@ struct Args {
     #[clap(long, action)]
     pairwise: bool,
     /// print a histogram of sequence identity values for each sequence
-    #[clap(long, action)]
-    histograms: bool,
+    #[clap(long)]
+    histograms: Option<String>,
     /// print sequence identity report (default)
     #[clap(long, action)]
     report: bool,
@@ -53,12 +54,15 @@ fn get_sequences(seq_or_fname: &String, seq_name: &str) -> Vec<Sequence> {
 
 struct SimilarityHistogramByQuery {
     histogram_bin_width: f64,
+    output_file_name: String,
     similarities: HashMap<String, Histogram>
 }
 
 impl SimilarityHistogramByQuery {
-    pub fn new(histogram_bin_width: f64) -> SimilarityHistogramByQuery {
-        SimilarityHistogramByQuery { histogram_bin_width, similarities: Default::default() }
+    pub fn new(histogram_bin_width: f64, output_file_name: &str) -> SimilarityHistogramByQuery {
+        SimilarityHistogramByQuery { histogram_bin_width, output_file_name: output_file_name.to_string(),
+            similarities: Default::default()
+        }
     }
 }
 
@@ -77,12 +81,13 @@ impl AlignmentReporter for SimilarityHistogramByQuery {
 
 impl Drop for SimilarityHistogramByQuery {
     fn drop(&mut self) {
+        let mut writer = out_writer(&self.output_file_name, false);
         for (key, histogram) in &self.similarities {
-            println!("{} min: {}, max: {}, mode: {}\n{}", key,
-                     histogram.min().unwrap() as f64 * self.histogram_bin_width,
-                     histogram.max().unwrap() as f64 * self.histogram_bin_width,
-                     histogram.tallest().unwrap() as f64 * self.histogram_bin_width,
-                     histogram.draw_horizonaly(0.0, 100.0, 10));
+            writer.write(format!("{} min: {}, max: {}, mode: {}\n{}", key,
+                                 histogram.min().unwrap() as f64 * self.histogram_bin_width,
+                                 histogram.max().unwrap() as f64 * self.histogram_bin_width,
+                                 histogram.tallest().unwrap() as f64 * self.histogram_bin_width,
+                                 histogram.draw_horizonaly(0.0, 100.0, 10)).as_bytes()).unwrap();
         }
     }
 }
@@ -97,7 +102,9 @@ pub fn main() {
 
     let mut reporters: Vec<Box<dyn AlignmentReporter>> = vec![];
     if args.pairwise { reporters.push(Box::new(PrintAsPairwise::new(80))); }
-    if args.histograms { reporters.push(Box::new(SimilarityHistogramByQuery::new(2.5))); }
+    if let Some(fname) = args.histograms {
+        reporters.push(Box::new(SimilarityHistogramByQuery::new(2.5, &fname)));
+    }
     if args.report { reporters.push(Box::new(SimilarityReport)); }
     if reporters.len() == 0 {  reporters.push(Box::new(SimilarityReport)); }
 
