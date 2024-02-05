@@ -6,7 +6,7 @@ use crate::sequence::Sequence;
 
 pub fn align_all_pairs(queries: &Vec<Sequence>, templates: &Vec<Sequence>,
                  matrix: SubstitutionMatrixList, gap_open: i32, gap_extend: i32, lower_triangle: bool,
-                 reporter: &mut Box<dyn AlignmentReporter>) {
+                 reporters: &mut Vec<Box<dyn AlignmentReporter>>) {
 
     let mut max_length = queries.iter().map(|s| s.len()).max().unwrap();
     max_length = max_length.max(templates.iter().map(|s| s.len()).max().unwrap());
@@ -24,8 +24,10 @@ pub fn align_all_pairs(queries: &Vec<Sequence>, templates: &Vec<Sequence>,
             aligner.align(&scoring, gap_open, gap_extend);
             let path = aligner.backtrace();
             let (ali_q, ali_t) = aligned_sequences(&path, &query, &template, '-');
-            reporter.report(&ali_q, &ali_t);
-            if lower_triangle { reporter.report(&ali_q, &ali_t); }
+            for reporter in &mut *reporters {
+                reporter.report(&ali_q, &ali_t);
+                if lower_triangle { reporter.report(&ali_t, &ali_q); }
+            }
             gcups += (query.len() * template.len()) as f64;
             n_pairs += 1;
         }

@@ -57,19 +57,20 @@ pub fn main() {
     env_logger::init();
     let args = Args::parse();
 
-    let mut reporter: Box<dyn AlignmentReporter>;
-    if args.pairwise { reporter = Box::new(PrintAsPairwise::new(80))}
-    else  { reporter = Box::new(SimilarityReport) }
+    let mut reporters: Vec<Box<dyn AlignmentReporter>> = vec![];
+    if args.pairwise { reporters.push(Box::new(PrintAsPairwise::new(80))); }
+    if args.report { reporters.push(Box::new(SimilarityReport)); }
+    if reporters.len() == 0 {  reporters.push(Box::new(SimilarityReport)); }
 
     let queries = get_sequences(&args.query, "query");
 
     if let Some(tmpl) = args.template {
         let templates = get_sequences(&tmpl, "template");
         align_all_pairs(&queries, &templates, SubstitutionMatrixList::BLOSUM62,
-            args.open, args.extend, false, &mut reporter);
+            args.open, args.extend, false, &mut reporters);
 
     } else {
         align_all_pairs(&queries, &queries, SubstitutionMatrixList::BLOSUM62,
-            args.open, args.extend, true, &mut reporter);
+            args.open, args.extend, true, &mut reporters);
     }
 }

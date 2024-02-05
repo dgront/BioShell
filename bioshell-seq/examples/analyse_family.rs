@@ -95,10 +95,12 @@ pub fn main() {
 
     let queries = get_sequences(&args.query, "query");
 
-    let mut report_type: Box<dyn AlignmentReporter>;
-    if args.pairwise { report_type = Box::new(PrintAsPairwise::new(80))}
-    else if args.histograms { report_type = Box::new(SimilarityHistogramByQuery::new(2.5)) }
-    else  { report_type = Box::new(SimilarityReport) }
+    let mut reporters: Vec<Box<dyn AlignmentReporter>> = vec![];
+    if args.pairwise { reporters.push(Box::new(PrintAsPairwise::new(80))); }
+    if args.histograms { reporters.push(Box::new(SimilarityHistogramByQuery::new(2.5))); }
+    if args.report { reporters.push(Box::new(SimilarityReport)); }
+    if reporters.len() == 0 {  reporters.push(Box::new(SimilarityReport)); }
+
     align_all_pairs(&queries, &queries, SubstitutionMatrixList::BLOSUM62,
-                    args.open, args.extend, true, &mut report_type);
+                    args.open, args.extend, true, &mut reporters);
 }
