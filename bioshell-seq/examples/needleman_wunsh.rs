@@ -23,7 +23,13 @@ struct Args {
     open: i32,
     /// gap extension penalty
     #[clap(long, default_value = "-2", short='e')]
-    extend: i32
+    extend: i32,
+    /// print pairwise alignments for every pair of aligned sequences
+    #[clap(long, action)]
+    pairwise: bool,
+    /// print sequence identity report (default)
+    #[clap(long, action)]
+    report: bool,
 }
 
 /// Returns a list of Sequences for a given input string.
@@ -36,7 +42,9 @@ fn get_sequences(seq_or_fname: &String, seq_name: &str) -> Vec<Sequence> {
     if seq_or_fname.contains(".") {
         let reader = open_file(&seq_or_fname);
         let seq_iter = FastaIterator::new(reader);
-        return seq_iter.collect();
+        let out: Vec<Sequence> = seq_iter.collect();
+        info!("{}",format!("{} sequences loaded from {}", out.len(), &seq_or_fname));
+        return out;
     }
 
     return vec![Sequence::from_str(seq_name, seq_or_fname)];
@@ -49,16 +57,18 @@ pub fn main() {
     env_logger::init();
     let args = Args::parse();
 
+    let mut reporter: Box<dyn AlignmentReporter>;
+    if args.pairwise { reporter = Box::new(PrintAsPairwise::new(80))}
+    else  { reporter = Box::new(SimilarityReport) }
+
     let queries = get_sequences(&args.query, "query");
 
     if let Some(tmpl) = args.template {
         let templates = get_sequences(&tmpl, "template");
         align_all_pairs(&queries, &templates, SubstitutionMatrixList::BLOSUM62,
-            args.open, args.extend, false, &mut PrintAsPairwise::new(80));
+            args.open, args.extend, false, &mut reporter);
 
     } else {
-        // let mut reporter = PrintAsPairwise::new(80);
-        let mut reporter = SimilarityReport;
         align_all_pairs(&queries, &queries, SubstitutionMatrixList::BLOSUM62,
             args.open, args.extend, true, &mut reporter);
     }

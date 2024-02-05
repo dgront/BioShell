@@ -5,7 +5,7 @@ use log::{info};
 
 use bioshell_seq::sequence::{Sequence, FastaIterator};
 use bioshell_io::open_file;
-use bioshell_seq::alignment::{AlignmentReporter, AlignmentStatistics, align_all_pairs};
+use bioshell_seq::alignment::{AlignmentReporter, AlignmentStatistics, align_all_pairs, PrintAsPairwise, SimilarityReport};
 use bioshell_seq::scoring::{SubstitutionMatrixList};
 use bioshell_statistics::Histogram;
 
@@ -21,7 +21,16 @@ struct Args {
     open: i32,
     /// gap extension penalty
     #[clap(long, default_value = "-2", short='e')]
-    extend: i32
+    extend: i32,
+    /// print pairwise alignments for every pair of aligned sequences
+    #[clap(long, action)]
+    pairwise: bool,
+    /// print a histogram of sequence identity values for each sequence
+    #[clap(long, action)]
+    histograms: bool,
+    /// print sequence identity report (default)
+    #[clap(long, action)]
+    report: bool,
 }
 
 /// Returns a list of Sequences for a given input string.
@@ -34,7 +43,9 @@ fn get_sequences(seq_or_fname: &String, seq_name: &str) -> Vec<Sequence> {
     if seq_or_fname.contains(".") {
         let reader = open_file(&seq_or_fname);
         let seq_iter = FastaIterator::new(reader);
-        return  seq_iter.collect();
+        let out: Vec<Sequence> = seq_iter.collect();
+        info!("{}",format!("{} sequences loaded from {}", out.len(), &seq_or_fname));
+        return out;
     }
 
     return vec![Sequence::from_str(seq_name, seq_or_fname)];
@@ -84,6 +95,10 @@ pub fn main() {
 
     let queries = get_sequences(&args.query, "query");
 
+    let mut report_type: Box<dyn AlignmentReporter>;
+    if args.pairwise { report_type = Box::new(PrintAsPairwise::new(80))}
+    else if args.histograms { report_type = Box::new(SimilarityHistogramByQuery::new(2.5)) }
+    else  { report_type = Box::new(SimilarityReport) }
     align_all_pairs(&queries, &queries, SubstitutionMatrixList::BLOSUM62,
-                    args.open, args.extend, true, &mut SimilarityHistogramByQuery::new(2.5));
+                    args.open, args.extend, true, &mut report_type);
 }
