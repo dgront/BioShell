@@ -32,6 +32,9 @@ struct Args {
     /// print sequence identity report (default)
     #[clap(long, action)]
     report: bool,
+    /// length of a sequence name to print; longer names will be cut that size
+    #[clap(long, short='w', default_value = "20")]
+    name_width: usize,
 }
 
 /// Returns a list of Sequences for a given input string.
@@ -98,6 +101,8 @@ pub fn main() {
     env_logger::init();
     let args = Args::parse();
 
+    let width = args.name_width;
+
     let queries = get_sequences(&args.query, "query");
 
     let mut reporters: Vec<Box<dyn AlignmentReporter>> = vec![];
@@ -105,8 +110,8 @@ pub fn main() {
     if let Some(fname) = args.histograms {
         reporters.push(Box::new(SimilarityHistogramByQuery::new(2.5, &fname)));
     }
-    if args.report { reporters.push(Box::new(SimilarityReport)); }
-    if reporters.len() == 0 {  reporters.push(Box::new(SimilarityReport)); }
+    if args.report { reporters.push(Box::new(SimilarityReport::new(width))); }
+    if reporters.len() == 0 {  reporters.push(Box::new(SimilarityReport::new(width))); }
 
     align_all_pairs(&queries, &queries, SubstitutionMatrixList::BLOSUM62,
                     args.open, args.extend, true, &mut reporters);

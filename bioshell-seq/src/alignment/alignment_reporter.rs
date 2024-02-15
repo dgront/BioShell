@@ -70,11 +70,21 @@ impl AlignmentReporter for PrintAsPairwise {
 }
 
 /// Prints staple statistics for a given alignment
-pub struct SimilarityReport;
+pub struct SimilarityReport {
+    pub header_width: usize
+}
+
+impl SimilarityReport {
+    pub fn new(header_width: usize) -> SimilarityReport { SimilarityReport{ header_width } }
+}
+
+impl Default for SimilarityReport {
+    fn default() -> Self { SimilarityReport::new(32) }
+}
 
 impl AlignmentReporter for SimilarityReport {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
-        let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, 32);
+        let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, self.header_width);
         println!("{}", stats);
     }
 }

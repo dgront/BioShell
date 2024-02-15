@@ -15,20 +15,24 @@ pub struct  AlignmentStatistics {
     pub query_length: usize,
     /// length of the template sequence without gaps
     pub template_length: usize,
+    /// maximum number of characters a sequence name can take
+    header_length: usize
 }
 
 impl AlignmentStatistics {
     /// Creates the [AlignmentStatistics] for a given pair of aligned sequences
     pub fn from_sequences(aligned_query: &Sequence, aligned_template: &Sequence, header_length: usize) -> AlignmentStatistics {
-        let query_header = aligned_query.description()[0..header_length].to_string();
-        let template_header = aligned_template.description()[0..header_length].to_string();
+        let q_name_len = header_length.min(aligned_query.description().len());
+        let t_name_len = header_length.min(aligned_template.description().len());
+        let query_header = aligned_query.description()[0..q_name_len].to_string();
+        let template_header = aligned_template.description()[0..t_name_len].to_string();
         let n_identical = count_identical(aligned_query, aligned_template).unwrap();
         let query_length = len_ungapped(aligned_query);
         let template_length = len_ungapped(aligned_template);
 
         AlignmentStatistics {
             query_header, template_header,
-            n_identical, query_length, template_length,
+            n_identical, query_length, template_length, header_length
         }
     }
 
@@ -40,7 +44,8 @@ impl AlignmentStatistics {
 
 impl Display for AlignmentStatistics {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:35} {:35} {:6.2} % {:3} {:4} {:4}", self.query_header, self.template_header,
-               self.percent_identity(), self.n_identical, self.query_length, self.template_length)
+        write!(f, "{:len$} {:len$} {:6.2} % {:3} {:4} {:4}", self.query_header, self.template_header,
+               self.percent_identity(), self.n_identical, self.query_length, self.template_length,
+               len = self.header_length)
     }
 }
