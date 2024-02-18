@@ -14,6 +14,13 @@ macro_rules! max {
     }}
 }
 
+macro_rules! swap {
+    ($a_vec: expr, $b_vec: expr) => {
+        let tmp = $a_vec;
+        $a_vec = $b_vec;
+        $b_vec = tmp;
+    };
+}
 /// Aligns two protein sequences using the Needleman-Wunsh algorithm with Gotoh matrices
 ///
 /// ```
@@ -66,6 +73,13 @@ impl<T:SimilarityScore> GlobalAligner<T> {
 
     pub fn align(&mut self, scoring: &T, gap_open: i32, gap_extend: i32) -> i32 {
 
+        let mut H = &mut self.H;
+        let mut H_prev = &mut self.H_prev;
+        let mut E = &mut self.E;
+        let mut E_prev = &mut self.E_prev;
+        let mut F = &mut self.F;
+        let mut F_prev = &mut self.F_prev;
+
         self.query_length = scoring.query_length();
         self.tmplt_length = scoring.template_length();
         for e in &mut self.E_arrows { e.fill(1u16); }    // open a new gap everywhere
@@ -74,14 +88,14 @@ impl<T:SimilarityScore> GlobalAligner<T> {
 
         // ---------- Initialize for tail gaps penalized
         let mut tmp = gap_open;
-        self.H[0] = 0;
+        H[0] = 0;
         self.recent_score = 0;
-        self.E[0] = 0;
-        self.F[0] = 0;
+        E[0] = 0;
+        F[0] = 0;
         for j in 1..self.tmplt_length + 1 {
-            self.F[j] = impossible_score;
-            self.H[j] = tmp;
-            self.E[j] = tmp;
+            F[j] = impossible_score;
+            H[j] = tmp;
+            E[j] = tmp;
             self.E_arrows[0][j] = j as u16;
             self.arrows[0][j] = 1;   // horizontal
             tmp += gap_extend;
@@ -89,35 +103,36 @@ impl<T:SimilarityScore> GlobalAligner<T> {
 
         let mut gap_started_in_q = gap_open;
         for i in 1..self.query_length + 1 {
-            std::mem::swap(&mut self.H, &mut self.H_prev);
-            std::mem::swap(&mut self.E, &mut self.E_prev);
-            std::mem::swap(&mut self.F, &mut self.F_prev);
+            swap!(H, H_prev);
+            swap!(E, E_prev);
+            swap!(F, F_prev);
+
             self.arrows[i][0] = 4;   // vertical gap
             self.F_arrows[i][0] = i as u16;   // horizontal
-            self.H[0] = gap_started_in_q;
-            self.F[0] = gap_started_in_q;
-            self.E[0] = impossible_score;
+            H[0] = gap_started_in_q;
+            F[0] = gap_started_in_q;
+            E[0] = impossible_score;
             for j in 1..self.tmplt_length + 1 {
                 // --- horizontal gap progression
-                self.E[j] = max!(self.E[j - 1] + gap_extend, self.H[j - 1] + gap_open, self.F[j - 1] + gap_open);
-                if self.E[j] - self.E[j - 1] == gap_extend { self.E_arrows[i][j] = self.E_arrows[i][j-1] + 1; }
+                E[j] = max!(E[j - 1] + gap_extend, H[j - 1] + gap_open, F[j - 1] + gap_open);
+                if E[j] - E[j - 1] == gap_extend { self.E_arrows[i][j] = self.E_arrows[i][j-1] + 1; }
                 // --- vertical gap progression
-                self.F[j] = max!(self.F_prev[j] + gap_extend, self.H_prev[j] + gap_open, self.E_prev[j] + gap_open);
-                if self.F[j] - self.F_prev[j] == gap_extend { self.F_arrows[i][j] = self.F_arrows[i - 1][j] + 1; }
+                F[j] = max!(F_prev[j] + gap_extend, H_prev[j] + gap_open, E_prev[j] + gap_open);
+                if F[j] - F_prev[j] == gap_extend { self.F_arrows[i][j] = self.F_arrows[i - 1][j] + 1; }
                 // --- matching move
-                let h = self.H_prev[j - 1] + scoring.score(i - 1, j - 1); // --- the score of a match at i,j
-                self.H[j] = max!(h, self.E[j], self.F[j]);
+                let h = H_prev[j - 1] + scoring.score(i - 1, j - 1); // --- the score of a match at i,j
+                H[j] = max!(h, E[j], F[j]);
                 let mut arrow_flag: u8 = 0;
-                if self.H[j] == self.E[j] { arrow_flag += 1; }
-                if self.H[j] == h { arrow_flag += 2; }
-                if self.H[j] == self.F[j] { arrow_flag += 4; }
+                if H[j] == E[j] { arrow_flag += 1; }
+                if H[j] == h { arrow_flag += 2; }
+                if H[j] == F[j] { arrow_flag += 4; }
                 self.arrows[i][j] = arrow_flag as u16;
             }
             gap_started_in_q += gap_extend;
         }
-        self.recent_score = self.H[self.tmplt_length];
+        self.recent_score = H[self.tmplt_length];
 
-        return self.H[self.tmplt_length];
+        return H[self.tmplt_length];
     }
 
     pub fn backtrace(&self) -> AlignmentPath {

@@ -10,7 +10,12 @@ struct GlobalAlignmentTestCase {
     score: i32
 }
 
-static GLOBAL_CASES: [GlobalAlignmentTestCase; 2] = [
+static GLOBAL_CASES: [GlobalAlignmentTestCase; 3] = [
+    GlobalAlignmentTestCase {
+        query: "A", template: "AW",
+        aligned_query: "A-", aligned_template: "AW",
+        alignment: "*-", score: -6,
+    },
     GlobalAlignmentTestCase {
         query: "AR", template: "ARK",
         aligned_query: "AR-", aligned_template: "ARK",
