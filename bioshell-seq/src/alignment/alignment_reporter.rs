@@ -23,31 +23,31 @@ impl AlignmentReporter for PrintAsFasta {
 /// use bioshell_seq::sequence::Sequence;
 /// let query = Sequence::from_str("query", "AL-IV");
 /// let template = Sequence::from_str("query", "ALRIV");
-/// let mut reporter = PrintAsPairwise::new(10);
+/// let mut reporter = PrintAsPairwise::new(5, 10);
 /// reporter.report(&query, &template);
 /// ```
 pub struct PrintAsPairwise {
     /// maximum number of characters available to print a sequence name
     ///
-    /// By default this value is set 16
     pub seq_name_width: usize,
-    width: usize
+    pub alignment_width: usize
 }
 
 impl PrintAsPairwise {
-    pub fn new(output_width: usize) -> PrintAsPairwise { PrintAsPairwise { seq_name_width: 16, width: output_width } }
+    pub fn new(seq_name_width: usize, alignment_width: usize) -> PrintAsPairwise {
+        PrintAsPairwise { seq_name_width, alignment_width }
+    }
 }
 
 
 impl AlignmentReporter for PrintAsPairwise {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
-        let len = aligned_query.description().len().max(aligned_template.description().len()).min(self.seq_name_width);
-        let q_name = format!("{:len$}", aligned_query.description(), len = len);
-        let t_name = format!("{:len$}", aligned_template.description(), len = len);
+        let q_name = format!("{:len$}", aligned_query.description_n(self.seq_name_width), len = self.seq_name_width);
+        let t_name = format!("{:len$}", aligned_template.description_n(self.seq_name_width), len = self.seq_name_width);
         let query_chunks: Vec<String> = aligned_query.to_string().chars().collect::<Vec<_>>()
-                .chunks(self.width).map(|chunk| chunk.into_iter().collect()).collect();
+                .chunks(self.alignment_width).map(|chunk| chunk.into_iter().collect()).collect();
         let template_chunks: Vec<String> = aligned_template.to_string().chars().collect::<Vec<_>>()
-            .chunks(self.width).map(|chunk| chunk.into_iter().collect()).collect();
+            .chunks(self.alignment_width).map(|chunk| chunk.into_iter().collect()).collect();
 
         let mut q_from = 1;
         let mut t_from = 1;

@@ -106,7 +106,7 @@ pub fn main() {
     let queries = get_sequences(&args.query, "query");
 
     let mut reporters: Vec<Box<dyn AlignmentReporter>> = vec![];
-    if args.pairwise { reporters.push(Box::new(PrintAsPairwise::new(80))); }
+    if args.pairwise { reporters.push(Box::new(PrintAsPairwise::new(8, 80))); }
     if let Some(fname) = args.histograms {
         reporters.push(Box::new(SimilarityHistogramByQuery::new(2.5, &fname)));
     }

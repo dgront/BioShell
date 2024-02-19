@@ -62,7 +62,7 @@ pub fn main() {
 
     let width = args.name_width;
     let mut reporters: Vec<Box<dyn AlignmentReporter>> = vec![];
-    if args.pairwise { reporters.push(Box::new(PrintAsPairwise::new(80))); }
+    if args.pairwise { reporters.push(Box::new(PrintAsPairwise::new(8, 80))); }
     if args.report { reporters.push(Box::new(SimilarityReport::new(width))); }
     if reporters.len() == 0 {  reporters.push(Box::new(SimilarityReport::new(width))); }
 
