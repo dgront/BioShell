@@ -7,7 +7,7 @@ use std::hash::{Hash, Hasher};
 use crate::errors::SequenceError;
 use crate::msa::MSA;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq)]
 /// Amino acid / nucleic sequence.
 ///
 /// In `Rust` a char data type takes four bytes, which is not needed for biological alphabets. Therefore
@@ -83,6 +83,24 @@ impl Sequence {
     /// ```
     pub fn description(&self) -> &str { self.description.as_ref() }
 
+    /// Return the first n characters of the description line of this Sequence.
+    ///
+    /// The whole description string is returned when it's shorter than ``n``
+    ///
+    /// # Example
+    /// ```rust
+    /// use bioshell_seq::sequence::Sequence;
+    ///
+    /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
+    /// let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
+    /// let seq = Sequence::from_attrs(header, sequence.to_vec());
+    /// assert_eq!(seq.description_n(10), "gi|5524211");
+    /// ```
+    pub fn description_n(&self, n: usize) -> &str {
+        let len = self.description.len().min(n);
+        self.description[0..len].as_ref()
+    }
+
     /// Return a string slice holding the ID of this sequence
     ///
     /// According to the NCBI standard, the FASTA header line should provide the unique identifier.
@@ -111,6 +129,9 @@ impl Sequence {
 
     /// Returns a residue (e.g. an amino acid or a nucleotide) u8 code at a given position in this `Sequence`
     pub fn u8(&self, pos:usize) -> u8 { self.seq[pos] }
+
+    /// Provides ``u8`` representation of this sequence
+    pub fn as_u8(&self) -> &Vec<u8> { &self.seq }
 
     /// Creates a string representing this sequence.
     ///
@@ -258,7 +279,7 @@ impl<R: BufRead> StockholmIterator<R> {
     ///
     /// Currently the function reads only the sequences; their annotations are not loaded
     ///
-    /// For the detailed description of the format, see: https://sonnhammer.sbc.su.se/Stockholm.html
+    /// For the detailed description of the format, see: `<https://sonnhammer.sbc.su.se/Stockholm.html>`
     pub fn from_stockholm_reader(reader: &mut R) -> Vec<Sequence> {
 
         let mut out:Vec<Sequence> = Vec::new();
@@ -484,6 +505,18 @@ pub fn count_identical(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceEr
 /// ```
 pub fn len_ungapped(sequence: &Sequence) -> usize {
     sequence.seq.iter().filter(|&c| *c != b'-' && *c != b'_').count()
+}
+
+/// Length of a sequence string excluding gaps
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, len_ungapped_str};
+/// assert_eq!(len_ungapped_str("P-RF"), 3);
+/// assert_eq!(len_ungapped_str("__PERF_"), 4);
+/// ```
+pub fn len_ungapped_str(sequence: &str) -> usize {
+    sequence.chars().filter(|&c| c != '-' && c != '_').count()
 }
 
 /// Removes gaps from a [`Sequence`](Sequence)

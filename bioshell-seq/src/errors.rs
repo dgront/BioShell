@@ -3,7 +3,7 @@ use thiserror::Error;
 
 #[derive(Debug, Error, Display, PartialEq)]
 #[non_exhaustive]
-/// Errors that may be thrown by `bioshell-seq` crate
+/// Errors that may be thrown while processing sequences or multiple sequence alignments
 pub enum SequenceError {
     /// Expected aligned sequences of length {length_expected}, found sequences of lengths: {length_found}
     AlignedSequencesOfDifferentLengths {
@@ -23,6 +23,35 @@ pub enum SequenceError {
     IdenticalSequenceDescriptions {
         /// multiplied description
         description: String,
+    },
+}
+
+#[derive(Debug, Error, Display, PartialEq)]
+#[non_exhaustive]
+/// Errors that may be thrown while loading or using a substitution matrix
+pub enum ScoringError {
+    /// The file: {file_name} can't be opened for reading
+    FileNotFound {
+        /// name of the missing file
+        file_name: String,
+    },
+    /// Reading occurred while reading a substitution matrix
+    ReadingError,
+    /// Given amino acid index: {given_index} is too high, maximum value is 20
+    AminoAcidIndexTooHigh {
+        /// Expected length
+        given_index: u8,
+    },
+    /// The following line of a NCBI matrix file is not formatted correctly: {line}
+    IncorrectNCBIFormat {
+        /// the incorrectly formatted line that broke the code
+        line: String,
+    },
+    /// The following entry: {value} found in line can't be parsed to i32 type; the problematic line was: {line}
+    CantParseNCBIEntry {
+        /// the incorrectly formatted line that broke the code
+        line: String,
+        value: String
     },
 }
 

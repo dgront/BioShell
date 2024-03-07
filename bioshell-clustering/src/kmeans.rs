@@ -12,7 +12,7 @@ use rand::rngs::SmallRng;
 /// provides assignment of each point to one of k-clusters. The value of `k` must be provided by a user.
 /// In the current implementation provides only random initialisation, i.e. the `k` starting points
 /// are randomly selected from the data set. Since the final clustering result is highly affected by that
-/// initial assignemnt, it's advised to repeat the procedure to find the best solution.
+/// initial assignment, it's advised to repeat the procedure to find the best solution.
 pub struct KMeans<T, D> {
     /// The total number of points to be clustered
     n: usize,

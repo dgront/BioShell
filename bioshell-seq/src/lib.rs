@@ -12,7 +12,11 @@
 //!
 //!
 
+mod errors;
 pub mod chemical;
 pub mod sequence;
+pub mod scoring;
+pub mod alignment;
 pub mod msa;
-pub(crate) mod errors;
+
+pub use errors::{SequenceError, ScoringError};

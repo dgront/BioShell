@@ -18,9 +18,10 @@ impl fmt::Debug for Rototranslation {
 impl Rototranslation {
     /// Creates a transformation that rotates 3D points around a given axis
     ///
+    /// The rotation matrix is computed using the [Rodrigues' rotation formula](https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula):
     /// cos_theta * u_identity
-    //             + sin_theta * u_cross
-    //             + (1.0 - cos_theta) * u_dot;
+    ///             + sin_theta * u_cross
+    ///             + (1.0 - cos_theta) * u_dot;
     pub fn around_axis(start: &Vec3, end: &Vec3, angle_rad: f64) -> Rototranslation {
 
         let mut axis = end.clone();
@@ -52,6 +53,58 @@ impl Rototranslation {
         };
     }
 
+    /// Creates a rototranslation that transforms a point from a global to a local coordinate system
+    ///
+    /// The local coordinate system is defined by three points ``a``, ``b`` and ``c``.
+    ///
+    /// ```
+    /// use bioshell_pdb::{assert_delta, assert_vec3_eq};
+    /// use bioshell_pdb::calc::{Rototranslation, Vec3};
+    /// let a = Vec3::new(0.0, 0.0, 0.0);
+    /// let b = Vec3::new(2.0, 0.0, 2.0);
+    /// let c = Vec3::new(4.0, 0.0, 0.0);
+    /// let rot = Rototranslation::by_three_atoms(&a, &b, &c);
+    /// let x_exp = Vec3::new(1.0, 0.0, 0.0);
+    /// let y_exp = Vec3::new(0.0, 1.0, 0.0);
+    /// let z_exp = Vec3::new(0.0, 0.0, 1.0);
+    /// let rot_m = rot.rotation_matrix();
+    /// assert_delta!(rot_m.elem(0,0), 1.0, 0.000001);
+    /// assert_delta!(rot_m.elem(1,1), 1.0, 0.000001);
+    /// assert_delta!(rot_m.elem(2,2), 1.0, 0.000001);
+    /// ```
+    pub fn by_three_atoms(a: &Vec3, b: &Vec3, c: &Vec3) -> Rototranslation {
+
+        let mut n_to_ca = b.clone();  // --- a1 -> b vector
+        n_to_ca -= a;
+        n_to_ca.normalize();
+
+        let mut ca_to_c = c.clone();  // --- a1 -> b vector
+        ca_to_c -= b;
+        ca_to_c.normalize();
+
+        let mut tz = n_to_ca.clone();
+        tz -= &ca_to_c;
+        tz.normalize();
+
+        let mut tx = n_to_ca.clone();
+        tx += &ca_to_c;
+        tx.normalize();
+
+        let mut ty = Vec3::cross(&n_to_ca, &ca_to_c);
+        ty.normalize();
+
+        let u_rot = Matrix3x3::from_column_vectors(&tx, &ty, &tz);
+        let mut inv = u_rot.clone();
+
+        inv.inverse();
+        return Rototranslation {
+            _origin: b.clone(),
+            _rotation_matrix: u_rot,
+            _inverse_rotation_matrix: inv,
+        };
+    }
+
+    /// Provides read-only access to the rotation matrix of this [`Rototranslation`](Rototranslation)
     pub fn rotation_matrix(&self) -> &Matrix3x3 { &self._rotation_matrix }
 
     pub fn apply_mut(&self, vector: &mut Vec3) {
@@ -78,3 +131,5 @@ impl Rototranslation {
         return v;
     }
 }
+
+

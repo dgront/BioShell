@@ -5,9 +5,9 @@ use log::{debug, info};
 
 use bioshell_statistics::{MultiNormalDistribution, OnlineMultivariateStatistics};
 use bioshell_clustering::em::expectation_maximization;
+use bioshell_clustering::euclidean_distance_squared;
 use bioshell_clustering::kmeans::KMeans;
 use bioshell_io::{read_tsv};
-use bioshell_numerical::distance::euclidean_distance_squared;
 
 
 #[derive(Parser, Debug)]

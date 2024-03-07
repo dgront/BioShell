@@ -1,9 +1,8 @@
 use std::env;
 use clap::{Parser};
-use bioshell_clustering::{CartesianPoints};
+use bioshell_clustering::{CartesianPoints, euclidean_distance_squared};
 use bioshell_clustering::optics::{Optics};
 use bioshell_io::{read_tsv, out_writer};
-use bioshell_numerical::distance::euclidean_distance_squared;
 
 use log::{error, info};
 
