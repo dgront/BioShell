@@ -2,9 +2,14 @@ use std::fmt;
 use std::ops::{Index, IndexMut, AddAssign, SubAssign, MulAssign, DivAssign};
 use crate::calc::Vec3;
 
-/// Represents a 3x3 matrix, e.g. for linear transformations.
+/// Represents a 3x3 matrix, e.g. for linear 3D transformations.
 ///
-/// Internally the matrix elements are stored as an `[f64; 9]` array.
+/// Internally the matrix elements are stored as an `[f64; 9]` array in the order as follows:
+/// ```text
+///     | 0 1 2 |
+/// m = | 3 4 5 |
+///     | 6 7 8 |
+/// ```
 ///
 /// # Example
 /// ```rust
@@ -160,7 +165,7 @@ impl Matrix3x3 {
         Matrix3x3 { array: m }
     }
 
-    /// Construct a Matrix3x3 from three column vectors, representing the x, y, and z axes of the matrix.
+    /// Construct a Matrix3x3 from three column vectors, representing the columns of the matrix.
     ///
     /// # Arguments
     ///
@@ -184,7 +189,7 @@ impl Matrix3x3 {
         Self::from_array([cx.x, cx.y, cx.z, cy.x, cy.y, cy.z, cz.x, cz.y, cz.z])
     }
 
-    /// This method creates a Matrix3x3 from three Vec3 objects representing the columns of the matrix.
+    /// This method creates a Matrix3x3 from three Vec3 objects representing the rows of the matrix.
     ///
     /// # Arguments
     ///
@@ -206,6 +211,23 @@ impl Matrix3x3 {
     ///```
     pub fn from_row_vectors(rx: &Vec3, ry: &Vec3, rz: &Vec3) -> Self {
         Self::from_array([rx.x, ry.x, rz.x, rx.y, ry.y, rz.y, rx.z, ry.z, rz.z])
+    }
+
+    /// Provides access to an elements of this matrix for a given ``row`` and ``column`` indexes.
+    ///
+    /// Effectively this method provides a 2D indexing capability for this 1D data storage.
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_pdb::assert_delta;
+    /// use bioshell_pdb::calc::Matrix3x3;
+    /// let m = Matrix3x3::from_array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]);
+    /// assert_delta!(m.elem(0, 1), 1.0, 0.0000001);
+    /// assert_delta!(m.elem(0, 1), 1.0, 0.0000001);
+    /// assert_delta!(m.elem(1, 2), 5.0, 0.0000001);
+    /// ```
+    pub fn elem(&self, row: usize, col:usize) -> f64 {
+        self[row * 3 + col]
     }
 
     /// Multiplies the caller matrix object with a Vec3 in place, i.e., modifies the matrix object itself.
