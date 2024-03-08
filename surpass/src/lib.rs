@@ -2,6 +2,8 @@
 mod system;
 #[macro_use]
 mod surpass_energy;
+
+mod surpass_hbond;
 mod move_proposal;
 mod contact_energy;
 mod hinge_move;
