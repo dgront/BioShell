@@ -53,11 +53,11 @@ struct Args {
      */
 }
 
-fn box_length_for_density(density: f64, bead_diameter: f64) -> f64 {
+fn box_length_for_density(density: f64, bead_diameter: f64, n_beads: usize) -> f64 {
     let r = bead_diameter / 2.0;
-    let chain_volume = 4.0/3.0 * PI * r * r * r;
-    let box_vol = chain_volume / density;
-    return box_vol.sqrt();
+    let bead_volume = 4.0/3.0 * PI * r * r * r;
+    let box_vol = n_beads as f64 * bead_volume / density;
+    return box_vol.powf(1.0 / 3.0);
 }
 
 fn main() {
@@ -80,9 +80,10 @@ fn main() {
     // --- box length: density settings has priority over explicit length
     let box_width = match args.density {
         None => { args.box_size }
-        Some(d) => { box_length_for_density(d, 3.5) }
+        Some(d) => { box_length_for_density(d, 3.5, n_res * n_chains) }
     };
-    info!("box width: {}",box_width);
+    info!("total number of beads: {nb}", nb=(n_res * n_chains));
+    info!("simulation box width: {}",box_width);
     let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], box_width, &mut rnd);
 
     // --- sampling: movers and proposals
