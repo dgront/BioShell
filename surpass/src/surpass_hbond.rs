@@ -17,8 +17,8 @@ fn compute_x_r_a(ca_prev: &Vec3, ca_i: &Vec3, ca_next: &Vec3, ca_j: &Vec3,
     // if (ca_j.z > 4.0) return false;                          // --- "stacking" strands is not allowed!
     let r = (ca_j_local.y * ca_j_local.y + ca_j_local.z * ca_j_local.z).sqrt();    // --- polar coordinates from Y-Z
     let mut a = ca_j_local.z.atan2(ca_j_local.y);                // --- angle should be [-pi,pi]
-    if a < 0.0 { a += 2 * std::f64::consts::PI; }               // --- take care the angle is in the range [0,2pi]
-    if a < std::f64::consts::PI / 2.0 { a += 2 * std::f64::consts::PI; }
+    if a < 0.0 { a += 2.0 * std::f64::consts::PI; }               // --- take care the angle is in the range [0,2pi]
+    if a < std::f64::consts::PI / 2.0 { a += 2.0 * std::f64::consts::PI; }
 
     return (x, r, a);
 }
