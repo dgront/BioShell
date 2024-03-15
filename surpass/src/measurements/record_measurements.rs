@@ -23,14 +23,15 @@ impl<T: std::fmt::Display, M: SystemMeasurement<T>> RecordMeasurements<T, M> {
 
     pub fn add_measurement(&mut self, measurement: M) -> &mut Self {
         self.measurements.push(measurement);
-        return &mut self;
+        return self;
     }
 
     pub fn observe(&self, system: &SurpassAlphaSystem) -> Result<(), Box<dyn Error>> {
         let mut stream = out_writer(&self.fname, true);
-        for o in &self.measurements {
+        stream.write(format!("{:}", self.measurements[0].measure(system)).as_bytes())?;
+        for o in &self.measurements[1..] {
             let oi = o.measure(system);
-            stream.write(format!("{:}", oi).as_bytes())?;
+            stream.write(format!("\t{:}", oi).as_bytes())?;
         }
         stream.write(b"\n");
         Ok(())

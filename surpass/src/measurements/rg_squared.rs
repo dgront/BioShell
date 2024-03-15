@@ -28,5 +28,5 @@ impl SystemMeasurement<f64> for RgSquared {
         return s/n;
     }
 
-    fn header(&self) -> String { String::from("gyration-radius-squared\n") }
+    fn header(&self) -> String { String::from("gyration-radius-squared") }
 }

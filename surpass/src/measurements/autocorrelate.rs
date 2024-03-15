@@ -53,7 +53,7 @@ impl<M: SystemMeasurement<Vec3>> AutocorrelateVec3Measurements<M> {
         let data = self.observed_values();
         stream.write(format!("# n_samples: {}\n", self.n_samples).as_bytes()).expect("Can't write to a file");
         for i in 0..data.len() {
-            stream.write(format!("{:4} {:}\n", i + 1, data[i]/data[0]).as_bytes()).expect("Can't write to a file");
+            stream.write(format!("{:4} {:}\n", i, data[i]/data[0]).as_bytes()).expect("Can't write to a file");
         }
     }
 }
