@@ -92,7 +92,9 @@ pub fn main() {
         // ---------- filter by length
         if sequence.len() < min_len || sequence.len() > max_len { continue }
         // ---------- keep only proteins
-        if args.protein_only && ! protein_filter.filter(&sequence) { continue }
+        if args.protein_only {
+           if nucleic_filter.filter(&sequence) || ! protein_filter.filter(&sequence) { continue }
+        }
         // ---------- keep only nucleic acids
         if args.nucleotide_only && ! nucleic_filter.filter(&sequence) { continue }
         // ---------- remove too many X's

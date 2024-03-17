@@ -106,7 +106,7 @@ pub struct IsNucleic;
 macro_rules! is_nucleotide {
     ($c: expr) => {
         match $c {
-            b'A' | b'C' | b'T' | b'G' | b'U' | b'a' | b'c' | b't' | b'g' | b'u' => true,
+            b'A' | b'C' | b'T' | b'G' | b'U' | b'X' | b'a' | b'c' | b't' | b'g' | b'u' | b'x' => true,
             _ => false,
         }
     };
