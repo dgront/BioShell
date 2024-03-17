@@ -66,3 +66,83 @@ impl SequenceFilter for ContainsX {
         count_residue_type(sequence, 'X') >= self.min_x
     }
 }
+
+/// Returns `true` if a given [`Sequence`](Sequence) contains at least `f` fraction of unknown residues, marked as `'X'`
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, FractionX, SequenceFilter};
+/// let sequence1 = Sequence::from_str("test_seq", "MRAXXA");
+/// let sequence2 = Sequence::from_str("test_seq", "MRAGSXA");
+/// let filter = FractionX{min_x_fraction: 0.25};
+/// assert_eq!(filter.filter(&sequence1), true);
+/// assert_eq!(filter.filter(&sequence2), false);
+/// ```
+pub struct FractionX {
+    pub min_x_fraction: f64,
+}
+
+impl SequenceFilter for FractionX {
+    fn filter(&self, sequence: &Sequence) -> bool {
+        count_residue_type(sequence, 'X') as f64 >= self.min_x_fraction * sequence.len() as f64
+    }
+}
+
+/// Returns `true` if a given [`Sequence`](Sequence) is a valid DNA or RNA sequence
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, IsNucleic, SequenceFilter};
+/// let sequence1 = Sequence::from_str("test_seq", "CGCGTATACGCG");
+/// let sequence2 = Sequence::from_str("test_seq", "cgcgtatacgc");
+/// let sequence3 = Sequence::from_str("test_seq", "CGATAGS");
+/// let filter = IsNucleic;
+/// assert!(filter.filter(&sequence1));
+/// assert!(filter.filter(&sequence2));
+/// assert!(!filter.filter(&sequence3));
+/// ```
+pub struct IsNucleic;
+
+macro_rules! is_nucleotide {
+    ($c: expr) => {
+        match $c {
+            b'A' | b'C' | b'T' | b'G' | b'U' | b'a' | b'c' | b't' | b'g' | b'u' => true,
+            _ => false,
+        }
+    };
+}
+
+impl SequenceFilter for IsNucleic {
+    fn filter(&self, sequence: &Sequence) -> bool {
+        sequence.as_u8().iter().all(|l| is_nucleotide!(l))
+    }
+}
+
+/// Returns `true` if a given [`Sequence`](Sequence) is a valid protein sequence
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, IsProtein, SequenceFilter};
+/// let sequence1 = Sequence::from_str("test_seq", "MRAGSXA");
+/// let sequence2 = Sequence::from_str("test_seq", "MRAGSXA*");
+/// let sequence3 = Sequence::from_str("test_seq", "MRAG!SXA");
+/// let filter = IsProtein;
+/// assert!(filter.filter(&sequence1));     // 'X' is a legal amino acid for IsProtein() filter
+/// assert!(!filter.filter(&sequence2));    // ... but '*' is not allowed
+/// assert!(!filter.filter(&sequence3));    // Neither does '!'
+/// ```
+pub struct IsProtein;
+macro_rules! is_amino_acid {
+    ($c: expr) => {
+        match $c {
+            b'A' | b'R' | b'N' | b'D' | b'C' | b'E' | b'Q' | b'G' | b'H' | b'I' | b'L' | b'K' | b'M' | b'F' | b'P' | b'S' | b'T' | b'W' | b'Y' | b'V' | b'X' => true,
+            _ => false,
+        }
+    };
+}
+
+impl SequenceFilter for IsProtein {
+    fn filter(&self, sequence: &Sequence) -> bool {
+        sequence.as_u8().iter().all(|l| is_amino_acid!(l))
+    }
+}

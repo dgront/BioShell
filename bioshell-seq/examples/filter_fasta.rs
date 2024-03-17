@@ -9,7 +9,7 @@ use std::io::{BufRead, BufReader};
 use std::time::Instant;
 // use regex::Regex;
 
-use bioshell_seq::sequence::{FastaIterator, count_residue_type, Sequence};
+use bioshell_seq::sequence::{FastaIterator, count_residue_type, Sequence, IsProtein, IsNucleic, SequenceFilter};
 use bioshell_io::open_file;
 
 #[derive(Parser, Debug)]
@@ -27,8 +27,14 @@ struct Args {
     /// remove sequences with more than given number of 'X' residues (unknowns)
     #[clap(short='x', long)]
     max_x: Option<usize>,
+    /// print only valid protein sequences ('X' symbol is allowed)
+    #[clap(short='p', long, action)]
+    protein_only: bool,
+    /// print only valid nucleotide sequences
+    #[clap(short='n', long, action)]
+    nucleotide_only: bool,
     /// print only unique sequences
-    #[clap(short='u', long)]
+    #[clap(short='u', long, action)]
     unique: bool,
     /// batch retrieval by ID: print only these sequences whose ID is on the list provided as an input file
     #[clap(short='r', long)]
@@ -78,12 +84,17 @@ pub fn main() {
     let max_x = match args.max_x { None => 0, Some(l) => l };
 
     let mut observed_sequences:HashSet<u64> = HashSet::new();
-
+    let protein_filter = IsProtein;
+    let nucleic_filter = IsNucleic;
     let start = Instant::now();
     for sequence in seq_iter {
         cnt_all += 1;
         // ---------- filter by length
         if sequence.len() < min_len || sequence.len() > max_len { continue }
+        // ---------- keep only proteins
+        if args.protein_only && ! protein_filter.filter(&sequence) { continue }
+        // ---------- keep only nucleic acids
+        if args.nucleotide_only && ! nucleic_filter.filter(&sequence) { continue }
         // ---------- remove too many X's
         if max_x > 0 && count_residue_type(&sequence, 'X') > max_x { continue }
         // ---------- keep only requested sequences
