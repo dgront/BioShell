@@ -113,8 +113,8 @@ fn main() {
     // --- save the starting conformation, reset the trajectory file
     system.to_pdb_file("tra.pdb", false);
 
-    let r_end_vec_a = REndVector::new(0);
-    let mut r_end_autocorr = AutocorrelateVec3Measurements::new(r_end_vec_a, t_max, "r_end_auto.dat");
+    // let r_end_vec_a = REndVector::new(0);
+    // let mut r_end_autocorr = AutocorrelateVec3Measurements::new(r_end_vec_a, t_max, "r_end_auto.dat");
 
     let excl_vol = ExcludedVolume::new(&system, 3.7, 100.0);
     let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol);
@@ -177,12 +177,12 @@ fn main() {
             // cmd.observe(&system);
             rend.observe(&system);
             r_end_vec.observe(&system);
-            r_end_autocorr.observe(&system);
+            // r_end_autocorr.observe(&system);
             rg.observe(&system);
         }           // --- single outer MC cycle done (all inner MC cycles finished)
         // --- append a current conformation to the trajectory file
         system.to_pdb_file("tra.pdb", true);
-        r_end_autocorr.write();
+        // r_end_autocorr.write();
     }   // --- end of the simulation: all outer MC cycles done
 }
 
