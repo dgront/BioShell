@@ -2,15 +2,15 @@ use std::env;
 use clap::{Parser};
 use log::{debug, info};
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::hash::{Hash, Hasher};
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
 // use regex::Regex;
 
 use bioshell_seq::sequence::{FastaIterator, count_residue_type, Sequence, IsProtein, IsNucleic, SequenceFilter};
-use bioshell_io::open_file;
+use bioshell_io::{open_file, out_writer};
 
 #[derive(Parser, Debug)]
 #[clap(name = "filter_fasta")]
@@ -36,13 +36,26 @@ struct Args {
     /// print only unique sequences
     #[clap(short='u', long, action)]
     unique: bool,
+    /// writes a file, where each row lists identical sequences; this works only when -u was used
+    #[clap(long)]
+    map_identical: Option<String>,
     /// batch retrieval by ID: print only these sequences whose ID is on the list provided as an input file
     #[clap(short='r', long)]
     retrieval_list: Option<String>,
-    /// batch retrieval by subsequences: print a database sequence only if it contains aa subsequence from a given FASTA file
+    /// batch retrieval by subsequences: print a database sequence only if it contains aa subsequence from a given FASTA file; given strings must fully match a sequence's description to have it printed. For a substring match use the --description-contains option
     #[clap(short='m', long)]
     match_subsequences: Option<String>,
+    /// print sequences whose description contains a certain substring, e.g. CYP1A or "DNA BINDING"
+    #[clap(long)]
+    description_contains: Option<String>,
 }
+
+fn first_word_of_description(description: &str) -> String {
+    let v: Vec<&str> = description.split_whitespace().collect();
+
+    return String::from(v[0]);
+}
+
 
 pub fn main() {
 
@@ -59,7 +72,7 @@ pub fn main() {
         if_retrieve = true;
         let reader = BufReader::new(file);
         requested_ids = HashSet::from_iter(reader.lines().map(|l| l.unwrap()));
-        info!("{} sequences selected for retrieval", requested_ids.len());
+        info!("{} sequence IDs selected for retrieval", requested_ids.len());
     }
 
     // ---------- Check is user wants to retrieve sequences that are given in a query FASTA file
@@ -75,6 +88,20 @@ pub fn main() {
         }
     }
 
+    // ---------- Check is user wants to filter sequences by a description substring
+    let if_substring: bool;
+    let substring: String;
+    match args.description_contains {
+        None => {
+            substring = "".to_string();
+            if_substring = false;
+        }
+        Some(s) => {
+            substring = s;
+            if_substring = true;
+        }
+    }
+
     let reader = open_file(&fname);
     let seq_iter = FastaIterator::new(reader);
     let mut cnt_all: usize = 0;
@@ -83,9 +110,10 @@ pub fn main() {
     let max_len = match args.shorter_than { None => 1000000, Some(l) => l };
     let max_x = match args.max_x { None => 0, Some(l) => l };
 
-    let mut observed_sequences:HashSet<u64> = HashSet::new();
     let protein_filter = IsProtein;
     let nucleic_filter = IsNucleic;
+    let mut represented_sequences: HashMap<u64, Vec<String>> = HashMap::new();
+
     let start = Instant::now();
     for sequence in seq_iter {
         cnt_all += 1;
@@ -103,6 +131,10 @@ pub fn main() {
         if if_retrieve {
             let id = sequence.id();
             if !requested_ids.contains(id) { continue }
+        }
+        // ---------- keep sequences selected by description substring
+        if if_substring {
+            if !sequence.description().contains(&substring) {continue}
         }
         // ---------- keep only sequences found in the input query fasta
         if if_fasta_retrieve {
@@ -131,11 +163,31 @@ pub fn main() {
             let mut hasher = DefaultHasher::new();
             sequence.hash(&mut hasher);
             let h = hasher.finish();
-            if observed_sequences.contains(&h) { continue}
-            else {observed_sequences.insert(h);}
+            let seq_id = first_word_of_description(&sequence.description());
+            if represented_sequences.contains_key(&h) {
+                represented_sequences.entry(h).or_default().push(seq_id);
+                continue;
+            }
+            else {
+                represented_sequences.insert(h, vec![seq_id]);
+            }
         }
         cnt_ok += 1;
         println!("{}", sequence);
+    }
+
+    if let Some(fname) = args.map_identical {
+        if ! args.unique {
+            panic!("The --map-identical option works only when --unique was also specified!");
+        }
+        let mut stream = out_writer(&fname, false);
+        for (_hash, ids) in represented_sequences {
+            let _ = stream.write(format!("{:}", ids[0]).as_bytes());
+            for seq_id in &ids[1..] {
+                let _ = stream.write(format!(" {:}", seq_id).as_bytes());
+            }
+            let _ = stream.write(b"\n");
+        }
     }
 
     info!("{} sequences processed in {:?}, {} of them printed in FASTA format",
