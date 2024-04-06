@@ -113,6 +113,9 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
 /// Reads a [`Structure`](Structure) from a PDB file
 ///
 pub fn load_pdb_file(file_name: &str) -> Result<Structure, PDBError> {
+
+    info!("Loading a PDB deposit: {}", file_name);
+
     let file = File::open(file_name)?;
     let reader = BufReader::new(file);
     return load_pdb_reader(reader);

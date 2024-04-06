@@ -51,6 +51,7 @@ pub struct GlobalAligner<T:SimilarityScore> {
 }
 
 impl<T:SimilarityScore> GlobalAligner<T> {
+    #[allow(non_snake_case)]
     pub fn new(max_seq_length: usize) -> GlobalAligner<T> {
         let max_seq_length = max_seq_length + 1;
         GlobalAligner {
@@ -71,6 +72,7 @@ impl<T:SimilarityScore> GlobalAligner<T> {
         }
     }
 
+    #[allow(non_snake_case)]
     pub fn align(&mut self, scoring: &T, gap_open: i32, gap_extend: i32) -> i32 {
 
         let mut H = &mut self.H;

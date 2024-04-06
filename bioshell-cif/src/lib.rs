@@ -30,6 +30,7 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader};
+use std::time::Instant;
 use log::{debug, info};
 
 use bioshell_io::split_into_strings;
@@ -251,6 +252,8 @@ impl Display for CifData {
 /// and returs all the data blocks it found.
 pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
 
+    info!("Loading a CIF file: {}", input_fname);
+
     let file = match File::open(input_fname) {
         Ok(file) => file,
         Err(e) => return Err(e)
@@ -267,6 +270,8 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
     let mut current_loop: Option<CifLoop> = None;
     // let mut current_loop = CifLoop{ column_names: vec![], data_rows: vec![] };
     let mut is_loop_open: bool = false;
+
+    let start = Instant::now();
 
     for line in buffer.lines() {
         if let Some(line_ok) = line.ok() {
@@ -296,7 +301,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
                 } else {
                     if data_blocks.len() == 0 { panic!("Found data entries outside any data block!")}
                     let last_block = data_blocks.last_mut().unwrap();
-                    let mut key_val = split_into_strings(ls, false);
+                    let key_val = split_into_strings(ls, false);
                     if key_val.len() != 2 {
                         panic!("{}", format!("A single data item line should contain exactly two tokens: a key and its value; {} values found in the line:{}",
                                        key_val.len(), &ls));
@@ -320,6 +325,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
             }
         }
     }
+    debug!("CIF structure loaded in: {:?}", start.elapsed());
 
     return data_blocks;
 }

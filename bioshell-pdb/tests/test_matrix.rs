@@ -120,13 +120,13 @@ mod matrix_test {
 
     #[test]
     fn matrix_from_column_vectors() {
-        let _cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-        let _cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-        let _cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-        let _mat: Matrix3x3 = Matrix3x3::from_column_vectors(&_cx, &_cy, &_cx);
-        assert_eq!(_cx.x, _mat[0]); assert_eq!(_cx.y, _mat[1]); assert_eq!(_cx.z, _mat[2]);
-        assert_eq!(_cy.x, _mat[3]); assert_eq!(_cy.y, _mat[4]); assert_eq!(_cy.z, _mat[5]);
-        assert_eq!(_cz.x, _mat[6]); assert_eq!(_cz.y, _mat[7]); assert_eq!(_cz.z, _mat[8]);
+        let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+        let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+        let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+        let mat: Matrix3x3 = Matrix3x3::from_column_vectors(&cx, &cy, &cx);
+        assert_eq!(cx.x, mat[0]); assert_eq!(cy.x, mat[1]); assert_eq!(cz.x, mat[2]);
+        assert_eq!(cx.y, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cy.y, mat[5]);
+        assert_eq!(cx.z, mat[6]); assert_eq!(cy.z, mat[7]); assert_eq!(cz.z, mat[8]);
     }
 
     #[test]
@@ -135,9 +135,9 @@ mod matrix_test {
         let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
         let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
         let mat: Matrix3x3 = Matrix3x3::from_row_vectors(&cx, &cy, &cx);
-        assert_eq!(cx.x, mat[0]); assert_eq!(cy.x, mat[1]); assert_eq!(cz.x, mat[2]);
-        assert_eq!(cx.y, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cz.y, mat[5]);
-        assert_eq!(cx.z, mat[6]); assert_eq!(cy.z, mat[7]); assert_eq!(cz.z, mat[8]);
+        assert_eq!(cx.x, mat[0]); assert_eq!(cx.y, mat[1]); assert_eq!(cx.z, mat[2]);
+        assert_eq!(cy.x, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cy.z, mat[5]);
+        assert_eq!(cz.x, mat[6]); assert_eq!(cz.y, mat[7]); assert_eq!(cz.z, mat[8]);
     }
 
     #[test]
