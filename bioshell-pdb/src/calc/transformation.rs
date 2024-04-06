@@ -1,6 +1,7 @@
 use std::fmt;
 use crate::calc::{Matrix3x3, Vec3};
 
+/// Rotation-translation operation in 3D
 pub struct Rototranslation {
     _origin: Vec3,
     _rotation_matrix: Matrix3x3,
@@ -55,14 +56,22 @@ impl Rototranslation {
 
     /// Rototranslation transforming to a local coordinate system of three atoms.
     ///
-    /// The axes of the local coordinate system are defined by three points ``a``, ``b`` and ``c`` as follows:
+    /// The axes of the local coordinate system are defined by three points ``a``, ``b`` and ``c``,
+    /// two versors are defined:
     ///
     /// ```math
-    /// v_{ab} = |b-a|
-    /// v_{bc} = |c-b|
-    /// v_x = |v_{ab}+v_{bc}|
-    /// v_z = |v_{ab}-v_{bc}|
-    /// v_y = v_z \times v_x
+    /// \begin{matrix}
+    /// v_{ab} = ||b-a||\\
+    /// v_{bc} = ||c-b||\\
+    /// \end{matrix}
+    /// ```
+    /// based on them the three axes of the local coordinate system are defined as
+    /// ```math
+    /// \begin{align*}
+    /// v_x & = ||v_{ab}+v_{bc}||\\
+    /// v_y & = v_z \times v_x\\
+    /// v_z & = ||v_{ab}+v_{bc}||\\
+    /// \end{align*}
     /// ```
     ///
     /// # Example

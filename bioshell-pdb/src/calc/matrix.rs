@@ -16,11 +16,11 @@ use crate::calc::Vec3;
 /// use bioshell_pdb::calc::Matrix3x3;
 /// use bioshell_pdb::calc::Vec3;
 ///
-/// let vx = Vec3::new(1.0, 0.0, 0.0);
-/// let vy = Vec3::new(0.0, 1.0, 0.0);
-/// let vz = Vec3::new(1.0, 0.0, 1.0);
+/// let vx = Vec3::new(0.0, 3.0, 6.0);
+/// let vy = Vec3::new(1.0, 4.0, 7.0);
+/// let vz = Vec3::new(2.0, 5.0, 8.0);
 /// let unit_mtx = Matrix3x3::from_column_vectors(&vx, &vy, &vz);
-/// assert_eq!(unit_mtx[0], 1.0); assert_eq!(unit_mtx[4], 1.0); assert_eq!(unit_mtx[8], 1.0);
+/// assert_eq!(unit_mtx[0], 0.0); assert_eq!(unit_mtx[3], 3.0); assert_eq!(unit_mtx[7], 7.0);
 /// ```
 
 #[derive(Clone, Copy, Default)]
@@ -131,8 +131,7 @@ impl PartialEq for Matrix3x3 {
 }
 
 impl Matrix3x3 {
-    /// Implements the new() method for the Matrix3x3 struct, which creates and returns a new
-    /// Matrix3x3 instance with all elements initialized to 0.
+    /// Creates and returns a new Matrix3x3 instance with all elements initialized to 0.
     ///
     /// # Example
     /// ```rust
@@ -165,52 +164,74 @@ impl Matrix3x3 {
         Matrix3x3 { array: m }
     }
 
-    /// Construct a Matrix3x3 from three column vectors, representing the columns of the matrix.
+    /// Creates a Matrix3x3 from three column vectors, representing the columns of the matrix.
+    ///
+    /// Given three column vectors ``a``, ``b`` and ``c``, this method returns a matrix created as:
+    /// ```math
+    /// M = \begin{vmatrix}
+    /// a & b & c\\
+    /// \end{vmatrix} = \begin{vmatrix}
+    /// a_x & b_x & c_x\\
+    /// a_y & b_y & c_y\\
+    /// a_z & b_z & c_z\\
+    /// \end{vmatrix}
+    /// ```
     ///
     /// # Arguments
-    ///
-    /// * cx - A reference to a Vec3 object representing the x axis of the matrix.
-    /// * cy - A reference to a Vec3 object representing the y axis of the matrix.
-    /// * cz - A reference to a Vec3 object representing the z axis of the matrix.
+    /// * a - a Vec3 object representing the first column of the matrix.
+    /// * b - a Vec3 object representing the second column of the matrix.
+    /// * c - a Vec3 object representing the third column of the matrix.
     ///
     /// # Example
     /// ```rust
     /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
     ///
-    /// let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let mat: Matrix3x3 = Matrix3x3::from_column_vectors(&cx, &cy, &cx);
-    /// assert_eq!(cx.x, mat[0]); assert_eq!(cx.y, mat[1]); assert_eq!(cx.z, mat[2]);
-    /// assert_eq!(cy.x, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cy.z, mat[5]);
-    /// assert_eq!(cz.x, mat[6]); assert_eq!(cz.y, mat[7]); assert_eq!(cz.z, mat[8]);
+    /// let a: Vec3 = Vec3::new(1.0, 4.0, 7.0);
+    /// let b: Vec3 = Vec3::new(2.0, 5.0, 8.0);
+    /// let c: Vec3 = Vec3::new(3.0, 6.0, 9.0);
+    /// let mat: Matrix3x3 = Matrix3x3::from_column_vectors(&a, &b, &c);
+    /// assert_eq!(a.x, mat[0]); assert_eq!(a.y, mat[3]); assert_eq!(a.z, mat[6]);
+    /// assert_eq!(b.x, mat[1]); assert_eq!(b.y, mat[4]); assert_eq!(b.z, mat[7]);
+    /// assert_eq!(c.x, mat[2]); assert_eq!(c.y, mat[5]); assert_eq!(c.z, mat[8]);
     ///```
-    pub fn from_column_vectors(cx: &Vec3, cy: &Vec3, cz: &Vec3) -> Self {
-        Self::from_array([cx.x, cx.y, cx.z, cy.x, cy.y, cy.z, cz.x, cz.y, cz.z])
+    pub fn from_column_vectors(a: &Vec3, b: &Vec3, c: &Vec3) -> Self {
+        Self::from_array([a.x, b.x, c.x, a.y, b.y, c.y, a.z, b.z, c.z])
     }
 
-    /// This method creates a Matrix3x3 from three Vec3 objects representing the rows of the matrix.
+    /// Creates a Matrix3x3 from three column vectors, representing the columns of the matrix.
+    ///
+    /// Given three row vectors ``a``, ``b`` and ``c``, this method returns a matrix created as:
+    /// ```math
+    /// M = \begin{vmatrix}
+    /// a \\
+    /// b \\
+    /// c \\
+    /// \end{vmatrix} = \begin{vmatrix}
+    /// a_x & a_y & a_z\\
+    /// b_x & b_y & b_z\\
+    /// c_x & c_y & c_z\\
+    /// \end{vmatrix}
+    /// ```
     ///
     /// # Arguments
-    ///
-    /// * rx - A reference to a Vec3 object representing the first column of the matrix.
-    /// * ry - A reference to a Vec3 object representing the second column of the matrix.
-    /// * rz - A reference to a Vec3 object representing the third column of the matrix.
+    /// * a - a Vec3 object representing the first row of the matrix.
+    /// * b - a Vec3 object representing the second row of the matrix.
+    /// * c - a Vec3 object representing the third column of the matrix.
     ///
     /// # Example
-    ///```rust
+    /// ```rust
     /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
     ///
-    /// let cx: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let cy: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let cz: Vec3 = Vec3::new(1.0, 2.0, 3.0);
-    /// let mat: Matrix3x3 = Matrix3x3::from_row_vectors(&cx, &cy, &cx);
-    /// assert_eq!(cx.x, mat[0]); assert_eq!(cy.x, mat[1]); assert_eq!(cz.x, mat[2]);
-    /// assert_eq!(cx.y, mat[3]); assert_eq!(cy.y, mat[4]); assert_eq!(cz.y, mat[5]);
-    /// assert_eq!(cx.z, mat[6]); assert_eq!(cy.z, mat[7]); assert_eq!(cz.z, mat[8]);
+    /// let a: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+    /// let b: Vec3 = Vec3::new(4.0, 5.0, 6.0);
+    /// let c: Vec3 = Vec3::new(7.0, 8.0, 9.0);
+    /// let mat: Matrix3x3 = Matrix3x3::from_row_vectors(&a, &b, &c);
+    /// assert_eq!(a.x, mat[0]); assert_eq!(a.y, mat[1]); assert_eq!(a.z, mat[2]);
+    /// assert_eq!(b.x, mat[3]); assert_eq!(b.y, mat[4]); assert_eq!(b.z, mat[5]);
+    /// assert_eq!(c.x, mat[6]); assert_eq!(c.y, mat[7]); assert_eq!(c.z, mat[8]);
     ///```
-    pub fn from_row_vectors(rx: &Vec3, ry: &Vec3, rz: &Vec3) -> Self {
-        Self::from_array([rx.x, ry.x, rz.x, rx.y, ry.y, rz.y, rx.z, ry.z, rz.z])
+    pub fn from_row_vectors(a: &Vec3, b: &Vec3, c: &Vec3) -> Self {
+        Self::from_array([a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z])
     }
 
     /// Provides access to an elements of this matrix for a given ``row`` and ``column`` indexes.
@@ -457,7 +478,7 @@ impl Matrix3x3 {
     /// let mat = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let vec = Vec3::new(1.0, 2.0, 3.0);
     /// let result = Matrix3x3::mul_vec_s(&mat, &vec);
-    /// assert_eq!(result, Vec3::new(30.0, 36.0, 42.0));
+    /// assert_eq!(result, Vec3::new(14.0, 32.0, 50.0));
     ///```
     pub fn mul_vec_s(mat: &Matrix3x3, vec: &Vec3) -> Vec3 {
         let mut vec_copy = vec.clone();
