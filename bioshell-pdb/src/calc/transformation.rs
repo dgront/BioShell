@@ -53,10 +53,19 @@ impl Rototranslation {
         };
     }
 
-    /// Creates a rototranslation that transforms a point from a global to a local coordinate system
+    /// Rototranslation transforming to a local coordinate system of three atoms.
     ///
-    /// The local coordinate system is defined by three points ``a``, ``b`` and ``c``.
+    /// The axes of the local coordinate system are defined by three points ``a``, ``b`` and ``c`` as follows:
     ///
+    /// ```math
+    /// v_{ab} = |b-a|
+    /// v_{bc} = |c-b|
+    /// v_x = |v_{ab}+v_{bc}|
+    /// v_z = |v_{ab}-v_{bc}|
+    /// v_y = v_z \times v_x
+    /// ```
+    ///
+    /// # Example
     /// ```
     /// use bioshell_pdb::{assert_delta, assert_vec3_eq};
     /// use bioshell_pdb::calc::{Rototranslation, Vec3};
@@ -110,11 +119,11 @@ impl Rototranslation {
     pub fn apply_mut(&self, vector: &mut Vec3) {
         *vector -= &self._origin;
         self._rotation_matrix.mul_vec_mut(vector);
-        *vector += &self._origin;
+        // *vector += &self._origin;
     }
 
     pub fn apply_inverse_mut(&self, vector: &mut Vec3) {
-        *vector -= &self._origin;
+        // *vector -= &self._origin;
         self._inverse_rotation_matrix.mul_vec_mut(vector);
         *vector += &self._origin;
     }

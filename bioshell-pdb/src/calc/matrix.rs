@@ -248,13 +248,13 @@ impl Matrix3x3 {
     /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let mut rhs = Vec3::new(2.0, 2.0, 2.0);
     /// lhs.mul_vec_mut(&mut rhs);
-    /// assert_vec3_eq!(Vec3::new(24.0, 30.0, 36.0), rhs, 0.0001, "Incorrect vector after multiplication");
+    /// assert_vec3_eq!(Vec3::new(12.0, 30.0, 48.0), rhs, 0.0001, "Incorrect vector after multiplication");
     ///```
     pub fn mul_vec_mut(&self, rhs: &mut Vec3) {
         let lhs = self;
-        let x = lhs[0] * rhs.x + lhs[3] * rhs.y + lhs[6] * rhs.z;
-        let y = lhs[1] * rhs.x + lhs[4] * rhs.y + lhs[7] * rhs.z;
-        let z = lhs[2] * rhs.x + lhs[5] * rhs.y + lhs[8] * rhs.z;
+        let x = lhs[0] * rhs.x + lhs[1] * rhs.y + lhs[2] * rhs.z;
+        let y = lhs[3] * rhs.x + lhs[4] * rhs.y + lhs[5] * rhs.z;
+        let z = lhs[6] * rhs.x + lhs[7] * rhs.y + lhs[8] * rhs.z;
         rhs.x = x;
         rhs.y = y;
         rhs.z = z;
@@ -307,10 +307,6 @@ impl Matrix3x3 {
 
     /// Computes the determinant of the 3x3 matrix.
     ///
-    /// # Arguments
-    ///
-    /// * self - a reference to the calling Matrix3x3 object.
-    ///
     /// # Example
     /// ```rust
     /// use bioshell_pdb::calc::{Matrix3x3};
@@ -328,10 +324,6 @@ impl Matrix3x3 {
     }
 
     /// Calculates the inverse of the matrix in-place.
-    ///
-    /// # Arguments
-    ///
-    /// * self - A mutable reference to the caller matrix object.
     ///
     /// # Panics
     ///
