@@ -21,6 +21,8 @@ pub use non_bonded_energy::*;
 pub use surpass_energy::*;
 pub use excluded_volume::*;
 pub use contact_energy::*;
+pub use surpass_hbond::{HBond3CA};
+
 pub use non_bonded_energy_debug::*;
 
 
