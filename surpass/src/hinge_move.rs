@@ -61,7 +61,7 @@ impl<const HINGE_MOVE_SIZE: usize> HingeMove<HINGE_MOVE_SIZE> {
         for i_moved in 0..HINGE_MOVE_SIZE {
             v = system.ca_to_nearest_vec3(i_chain, moved_from - 1);
             roto.apply_mut(&mut v);
-            proposal.cax[i_moved] = system.real_to_int( v.x);
+            proposal.cax[i_moved] = system.real_to_int(v.x);
             proposal.cay[i_moved] = system.real_to_int(v.y);
             proposal.caz[i_moved] = system.real_to_int(v.z);
             i_chain += 1;

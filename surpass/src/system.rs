@@ -49,8 +49,8 @@ impl SurpassAlphaSystem {
         // ---------- Assign atoms to chains
         let mut atoms_total = 0;
         let mut codes: Vec<char> = ('A'..='Z').collect();
-        codes.extend(('a'..='z'));
-        codes.extend(('0'..='9'));
+        codes.extend('a'..='z');
+        codes.extend('0'..='9');
         for (ic,nc) in chain_lengths.iter().enumerate() {
             for i in 0..*nc { s.chain_indexes[i+ atoms_total] = ic as u16; }
             s.chain_id_by_index[ic] = codes[ic].to_string();

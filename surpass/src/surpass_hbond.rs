@@ -1,4 +1,3 @@
-use std::task::ready;
 use bioshell_pdb::calc::{Rototranslation, Vec3};
 use crate::{MoveProposal, SurpassAlphaSystem, SurpassEnergy};
 
@@ -131,7 +130,30 @@ impl SurpassEnergy for HBond3CA {
     }
 
     fn evaluate_delta<const N: usize>(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N>) -> f64 {
-        todo!()
+        let mut en_chain = 0.0;
+        let mut en_proposed = 0.0;
+        let mut i_chain = move_prop.first_moved_pos as i32;
+        let mut backup: MoveProposal<N> = move_prop.clone();
+        // ---------- Energy of the current conformation
+
+        // ---------- Energy of the proposed conformation
+        backup.backup(conf);
+        // move_prop.apply(conf);
+        for _i_moved in 0..N {
+            for i_partner in 0..move_prop.first_moved_pos as i32 {
+                en_proposed += self.evaluate_hbond_energy(conf, i_chain as usize, i_partner as usize);
+            }
+            i_chain += 1;
+        }
+        let mut i_chain = move_prop.first_moved_pos as i32;
+        for _i_moved in 0..N {
+            for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_atoms() as i32 {
+                en_proposed += self.evaluate_hbond_energy(conf, i_chain as usize, i_partner as usize);
+            }
+            i_chain += 1;
+        }
+
+        return en_proposed - en_chain;
     }
 }
 

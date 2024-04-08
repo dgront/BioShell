@@ -25,6 +25,7 @@ impl<const N: usize> MoveProposal<N> {
         }
     }
 
+    /// Alters the given model by copying into it the coordinates from this move proposal
     pub fn apply(&self, model: &mut SurpassAlphaSystem) {
         let mut i_chain = self.first_moved_pos;
         for i_moved in 0..N {
@@ -35,6 +36,7 @@ impl<const N: usize> MoveProposal<N> {
         }
     }
 
+    /// Alters this move proposal by copying coordinates from the given model
     pub fn backup(&mut self, model: &SurpassAlphaSystem) {
         let mut i_chain = self.first_moved_pos;
         for i_moved in 0..N {

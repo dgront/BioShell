@@ -1,4 +1,4 @@
-use crate::{MoveProposal, NonBondedEnergyKernel, SurpassAlphaSystem, SurpassEnergy};
+use crate::{MoveProposal, NonBondedEnergyKernel, SurpassAlphaSystem};
 use crate::non_bonded_energy::pairwise_energy;
 
 
