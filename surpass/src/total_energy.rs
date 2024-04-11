@@ -5,6 +5,15 @@ pub struct TotalEnergy {
     weights: Vec<f64>
 }
 
+impl TotalEnergy {
+    pub fn new() -> Self { TotalEnergy{ components: vec![], weights: vec![] } }
+
+    pub fn add_component(&mut self, energy_term: Box<dyn SurpassEnergy>, weight: f64) {
+        self.components.push(energy_term);
+        self.weights.push(weight);
+    }
+}
+
 impl SurpassEnergy for TotalEnergy {
     fn evaluate(&self, conf: &SurpassAlphaSystem) -> f64 {
         let mut total = 0.0;

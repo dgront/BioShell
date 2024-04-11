@@ -9,7 +9,7 @@ use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
 
-use surpass::{CaContactEnergy, ExcludedVolume, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove};
+use surpass::{CaContactEnergy, ExcludedVolume, HBond3CA, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove, TotalEnergy};
 use surpass::measurements::{AutocorrelateVec3Measurements, CMDisplacement, REndVector, ChainCM, RgSquared, RecordMeasurements, REndSquared};
 #[allow(unused_imports)]                // NonBondedEnergyDebug can be un-commented to test non-bonded energy if the debug check fails
 use surpass::{NonBondedEnergyDebug};
@@ -66,9 +66,8 @@ fn main() {
     env_logger::init();
 
     let args = Args::parse();
-    // let mut strctr = load_pdb_file(&args[1]).unwrap();
-    
-    // --- the system
+
+    // ========== the system
     let n_res = args.n_res_in_chain;
     if n_res < 4 { panic!("Simulated chain must be at least 4 residues long!") }
     let n_chains = args.n_chains;
@@ -86,7 +85,7 @@ fn main() {
     info!("simulation box width: {}",box_width);
     let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], box_width, &mut rnd);
 
-    // --- sampling: movers and proposals
+    // ========== movers and proposals
     let hinge_mover: HingeMove = HingeMove::new(4, std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
     let tail_mover_1: TailMove = TailMove::new(1, std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
     let mut hinge_prop: MoveProposal = MoveProposal::new(4);
@@ -94,7 +93,7 @@ fn main() {
     let tail_mover_2: TailMove = TailMove::new(2, std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
     let mut tail_prop_2: MoveProposal = MoveProposal::new(2);
 
-    // --- Observers
+    // ========== Observers
     let cm_measurements: Vec<ChainCM> = (0..system.count_chains()).map(|i|ChainCM::new(i)).collect();
     let mut cm =
         RecordMeasurements::new("cm.dat", cm_measurements).expect("can't write to cm.dat");
@@ -116,8 +115,12 @@ fn main() {
     // let r_end_vec_a = REndVector::new(0);
     // let mut r_end_autocorr = AutocorrelateVec3Measurements::new(r_end_vec_a, t_max, "r_end_auto.dat");
 
-    let excl_vol = ExcludedVolume::new(&system, 3.7, 100.0);
-    let energy: NonBondedEnergy<ExcludedVolume> = NonBondedEnergy::new(&system, excl_vol);
+    // ========== Energy function
+    let mut total_energy = TotalEnergy::new();
+    total_energy.add_component(Box::new(ExcludedVolume::new(&system, 3.7, 100.0)), 1.0);
+    total_energy.add_component(Box::new(HBond3CA::new()), 1.0);
+    let excl_vol_kernel = ExcludedVolume::new(&system, 3.7, 100.0);
+    total_energy.add_component(Box::new(NonBondedEnergy::new(&system, excl_vol_kernel)), 1.0);
     // let mut energy: NonBondedEnergyDebug<ExcludedVolume> = NonBondedEnergyDebug::new(&system, excl_vol);
 
     // let cntcts = CaContactEnergy::new(&system, 10.0, -1.0, 3.7, 4.0, 5.0);
@@ -126,7 +129,7 @@ fn main() {
     let start = Instant::now();
 
 
-    println!("initial energy: {}", energy.evaluate(&system));
+    println!("initial energy: {}", total_energy.evaluate(&system));
     let mut _en_before: f64; // --- for debugging
     for outer in 0..args.outer_cycles {
         for inner in 0..args.inner_cycles {
@@ -136,7 +139,7 @@ fn main() {
                     tail_mover_1.propose(&mut system, &mut rnd, &mut tail_prop_1);
                     #[cfg(debug_assertions)]
                     check_bond_lengths(&mut system, &tail_prop_1, 3.8);
-                    if energy.evaluate_delta(&system, &tail_prop_1) < 0.1 {
+                    if total_energy.evaluate_delta(&system, &tail_prop_1) < 0.1 {
                         tail_prop_1.apply(&mut system);
                     }
                 }
@@ -145,23 +148,23 @@ fn main() {
                     tail_mover_2.propose(&mut system, &mut rnd, &mut tail_prop_2);
                     #[cfg(debug_assertions)]
                     check_bond_lengths(&mut system, &tail_prop_2, 3.8);
-                    if energy.evaluate_delta(&system, &tail_prop_2) < 0.1 {
+                    if total_energy.evaluate_delta(&system, &tail_prop_2) < 0.1 {
                         tail_prop_2.apply(&mut system);
                     }
                 }
                 // ---------- hinge move
                 for _hinge in 0..n_chains*(n_res-2) {
                     hinge_mover.propose(&mut system, &mut rnd, &mut hinge_prop);
-                    let delta_e = energy.evaluate_delta(&system, &hinge_prop);
+                    let delta_e = total_energy.evaluate_delta(&system, &hinge_prop);
                     if delta_e < 0.1 {
                         #[cfg(debug_assertions)] {
-                            _en_before = energy.evaluate(&system);
+                            _en_before = total_energy.evaluate(&system);
                             check_bond_lengths(&mut system, &hinge_prop, 3.8);
                         }
                         hinge_prop.apply(&mut system);
 
                         #[cfg(debug_assertions)] {
-                            let en_after = energy.evaluate(&system);
+                            let en_after = total_energy.evaluate(&system);
                             if (en_after - _en_before - delta_e).abs() > 0.001 {
                                 panic!("Incorrect energy change: global {} vs delta {}\n", en_after-_en_before, delta_e);
                             }
@@ -169,7 +172,7 @@ fn main() {
                     }
                 }
             }       // --- single inner MC cycle done (all cycle_factor MC cycles finished)
-            println!("{} {} {} {:?}", outer, inner, energy.evaluate(&system), start.elapsed());
+            println!("{} {} {} {:?}", outer, inner, total_energy.evaluate(&system), start.elapsed());
             let bond_err = system.adjust_bond_length(3.8);
             debug!("bond lengths corrected, maximum violation was: {}", &bond_err);
 
