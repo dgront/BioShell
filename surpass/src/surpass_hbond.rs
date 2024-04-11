@@ -102,6 +102,7 @@ impl SurpassEnergy for HBond3CA {
     fn evaluate(&self, conf: &SurpassAlphaSystem) -> f64 {
         let mut total_en = 0.0;
 
+        // ---------- Energy of the chain 0 with itself
         let i_range = conf.chain_atoms(0);
         for i_pos in i_range.start+4..i_range.end-1 {
             for j_pos in i_range.start+1..i_pos-2 {
@@ -109,13 +110,16 @@ impl SurpassEnergy for HBond3CA {
             }
         }
 
+        // ---------- Loop over chain "i" starting from chain 1
         for i_chain in 1..conf.count_chains() {
             let i_range = conf.chain_atoms(i_chain);
+            // ---------- Energy of i_chain with itself
             for i_pos in i_range.start+4..i_range.end-1 {
                 for j_pos in i_range.start+1..i_pos-2 {
                     total_en += self.evaluate_hbond_energy(conf, i_pos, j_pos);
                 }
             }
+            // ---------- Energy of i_chain with j_chain, i_chain > j_chain
             for j_chain in 0..i_chain {
                 let j_range = conf.chain_atoms(j_chain);
                 for i_pos in i_range.start+1..i_range.end-1 {
@@ -134,26 +138,10 @@ impl SurpassEnergy for HBond3CA {
         let mut en_proposed = 0.0;
         let mut i_chain = move_prop.first_moved_pos as i32;
         let mut backup: MoveProposal<N> = move_prop.clone();
-        // ---------- Energy of the current conformation
 
-        // ---------- Energy of the proposed conformation
-        backup.backup(conf);
-        // move_prop.apply(conf);
-        for _i_moved in 0..N {
-            for i_partner in 0..move_prop.first_moved_pos as i32 {
-                en_proposed += self.evaluate_hbond_energy(conf, i_chain as usize, i_partner as usize);
-            }
-            i_chain += 1;
-        }
-        let mut i_chain = move_prop.first_moved_pos as i32;
-        for _i_moved in 0..N {
-            for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_atoms() as i32 {
-                en_proposed += self.evaluate_hbond_energy(conf, i_chain as usize, i_partner as usize);
-            }
-            i_chain += 1;
-        }
-
-        return en_proposed - en_chain;
+        let mut moved_system = conf.clone();
+        move_prop.apply(&mut moved_system);
+        return self.evaluate(&moved_system) - self.evaluate(&conf);
     }
 }
 
