@@ -87,12 +87,12 @@ fn main() {
     let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], box_width, &mut rnd);
 
     // --- sampling: movers and proposals
-    let hinge_mover: HingeMove<4> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let tail_mover_1: TailMove<1> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let mut hinge_prop: MoveProposal<4> = MoveProposal::new();
-    let mut tail_prop_1: MoveProposal<1> = MoveProposal::new();
-    let tail_mover_2: TailMove<2> = TailMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let mut tail_prop_2: MoveProposal<2> = MoveProposal::new();
+    let hinge_mover: HingeMove = HingeMove::new(4, std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+    let tail_mover_1: TailMove = TailMove::new(1, std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+    let mut hinge_prop: MoveProposal = MoveProposal::new(4);
+    let mut tail_prop_1: MoveProposal = MoveProposal::new(1);
+    let tail_mover_2: TailMove = TailMove::new(2, std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
+    let mut tail_prop_2: MoveProposal = MoveProposal::new(2);
 
     // --- Observers
     let cm_measurements: Vec<ChainCM> = (0..system.count_chains()).map(|i|ChainCM::new(i)).collect();
@@ -187,8 +187,8 @@ fn main() {
 }
 
 #[allow(dead_code)]
-fn check_bond_lengths<const N: usize>(system: &mut SurpassAlphaSystem, mp: &MoveProposal<N>, d: f64) {
-    let mut backup: MoveProposal<N> = MoveProposal::new();
+fn check_bond_lengths(system: &mut SurpassAlphaSystem, mp: &MoveProposal, d: f64) {
+    let mut backup: MoveProposal = MoveProposal::new(mp.n_moved);
     backup.first_moved_pos = mp.first_moved_pos;
     backup.backup(system);
     mp.apply(system);

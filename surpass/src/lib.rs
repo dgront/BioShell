@@ -12,6 +12,7 @@ mod excluded_volume;
 mod non_bonded_energy;
 mod non_bonded_energy_debug;
 pub mod measurements;
+mod total_energy;
 
 pub use system::*;
 pub use move_proposal::*;
@@ -22,7 +23,7 @@ pub use surpass_energy::*;
 pub use excluded_volume::*;
 pub use contact_energy::*;
 pub use surpass_hbond::{HBond3CA};
-
+pub use total_energy::*;
 pub use non_bonded_energy_debug::*;
 
 

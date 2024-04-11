@@ -133,11 +133,11 @@ impl SurpassEnergy for HBond3CA {
         return total_en;
     }
 
-    fn evaluate_delta<const N: usize>(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N>) -> f64 {
+    fn evaluate_delta(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal) -> f64 {
         let mut en_chain = 0.0;
         let mut en_proposed = 0.0;
         let mut i_chain = move_prop.first_moved_pos as i32;
-        let mut backup: MoveProposal<N> = move_prop.clone();
+        let mut backup: MoveProposal = move_prop.clone();
 
         let mut moved_system = conf.clone();
         move_prop.apply(&mut moved_system);

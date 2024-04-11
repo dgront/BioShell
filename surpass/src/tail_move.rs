@@ -19,13 +19,14 @@ impl fmt::Display for MovedTermini {
     }
 }
 
-pub struct TailMove<const N_MOVED: usize> {
+pub struct TailMove {
+    n_moved: usize,
     max_angle: f64,
     max_range_allowed: f64
 }
 
-impl<const N_MOVED: usize> Mover<N_MOVED> for TailMove<N_MOVED> {
-    fn propose<R: Rng>(&self, system: &SurpassAlphaSystem, rnd_gen: &mut R, proposal: &mut MoveProposal<N_MOVED>) {
+impl Mover for TailMove {
+    fn propose<R: Rng>(&self, system: &SurpassAlphaSystem, rnd_gen: &mut R, proposal: &mut MoveProposal) {
 
         // --- pick a chain randomly
         let i_chain = rnd_gen.gen_range(0..system.count_chains());
@@ -40,14 +41,14 @@ impl<const N_MOVED: usize> Mover<N_MOVED> for TailMove<N_MOVED> {
     }
 }
 
-impl<const N_MOVED: usize> TailMove<N_MOVED> {
+impl TailMove {
 
-    pub fn new(max_angle: f64, max_range_allowed: f64) -> TailMove<N_MOVED> {
-        TailMove{ max_angle, max_range_allowed }
+    pub fn new(n_moved: usize, max_angle: f64, max_range_allowed: f64) -> TailMove {
+        TailMove{ n_moved, max_angle, max_range_allowed }
     }
 
     pub fn compute_move(&self, system: &SurpassAlphaSystem, which_chain: usize, which_tail: MovedTermini,
-                        angle: f64, proposal: &mut MoveProposal<N_MOVED>) {
+                        angle: f64, proposal: &mut MoveProposal) {
 
         let r = system.chain_atoms(which_chain);
         // --- axis_from, axis_to : vectors defining the rotation axis
@@ -55,14 +56,14 @@ impl<const N_MOVED: usize> TailMove<N_MOVED> {
         // --- i_referenced index of the atom used as the PBC reference, i.e. all other atoms are moved to the image which is the closest to i_referenced
         let (axis_from, axis_to, i_moved_from, i_moved_to, i_referenced) = match which_tail {
             CTerminal => {
-                (system.ca_to_nearest_vec3(r.end-N_MOVED-2, r.end-N_MOVED-1),
-                 system.ca_to_vec3(r.end-N_MOVED-1),
-                 r.end - N_MOVED, r.end, r.end - N_MOVED -1)
+                (system.ca_to_nearest_vec3(r.end-self.n_moved-2, r.end-self.n_moved-1),
+                 system.ca_to_vec3(r.end-self.n_moved-1),
+                 r.end - self.n_moved, r.end, r.end - self.n_moved -1)
             }
             NTerminal => {
-                (system.ca_to_vec3(r.start + N_MOVED),
-                 system.ca_to_nearest_vec3(r.start+N_MOVED+1, r.start+N_MOVED),
-                 r.start, r.start + N_MOVED, r.start + N_MOVED)
+                (system.ca_to_vec3(r.start + self.n_moved),
+                 system.ca_to_nearest_vec3(r.start+self.n_moved+1, r.start+self.n_moved),
+                 r.start, r.start + self.n_moved, r.start + self.n_moved)
             }
         };
         trace!("{} tail move of {}..{}", which_tail, i_moved_from, i_moved_to);

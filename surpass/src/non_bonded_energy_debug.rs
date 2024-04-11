@@ -39,7 +39,7 @@ impl<E: NonBondedEnergyKernel> NonBondedEnergyDebug<E> {
         return e_total;
     }
 
-    pub fn evaluate_delta<const N: usize>(&mut self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N>) -> f64 {
+    pub fn evaluate_delta(&mut self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal) -> f64 {
 
         for i in 0..conf.count_atoms() {
             self.delta_energy_map[i].fill(0.0);
@@ -48,7 +48,7 @@ impl<E: NonBondedEnergyKernel> NonBondedEnergyDebug<E> {
         let mut en_chain = 0.0;
         let mut en_proposed = 0.0;
         let mut i_chain = move_prop.first_moved_pos as i32;
-        for i_moved in 0..N {
+        for i_moved in 0..move_prop.n_moved {
             for i_partner in 0..move_prop.first_moved_pos as i32 {
                 let mut ep = 0.0;
                 pairwise_energy!(self, i_partner as usize, conf, i_moved, move_prop, ep);
@@ -66,8 +66,8 @@ impl<E: NonBondedEnergyKernel> NonBondedEnergyDebug<E> {
             i_chain += 1;
         }
         let mut i_chain = move_prop.first_moved_pos as i32;
-        for i_moved in 0..N {
-            for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_atoms() as i32 {
+        for i_moved in 0..move_prop.n_moved {
+            for i_partner in (move_prop.first_moved_pos + move_prop.n_moved) as i32 ..conf.count_atoms() as i32 {
                 let mut ep = 0.0;
                 pairwise_energy!(self, i_partner as usize, conf, i_moved, move_prop, ep);
                 en_proposed += ep;
@@ -102,8 +102,8 @@ impl<E: NonBondedEnergyKernel> NonBondedEnergyDebug<E> {
         eprintln!();
     }
 
-    pub fn report<const N: usize>(&mut self, conf: &mut SurpassAlphaSystem, move_prop: &MoveProposal<N>) {
-        eprintln!("Moved range: [{},{}]", move_prop.first_moved_pos, move_prop.first_moved_pos + N - 1);
+    pub fn report(&mut self, conf: &mut SurpassAlphaSystem, move_prop: &MoveProposal) {
+        eprintln!("Moved range: [{},{}]", move_prop.first_moved_pos, move_prop.first_moved_pos + move_prop.n_moved - 1);
         eprintln!("Global energy:");
         Self::show_matrix(&self.global_energy_map);
         eprintln!("Local energy:");

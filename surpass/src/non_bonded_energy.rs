@@ -43,12 +43,12 @@ impl<E: NonBondedEnergyKernel> SurpassEnergy for NonBondedEnergy<E> {
         return e_total;
     }
 
-    fn evaluate_delta<const N: usize>(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal<N>) -> f64 {
+    fn evaluate_delta(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal) -> f64 {
 
         let mut en_chain = 0.0;
         let mut en_proposed = 0.0;
         let mut i_chain = move_prop.first_moved_pos as i32;
-        for i_moved in 0..N {
+        for i_moved in 0..move_prop.n_moved {
             for i_partner in 0..move_prop.first_moved_pos as i32 {
                 pairwise_energy!(self, i_partner as usize, conf, i_moved, move_prop, en_proposed);
                 pairwise_energy!(self, i_partner as usize, conf, i_chain as usize, conf, en_chain);
@@ -57,8 +57,8 @@ impl<E: NonBondedEnergyKernel> SurpassEnergy for NonBondedEnergy<E> {
             i_chain += 1;
         }
         let mut i_chain = move_prop.first_moved_pos as i32;
-        for i_moved in 0..N {
-            for i_partner in (move_prop.first_moved_pos + N) as i32 ..conf.count_atoms() as i32 {
+        for i_moved in 0..move_prop.n_moved {
+            for i_partner in (move_prop.first_moved_pos + move_prop.n_moved) as i32 ..conf.count_atoms() as i32 {
                 pairwise_energy!(self, i_partner as usize, conf, i_moved, move_prop, en_proposed);
                 pairwise_energy!(self, i_partner as usize, conf, i_chain as usize, conf, en_chain);
                 // eprintln!("{} {} {}   {} {}", i_partner, i_moved, i_chain, en_chain, en_proposed);
