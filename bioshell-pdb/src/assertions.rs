@@ -27,6 +27,9 @@ macro_rules! assert_vec3_eq {
 #[macro_export]
 macro_rules! assert_delta {
     ($a:expr, $b:expr, $delta:expr) => {
-        assert!(($a-$b).abs() < $delta, "a = {}, b = {}", $a, $b)
-    }
+        assert_delta!($a, $b, $delta, "")
+    };
+    ($a:expr, $b:expr, $delta:expr, $msg:expr) => {
+        assert!(($a-$b).abs() < $delta, "{} : a = {}, b = {}", $msg, $a, $b)
+    };
 }

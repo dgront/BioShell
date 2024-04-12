@@ -1,12 +1,8 @@
-macro_rules! assert_delta {
-    ($x:expr, $y:expr, $d:expr) => {
-        assert!(($x-$y).abs() < $d, "a = {}, b = {}", $x, $y)
-    }
-}
+
 
 #[cfg(test)]
 mod rototranslation_test {
-
+    use bioshell_pdb::assert_delta;
     use bioshell_pdb::calc::{Vec3, Rototranslation};
 
     #[test]
@@ -75,15 +71,15 @@ mod rototranslation_test {
             assert_delta!(rot.rotation_matrix()[i], expected[i], 0.000001);
         }
 
-        println!("{:?}", rot.rotation_matrix());
+        // println!("{:?}", rot.rotation_matrix());
         let mut another_vec = Vec3::new(1.0, 0.0, 0.0);
         for _ in 0..4 {
             rot.apply_mut(&mut another_vec);
-            println!("{}", another_vec);
+            // println!("{}", another_vec);
         }
-        assert_delta!(another_vec.x, 0.0, 0.000001);
-        assert_delta!(another_vec.y, 1.0, 0.000001);
-        assert_delta!(another_vec.z, 0.0, 0.000001);
+        assert_delta!(another_vec.x, 0.0, 0.000001, "bad X coordinate after 111 rotation");
+        assert_delta!(another_vec.y, 1.0, 0.000001, "bad Y coordinate after 111 rotation");
+        assert_delta!(another_vec.z, 0.0, 0.000001, "bad Z coordinate after 111 rotation");
     }
 
     #[test]
@@ -92,11 +88,11 @@ mod rototranslation_test {
         let corner_2 = Vec3::new(0.0, 0.0, 1.0);
         let angle = std::f64::consts::PI / 2.0;
         let rot = Rototranslation::around_axis(&corner_1, &corner_2, angle);
-        println!("{}", corner_1);
+        // println!("{}", corner_1);
         let mut another_vec = Vec3::new(1.0, 0.0, 0.0);
         for _ in 0..4 {
             rot.apply_mut(&mut another_vec);
-            println!("{}", another_vec);
+            // println!("{}", another_vec);
         }
     }
 }
