@@ -9,7 +9,7 @@ use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
 
-use surpass::{CaContactEnergy, ExcludedVolume, HBond3CA, HingeMove, MoveProposal, Mover, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove, TotalEnergy};
+use surpass::{CaContactEnergy, ExcludedVolume, HBond3CA, HingeMove, MoveProposal, Mover, MovesSet, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove, TotalEnergy};
 use surpass::measurements::{AutocorrelateVec3Measurements, CMDisplacement, REndVector, ChainCM, RgSquared, RecordMeasurements, REndSquared};
 #[allow(unused_imports)]                // NonBondedEnergyDebug can be un-commented to test non-bonded energy if the debug check fails
 use surpass::{NonBondedEnergyDebug};
@@ -46,11 +46,9 @@ struct Args {
     /// simulation box size in Angstroms
     #[clap(long)]
     seed: Option<u64>,
-    /*
     /// simulation temperature
     #[clap(long, default_value = "1.0", short='t')]
     t_start: f64,
-     */
 }
 
 fn box_length_for_density(density: f64, bead_diameter: f64, n_beads: usize) -> f64 {
@@ -85,13 +83,11 @@ fn main() {
     info!("simulation box width: {}",box_width);
     let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], box_width, &mut rnd);
 
-    // ========== movers and proposals
-    let hinge_mover: HingeMove = HingeMove::new(4, std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let tail_mover_1: TailMove = TailMove::new(1, std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let mut hinge_prop: MoveProposal = MoveProposal::new(4);
-    let mut tail_prop_1: MoveProposal = MoveProposal::new(1);
-    let tail_mover_2: TailMove = TailMove::new(2, std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-    let mut tail_prop_2: MoveProposal = MoveProposal::new(2);
+    // ========== movers
+    let mut movers = MovesSet::new();
+    movers.add_mover(Box::new(HingeMove::new(4, PI / 2.0, PI / 2.0)), system.count_atoms() / 4);
+    movers.add_mover(Box::new(TailMove::new(1, PI / 2.0, PI / 2.0)), system.count_chains()*2);
+    movers.add_mover(Box::new(TailMove::new(2, PI / 2.0, PI / 2.0)), system.count_chains());
 
     // ========== Observers
     let cm_measurements: Vec<ChainCM> = (0..system.count_chains()).map(|i|ChainCM::new(i)).collect();
@@ -133,44 +129,9 @@ fn main() {
     for outer in 0..args.outer_cycles {
         for inner in 0..args.inner_cycles {
             for _cycle in 0..args.cycle_factor {
-                // ---------- single atom tail move
-                for _tail in 0..n_chains*2 {
-                    tail_mover_1.propose(&mut system, &mut rnd, &mut tail_prop_1);
-                    #[cfg(debug_assertions)]
-                    check_bond_lengths(&mut system, &tail_prop_1, 3.8);
-                    if total_energy.evaluate_delta(&system, &tail_prop_1) < 0.1 {
-                        tail_prop_1.apply(&mut system);
-                    }
-                }
-                // ---------- tail move of two residues
-                for _tail in 0..n_chains * 2 {
-                    tail_mover_2.propose(&mut system, &mut rnd, &mut tail_prop_2);
-                    #[cfg(debug_assertions)]
-                    check_bond_lengths(&mut system, &tail_prop_2, 3.8);
-                    if total_energy.evaluate_delta(&system, &tail_prop_2) < 0.1 {
-                        tail_prop_2.apply(&mut system);
-                    }
-                }
-                // ---------- hinge move
-                for _hinge in 0..n_chains*(n_res-2) {
-                    hinge_mover.propose(&mut system, &mut rnd, &mut hinge_prop);
-                    let delta_e = total_energy.evaluate_delta(&system, &hinge_prop);
-                    if delta_e < 0.1 {
-                        #[cfg(debug_assertions)] {
-                            _en_before = total_energy.evaluate(&system);
-                            check_bond_lengths(&mut system, &hinge_prop, 3.8);
-                        }
-                        hinge_prop.apply(&mut system);
-
-                        #[cfg(debug_assertions)] {
-                            let en_after = total_energy.evaluate(&system);
-                            if (en_after - _en_before - delta_e).abs() > 0.001 {
-                                panic!("Incorrect energy change: global {} vs delta {}\n", en_after-_en_before, delta_e);
-                            }
-                        }
-                    }
-                }
-            }       // --- single inner MC cycle done (all cycle_factor MC cycles finished)
+                // ---------- make a single Monte Carlo cycle
+                movers.mc_cycle(&mut system, &total_energy, args.t_start, &mut rnd);
+            }
             println!("{} {} {} {:?}", outer, inner, total_energy.evaluate(&system), start.elapsed());
             let bond_err = system.adjust_bond_length(3.8);
             debug!("bond lengths corrected, maximum violation was: {}", &bond_err);
@@ -186,35 +147,4 @@ fn main() {
         system.to_pdb_file("tra.pdb", true);
         // r_end_autocorr.write();
     }   // --- end of the simulation: all outer MC cycles done
-}
-
-#[allow(dead_code)]
-fn check_bond_lengths(system: &mut SurpassAlphaSystem, mp: &MoveProposal, d: f64) {
-    let mut backup: MoveProposal = MoveProposal::new(mp.n_moved);
-    backup.first_moved_pos = mp.first_moved_pos;
-    backup.backup(system);
-    mp.apply(system);
-    for i in 0..system.count_atoms()-1 {
-        if system.chain(i) != system.chain(i+1) { continue }
-        let dd = system.distance(i+1, i);
-        if (dd-d).abs() > 0.01 {
-            system.to_pdb_file("after.pdb", false);
-            let av = system.ca_to_vec3(i+1);
-            let prev_av = system.ca_to_vec3(i);
-            backup.apply(system);
-            let bv = system.ca_to_vec3(i+1);
-            let prev_bv = system.ca_to_vec3(i);
-            system.to_pdb_file("before.pdb", false);
-
-            panic!("Broken bond between {} and {}, current length is: {}\nPos. before: {} {}\nPos. after: {} {}\n",
-                   i, i+1, dd, &prev_bv, &bv, &prev_av, &av);
-        }
-    }
-    backup.apply(system);
-}
-#[allow(dead_code)]
-fn check_delta_en(en_before: f64, en_after: f64, delta: f64) {
-    if (en_after-en_before-delta).abs() > 0.001 {
-        panic!("Incorrect energy change: global {} vs delta {}\n", en_after-en_before, delta);
-    }
 }

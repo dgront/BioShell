@@ -28,8 +28,8 @@ pub struct MovesSet {
 impl MovesSet {
     pub fn new() -> Self { MovesSet{ movers: vec![], moves_in_cycle: vec![] } }
 
-    pub fn add_mover(&mut self, energy_term: Box<dyn Mover>, moves_in_cycle: usize) {
-        self.movers.push(energy_term);
+    pub fn add_mover(&mut self, mover: Box<dyn Mover>, moves_in_cycle: usize) {
+        self.movers.push(mover);
         self.moves_in_cycle.push(moves_in_cycle);
     }
 
@@ -41,6 +41,9 @@ impl MovesSet {
             let mut proposal = MoveProposal::new(mover.n_moved());
             for _i in 0..*n_moves {
                 mover.propose(system, rndgen, &mut proposal);
+                #[cfg(debug_assertions)]
+                check_bond_lengths(system, &proposal, 3.8);
+
                 let delta_en = total_energy.evaluate_delta(&system, &proposal);
                 if criterion.is_move_accepted(0.0, delta_en, rndgen) {
                     proposal.apply(system);
@@ -48,5 +51,37 @@ impl MovesSet {
                 }
             }
         }
+    }
+}
+
+#[allow(dead_code)]
+fn check_bond_lengths(system: &mut SurpassAlphaSystem, mp: &MoveProposal, d: f64) {
+    let mut backup: MoveProposal = MoveProposal::new(mp.n_moved);
+    backup.first_moved_pos = mp.first_moved_pos;
+    backup.backup(system);
+    mp.apply(system);
+    for i in 0..system.count_atoms()-1 {
+        if system.chain(i) != system.chain(i+1) { continue }
+        let dd = system.distance(i+1, i);
+        if (dd-d).abs() > 0.01 {
+            system.to_pdb_file("after.pdb", false);
+            let av = system.ca_to_vec3(i+1);
+            let prev_av = system.ca_to_vec3(i);
+            backup.apply(system);
+            let bv = system.ca_to_vec3(i+1);
+            let prev_bv = system.ca_to_vec3(i);
+            system.to_pdb_file("before.pdb", false);
+
+            panic!("Broken bond between {} and {}, current length is: {}\nPos. before: {} {}\nPos. after: {} {}\n",
+                   i, i+1, dd, &prev_bv, &bv, &prev_av, &av);
+        }
+    }
+    backup.apply(system);
+}
+
+#[allow(dead_code)]
+fn check_delta_en(en_before: f64, en_after: f64, delta: f64) {
+    if (en_after-en_before-delta).abs() > 0.001 {
+        panic!("Incorrect energy change: global {} vs delta {}\n", en_after-en_before, delta);
     }
 }

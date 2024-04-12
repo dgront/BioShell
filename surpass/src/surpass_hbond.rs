@@ -61,7 +61,7 @@ impl HBond3CA {
 
         let out = self.evaluate_hbond_energy_6ca(i_res, &vip, &vi, &vin, j_res, &vjp, &vj, &vjn);
 
-        println!("{} {}  {}",i_res, j_res, out);
+        // println!("{} {}  {}",i_res, j_res, out);
         return out;
     }
 
@@ -76,22 +76,22 @@ impl HBond3CA {
             HBondSense::None => { return 0.0;}
             HBondSense::Parallel => {
                 if j_res > i_res && j_res - i_res == 4 {
-                    return (self.h_against.evaluate(&vjp, &vj, &vjn, &vi)*
+                    return -(self.h_against.evaluate(&vjp, &vj, &vjn, &vi)*
                         self.h_along.evaluate(&vip, &vi, &vin, &vj)).powf(1.0 / 6.0);
                 }
                 else if j_res > i_res && j_res - i_res == 4 {
-                    return (self.h_along.evaluate(&vjp, &vj, &vjn, &vi)*
+                    return -(self.h_along.evaluate(&vjp, &vj, &vjn, &vi)*
                         self.h_against.evaluate(&vip, &vi, &vin, &vj)).powf(1.0 / 6.0);
                 }
 
-                println!("parallel E");
-                return (self.e_parallel.evaluate(&vip, &vi, &vin, &vj)
+                // println!("parallel E");
+                return - (self.e_parallel.evaluate(&vip, &vi, &vin, &vj)
                     * self.e_parallel.evaluate(&vjp, &vj, &vjn, &vi)).powf(1.0 / 6.0);
             }
             HBondSense::Antiparallel => {
-                println!("antiparallel E");
+                // println!("antiparallel E");
 
-                return (self.e_anti.evaluate(&vip, &vi, &vin, &vj)
+                return -(self.e_anti.evaluate(&vip, &vi, &vin, &vj)
                     * self.e_anti.evaluate(&vjn, &vj, &vjp, &vi)).powf(1.0 / 6.0);
             }
         }
@@ -134,10 +134,6 @@ impl SurpassEnergy for HBond3CA {
     }
 
     fn evaluate_delta(&self, conf: &SurpassAlphaSystem, move_prop: &MoveProposal) -> f64 {
-        let mut en_chain = 0.0;
-        let mut en_proposed = 0.0;
-        let mut i_chain = move_prop.first_moved_pos as i32;
-        let mut backup: MoveProposal = move_prop.clone();
 
         let mut moved_system = conf.clone();
         move_prop.apply(&mut moved_system);
@@ -264,7 +260,7 @@ fn compute_x_r_a(ca_prev: &Vec3, ca_i: &Vec3, ca_next: &Vec3, ca_j: &Vec3,
 
     let rt = Rototranslation::by_three_atoms(&ca_prev, &ca_i, &ca_next);
     let mut ca_j_local = rt.apply(&ca_j);
-    println!("xyz: {} {} {}", ca_j_local.x, ca_j_local.y, ca_j_local.z);
+    // println!("xyz: {} {} {}", ca_j_local.x, ca_j_local.y, ca_j_local.z);
 
     let x = ca_j_local.x;                                        // --- X coordinate
     ca_j_local.y -= correct_y;                                        // --- correct for the center of Y-Z circle
@@ -275,7 +271,7 @@ fn compute_x_r_a(ca_prev: &Vec3, ca_i: &Vec3, ca_next: &Vec3, ca_j: &Vec3,
     if a < 0.0 { a += 2.0 * std::f64::consts::PI; }               // --- take care the angle is in the range [0,2pi]
     if a < std::f64::consts::PI / 2.0 { a += 2.0 * std::f64::consts::PI; }
 
-    println!("{x} {r} {a}");
+    // println!("{x} {r} {a}");
     return (x, r, a);
 }
 
