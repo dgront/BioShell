@@ -4,6 +4,7 @@ use crate::calc::{Matrix3x3, Vec3};
 /// Rotation-translation operation in 3D
 pub struct Rototranslation {
     _origin: Vec3,
+    translate_back: bool,
     _rotation_matrix: Matrix3x3,
     _inverse_rotation_matrix: Matrix3x3,
 }
@@ -49,6 +50,7 @@ impl Rototranslation {
         inv.inverse();
         return Rototranslation {
             _origin: start.clone(),
+            translate_back: true,
             _rotation_matrix: u_rot,
             _inverse_rotation_matrix: inv,
         };
@@ -117,6 +119,7 @@ impl Rototranslation {
         inv.inverse();
         return Rototranslation {
             _origin: b.clone(),
+            translate_back: false,
             _rotation_matrix: u_rot,
             _inverse_rotation_matrix: inv,
         };
@@ -128,11 +131,11 @@ impl Rototranslation {
     pub fn apply_mut(&self, vector: &mut Vec3) {
         *vector -= &self._origin;
         self._rotation_matrix.mul_vec_mut(vector);
-        // *vector += &self._origin;
+        if self.translate_back { *vector += &self._origin; }
     }
 
     pub fn apply_inverse_mut(&self, vector: &mut Vec3) {
-        // *vector -= &self._origin;
+        if self.translate_back { *vector += &self._origin; }
         self._inverse_rotation_matrix.mul_vec_mut(vector);
         *vector += &self._origin;
     }
