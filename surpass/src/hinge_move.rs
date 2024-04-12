@@ -1,6 +1,7 @@
 #[warn(unused_imports)]
 use log::{trace};
 use rand::{Rng};
+use rand::rngs::SmallRng;
 use bioshell_pdb::calc::{Rototranslation, Vec3};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
 
@@ -11,7 +12,9 @@ pub struct HingeMove {
 }
 
 impl Mover for HingeMove {
-    fn propose<R: Rng>(&self, system: &SurpassAlphaSystem, rnd_gen: &mut R, proposal: &mut MoveProposal) {
+    fn n_moved(&self) -> usize { self.n_moved }
+
+    fn propose(&self, system: &SurpassAlphaSystem, rnd_gen: &mut SmallRng, proposal: &mut MoveProposal) {
 
         // --- pick end points randomly
         let mut moved_from;

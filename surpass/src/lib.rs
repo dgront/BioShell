@@ -13,9 +13,11 @@ mod non_bonded_energy;
 mod non_bonded_energy_debug;
 pub mod measurements;
 mod total_energy;
+mod moves_set;
 
 pub use system::*;
 pub use move_proposal::*;
+pub use moves_set::*;
 pub use hinge_move::*;
 pub use tail_move::*;
 pub use non_bonded_energy::*;

@@ -1,6 +1,7 @@
 use std::fmt;
 use log::trace;
 use rand::{Rng};
+use rand::rngs::SmallRng;
 use bioshell_pdb::calc::{Rototranslation};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
 use crate::tail_move::MovedTermini::{CTerminal, NTerminal};
@@ -26,7 +27,9 @@ pub struct TailMove {
 }
 
 impl Mover for TailMove {
-    fn propose<R: Rng>(&self, system: &SurpassAlphaSystem, rnd_gen: &mut R, proposal: &mut MoveProposal) {
+    fn n_moved(&self) -> usize { self.n_moved }
+
+    fn propose(&self, system: &SurpassAlphaSystem, rnd_gen: &mut SmallRng, proposal: &mut MoveProposal) {
 
         // --- pick a chain randomly
         let i_chain = rnd_gen.gen_range(0..system.count_chains());

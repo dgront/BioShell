@@ -117,7 +117,6 @@ fn main() {
 
     // ========== Energy function
     let mut total_energy = TotalEnergy::new();
-    total_energy.add_component(Box::new(ExcludedVolume::new(&system, 3.7, 100.0)), 1.0);
     total_energy.add_component(Box::new(HBond3CA::new()), 1.0);
     let excl_vol_kernel = ExcludedVolume::new(&system, 3.7, 100.0);
     total_energy.add_component(Box::new(NonBondedEnergy::new(&system, excl_vol_kernel)), 1.0);
