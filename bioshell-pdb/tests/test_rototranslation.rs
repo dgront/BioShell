@@ -28,6 +28,24 @@ mod rototranslation_test {
     }
 
     #[test]
+    fn rototranslation_apply_mut2() {
+        let _origin_vector: Vec3 = Vec3::new(1.0, 1.0, 1.0);
+        let _start_vector: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+        let _end_vector: Vec3 = Vec3::new(4.0, 4.0, 4.0);
+        let _theta_rad = - 180.0 * std::f64::consts::PI /180.0;
+
+        let _roto = Rototranslation::around_axis(&_end_vector,&_start_vector,  _theta_rad);
+
+        let mut _candidate_vector: Vec3 = Vec3::new(1.0, 2.0, 3.0);
+
+        _roto.apply_mut(&mut _candidate_vector);
+
+        assert_delta!(_candidate_vector.x, 3.0, 0.00001);
+        assert_delta!(_candidate_vector.y, 2.0, 0.00001);
+        assert_delta!(_candidate_vector.z, 1.0, 0.00001);
+    }
+
+    #[test]
     fn rototranslation_apply_inverse_mut() {
         let _origin_vector: Vec3 = Vec3::new(1.0, 1.0, 1.0);
         let _start_vector: Vec3 = Vec3::new(0.0, 0.0, 0.0);
