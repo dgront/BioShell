@@ -25,7 +25,7 @@ fn step(step_size: f64, system: &mut SurpassAlphaSystem) {
 #[test]
 fn test_autocorrelations() {
     // --- the system is not used
-    let mut s = SurpassAlphaSystem::new(&[5], 100.0);
+    let mut s = SurpassAlphaSystem::by_length(&[5], 100.0);
     let m = Vec3Measurement{ last_vec: Default::default() };
     let t_max = 100;
     let n_samples = 100000;

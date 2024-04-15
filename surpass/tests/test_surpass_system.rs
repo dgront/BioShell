@@ -78,7 +78,7 @@ fn test_extended_chain() {
 
 #[test]
 fn test_coords_operations() {
-    let mut model = SurpassAlphaSystem::new(&[3], 100.0);
+    let mut model = SurpassAlphaSystem::by_length(&[3], 100.0);
 
     model.cax[2] = model.real_to_int(6.0);
     assert_delta!(model.int_to_real(model.cax[2]), 6.0, 0.00001);
@@ -92,14 +92,14 @@ fn test_coords_operations() {
     model.cax[2] = model.real_to_int(-51.0);
     assert_delta!(model.int_to_real(model.cax[2]), 49.0, 0.00001);
 
-    let mut model = SurpassAlphaSystem::new(&[3], 50.0);
+    let mut model = SurpassAlphaSystem::by_length(&[3], 50.0);
     model.cax[2] = model.real_to_int(-27.4);
     assert!(model.cax[2] > 0);
 }
 
 #[test]
 fn test_diatance_evaluation() {
-    let mut model = SurpassAlphaSystem::new(&[3], 100.0);
+    let mut model = SurpassAlphaSystem::by_length(&[3], 100.0);
     for i in 0..3 {
         model.cax[i] = model.real_to_int(0.0);
         model.cay[i] = model.real_to_int(0.0);
@@ -118,7 +118,7 @@ fn test_bond_adjustments() {
     let new_bond_length = 7.0;
     const n_chains: usize = 2;
     let n_atoms = atom_each_chain * n_chains;
-    let mut system = SurpassAlphaSystem::new(&[atom_each_chain; n_chains], 1000.0);
+    let mut system = SurpassAlphaSystem::by_length(&[atom_each_chain; n_chains], 1000.0);
     // ---------- Initialize coordinates
     let mut r = vec![3.8; n_atoms];
     let planar: Vec<f64> = (0..n_atoms).map(|_| 120.0_f64.to_radians()).collect();

@@ -8,6 +8,26 @@ use bioshell_pdb::pdb_atom_filters::{IsCA, PdbAtomPredicate};
 use bioshell_pdb::PDBError;
 use bioshell_io::out_writer;
 
+#[repr(u8)]
+#[derive(Clone, PartialEq, Eq, Copy, PartialOrd)]
+pub enum SecondaryStructure {
+    HELIX,
+    EXTENDED,
+    COIL,
+    UNDEFINED
+}
+
+impl From<char> for SecondaryStructure {
+    fn from(code: char) -> Self {
+        match code {
+            'H' => SecondaryStructure::HELIX,
+            'E' => SecondaryStructure::EXTENDED,
+            'U' => SecondaryStructure::UNDEFINED,
+            _ => SecondaryStructure::COIL
+        }
+    }
+}
+
 /// SURPASS-alpha system holds coordinates of all atoms
 ///
 #[derive(Clone)]
@@ -19,6 +39,7 @@ pub struct SurpassAlphaSystem {
     pub sgy: Vec<i32>,
     pub sgz: Vec<i32>,
     atoms_for_chain: Vec<Range<usize>>,
+    secondary_for_residue: Vec<SecondaryStructure>,
     chain_indexes: Vec<u16>,
     chain_id_by_index: Vec<String>,
     int_to_real: f64,
@@ -34,7 +55,7 @@ macro_rules! closest_coordinate {
 }
 impl SurpassAlphaSystem {
 
-    pub fn new(chain_lengths: &[usize], box_length: f64) -> SurpassAlphaSystem {
+    pub fn by_length(chain_lengths: &[usize], box_length: f64) -> SurpassAlphaSystem {
 
         // ---------- Create an empty system
         let l = box_length / 2.0 / (i32::MAX as f64);
@@ -44,7 +65,8 @@ impl SurpassAlphaSystem {
             chain_indexes: vec![0; n_atoms], cax: vec![0; n_atoms], cay: vec![0; n_atoms], caz: vec![0; n_atoms],
             sgx: vec![0; n_atoms], sgy: vec![0; n_atoms], sgz: vec![0; n_atoms],
             atoms_for_chain: vec![0..0; n_atoms], chain_id_by_index: vec![String::from("A");n_chains],
-            int_to_real: l, int_to_real_2: l*l, box_length, model_id: 0
+            int_to_real: l, int_to_real_2: l*l, box_length, model_id: 0,
+            secondary_for_residue: vec![SecondaryStructure::UNDEFINED; n_atoms],
         };
         // ---------- Assign atoms to chains
         let mut atoms_total = 0;
@@ -59,6 +81,21 @@ impl SurpassAlphaSystem {
         }
 
         return s;
+    }
+
+    pub fn by_secondary_structure(chain_secondary: &Vec<String>, box_length: f64) -> SurpassAlphaSystem {
+
+        let chain_lengths: Vec<usize> = chain_secondary.iter().map(|s| s.len()).collect();
+        let mut system = SurpassAlphaSystem::by_length(&chain_lengths, box_length);
+        let mut ic = 0;
+        for chain in chain_secondary {
+            for code in chain.chars() {
+                system.secondary_for_residue[ic] = SecondaryStructure::from(code);
+                ic += 1;
+            }
+        }
+
+        return system;
     }
 
     #[inline(always)]
@@ -186,7 +223,7 @@ impl SurpassAlphaSystem {
     ///
     /// ```
     /// # use surpass::SurpassAlphaSystem;
-    /// # let mut system = SurpassAlphaSystem::new(&[5, 5], 100.0);
+    /// # let mut system = SurpassAlphaSystem::by_length(&[5, 5], 100.0);
     /// // by default the first chain is named as "A"
     /// assert_eq!(system.chain_id(0).unwrap(), &String::from("A"));
     /// system.set_chain_id(0, "XYZ");
@@ -212,13 +249,17 @@ impl SurpassAlphaSystem {
 
     pub fn distance(&self, i: usize, j: usize) -> f64 { self.distance_squared(i, j).sqrt() }
 
+    pub fn ss(&self, pos: usize) -> SecondaryStructure {
+        self.secondary_for_residue[pos]
+    }
+
     pub fn from_pdb_structure(strctr: &Structure, box_length: f64) -> SurpassAlphaSystem {
 
         let mut chain_sizes: Vec<usize> = vec![];
         for chain_id in strctr.chain_ids().iter() {
             chain_sizes.push(strctr.chain_residue_ids(chain_id).len());
         }
-        let mut surpass_model = SurpassAlphaSystem::new(&chain_sizes, box_length);
+        let mut surpass_model = SurpassAlphaSystem::by_length(&chain_sizes, box_length);
         for (i, cid) in strctr.chain_ids().iter().enumerate() {
             surpass_model.set_chain_id(i, cid);
         }
@@ -237,7 +278,7 @@ impl SurpassAlphaSystem {
     }
 
     pub fn make_random<R: Rng>(chain_lengths: &[usize], box_length: f64, rnd_gen: &mut R) -> SurpassAlphaSystem {
-        let mut s = SurpassAlphaSystem::new(chain_lengths, box_length);
+        let mut s = SurpassAlphaSystem::by_length(chain_lengths, box_length);
         let n_atoms = s.count_atoms();
         // ---------- Initialize coordinates
         let r = vec![3.8; n_atoms];
@@ -309,7 +350,7 @@ pub fn calculate_cm(system: &SurpassAlphaSystem, i_chain: usize) -> Vec3 {
 /// of length `box_length`. All planar and dihedral angles are set to 120 and 180 degrees, respectively
 pub fn extended_chain(n_res: usize, box_length: f64) -> SurpassAlphaSystem {
 
-    let mut model = SurpassAlphaSystem::new(&[n_res], box_length);
+    let mut model = SurpassAlphaSystem::by_length(&[n_res], box_length);
     // ---------- Initialize internal coordinates
     let r= vec![3.8; n_res];
     let planar = vec![120.0_f64.to_radians(); n_res];

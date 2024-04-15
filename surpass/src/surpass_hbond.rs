@@ -1,5 +1,6 @@
 use bioshell_pdb::calc::{Rototranslation, Vec3};
-use crate::{MoveProposal, SurpassAlphaSystem, SurpassEnergy};
+use crate::{MoveProposal, SecondaryStructure, SurpassAlphaSystem, SurpassEnergy};
+use crate::SecondaryStructure::{COIL, EXTENDED, HELIX, UNDEFINED};
 
 /// Shortest CA-CA distance the residues might form a hydrogen bond
 const MIN_HBOND_DISTANCE_SQ: f64 = 4.0 * 4.0;
@@ -11,6 +12,24 @@ pub struct HBond3CA {
       h_against: HelicalHBond,
       e_parallel: StrandHBond,
       e_anti: StrandHBond,
+}
+
+pub fn h_bond_type(partner_i: SecondaryStructure, partner_j: SecondaryStructure) -> Option<SecondaryStructure> {
+    // there are 16 possibilities:
+    //    H  E  U  C       the integer: 0, 1, 2, 3 or 4 in the table
+    // H  2  5  4  0       correspond to the IF statement below
+    // E  5  3  4  0       which is responsible to sort out a given combination
+    // U  4  4  1  0
+    // C  0  0  0  0
+    if partner_i==COIL || partner_j == COIL { return None; }                        // 0 --- coil doesn't form H-bonds
+    if partner_i==UNDEFINED && partner_j == UNDEFINED { return Some(UNDEFINED); }   // 1 --- both undefined makes undefined
+    if partner_i==HELIX && partner_j == HELIX { return Some(HELIX); }               // 2 --- both helix makes helix
+    if partner_i==EXTENDED && partner_j == EXTENDED { return Some(EXTENDED); }      // 3 --- both strand makes strand
+    let (pi, pj) =                                // -- sort them so undefined must be pj if any
+        if partner_i < partner_j { (partner_i, partner_j) } else { (partner_j, partner_i) };
+    if pj == UNDEFINED { return Some(pi); }                                         // 4 --- there can be only one undefined; the other is H or E
+
+    return None;    // 5 --- there are only H and E combinations left
 }
 
 impl HBond3CA {
@@ -44,6 +63,10 @@ impl HBond3CA {
     ///
     pub fn evaluate_hbond_energy(&self, system: &SurpassAlphaSystem, i_res: usize, j_res: usize) -> f64 {
 
+        // ---------- Exclude H-E and similar bonds
+        let hbond_type = h_bond_type(system.ss(i_res), system.ss(j_res));
+        if hbond_type == None { return 0.0; }
+
         // ---------- First and last CA of a chain can't form an H-bond
         let chain_i_range = system.chain_atoms(system.chain(i_res) as usize);
         if i_res == chain_i_range.start || i_res == chain_i_range.end -1 { return 0.0; }
@@ -59,7 +82,7 @@ impl HBond3CA {
         let vjp = system.ca_to_nearest_vec3(j_res - 1, j_res);
         let vjn = system.ca_to_nearest_vec3(j_res + 1, j_res);
 
-        let out = self.evaluate_hbond_energy_6ca(i_res, &vip, &vi, &vin, j_res, &vjp, &vj, &vjn);
+        let out = self.evaluate_hbond_energy_6ca(i_res, &vip, &vi, &vin, j_res, &vjp, &vj, &vjn, hbond_type.unwrap());
 
         // println!("{} {}  {}",i_res, j_res, out);
         return out;
@@ -68,7 +91,7 @@ impl HBond3CA {
     /// Calculate coarse-grained hydrogen bond energy between 6 amino acid residues
     ///
     pub fn evaluate_hbond_energy_6ca(&self, i_res: usize, vip: &Vec3, vi: &Vec3, vin: &Vec3,
-                                     j_res: usize, vjp: &Vec3, vj: &Vec3, vjn: &Vec3) -> f64 {
+                j_res: usize, vjp: &Vec3, vj: &Vec3, vjn: &Vec3, ss_type: SecondaryStructure) -> f64 {
 
         // ---------- check the sense of a possible  H-bond
         let sense = sense_h_bond(&vip, &vi, &vin, &vjp, &vj, &vjn);
@@ -76,13 +99,16 @@ impl HBond3CA {
             HBondSense::None => { return 0.0;}
             HBondSense::Parallel => {
                 if j_res > i_res && j_res - i_res == 4 {
+                    if ss_type == EXTENDED {return 0.0}
                     return -(self.h_against.evaluate(&vjp, &vj, &vjn, &vi)*
                         self.h_along.evaluate(&vip, &vi, &vin, &vj)).powf(1.0 / 6.0);
                 }
                 else if j_res > i_res && j_res - i_res == 4 {
+                    if ss_type == EXTENDED {return 0.0}
                     return -(self.h_along.evaluate(&vjp, &vj, &vjn, &vi)*
                         self.h_against.evaluate(&vip, &vi, &vin, &vj)).powf(1.0 / 6.0);
                 }
+                if ss_type == HELIX {return 0.0}
 
                 // println!("parallel E");
                 return - (self.e_parallel.evaluate(&vip, &vi, &vin, &vj)
@@ -90,6 +116,7 @@ impl HBond3CA {
             }
             HBondSense::Antiparallel => {
                 // println!("antiparallel E");
+                if ss_type == HELIX {return 0.0}
 
                 return -(self.e_anti.evaluate(&vip, &vi, &vin, &vj)
                     * self.e_anti.evaluate(&vjn, &vj, &vjp, &vi)).powf(1.0 / 6.0);
