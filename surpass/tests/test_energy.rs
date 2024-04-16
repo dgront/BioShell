@@ -13,7 +13,7 @@ macro_rules! assert_delta {
 #[test]
 fn test_excluded_volume_5() {
     // --- make a system of 5 atoms
-    let mut model = SurpassAlphaSystem::by_length(&[5], 100.0);
+    let mut model = SurpassAlphaSystem::new(&[5], 100.0);
     // --- put all atoms in 0.0,0
     for i in 0..5 {
         model.cax[i] = model.real_to_int(0.0);
@@ -59,7 +59,7 @@ fn test_excluded_volume_N() {
 #[allow(non_snake_case)]
 fn run_test_excluded_volume_N<const N: usize>() {
     // --- make a system of N atoms
-    let mut model = SurpassAlphaSystem::by_length(&[N], 100.0);
+    let mut model = SurpassAlphaSystem::new(&[N], 100.0);
     // --- put all atoms in 0, 0, 0
     for i in 0..N {
         model.cax[i] = model.real_to_int(0.0);
@@ -74,7 +74,7 @@ fn run_test_excluded_volume_N<const N: usize>() {
 
 #[test]
 fn test_cacontacts_kernel() {
-    let mut system = SurpassAlphaSystem::by_length(&[10], 1000.0);
+    let mut system = SurpassAlphaSystem::new(&[10], 1000.0);
     let cntcts = CaContactEnergy::new(&system, 10.0, -1.0, 3.7, 4.0, 5.0);
     let d = [3.2, 3.5, 3.6, 3.701, 3.99, 4.001, 4.999, 5.001];
     let e = [10.0, 10.0, 10.0, 0.0, 0.0, -1.0, -1.0, 0.0];

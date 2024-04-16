@@ -91,7 +91,10 @@ macro_rules! closest_coordinate {
 }
 impl SurpassAlphaSystem {
 
-    pub fn by_length(chain_lengths: &[usize], pbc: BoxDefinition) -> SurpassAlphaSystem {
+    /// Creates data structures for a system of given size.
+    ///
+    /// This unction does not initialize system's coordinates!
+    pub fn new(chain_lengths: &[usize], pbc: BoxDefinition) -> SurpassAlphaSystem {
 
         let n_atoms = chain_lengths.iter().sum();
         let n_chains = chain_lengths.len();
@@ -181,7 +184,7 @@ impl SurpassAlphaSystem {
         for chain_id in strctr.chain_ids().iter() {
             chain_sizes.push(strctr.chain_residue_ids(chain_id).len());
         }
-        let mut surpass_model = SurpassAlphaSystem::by_length(&chain_sizes, pbc);
+        let mut surpass_model = SurpassAlphaSystem::new(&chain_sizes, pbc);
         for (i, cid) in strctr.chain_ids().iter().enumerate() {
             surpass_model.set_chain_id(i, cid);
         }
@@ -200,7 +203,7 @@ impl SurpassAlphaSystem {
     }
 
     pub fn make_random<R: Rng>(chain_lengths: &[usize], pbc: BoxDefinition, rnd_gen: &mut R) -> SurpassAlphaSystem {
-        let mut s = SurpassAlphaSystem::by_length(chain_lengths, pbc);
+        let mut s = SurpassAlphaSystem::new(chain_lengths, pbc);
         let n_atoms = s.count_atoms();
         // ---------- Initialize coordinates
         let r = vec![3.8; n_atoms];
@@ -340,7 +343,7 @@ impl SurpassAlphaSystem {
     ///
     /// ```
     /// # use surpass::{BoxDefinition, SurpassAlphaSystem};
-    /// # let mut system = SurpassAlphaSystem::by_length(&[5, 5], BoxDefinition::BoxWidth {width: 100.0});
+    /// # let mut system = SurpassAlphaSystem::new(&[5, 5], BoxDefinition::BoxWidth {width: 100.0});
     /// // by default the first chain is named as "A"
     /// assert_eq!(system.chain_id(0).unwrap(), &String::from("A"));
     /// system.set_chain_id(0, "XYZ");
@@ -422,7 +425,7 @@ pub fn calculate_cm(system: &SurpassAlphaSystem, i_chain: usize) -> Vec3 {
 /// of length `box_length`. All planar and dihedral angles are set to 120 and 180 degrees, respectively
 pub fn extended_chain(n_res: usize, pbc: BoxDefinition) -> SurpassAlphaSystem {
 
-    let mut model = SurpassAlphaSystem::by_length(&[n_res], pbc);
+    let mut model = SurpassAlphaSystem::new(&[n_res], pbc);
     // ---------- Initialize internal coordinates
     let r= vec![3.8; n_res];
     let planar = vec![120.0_f64.to_radians(); n_res];
