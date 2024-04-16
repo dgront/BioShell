@@ -1,24 +1,10 @@
-use bioshell_ff::{Coordinates, System};
-use bioshell_ff::nonbonded::{ArgonRules, NbList};
-use bioshell_sim::generators::cubic_grid_atoms;
-
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
+use surpass::{BoxDefinition, SurpassAlphaSystem};
 #[test]
-fn create_simple_system() {
-    const L: f64 = 6.0;        // --- width of the box
-    const N: usize = 27;       // --- the number of atoms in it
-    const R: f64 = 2.0;         // --- radius of each atom (interaction cutoff)
-    const B: f64 = 1.0;         // --- buffer zone width for NBL
+fn surpass_alpha_from_fasta() {
 
-    // ---------- Create system's coordinates and initialize them
-    let mut xyz = Coordinates::new(N);
-    xyz.set_box_len(L);
-    cubic_grid_atoms(&mut xyz);
-
-    // ---------- Create system's list of neighbors - it's mandatory!
-    let nbl: NbList = NbList::new(2.0*R,B,Box::new(ArgonRules{}));
-
-    // ---------- Create and modify the system
-    let mut system: System = System::new(xyz,nbl);
-    system.add(0, 0.5, 0.5, 0.5);
-
+    let mut rnd = SmallRng::from_entropy();
+    let sec_str = vec!["CEEEEEECCCCCCEEEEEECCHHHHHHHHHHHHHHHCCCCCEEEEECCCCEEEEEC".to_string()];
+    let system = SurpassAlphaSystem::by_secondary_structure(&sec_str, BoxDefinition::Density {density:0.001}, &mut rnd);
 }

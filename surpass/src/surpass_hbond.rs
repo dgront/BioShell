@@ -1,6 +1,6 @@
 use bioshell_pdb::calc::{Rototranslation, Vec3};
 use crate::{MoveProposal, SecondaryStructure, SurpassAlphaSystem, SurpassEnergy};
-use crate::SecondaryStructure::{COIL, EXTENDED, HELIX, UNDEFINED};
+use crate::SecondaryStructure::{Coil, Extended, Helix, Undefined};
 
 /// Shortest CA-CA distance the residues might form a hydrogen bond
 const MIN_HBOND_DISTANCE_SQ: f64 = 4.0 * 4.0;
@@ -21,13 +21,13 @@ pub fn h_bond_type(partner_i: SecondaryStructure, partner_j: SecondaryStructure)
     // E  5  3  4  0       which is responsible to sort out a given combination
     // U  4  4  1  0
     // C  0  0  0  0
-    if partner_i==COIL || partner_j == COIL { return None; }                        // 0 --- coil doesn't form H-bonds
-    if partner_i==UNDEFINED && partner_j == UNDEFINED { return Some(UNDEFINED); }   // 1 --- both undefined makes undefined
-    if partner_i==HELIX && partner_j == HELIX { return Some(HELIX); }               // 2 --- both helix makes helix
-    if partner_i==EXTENDED && partner_j == EXTENDED { return Some(EXTENDED); }      // 3 --- both strand makes strand
+    if partner_i== Coil || partner_j == Coil { return None; }                        // 0 --- coil doesn't form H-bonds
+    if partner_i== Undefined && partner_j == Undefined { return Some(Undefined); }   // 1 --- both undefined makes undefined
+    if partner_i== Helix && partner_j == Helix { return Some(Helix); }               // 2 --- both helix makes helix
+    if partner_i== Extended && partner_j == Extended { return Some(Extended); }      // 3 --- both strand makes strand
     let (pi, pj) =                                // -- sort them so undefined must be pj if any
         if partner_i < partner_j { (partner_i, partner_j) } else { (partner_j, partner_i) };
-    if pj == UNDEFINED { return Some(pi); }                                         // 4 --- there can be only one undefined; the other is H or E
+    if pj == Undefined { return Some(pi); }                                         // 4 --- there can be only one undefined; the other is H or E
 
     return None;    // 5 --- there are only H and E combinations left
 }
@@ -99,16 +99,16 @@ impl HBond3CA {
             HBondSense::None => { return 0.0;}
             HBondSense::Parallel => {
                 if j_res > i_res && j_res - i_res == 4 {
-                    if ss_type == EXTENDED {return 0.0}
+                    if ss_type == Extended {return 0.0}
                     return -(self.h_against.evaluate(&vjp, &vj, &vjn, &vi)*
                         self.h_along.evaluate(&vip, &vi, &vin, &vj)).powf(1.0 / 6.0);
                 }
                 else if j_res > i_res && j_res - i_res == 4 {
-                    if ss_type == EXTENDED {return 0.0}
+                    if ss_type == Extended {return 0.0}
                     return -(self.h_along.evaluate(&vjp, &vj, &vjn, &vi)*
                         self.h_against.evaluate(&vip, &vi, &vin, &vj)).powf(1.0 / 6.0);
                 }
-                if ss_type == HELIX {return 0.0}
+                if ss_type == Helix {return 0.0}
 
                 // println!("parallel E");
                 return - (self.e_parallel.evaluate(&vip, &vi, &vin, &vj)
@@ -116,7 +116,7 @@ impl HBond3CA {
             }
             HBondSense::Antiparallel => {
                 // println!("antiparallel E");
-                if ss_type == HELIX {return 0.0}
+                if ss_type == Helix {return 0.0}
 
                 return -(self.e_anti.evaluate(&vip, &vi, &vin, &vj)
                     * self.e_anti.evaluate(&vjn, &vj, &vjp, &vi)).powf(1.0 / 6.0);

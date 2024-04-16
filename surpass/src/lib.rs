@@ -14,6 +14,7 @@ mod non_bonded_energy_debug;
 pub mod measurements;
 mod total_energy;
 mod moves_set;
+mod surpass_error;
 
 pub use system::*;
 pub use move_proposal::*;
@@ -27,6 +28,6 @@ pub use contact_energy::*;
 pub use surpass_hbond::{HBond3CA};
 pub use total_energy::*;
 pub use non_bonded_energy_debug::*;
-
+pub use surpass_error::*;
 
 

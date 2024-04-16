@@ -1,4 +1,5 @@
 use std::env;
+use std::env::args;
 use std::f64::consts::PI;
 use std::time::Instant;
 
@@ -9,19 +10,23 @@ use rand::SeedableRng;
 
 use bioshell_pdb::{Structure, load_pdb_file};
 
-use surpass::{CaContactEnergy, ExcludedVolume, HBond3CA, HingeMove, MoveProposal, Mover, MovesSet, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, TailMove, TotalEnergy};
+use surpass::{BoxDefinition, CaContactEnergy, ExcludedVolume, HBond3CA, HingeMove, MoveProposal, Mover, MovesSet, NonBondedEnergy, SurpassAlphaSystem, SurpassEnergy, SurpassError, TailMove, TotalEnergy};
 use surpass::measurements::{AutocorrelateVec3Measurements, CMDisplacement, REndVector, ChainCM, RgSquared, RecordMeasurements, REndSquared};
 #[allow(unused_imports)]                // NonBondedEnergyDebug can be un-commented to test non-bonded energy if the debug check fails
 use surpass::{NonBondedEnergyDebug};
+use surpass::BoxDefinition::{BoxWidth, Density};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 /// Surpass-alpha model for coarse grained simulations of proteins
 /// say surpass -h to see options
 struct Args {
+    /// secondary structure for chain(s) to be simulated
+    #[clap(long)]
+    fasta_ss: Option<String>,
     /// starting conformation in the PDB format
-    #[clap(short, long, default_value = "", short='f')]
-    infile: String,
+    #[clap(short, long, short='f')]
+    pdb_start: Option<String>,
     /// number of chains of the simulated system
     #[clap(short, long, default_value = "1", short='c')]
     n_chains: usize,
@@ -51,11 +56,11 @@ struct Args {
     t_start: f64,
 }
 
-fn box_length_for_density(density: f64, bead_diameter: f64, n_beads: usize) -> f64 {
-    let r = bead_diameter / 2.0;
-    let bead_volume = 4.0/3.0 * PI * r * r * r;
-    let box_vol = n_beads as f64 * bead_volume / density;
-    return box_vol.powf(1.0 / 3.0);
+impl Args {
+    pub fn box_definition(&self) -> BoxDefinition {
+        if let Some(d) = self.density { return Density { density: d } }
+        return BoxWidth { width: self.box_size }
+    }
 }
 
 fn main() {
@@ -64,24 +69,32 @@ fn main() {
     env_logger::init();
 
     let args = Args::parse();
-
-    // ========== the system
-    let n_res = args.n_res_in_chain;
-    if n_res < 4 { panic!("Simulated chain must be at least 4 residues long!") }
-    let n_chains = args.n_chains;
-    if n_res < 4 { panic!("Simulated system must contain at least one chain!") }
     let mut rnd = SmallRng::from_entropy();
     if let Some(seed) = args.seed {
         rnd = SmallRng::seed_from_u64(seed);
     }
-    // --- box length: density settings has priority over explicit length
-    let box_width = match args.density {
-        None => { args.box_size }
-        Some(d) => { box_length_for_density(d, 3.5, n_res * n_chains) }
-    };
-    info!("total number of beads: {nb}", nb=(n_res * n_chains));
-    info!("simulation box width: {}",box_width);
-    let mut system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], box_width, &mut rnd);
+
+    let box_definition = args.box_definition();
+
+    // ========== the system
+    let mut system: SurpassAlphaSystem;
+    if let Some(fasta_file) = args.fasta_ss {    // --- initialize with given secondary structure
+        match SurpassAlphaSystem::from_fasta_file(&fasta_file, box_definition, &mut rnd) {
+            Ok(s) => { system = s; }
+            Err(e) => { panic!("{}", e) }
+        }
+    } else if let Some(pdb_file) = args.pdb_start {     // --- initialize from PDB
+        todo!()
+    } else {                                            // --- initialize by random chains of given length
+        let n_res = args.n_res_in_chain;
+        if n_res < 4 { panic!("Simulated chain must be at least 4 residues long!") }
+        let n_chains = args.n_chains;
+        if n_res < 4 { panic!("Simulated system must contain at least one chain!") }
+        info!("total number of beads: {nb}", nb=(n_res * n_chains));
+        system = SurpassAlphaSystem::make_random(&vec![n_res; n_chains], box_definition, &mut rnd);
+        info!("simulation box width: {}", system.box_length());
+    }
+
 
     // ========== movers
     let mut movers = MovesSet::new();
