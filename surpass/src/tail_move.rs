@@ -4,6 +4,7 @@ use rand::{Rng};
 use rand::rngs::SmallRng;
 use bioshell_pdb::calc::{Rototranslation};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
+use crate::moves_set::AdaptiveMoveRange;
 use crate::tail_move::MovedTermini::{CTerminal, NTerminal};
 
 pub enum MovedTermini {
@@ -22,8 +23,7 @@ impl fmt::Display for MovedTermini {
 
 pub struct TailMove {
     n_moved: usize,
-    max_angle: f64,
-    max_range_allowed: f64
+    move_range: AdaptiveMoveRange
 }
 
 impl Mover for TailMove {
@@ -33,21 +33,46 @@ impl Mover for TailMove {
 
         // --- pick a chain randomly
         let i_chain = rnd_gen.gen_range(0..system.count_chains());
+        // --- move range
+        let max_angle = self.move_range.move_range();
         // --- pick either end
         let which_tail = match rnd_gen.gen::<bool>() {
             true => {NTerminal}
             false => {CTerminal}
         };
-        let angle = rnd_gen.gen_range(-self.max_angle..self.max_angle);
+        let angle = rnd_gen.gen_range(-max_angle..max_angle);
 
         self.compute_move(system, i_chain, which_tail, angle, proposal);
     }
+
+    /// Record accepted move
+    ///
+    /// Statistics of how many moves were accepted and cancelled are used to adjust
+    /// the maximum range of this mover.
+    fn move_accepted(&mut self) { self.move_range.move_accepted() }
+
+    /// Record rejected move
+    ///
+    /// Statistics of how many moves were accepted and cancelled are used to adjust
+    /// the maximum range of this mover.
+    fn move_cancelled(&mut self) { self.move_range.move_cancelled() }
+
+    fn adjust_move_range(&mut self) { self.move_range.adjust_move_range() }
+
+    fn move_range(&mut self) -> f64 { self.move_range.move_range() }
+
+    fn success_rate(&mut self) -> f64 { self.move_range.success_rate() }
+
+    fn reset_counters(&mut self) -> f64 { self.move_range.reset_counters() }
+
 }
 
 impl TailMove {
 
-    pub fn new(n_moved: usize, max_angle: f64, max_range_allowed: f64) -> TailMove {
-        TailMove{ n_moved, max_angle, max_range_allowed }
+    pub fn new(n_moved: usize, max_angle: f64, max_angle_allowed: f64) -> TailMove {
+        TailMove{ n_moved, move_range: AdaptiveMoveRange::new (
+            max_angle, max_angle_allowed, 0.4)
+        }
     }
 
     pub fn compute_move(&self, system: &SurpassAlphaSystem, which_chain: usize, which_tail: MovedTermini,

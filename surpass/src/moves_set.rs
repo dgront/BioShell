@@ -1,3 +1,4 @@
+use log::debug;
 use rand::Rng;
 use rand::rngs::SmallRng;
 use crate::{MoveProposal, SurpassAlphaSystem, SurpassEnergy, TotalEnergy};
@@ -14,11 +15,87 @@ impl MetropolisCriterion {
     }
 }
 
+
 pub trait Mover {
     fn n_moved(&self) -> usize;
     fn propose(&self, system: &SurpassAlphaSystem, rndgen: &mut SmallRng, proposal: &mut MoveProposal);
+
+    fn move_accepted(&mut self);
+
+    fn move_cancelled(&mut self);
+
+    fn adjust_move_range(&mut self);
+
+    fn move_range(&mut self) -> f64;
+
+    fn success_rate(&mut self) -> f64;
+
+    fn reset_counters(&mut self) -> f64;
 }
 
+pub(crate) struct AdaptiveMoveRange {
+    max_range: f64,
+    max_range_allowed: f64,
+    expected_acceptance: f64,
+    n_accepted: usize,
+    n_canceled: usize
+}
+
+impl AdaptiveMoveRange {
+    pub fn new(max_range: f64, max_range_allowed: f64, expected_acceptance: f64) -> AdaptiveMoveRange {
+        AdaptiveMoveRange {
+            max_range, max_range_allowed,
+            expected_acceptance,
+            n_accepted: 0, n_canceled: 0,
+        }
+    }
+
+    /// Record accepted move
+    ///
+    /// Statistics of how many moves were accepted and cancelled are used to adjust
+    /// the maximum range of this mover.
+    pub fn move_accepted(&mut self) { self.n_accepted += 1 }
+
+    /// Record rejected move
+    ///
+    /// Statistics of how many moves were accepted and cancelled are used to adjust
+    /// the maximum range of this mover.
+    pub fn move_cancelled(&mut self) { self.n_canceled += 1 }
+
+    pub fn reset_counters(&mut self) -> f64 {
+        let out = self.success_rate();
+        self.n_canceled = 0;
+        self.n_accepted = 0;
+        return out;
+    }
+
+    /// Adjust move range to reach the expected value of accepted moves
+    pub fn adjust_move_range(&mut self) {
+        let succ_rate = self.success_rate();
+
+        if self.expected_acceptance - succ_rate > 0.05 {            // current success rate is too small, make moves smaller
+            let tmp = self.max_range;
+            self.max_range = self.max_range * 0.95;
+            debug!("mover range shortened from {:5.2} to {:5.2} at acceptance rate {:6.3}",
+                tmp, self.max_range, succ_rate);
+        } else if succ_rate - self.expected_acceptance > 0.05 {     // current success rate is too high, make moves larger
+            let tmp = self.max_range;
+            self.max_range = self.max_range_allowed.min(self.max_range * 1.05);
+            if self.max_range < self.max_range_allowed {
+                debug!("mover range increased from {:5.2} to {:5.2} at acceptance rate {:6.3}",
+                    tmp, self.max_range, succ_rate);
+            } else {
+                debug!("mover acceptance rate is {:5.3} but move range reached its allowed maximum {:6.3} range",
+                    succ_rate, self.max_range_allowed);
+            }
+        }
+    }
+
+    pub fn move_range(&self) -> f64 { self.max_range }
+
+    pub fn success_rate(&self) -> f64 { self.n_accepted as f64 / (self.n_accepted + self.n_canceled) as f64 }
+
+}
 
 pub struct MovesSet {
     movers: Vec<Box<dyn Mover>>,
@@ -33,23 +110,28 @@ impl MovesSet {
         self.moves_in_cycle.push(moves_in_cycle);
     }
 
-    pub fn mc_cycle(&self, system: &mut SurpassAlphaSystem, total_energy: &TotalEnergy, temperature: f64, rndgen: &mut SmallRng) {
-
+    pub fn mc_cycle(&mut self, system: &mut SurpassAlphaSystem, total_energy: &TotalEnergy,
+        temperature: f64, n_cycles: usize, rndgen: &mut SmallRng) {
         let criterion = MetropolisCriterion::new(temperature);
+        for _j in 0..n_cycles {
+            for (mover, n_moves) in self.movers.iter_mut().zip(&self.moves_in_cycle) {
+                let mut proposal = MoveProposal::new(mover.n_moved());
+                for _i in 0..*n_moves {
+                    mover.propose(system, rndgen, &mut proposal);
+                    #[cfg(debug_assertions)]
+                    check_bond_lengths(system, &proposal, 3.8);
 
-        for (mover, n_moves) in self.movers.iter().zip(&self.moves_in_cycle) {
-            let mut proposal = MoveProposal::new(mover.n_moved());
-            for _i in 0..*n_moves {
-                mover.propose(system, rndgen, &mut proposal);
-                #[cfg(debug_assertions)]
-                check_bond_lengths(system, &proposal, 3.8);
-
-                let delta_en = total_energy.evaluate_delta(&system, &proposal);
-                if criterion.is_move_accepted(0.0, delta_en, rndgen) {
-                    proposal.apply(system);
-
+                    let delta_en = total_energy.evaluate_delta(&system, &proposal);
+                    if criterion.is_move_accepted(0.0, delta_en, rndgen) {
+                        proposal.apply(system);
+                        mover.move_accepted();
+                    } else { mover.move_cancelled(); }
                 }
             }
+        }
+        for mover in self.movers.iter_mut() {
+            mover.adjust_move_range();
+            mover.reset_counters();
         }
     }
 }

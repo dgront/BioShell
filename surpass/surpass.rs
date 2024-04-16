@@ -34,13 +34,13 @@ struct Args {
     #[clap(long, default_value = "10", short='r')]
     n_res_in_chain: usize,
     /// number of inner Monte Carlo cycles
-    #[clap(long, default_value = "100", short='o')]
+    #[clap(long, default_value = "10", short='o')]
     outer_cycles: usize,
     /// number of inner Monte Carlo cycles
-    #[clap(long, default_value = "10", short='i')]
+    #[clap(long, default_value = "100", short='i')]
     inner_cycles: usize,
     /// inner cycle scaling factor: the number of Monte Carlo cycles simulated for each inner MC cycle
-    #[clap(long, default_value = "10", short='s')]
+    #[clap(long, default_value = "100", short='s')]
     cycle_factor: usize,
     /// simulation box size in Angstroms
     #[clap(long, default_value = "10000.0", short='b')]
@@ -52,7 +52,7 @@ struct Args {
     #[clap(long)]
     seed: Option<u64>,
     /// simulation temperature
-    #[clap(long, default_value = "1.0", short='t')]
+    #[clap(long, default_value = "0.1", short='t')]
     t_start: f64,
 }
 
@@ -141,21 +141,19 @@ fn main() {
     let mut _en_before: f64; // --- for debugging
     for outer in 0..args.outer_cycles {
         for inner in 0..args.inner_cycles {
-            for _cycle in 0..args.cycle_factor {
-                // ---------- make a single Monte Carlo cycle
-                movers.mc_cycle(&mut system, &total_energy, args.t_start, &mut rnd);
-            }
+            // ---------- make cycle_factor Monte Carlo sweeps
+            movers.mc_cycle(&mut system, &total_energy, args.t_start, args.cycle_factor, &mut rnd);
             println!("{} {} {} {:?}", outer, inner, total_energy.evaluate(&system), start.elapsed());
             let bond_err = system.adjust_bond_length(3.8);
             debug!("bond lengths corrected, maximum violation was: {}", &bond_err);
+        }
 
-            cm.observe(&system);
-            // cmd.observe(&system);
-            rend.observe(&system);
-            r_end_vec.observe(&system);
-            // r_end_autocorr.observe(&system);
-            rg.observe(&system);
-        }           // --- single outer MC cycle done (all inner MC cycles finished)
+        cm.observe(&system);
+        // cmd.observe(&system);
+        rend.observe(&system);
+        r_end_vec.observe(&system);
+        // r_end_autocorr.observe(&system);
+        rg.observe(&system);
         // --- append a current conformation to the trajectory file
         system.to_pdb_file("tra.pdb", true);
         // r_end_autocorr.write();

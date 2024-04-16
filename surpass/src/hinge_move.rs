@@ -4,11 +4,11 @@ use rand::{Rng};
 use rand::rngs::SmallRng;
 use bioshell_pdb::calc::{Rototranslation, Vec3};
 use crate::{MoveProposal, Mover, SurpassAlphaSystem};
+use crate::moves_set::AdaptiveMoveRange;
 
 pub struct HingeMove {
     n_moved: usize,
-    max_angle: f64,
-    max_range_allowed: f64
+    move_range: AdaptiveMoveRange
 }
 
 impl Mover for HingeMove {
@@ -24,16 +24,41 @@ impl Mover for HingeMove {
             moved_to = moved_from + self.n_moved - 1;
             if system.chain(moved_from-1) == system.chain(moved_to+1) { break };
         }
-        let angle = rnd_gen.gen_range(-self.max_angle..self.max_angle);
+        let max_angle = self.move_range.move_range();
+        let angle = rnd_gen.gen_range(-max_angle..max_angle);
         trace!("hinge move of {}:{} by {}", moved_from, moved_from+self.n_moved-1, angle);
         self.compute_move(system, moved_from, angle, proposal);
     }
+
+    /// Record accepted move
+    ///
+    /// Statistics of how many moves were accepted and cancelled are used to adjust
+    /// the maximum range of this mover.
+    fn move_accepted(&mut self) { self.move_range.move_accepted() }
+
+    /// Record rejected move
+    ///
+    /// Statistics of how many moves were accepted and cancelled are used to adjust
+    /// the maximum range of this mover.
+    fn move_cancelled(&mut self) { self.move_range.move_cancelled() }
+
+    fn adjust_move_range(&mut self) { self.move_range.adjust_move_range() }
+
+    fn move_range(&mut self) -> f64 { self.move_range.move_range() }
+
+    fn success_rate(&mut self) -> f64 { self.move_range.success_rate() }
+
+    fn reset_counters(&mut self) -> f64 { self.move_range.reset_counters() }
+
 }
 
 impl HingeMove {
 
-    pub fn new(n_moved: usize, max_angle: f64, max_range_allowed: f64) -> Self {
-        HingeMove { n_moved, max_angle, max_range_allowed, }
+    pub fn new(n_moved: usize, max_angle: f64, max_angle_allowed: f64) -> Self {
+        HingeMove {
+            n_moved, move_range: AdaptiveMoveRange::new (
+            max_angle, max_angle_allowed, 0.4)
+        }
     }
 
 
