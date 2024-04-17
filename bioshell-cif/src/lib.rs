@@ -1,6 +1,8 @@
 //! Reads and writes data in CIF format.
 //!
-//! A CIF file stores data blocks. Each data block in turn contains name-value data items and loop blocks.
+//! A CIF file stores **data blocks**. Each data block in turn contains name-value data items and loop blocks.
+//! A single file may contain more than one data block. In addition, the CIF format defines **loop blocks**,
+//! which store tabulated data.
 //!
 //! # Example CIF-formatted file:
 //! ``` text
@@ -20,7 +22,7 @@
 //! prefix is not considered a part of that name). That block, loaded as a [CifData]
 //! struct, holds two key-value entries:
 //! ``_name_1:value_1`` and ``_name_2:value_2``,  followed by a loop block.
-//! Data items stored as a loop are loaded into a [CifLoop] struct.
+//! Data items stored by a loop block are loaded into a [CifLoop] struct.
 //!
 //! The official specification of the CIF format can be found on
 //! [this page](https://www.iucr.org/resources/cif/spec/version1.1/cifsyntax)
@@ -90,10 +92,14 @@ pub struct CifLoop {
 
 impl CifLoop {
 
+    /// Creates an empty loop block with given columns.
+    ///
+    /// The newly created struct basically represents a table with named columns but with no data rows
     pub fn new(data_item_names: &[&str]) -> CifLoop {
         let cols: Vec<_> = data_item_names.iter().map(|e| e.to_string()).collect();
         return CifLoop{ column_names: cols, data_rows: vec![] };
     }
+
     /// Add a new column to this loop block.
     ///
     /// Adding columns is possible only before any data is inserted; once any data has been inserted,
@@ -186,9 +192,19 @@ impl Display for CifLoop {
 }
 
 impl CifData {
-    pub fn new(name:String) -> CifData {
+    /// Creates a new CIF data structure with the given name.
+    ///
+    /// This method creates an empty struct with no data.
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_cif::CifData;
+    /// let cif_block = CifData::new("blockname");
+    /// assert_eq!(cif_block.name(), "blockname");
+    /// ```
+    pub fn new(name: &str) -> CifData {
         return CifData{
-            name, data_items: HashMap::new(), loops: vec![]
+            name: name.to_string(), data_items: HashMap::new(), loops: vec![]
         };
     }
 
@@ -204,7 +220,7 @@ impl CifData {
     /// assert_eq!(data_blocks.len(), 1);
     /// assert_eq!(data_blocks[0].name(),"first_block");
     /// ```
-    pub fn name(&self) -> &String { &self.name }
+    pub fn name(&self) -> &str { &self.name }
 
     /// Add a given loop to this block
     pub fn add_loop(&mut self, a_loop: CifLoop) { self.loops.push(a_loop)}
@@ -288,7 +304,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
 
             if ls.starts_with("data_") {        // --- start a new data block
                 let mut parts = ls.splitn(2, '_');
-                let block_name = parts.nth(1).unwrap().to_string();
+                let block_name = parts.nth(1).unwrap();
                 info!("new data block found: {}",&block_name);
                 data_blocks.push(CifData::new(block_name));
             } else if ls.starts_with('_') {
