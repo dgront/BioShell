@@ -164,12 +164,24 @@ pub fn open_file(filename: &str) -> Box<dyn BufRead> {
 /// assert_eq!(tokens_quoted[1], "'quick brown fox'");
 /// let tokens_quoted = split_into_strings("The 'quick brown fox' jumps over the 'lazy dog'", true);
 /// assert_eq!(tokens_quoted[1], "quick brown fox");
+/// let tokens_tricky = split_into_strings("O \"O5'\" \"O5'\"", false);
+/// println!("{:?}", tokens_tricky);
+/// assert_eq!(tokens_tricky.len(), 3);
+/// let tokens_tricky = split_into_strings("O \"O5'\" \"O1\"", false);
+/// println!("{:?}", tokens_tricky);
+/// assert_eq!(tokens_tricky.len(), 3);
 /// ```
 pub fn split_into_strings(s: &str, if_remove_quotes: bool) -> Vec<String> {
     let mut wrapped = false;
+    let mut quotation_style: Option<char> = None;
+    fn is_quoted(c: &char, quotation_style: &Option<char>) -> bool {
+        if let Some(q) = quotation_style { return c == q; }
+        return *c == '"' || *c == '\'';
+    }
 
     s.split(|c| {
-        if c == '"' || c == '\'' {
+        if is_quoted(&c, &quotation_style) {
+            if quotation_style.is_none() { quotation_style = Some(c) }
             wrapped = !wrapped;
         }
         c == ' ' && !wrapped
