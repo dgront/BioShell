@@ -31,7 +31,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Lines};
 use std::time::Instant;
 use log::{debug, info};
 
@@ -87,7 +87,8 @@ pub struct CifData {
 /// ```
 pub struct CifLoop {
     column_names: Vec<String>,
-    data_rows: Vec<Vec<String>>
+    data_rows: Vec<Vec<String>>,
+    previous_row_incomplete: bool
 }
 
 impl CifLoop {
@@ -97,7 +98,7 @@ impl CifLoop {
     /// The newly created struct basically represents a table with named columns but with no data rows
     pub fn new(data_item_names: &[&str]) -> CifLoop {
         let cols: Vec<_> = data_item_names.iter().map(|e| e.to_string()).collect();
-        return CifLoop{ column_names: cols, data_rows: vec![] };
+        return CifLoop{ column_names: cols, data_rows: vec![], previous_row_incomplete: false };
     }
 
     /// Add a new column to this loop block.
@@ -105,7 +106,9 @@ impl CifLoop {
     /// Adding columns is possible only before any data is inserted; once any data has been inserted,
     /// this method will panic.
     pub fn add_column(&mut self, column_name: &str) {
-        if self.data_rows.len() > 0 { panic!("Attempted column insertion for a loop-block that already contains some data!"); }
+        if self.data_rows.len() > 0 {
+            panic!("Attempted column insertion for a loop-block that already contains some data!");
+        }
         self.column_names.push(column_name.to_string());
     }
 
@@ -114,10 +117,21 @@ impl CifLoop {
     /// The provided row of data must contain the same number of entries as the number of columns
     /// in this loop-block; otherwise this method will panic.
     pub fn add_data_row(&mut self, row: Vec<String>) {
+
+        let n_columns = self.column_names.len();
         if self.column_names.len() != row.len() {
-            panic!("Provided row of data doesn't match the number of columns!\nOffending input was:{:?}", &row);
+            if self.previous_row_incomplete {
+                let last_vec: &mut Vec<String> = self.data_rows.last_mut().unwrap();
+                last_vec.extend(row);
+                if last_vec.len() == n_columns { self.previous_row_incomplete = false; }
+                else if last_vec.len() > n_columns {
+                    panic!("Provided row of data doesn't match the number of columns!\nThe previous row was incomplete; the combined rows are: {:?}", &last_vec);
+                }
+            } else {
+                self.data_rows.push(row);
+                self.previous_row_incomplete = true;
+            }
         }
-        self.data_rows.push(row);
     }
 
     /// Non-mutable iterator over rows of this loop block.
@@ -288,8 +302,8 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
     let mut is_loop_open: bool = false;
 
     let start = Instant::now();
-
-    for line in buffer.lines() {
+    let mut line_iter = buffer.lines();
+    while let Some(line) = line_iter.next() {
         if let Some(line_ok) = line.ok() {
             let ls = line_ok.trim();
             // ---------- skip empty content and comments
@@ -319,18 +333,22 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
                     let last_block = data_blocks.last_mut().unwrap();
                     let key_val = split_into_strings(ls, false);
                     if key_val.len() != 2 {
-                        panic!("{}", format!("A single data item line should contain exactly two tokens: a key and its value; {} values found in the line:{}",
-                                       key_val.len(), &ls));
+                        let next_line = read_string(&mut line_iter);
+                        if ! is_quoted_string(&next_line.trim()) {
+                            panic!("{}", format!("A single data item line should contain exactly two tokens: a key and its value; {} values found in the line: {}",
+                                                 key_val.len(), &ls));
+                        }
+                        last_block.data_items_mut().insert(key_val[0].clone(), next_line.trim().to_string());
+                    } else {
+                        last_block.data_items_mut().insert(key_val[0].clone(), key_val[1].clone());
                     }
-
-                    last_block.data_items_mut().insert(key_val[0].clone(), key_val[1].clone());
                 }
             } else if ls.starts_with("loop_") {
                 if data_blocks.len() == 0 { panic!("Found data loop outside any data block!")}
                 if is_loop_open {
                     data_blocks.last_mut().unwrap().add_loop(current_loop.unwrap());
                 }
-                current_loop = Some(CifLoop{ column_names: vec![], data_rows: vec![] });
+                current_loop = Some(CifLoop{ column_names: vec![], data_rows: vec![], previous_row_incomplete: false });
                 is_loop_open = true;
             } else {
                 if let Some(a_loop) = &mut current_loop {
@@ -344,4 +362,42 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
     debug!("CIF structure loaded in: {:?}", start.elapsed());
 
     return data_blocks;
+}
+
+/// Returns true if the input string starts and end with a semicolon, a single or a double quote.
+///
+/// The input string must be trimmed!
+fn is_quoted_string(input: &str) -> bool {
+    let first = input.chars().nth(0).unwrap();
+    if first != '\'' && first != '"' && first != ';' { return false }
+    let last = input.chars().last().unwrap();
+    if last != '\'' && last != '"' && last != ';' { return false }
+
+    return true
+}
+
+fn read_string<R>(line_iter: &mut Lines<R>) -> String where R: BufRead {
+    let mut lines: Vec<String> = vec![];
+    let mut multiline_opened = false;
+    while let Some(line) = line_iter.next() {
+        match line {
+            Ok(line) => {
+                if line.trim().len() == 0 { continue }                  // skip empty lines
+                let first_char = line.chars().nth(0).unwrap();
+                if first_char != ';' && !multiline_opened {             // it's not a multiline string
+                    return line;
+                }
+                if line.trim().len() == 1 && first_char == ';' {        // multiline string ends here
+                    lines.push(line);
+                    return lines.join("\n");
+                }
+                multiline_opened = true;
+                lines.push(line);
+            }
+            Err(err) => { panic!("{:?}",err); }
+        }
+
+    }
+
+    panic!("End of CIF file reached while searching for the ';' closing a multi-line string");
 }
