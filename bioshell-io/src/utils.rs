@@ -148,10 +148,11 @@ pub fn open_file(filename: &str) -> Box<dyn BufRead> {
 
 /// Splits a string by a whitespace into strings that can contain a whitespace within
 ///
-/// Unlike the `split_whitespace()` method of the `str` type from the Rust type, this function
+/// Unlike the `split_whitespace()` method of the `str` type from the Rust standard library, this function
 /// takes quotation marks (both single and double) into account; a quoted string that includes white space
-/// characters is returned as a single token. The second parameter of the function determines whether
-/// the quotation mark are removed from a substring token or not.
+/// characters is returned as a single token. The function also allows for nested quotes.
+/// The second parameter of the function determines whether the quotation mark are removed
+/// from a substring token or not.
 ///
 /// # Examples
 ///
