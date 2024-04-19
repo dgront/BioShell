@@ -67,6 +67,9 @@ fn main() {
     }
     if args.info {
         println!("methods: {:?}",strctr.methods);
+        if let Some(res) = strctr.resolution {
+            println!("resolution: {}", res);
+        }
     }
 }
 

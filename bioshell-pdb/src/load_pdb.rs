@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
 use log::{debug, info};
-use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbHelix, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure};
+use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbHelix, PDBRemarks, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure};
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::PDBError;
 
@@ -33,6 +33,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     let mut atoms: Vec<PdbAtom> = vec![];
     let mut helices: Vec<PdbHelix> = vec![];
     let mut strands: Vec<PdbSheet> = vec![];
+    let mut remarks = PDBRemarks::new();
 
     for line in reader.lines() {
         let line = line?;
@@ -84,6 +85,9 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             "ENDMDL" => {
                 break;
             },
+            "REMARK" => {
+                remarks.add_remark(&line);
+            }
             _ => {},
         };
     }
@@ -106,6 +110,9 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             if check.check(a) { a.secondary_struct_type = SecondaryStructureTypes::Strand as u8 }
         }
     }
+
+    // ---------- Extract values stored in remarks
+    pdb_structure.resolution = remarks.resolution();
 
     pdb_structure.atoms = atoms;
     pdb_structure.update();
