@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::num::ParseFloatError;
 
 pub struct PDBRemarks {
     remarks: HashMap<String, Vec<String>>,

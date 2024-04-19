@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
 use log::{debug, info};
-use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbHelix, PDBRemarks, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure};
+use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbHelix, PDBRemarks, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::PDBError;
 
@@ -53,11 +53,9 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
                 }
             }
             "HEADER" => {
-                let header = PdbHeader::new(&line);
-                pdb_structure.header = Some(header);
+                pdb_structure.header = Some(PdbHeader::new(&line));
             },
             "EXPDTA" => {
-                let header = PdbHeader::new(&line);
                 pdb_structure.methods = ExperimentalMethod::from_expdata_line(&line);
             },
             "TITLE" => {
@@ -87,6 +85,9 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             },
             "REMARK" => {
                 remarks.add_remark(&line);
+            }
+            "CRYST1" => {
+                pdb_structure.unit_cell = Some(UnitCell::from_cryst1_line(&line));
             }
             _ => {},
         };

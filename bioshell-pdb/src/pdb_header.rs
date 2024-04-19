@@ -12,6 +12,7 @@ use std::fmt::{Display, Formatter};
 /// use bioshell_pdb::PdbHeader;
 /// let header_line = String::from("HEADER    PHOTOSYNTHESIS                          28-MAR-07   2UXK");
 /// let h = PdbHeader::new(&header_line);
+/// assert_eq!(h.id_code, "2UXK");
 /// assert_eq!(format!("{}", h), header_line);
 /// ```
 pub struct PdbHeader {
