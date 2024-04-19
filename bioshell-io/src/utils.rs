@@ -165,11 +165,12 @@ pub fn open_file(filename: &str) -> Box<dyn BufRead> {
 /// let tokens_quoted = split_into_strings("The 'quick brown fox' jumps over the 'lazy dog'", true);
 /// assert_eq!(tokens_quoted[1], "quick brown fox");
 /// let tokens_tricky = split_into_strings("O \"O5'\" \"O5'\"", false);
-/// println!("{:?}", tokens_tricky);
 /// assert_eq!(tokens_tricky.len(), 3);
 /// let tokens_tricky = split_into_strings("O \"O5'\" \"O1\"", false);
-/// println!("{:?}", tokens_tricky);
 /// assert_eq!(tokens_tricky.len(), 3);
+/// let cif_tokens = split_into_strings("A   'RNA linking'       y \"ADENOSINE-5'-MONOPHOSPHATE\" ? 'C10 H14 N5 O7 P' 347.221", false);
+/// println!("{:?}", cif_tokens);
+/// assert_eq!(cif_tokens.len(), 7);
 /// ```
 pub fn split_into_strings(s: &str, if_remove_quotes: bool) -> Vec<String> {
     let mut wrapped = false;
@@ -183,6 +184,7 @@ pub fn split_into_strings(s: &str, if_remove_quotes: bool) -> Vec<String> {
         if is_quoted(&c, &quotation_style) {
             if quotation_style.is_none() { quotation_style = Some(c) }
             wrapped = !wrapped;
+            if !wrapped { quotation_style=None; }
         }
         c == ' ' && !wrapped
     })
