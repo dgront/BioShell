@@ -37,6 +37,25 @@ use log::{debug, info};
 
 use bioshell_io::split_into_strings;
 
+
+/// Returns true if a given file is in CIF format.
+///
+/// This function simply tests whether the first data line of a given file starts with ``data_``.
+/// Otherwise it returns ``false``. When the file can't be open returns I/O error..
+pub fn is_cif_file(file_path: &str) -> io::Result<bool> {
+    let file = File::open(file_path)?;
+    let reader = io::BufReader::new(file);
+
+    for line in reader.lines() {
+        let line = line?;
+        if !line.trim().is_empty() && !line.starts_with('#') {
+            return Ok(line.trim().starts_with("data_"));
+        }
+    }
+
+    return Ok(false);
+}
+
 /// Represents a single `data_` block of a CIF file.
 ///
 /// A single data block may contain entries given as key-value pairs as well as loop blocks.
