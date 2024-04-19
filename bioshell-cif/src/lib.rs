@@ -333,7 +333,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
                     let last_block = data_blocks.last_mut().unwrap();
                     let key_val = split_into_strings(ls, false);
                     if key_val.len() != 2 {
-                        let next_line = read_string(&mut line_iter);
+                        let next_line = read_string("", &mut line_iter);
                         if ! is_quoted_string(&next_line.trim()) {
                             panic!("{}", format!("A single data item line should contain exactly two tokens: a key and its value; {} values found in the line: {}",
                                                  key_val.len(), &ls));
@@ -350,9 +350,15 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
                 }
                 current_loop = Some(CifLoop{ column_names: vec![], data_rows: vec![], previous_row_incomplete: false });
                 is_loop_open = true;
-            } else {
+            } else {        // --- the last possibility: data rows inside a loop block
                 if let Some(a_loop) = &mut current_loop {
-                    a_loop.add_data_row(split_into_strings(ls, false));
+                    if ls.starts_with(';') {
+                        let vec = vec![read_string(ls, &mut line_iter)];
+                        a_loop.add_data_row(vec);
+                    }
+                    else {
+                        a_loop.add_data_row(split_into_strings(ls, false));
+                    }
                 } else {
                     panic!("Attempt to add a loop row with no loop open!");
                 }
@@ -376,9 +382,9 @@ fn is_quoted_string(input: &str) -> bool {
     return true
 }
 
-fn read_string<R>(line_iter: &mut Lines<R>) -> String where R: BufRead {
-    let mut lines: Vec<String> = vec![];
-    let mut multiline_opened = false;
+fn read_string<R>(prefix: &str, line_iter: &mut Lines<R>) -> String where R: BufRead {
+    let mut lines: Vec<String> = vec![prefix.to_string()];
+    let mut multiline_opened = prefix.starts_with(';');
     while let Some(line) = line_iter.next() {
         match line {
             Ok(line) => {
@@ -387,11 +393,16 @@ fn read_string<R>(line_iter: &mut Lines<R>) -> String where R: BufRead {
                 if first_char != ';' && !multiline_opened {             // it's not a multiline string
                     return line;
                 }
-                if line.trim().len() == 1 && first_char == ';' {        // multiline string ends here
-                    lines.push(line);
-                    return lines.join("\n");
+                if first_char == ';' {
+                    if !multiline_opened {                              // a ';' character opens a multiline
+                        lines.push(";".to_string());
+                        multiline_opened = true;
+                    } else {                                            // ... or closes if it has been opened
+                        lines.push(";".to_string());
+                        return lines.join("\n");                    // return the multiline string
+                    }
                 }
-                multiline_opened = true;
+                // --- now the only remaining possibility is the string is a continuation of a multiline
                 lines.push(line);
             }
             Err(err) => { panic!("{:?}",err); }
