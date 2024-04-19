@@ -32,6 +32,7 @@ pub mod calc;
 
 mod residue_id;
 mod load_pdb;
+mod exp_data;
 
 pub use structure::Structure;
 pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
@@ -44,5 +45,6 @@ pub use pdb_header::PdbHeader;
 pub use pdb_title::PdbTitle;
 pub use pdb_helix::PdbHelix;
 pub use pdb_sheet::PdbSheet;
+pub use exp_data::{ExperimentalMethod};
 
 

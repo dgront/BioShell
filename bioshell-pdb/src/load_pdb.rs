@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
 use log::{debug, info};
-use crate::{PdbAtom, PdbHeader, PdbHelix, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure};
+use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbHelix, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure};
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::PDBError;
 
@@ -54,6 +54,10 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             "HEADER" => {
                 let header = PdbHeader::new(&line);
                 pdb_structure.header = Some(header);
+            },
+            "EXPDTA" => {
+                let header = PdbHeader::new(&line);
+                pdb_structure.methods = ExperimentalMethod::from_expdata_line(&line);
             },
             "TITLE" => {
                 if pdb_structure.title == None {

@@ -13,7 +13,7 @@ use crate::pdb_title::PdbTitle;
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
 use crate::pdb_parsing_error::PDBError;
 use crate::pdb_parsing_error::PDBError::{NoSuchAtom, NoSuchResidue};
-use crate::ResidueId;
+use crate::{ExperimentalMethod, ResidueId};
 use crate::secondary_structure::SecondaryStructure;
 
 
@@ -91,6 +91,7 @@ use crate::secondary_structure::SecondaryStructure;
 pub struct Structure {
     pub header: Option<PdbHeader>,
     pub title: Option<PdbTitle>,
+    pub methods: Vec<ExperimentalMethod>,
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
     pub(crate) residue_ids: Vec<ResidueId>,
@@ -103,6 +104,7 @@ impl Structure {
         Self {
             header: None,
             title: None,
+            methods: vec![],
             ter_atoms: Default::default(),
             atoms: vec![],
             residue_ids: vec![],

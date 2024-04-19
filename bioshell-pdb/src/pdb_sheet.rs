@@ -64,8 +64,8 @@ impl PdbSheet {
     /// # Example
     /// ```
     /// use bioshell_pdb::{PdbSheet, ResidueId};
-    /// let helix_line = "SHEET    1   A 5 THR A 107  ARG A 110  0";
-    /// let pdb_strand = PdbSheet::from_sheet_line(helix_line);
+    /// let sheet_line = "SHEET    1   A 5 THR A 107  ARG A 110  0";
+    /// let pdb_strand = PdbSheet::from_sheet_line(sheet_line);
     /// assert_eq!(pdb_strand.init_res_id(), ResidueId::new("A", 107, ' '));
     /// ```
     pub fn init_res_id(&self) -> ResidueId { ResidueId::new(&self.init_chain_id, self.init_seq_num, self.init_i_code)}

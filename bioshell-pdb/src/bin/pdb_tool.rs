@@ -17,6 +17,9 @@ struct Args {
     /// print secondary structure for every chain in each input file
     #[clap(long)]
     out_secondary: bool,
+    /// print basic information about a given structure
+    #[clap(long)]
+    info: bool,
     /// break FASTA lines when longer that given cutoff
     #[clap(long, default_value="80")]
     out_fasta_width: usize,
@@ -61,6 +64,9 @@ fn main() {
             let seq = strctr.sequence(chain_id);
             println!("> {}\n{}", seq.description(), strctr.secondary(chain_id).to_string());
         }
+    }
+    if args.info {
+        println!("methods: {:?}",strctr.methods);
     }
 }
 
