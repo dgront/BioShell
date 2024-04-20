@@ -97,7 +97,8 @@ pub struct Structure {
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
     pub(crate) residue_ids: Vec<ResidueId>,
-    pub(crate) atoms_for_residueid: Vec<Range<usize>>
+    pub(crate) atoms_for_residueid: Vec<Range<usize>>,
+    pub(crate) entity_sequences: HashMap<String, Sequence>
 }
 
 impl Structure {
@@ -113,6 +114,7 @@ impl Structure {
             atoms: vec![],
             residue_ids: vec![],
             atoms_for_residueid: vec![],
+            entity_sequences: Default::default(),
             // atoms_for_residue: HashMap::default()
         }
     }

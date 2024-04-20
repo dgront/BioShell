@@ -1,7 +1,10 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
 use log::{debug, info};
+use bioshell_seq::chemical::{ResidueTypeManager, ResidueTypeProperties};
+use bioshell_seq::sequence::Sequence;
 use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbHelix, PDBRemarks, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::PDBError;
@@ -34,6 +37,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     let mut helices: Vec<PdbHelix> = vec![];
     let mut strands: Vec<PdbSheet> = vec![];
     let mut remarks = PDBRemarks::new();
+    let mut seqres: Vec<String> = vec![];
 
     for line in reader.lines() {
         let line = line?;
@@ -86,6 +90,9 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             "REMARK" => {
                 remarks.add_remark(&line);
             }
+            "SEQRES" => {
+                seqres.push(line);
+            }
             "CRYST1" => {
                 pdb_structure.unit_cell = Some(UnitCell::from_cryst1_line(&line));
             }
@@ -115,6 +122,8 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     // ---------- Extract values stored in remarks
     pdb_structure.resolution = remarks.resolution();
 
+    pdb_structure.entity_sequences = parse_seqres_records(seqres);
+
     pdb_structure.atoms = atoms;
     pdb_structure.update();
     debug!("Structure loaded in: {:?}", start.elapsed());
@@ -132,3 +141,58 @@ pub fn load_pdb_file(file_name: &str) -> Result<Structure, PDBError> {
     let reader = BufReader::new(file);
     return load_pdb_reader(reader);
 }
+
+
+fn parse_seqres_records(seqres_records: Vec<String>) -> HashMap<String, Sequence> {
+    let mut sequences: HashMap<String, Vec<u8>> = HashMap::new();
+
+    for record in seqres_records {
+        let parts: Vec<&str> = record.split_whitespace().collect();
+        if parts.len() < 5 {
+            continue; // Skip records that don't have at least one residue entry
+        }
+
+        let chain_id = parts[2].to_string();
+        let _num_residues: usize = parts[3].parse().unwrap(); // Assuming the number of residues field is correct and parseable
+
+        let residues = &parts[4..]; // The rest are residue names
+
+        // Get the vector for the chain or create it if it doesn't exist
+        let chain_sequence = sequences.entry(chain_id).or_insert_with(Vec::new);
+
+        // Add all residues in this record to the vector
+        for &residue in residues {
+            if let Some(restype) = ResidueTypeManager::get().by_code3(residue) {
+                chain_sequence.push(u8::try_from(restype.parent_type.code1()).unwrap());
+            } else {
+                chain_sequence.push(b'X');
+            }
+        }
+    }
+    let mut final_sequences: HashMap<String, Sequence> = HashMap::new();
+    for (chain_id, seq) in sequences {
+        let header = format!(":{}", chain_id);
+        final_sequences.insert(chain_id,  Sequence::from_attrs(header, seq));
+    }
+
+    return final_sequences;
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::load_pdb::parse_seqres_records;
+
+    #[test]
+    fn test_seqres_loading() {
+        let input = vec![
+            String::from("SEQRES   1 A   8  ALA VAL CYS LEU MET GLU ARG GLY"),
+            String::from("SEQRES   2 A   8  TYR PHE ASN"),
+            String::from("SEQRES   1 B   5  LYS THR GLN"),
+        ];
+
+        let sequences = parse_seqres_records(input);
+        assert_eq!(sequences["A"].to_string(), "AVCLMERGYFN".to_string());
+        assert_eq!(sequences["B"].to_string(), "KTQ".to_string());
+    }
+}
+
