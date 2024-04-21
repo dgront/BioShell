@@ -210,6 +210,7 @@ impl Vec3 {
 
     /// Creates a new vector with given values
     ///
+    /// # Example
     /// ```
     /// # use bioshell_pdb::calc::Vec3;
     /// let zero_vec = Vec3::from_array(&[2.0, 1.0, 2.0]);
@@ -217,6 +218,22 @@ impl Vec3 {
     /// ```
     pub fn from_array(values: &[f64; 3]) -> Vec3 {
         Vec3 { x: values[0], y: values[1], z: values[2] }
+    }
+
+    /// Creates a new vector reading its coordinates from an ATOM or a HETATM record of a PDB file.
+    ///
+    /// Note, that this function doesn't check if the line is formatted correctly.
+    ///
+    /// # Example
+    /// ```
+    /// # use bioshell_pdb::calc::Vec3;
+    /// let v = Vec3::from_pdb_line("ATOM    210  N   LYS A  13      10.887  -3.910   4.872  1.00  0.20           N");
+    /// assert!((v.x-10.887).abs() < 0.00001);
+    pub fn from_pdb_line(atom_line: &str) -> Vec3 {
+        let x = atom_line[30..38].trim().parse::<f64>().unwrap();
+        let y = atom_line[38..46].trim().parse::<f64>().unwrap();
+        let z = atom_line[46..54].trim().parse::<f64>().unwrap();
+        return Vec3::new(x, y, z);
     }
 
     /// Assigns new content to this vector.

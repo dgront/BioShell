@@ -86,13 +86,14 @@ impl PdbAtom {
         let chain_id = pdb_line[21..22].to_string();
         let res_seq = pdb_line[22..26].trim().parse::<i32>().unwrap();
         let i_code = pdb_line[26..27].chars().next().unwrap();
-        let x = pdb_line[30..38].trim().parse::<f64>().unwrap();
-        let y = pdb_line[38..46].trim().parse::<f64>().unwrap();
-        let z = pdb_line[46..54].trim().parse::<f64>().unwrap();
+        let pos = Vec3::from_pdb_line(pdb_line);
+        // let x = pdb_line[30..38].trim().parse::<f64>().unwrap();
+        // let y = pdb_line[38..46].trim().parse::<f64>().unwrap();
+        // let z = pdb_line[46..54].trim().parse::<f64>().unwrap();
         let occupancy = pdb_line[54..60].trim().parse::<f64>().unwrap();
         let temp_factor = pdb_line[60..66].trim().parse::<f64>().unwrap();
         let element = if pdb_line.len()>=78 { Some(pdb_line[77..].trim().to_string()) } else { None };
-        return PdbAtom{
+        return PdbAtom {
             serial,
             name,
             alt_loc,
@@ -100,7 +101,7 @@ impl PdbAtom {
             chain_id,
             res_seq,
             i_code,
-            pos: Vec3::new(x, y, z),
+            pos,
             occupancy,
             temp_factor,
             element: element,
