@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
+use std::io;
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
 use log::{debug, info};
@@ -57,7 +58,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
                 }
             }
             "HEADER" => {
-                pdb_structure.header = Some(PdbHeader::new(&line));
+                pdb_structure.header = PdbHeader::new(&line);
             },
             "EXPDTA" => {
                 pdb_structure.methods = ExperimentalMethod::from_expdata_line(&line);
@@ -176,6 +177,26 @@ fn parse_seqres_records(seqres_records: Vec<String>) -> HashMap<String, Sequence
     }
 
     return final_sequences;
+}
+
+/// Returns true if a given file is in PDB format.
+///
+/// This function simply tests whether the first data line of a given file starts with ``HEADER``,
+/// ``REMARK``, ``ATOM`` or ``HETATM``.
+/// Otherwise it returns ``false``. When the file can't be open returns I/O error..
+pub fn is_pdb_file(file_path: &str) -> io::Result<bool> {
+    let file = File::open(file_path)?;
+    let reader = io::BufReader::new(file);
+
+    let pdb_starts_with = ["HEADER", "ATOM", "HETATM", "REMARK"];
+    for line in reader.lines() {
+        let line = line?;
+        if !line.is_empty() {
+            return Ok(pdb_starts_with.iter().any(|s|line.starts_with(s)));
+        }
+    }
+
+    return Ok(false);
 }
 
 #[cfg(test)]

@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use bioshell_cif::CifData;
 
 /// The `HEADER` record contains the header data for a PDB entry.
 ///
@@ -11,7 +12,7 @@ use std::fmt::{Display, Formatter};
 /// ```
 /// use bioshell_pdb::PdbHeader;
 /// let header_line = String::from("HEADER    PHOTOSYNTHESIS                          28-MAR-07   2UXK");
-/// let h = PdbHeader::new(&header_line);
+/// let h = PdbHeader::new(&header_line).unwrap();
 /// assert_eq!(h.id_code, "2UXK");
 /// assert_eq!(format!("{}", h), header_line);
 /// ```
@@ -32,15 +33,47 @@ impl PdbHeader {
     /// # Example
     /// ```
     /// use bioshell_pdb::PdbHeader;
-    /// let h = PdbHeader::new("HEADER    PHOTOSYNTHESIS                          28-MAR-07   2UXK");
+    /// let h = PdbHeader::new("HEADER    PHOTOSYNTHESIS                          28-MAR-07   2UXK").unwrap();
     /// assert_eq!(h.id_code, String::from("2UXK"));
     /// ```
-    pub fn new(header_line: &str) -> Self {
-        Self{
+    pub fn new(header_line: &str) -> Option<Self> {
+        Some(Self{
             classification: header_line[10..50].trim().to_string(),
             dep_date: header_line[50..59].trim().to_string(),
             id_code: header_line[59..66].trim().to_string(),
+        })
+    }
+
+    /// Creates a new struct by extracting the necessary data from a CID data block.
+    ///
+    /// If all fields have been correctly located, returns  ``Option<PdbHeader> ``, otherwise returns ``None``.
+    ///
+    /// # Example
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_cif::{CifData, read_cif_buffer};
+    /// use bioshell_pdb::PdbHeader;
+    /// let cif_data: &'static str = "data_1AZY
+    /// #
+    /// _entry.id                                            1AZY
+    /// _struct_keywords.pdbx_keywords                       GLYCOSYLTRANSFERASE
+    /// _pdbx_database_status.recvd_initial_deposition_date  1997-11-18
+    /// ";
+    /// let mut reader = BufReader::new(cif_data.as_bytes());
+    /// let data_block = &read_cif_buffer(&mut reader)[0];
+    /// let header = PdbHeader::from_cif(data_block).unwrap();
+    /// assert_eq!(header.id_code, "1AZY".to_string());
+    /// ```
+    pub fn from_cif(cif_data: &CifData) -> Option<PdbHeader> {
+        let classification: Option<String> = cif_data.get_item("_struct_keywords.pdbx_keywords");
+        let dep_date: Option<String> = cif_data.get_item("_pdbx_database_status.recvd_initial_deposition_date");
+        let id_code: Option<String> = cif_data.get_item("_entry.id");
+
+        if let (Some(classification), Some(dep_date), Some(id_code)) =
+            (classification, dep_date, id_code) {
+            return Some(PdbHeader{ classification, dep_date, id_code});
         }
+        return None;
     }
 }
 

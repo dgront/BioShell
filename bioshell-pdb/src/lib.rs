@@ -35,10 +35,11 @@ mod load_pdb;
 mod exp_data;
 mod remarks;
 mod unit_cell;
+mod load_cif;
 
 pub use structure::Structure;
 pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
-pub use load_pdb::*;
+pub use load_pdb::{load_pdb_file, load_pdb_reader};
 pub use assertions::*;
 pub use pdb_parsing_error::PDBError;
 pub use pdb_atom::{PdbAtom, same_residue_atoms};
@@ -50,5 +51,6 @@ pub use pdb_sheet::PdbSheet;
 pub use exp_data::{ExperimentalMethod};
 pub use remarks::{PDBRemarks};
 pub use unit_cell::{UnitCell};
+pub use load_cif::{load_cif_file, load_cif_reader};
 
 
