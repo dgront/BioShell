@@ -32,6 +32,7 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Lines};
+use std::str::FromStr;
 use std::time::Instant;
 use log::{debug, info};
 
@@ -258,6 +259,25 @@ impl CifData {
     /// Add a given loop to this block
     pub fn add_loop(&mut self, a_loop: CifLoop) { self.loops.push(a_loop)}
 
+    /// Returns a data item value assigned to a given key
+    ///
+    /// # Example
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_cif::read_cif_buffer;
+    /// let cif_block = "data_1AZP
+    /// _entry.id                                        1AZP
+    /// _refine.ls_d_res_high                            1.6
+    /// ";
+    /// let mut reader = BufReader::new(cif_block.as_bytes());
+    /// let data_block = &read_cif_buffer(&mut reader)[0];
+    /// assert_eq!(data_block.get_item("_entry.id"), Some("1AZP".to_string()));
+    /// assert_eq!(data_block.get_item("_refine.ls_d_res_high"), Some(1.6));
+    /// ```
+    pub fn get_item<T: FromStr>(&self, key: &str) -> Option<T> {
+        self.data_items.get(key).and_then(|value| value.parse().ok())
+    }
+
     /// Read access to data items of this block
     pub fn data_items(&self) -> &HashMap<String, String> { &self.data_items }
 
@@ -313,6 +333,21 @@ pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
 /// Reads a CIF-formatted data from a buffer.
 ///
 /// Returns a vector of all data blocks found.
+/// # Example
+/// ```
+/// use std::io::BufReader;
+/// use bioshell_cif::read_cif_buffer;
+/// let cif_block = "data_ALA
+/// _chem_comp.id                                    ALA
+/// _chem_comp.name                                  ALANINE
+/// _chem_comp.type                                  'L-PEPTIDE LINKING'
+/// _chem_comp.pdbx_type                             ATOMP
+/// ";
+/// let mut reader = BufReader::new(cif_block.as_bytes());
+/// let data_blocks = read_cif_buffer(&mut reader);
+/// assert_eq!(data_blocks.len(), 1);
+/// # assert_eq!(data_blocks[0].get_item("_chem_comp.id"), Some("ALA".to_string()));
+/// ```
 pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
 
     let mut data_blocks: Vec<CifData> = vec![];
