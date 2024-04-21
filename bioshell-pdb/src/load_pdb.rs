@@ -7,6 +7,7 @@ use log::{debug, info};
 use bioshell_seq::chemical::{ResidueTypeManager, ResidueTypeProperties};
 use bioshell_seq::sequence::Sequence;
 use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbHelix, PDBRemarks, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
+use crate::calc::Vec3;
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::PDBError;
 
@@ -34,11 +35,12 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     let start = Instant::now();
     let mut pdb_structure = Structure::new();
 
-    let mut atoms: Vec<PdbAtom> = vec![];
     let mut helices: Vec<PdbHelix> = vec![];
     let mut strands: Vec<PdbSheet> = vec![];
     let mut remarks = PDBRemarks::new();
     let mut seqres: Vec<String> = vec![];
+    let mut model_id = 0;
+    pdb_structure.model_coordinates.push(vec![]);
 
     for line in reader.lines() {
         let line = line?;
@@ -52,7 +54,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
                     let ter_chain = ter_res.chain_id.clone();
                     pdb_structure.ter_atoms.insert(ter_chain, ter_res);
                 } else {                    // --- assign that TER to the very last atom of the current chain
-                    if let Some(last_atom) = atoms.last() {
+                    if let Some(last_atom) = pdb_structure.atoms.last() {
                         pdb_structure.ter_atoms.insert(last_atom.chain_id.clone(), ResidueId::try_from(last_atom).unwrap());
                     }
                 }
@@ -79,14 +81,23 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
                 let strand = PdbSheet::from_sheet_line(&line);
                 strands.push(strand);
             }
-            "ATOM" => {
-                atoms.push(PdbAtom::from_atom_line(&line));
-            },
-            "HETATM" => {
-                atoms.push(PdbAtom::from_atom_line(&line));
+            "ATOM" | "HETATM" => {
+                if model_id == 0 {
+                    let a = PdbAtom::from_atom_line(&line);
+                    pdb_structure.model_coordinates[model_id].push(a.pos.clone());
+                    pdb_structure.atoms.push(a);
+                } else {
+                    let v = Vec3::from_pdb_line(&line);
+                    pdb_structure.model_coordinates[model_id].push(v);
+                }
             },
             "ENDMDL" => {
-                break;
+                model_id += 1;
+            },
+            "MODEL" => {
+                if pdb_structure.model_coordinates.len() == model_id {
+                    pdb_structure.model_coordinates.push(vec![]);
+                }
             },
             "REMARK" => {
                 remarks.add_remark(&line);
@@ -100,14 +111,14 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             _ => {},
         };
     }
-    debug!("{:} atoms loaded",atoms.len());
+    debug!("{:} atoms loaded", pdb_structure.atoms.len());
 
     // ---------- Annotate secondary structure
     for i in 0..helices.len() {
         let from = helices[i].init_res_id();
         let to = helices[i].end_res_id();
         let check = ByResidueRange::new(from,to);
-        for a in &mut atoms {
+        for a in &mut pdb_structure.atoms {
             if check.check(a) { a.secondary_struct_type = helices[i].helix_class }
         }
     }
@@ -115,7 +126,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
         let from = strands[i].init_res_id();
         let to = strands[i].end_res_id();
         let check = ByResidueRange::new(from,to);
-        for a in &mut atoms {
+        for a in &mut pdb_structure.atoms {
             if check.check(a) { a.secondary_struct_type = SecondaryStructureTypes::Strand as u8 }
         }
     }
@@ -125,7 +136,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
 
     pdb_structure.entity_sequences = parse_seqres_records(seqres);
 
-    pdb_structure.atoms = atoms;
+    // pdb_structure.atoms = atoms;
     pdb_structure.update();
     debug!("Structure loaded in: {:?}", start.elapsed());
 

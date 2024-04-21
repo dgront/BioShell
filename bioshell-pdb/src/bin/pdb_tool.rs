@@ -70,9 +70,10 @@ fn main() {
         if let Some(res) = strctr.resolution {
             println!("resolution: {}", res);
         }
-        if let Some(unit_cell) = strctr.unit_cell {
+        if let Some(unit_cell) = &strctr.unit_cell {
             println!("space group: {}", unit_cell.space_group);
         }
+        println!("models: {}", strctr.count_models());
     }
 }
 

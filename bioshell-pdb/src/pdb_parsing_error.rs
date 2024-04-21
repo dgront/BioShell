@@ -44,7 +44,11 @@ pub enum PDBError {
     /// Can't find an atom defined for a given residue
     DefinedAtomNotFound {residue_index: usize, atom_name: String},
     
-    #[error("Can't find a residue {residue_index}?")]
+    #[error("Can't find a residue {residue_index}")]
     /// Can't find a residue for a given index
     ResidueNotDefined {residue_index: usize},
+
+    #[error("The number of atoms in model {model_index} is different than the number of atoms in the first model")]
+    /// A requested model has different number of atoms that the first model
+    WrongAtomsNumberInModel {model_index: usize},
 }

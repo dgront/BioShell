@@ -14,6 +14,8 @@ use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, 
 use crate::pdb_parsing_error::PDBError;
 use crate::pdb_parsing_error::PDBError::{NoSuchAtom, NoSuchResidue};
 use crate::{ExperimentalMethod, ResidueId, UnitCell};
+use crate::calc::Vec3;
+use crate::PDBError::WrongAtomsNumberInModel;
 use crate::secondary_structure::SecondaryStructure;
 
 
@@ -96,6 +98,7 @@ pub struct Structure {
     pub unit_cell: Option<UnitCell>,
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
+    pub(crate) model_coordinates: Vec<Vec<Vec3>>,
     pub(crate) residue_ids: Vec<ResidueId>,
     pub(crate) atoms_for_residueid: Vec<Range<usize>>,
     pub(crate) entity_sequences: HashMap<String, Sequence>
@@ -112,6 +115,7 @@ impl Structure {
             unit_cell: None,
             ter_atoms: Default::default(),
             atoms: vec![],
+            model_coordinates: vec![],
             residue_ids: vec![],
             atoms_for_residueid: vec![],
             entity_sequences: Default::default(),
@@ -197,6 +201,19 @@ impl Structure {
     pub fn count_chains(&self) -> usize {
         let same_chain = SameChain{};
         return self.atoms().windows(2).filter(|a| !same_chain.check(&a[0], &a[1])).count() + 1
+    }
+
+    /// Counts models i.e. distinct conformations of this [`Structure`](Structure)
+    pub fn count_models(&self) -> usize { self.model_coordinates.len() }
+
+    pub fn set_model(&mut self, i_model: usize) -> Result<(), PDBError> {
+        if self.model_coordinates[i_model].len() != self.atoms.len() {
+            return Err(WrongAtomsNumberInModel { model_index: i_model });
+        }
+        for i in 0..self.model_coordinates[i_model].len() {
+            self.atoms[i].pos.set(&self.model_coordinates[i_model][i]);
+        }
+        return Ok(());
     }
 
     /// Provides immutable access to an atom
