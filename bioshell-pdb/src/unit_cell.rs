@@ -1,3 +1,6 @@
+use bioshell_cif::{CifData, CifError, unwrap_item_or_error};
+use bioshell_cif::CifError::MissingCifDataKey;
+
 /// A unit cell of a crystal, containing its dimensions and angles
 pub struct UnitCell {
     /// a-axis dimension
@@ -57,4 +60,39 @@ impl UnitCell {
 
         return UnitCell::new(a, b, c, alpha, beta, gamma, space_group, z);
     }
+
+    /// Creates a new UnitCell struct by extracting the necessary fields from a CIF-formatted data
+    ///
+    /// # Example
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_cif::read_cif_buffer;
+    /// use bioshell_pdb::{assert_delta, UnitCell};
+    /// let cell_data = "data_cryst_cell
+    ///     _cell.length_a                         58.39
+    ///     _cell.length_b                         86.70
+    ///     _cell.length_c                         46.27
+    ///     _cell.angle_alpha                      90.00
+    ///     _cell.angle_beta                       90.00
+    ///     _cell.angle_gamma                      90.00
+    ///     _symmetry.space_group_name_H-M         'C 1 21 1'
+    ///     _cell.Z_PDB                            1
+    /// ";
+    /// let data_block = &read_cif_buffer(&mut BufReader::new(cell_data.as_bytes()))[0];
+    /// let uc = UnitCell::from_cif_data(data_block).unwrap();
+    /// assert_delta!(uc.a, 58.39, 0.00001, "Incorrect unit cell dimension along a axis")
+    /// ```
+    pub fn from_cif_data(cif_data: &CifData) -> Result<UnitCell, CifError> {
+        let a = unwrap_item_or_error!(cif_data, "_cell.length_a");
+        let b = unwrap_item_or_error!(cif_data, "_cell.length_b");
+        let c = unwrap_item_or_error!(cif_data, "_cell.length_c");
+        let alpha = unwrap_item_or_error!(cif_data, "_cell.angle_alpha");
+        let beta = unwrap_item_or_error!(cif_data, "_cell.angle_beta");
+        let gamma = unwrap_item_or_error!(cif_data, "_cell.angle_gamma");
+        let space_group: String = unwrap_item_or_error!(cif_data, "_symmetry.space_group_name_H-M");
+        let z = unwrap_item_or_error!(cif_data, "_cell.Z_PDB");
+
+        return Ok(UnitCell::new(a, b, c, alpha, beta, gamma, &space_group, z));
+    }
 }
+

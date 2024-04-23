@@ -5,14 +5,15 @@
 ///
 /// See  the [official documentation of the `TITLE` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect2.html#TITLE) for details
 #[derive(PartialEq)]
-pub struct PdbTitle { text: String, }
+pub struct PdbTitle { pub text: String, }
 
 impl PdbTitle {
+
     /// Create a new record from a given PDB-formatted line.
     ///
     /// The `new()` method accepts only the very first line of the `TITLE` record. Continuation lines
-    /// must me appended using the [`append()`](PdbTitle::append()) method.
-    pub fn new(line: &str) -> Self {
+    /// must me appended using the [`append_pdb_line()`](PdbTitle::append_pdb_line()) method.
+    pub fn from_pdb_line(line: &str) -> Self {
         Self { text: line[10..].trim().to_string(), }
     }
 
@@ -24,12 +25,12 @@ impl PdbTitle {
     /// # Example
     /// ```
     /// use bioshell_pdb::PdbTitle;
-    /// let mut title = PdbTitle::new("TITLE     A NOVEL, HIGHLY STABLE FOLD OF THE IMMUNOGLOBULIN BINDING");
-    /// title.append("TITLE    2 DOMAIN OF STREPTOCOCCAL PROTEIN G ");
+    /// let mut title = PdbTitle::from_pdb_line("TITLE     A NOVEL, HIGHLY STABLE FOLD OF THE IMMUNOGLOBULIN BINDING");
+    /// title.append_pdb_line("TITLE    2 DOMAIN OF STREPTOCOCCAL PROTEIN G ");
     /// assert_eq!(title.to_string(),
     ///                    String::from("A NOVEL, HIGHLY STABLE FOLD OF THE IMMUNOGLOBULIN BINDING DOMAIN OF STREPTOCOCCAL PROTEIN G"))
     /// ```
-    pub fn append(&mut self, line: &str) {
+    pub fn append_pdb_line(&mut self, line: &str) {
         self.text.push_str(line[10..].trim_end());
     }
 

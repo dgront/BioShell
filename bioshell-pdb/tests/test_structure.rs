@@ -78,25 +78,6 @@ fn test_atoms_by_residue() {
     let atoms: Vec<PdbAtom> = lines_2gb1.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     let strctr = Structure::from_iterator(atoms.iter());
 
-    let first = ResidueId::new("A", 4, ' ');
-    let last = ResidueId::new("B", 2, ' ');
-    let iterator = strctr.atom_in_range(first, last);
-    assert_eq!(iterator.count())
-    assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 1, ' ')).unwrap().count(), 19);
-    assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 56, ' ')).unwrap().count(), 16);
-}
-
-#[test]
-fn test_atom_iterator() {
-
-    let lines_2gb1: Vec<_> = pdb_2gb1.split("\n").filter(|&l|l.starts_with("ATOM")).collect();
-    let atoms: Vec<PdbAtom> = lines_2gb1.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    let strctr = Structure::from_iterator(atoms.iter());
-
-    let first = ResidueId::new("A", 4, ' ');
-    let last = ResidueId::new("B", 2, ' ');
-    let iterator = strctr.atom_in_range(first, last);
-    assert_eq!(iterator.count())
     assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 1, ' ')).unwrap().count(), 19);
     assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 56, ' ')).unwrap().count(), 16);
 }

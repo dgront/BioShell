@@ -67,10 +67,10 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             },
             "TITLE" => {
                 if pdb_structure.title == None {
-                    pdb_structure.title = Some(PdbTitle::new(&line));
+                    pdb_structure.title = Some(PdbTitle::from_pdb_line(&line));
                 } else {
                     let title = pdb_structure.title.as_mut().unwrap();
-                    title.append(&line);
+                    title.append_pdb_line(&line);
                 }
             },
             "HELIX" => {

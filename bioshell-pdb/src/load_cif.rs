@@ -4,7 +4,7 @@ use std::str::FromStr;
 use std::time::Instant;
 use log::{debug, info, warn};
 use bioshell_cif::{cif_columns_by_name, CifLoop, read_cif_buffer, CifError};
-use crate::{ExperimentalMethod, PdbAtom, PdbHeader, Structure};
+use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbTitle, Structure, UnitCell};
 use crate::calc::Vec3;
 use bioshell_cif::CifError::{ExtraDataBlock, MissingCifDataKey, MissingCifLoopKey};
 
@@ -76,13 +76,17 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, CifError> {
 
     // --- header data
     pdb_structure.header = PdbHeader::from_cif(cif_data_block);
-    let methods: Option<String> = cif_data_block.get_item("_exptl.method");
-    match methods {
+    pdb_structure.title = cif_data_block.get_item("_struct.title").and_then(|t| Some(PdbTitle{ text: t }));
+
+    // --- exp details and resolution
+    match cif_data_block.get_item::<String>("_exptl.method") {
         Some(methods) => pdb_structure.methods = ExperimentalMethod::from_expdata_line(&methods),
         None => return Err(MissingCifDataKey{ item_key: "_exptl.method".to_string() })
     }
-    // --- resolution
     pdb_structure.resolution = cif_data_block.get_item("_refine.ls_d_res_high");
+
+    // --- crystallography parameters
+    pdb_structure.unit_cell = if let Ok(uc) = UnitCell::from_cif_data(cif_data_block) { Some(uc) } else { None };
     pdb_structure.update();
     debug!("Structure loaded in: {:?}", start.elapsed());
 
