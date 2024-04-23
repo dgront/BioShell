@@ -2,7 +2,6 @@
 
 #[cfg(test)]
 mod tests {
-    use itertools::assert_equal;
     use bioshell_pdb::{assert_delta, PDBRemarks};
 
     #[test]

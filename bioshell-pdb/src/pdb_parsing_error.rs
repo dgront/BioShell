@@ -8,11 +8,7 @@ pub enum PDBError {
     /// Invalid format of a PDB line
     InvalidFormat {broken_pdb_line: String},
 
-    #[error("CIF input contains more than one data block")]
-    /// CIF input contains more than one data block
-    ExtraDataBlock,
-
-    #[error("I/O error")]
+    #[error("General I/O error occurred while reading a file")]
     /// I/O error occurred while reading a PDB or a CIF file
     Io(#[from] std::io::Error),
 

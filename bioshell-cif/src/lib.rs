@@ -27,6 +27,12 @@
 //! The official specification of the CIF format can be found on
 //! [this page](https://www.iucr.org/resources/cif/spec/version1.1/cifsyntax)
 //!
+mod column_mapping;
+mod cif_errors;
+
+pub use column_mapping::*;
+pub use cif_errors::*;
+
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
@@ -139,18 +145,17 @@ impl CifLoop {
     pub fn add_data_row(&mut self, row: Vec<String>) {
 
         let n_columns = self.column_names.len();
-        if self.column_names.len() != row.len() {
-            if self.previous_row_incomplete {
-                let last_vec: &mut Vec<String> = self.data_rows.last_mut().unwrap();
-                last_vec.extend(row);
-                if last_vec.len() == n_columns { self.previous_row_incomplete = false; }
-                else if last_vec.len() > n_columns {
-                    panic!("Provided row of data doesn't match the number of columns!\nThe previous row was incomplete; the combined rows are: {:?}", &last_vec);
-                }
-            } else {
-                self.data_rows.push(row);
-                self.previous_row_incomplete = true;
+
+        if self.previous_row_incomplete {
+            let last_vec: &mut Vec<String> = self.data_rows.last_mut().unwrap();
+            last_vec.extend(row);
+            if last_vec.len() == n_columns { self.previous_row_incomplete = false; }
+            else if last_vec.len() > n_columns {
+                panic!("Provided row of data doesn't match the number of columns!\nThe previous row was incomplete; the combined rows are: {:?}", &last_vec);
             }
+        } else {
+            self.previous_row_incomplete = row.len()!=n_columns;
+            self.data_rows.push(row);
         }
     }
 
@@ -171,6 +176,31 @@ impl CifLoop {
     /// Index of a column which holds values for a data item given its name
     pub fn column_index(&self, data_name: &str) -> Option<usize> {
         self.column_names.iter().position(|r| r == data_name)
+    }
+
+    /// # Example
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_cif::read_cif_buffer;
+    /// let cif_block = "data_loop_example
+    /// loop_
+    /// _atom_site_label
+    /// _atom_site_Cartn_x
+    /// _atom_site_Cartn_y
+    /// _atom_site_Cartn_z
+    /// O1 4.154 5.699 3.026
+    /// C2 5.630 5.087 4.246
+    /// ";
+    /// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_block.as_bytes()));
+    /// # assert_eq!(data_blocks.len(), 1);
+    /// # assert_eq!(data_blocks[0].name(),"loop_example");
+    /// let a_loop = data_blocks[0].loop_blocks().next().unwrap();
+    /// assert!(a_loop.column_name_contains("atom_site"));
+    /// assert!(a_loop.column_name_contains("x"));
+    /// assert!(!a_loop.column_name_contains("vector"))
+    /// ```
+    pub fn column_name_contains(&self, substring: &str) -> bool {
+        return self.column_names.iter().any(|name| name.contains(substring));
     }
 
     /// Provides access to a data item from a given row of this loop
@@ -289,6 +319,14 @@ impl CifData {
         self.loops.iter()
     }
 
+    /// Finds a loop block that contains a column of a given name
+    ///
+    /// Only the first sucha loop block may be accessed with  this method which is provided for
+    /// cases when there is only one such a loop block
+    pub fn first_loop(&self, column: &str) -> Option<&CifLoop> {
+        self.loops.iter().filter(|l| l.column_name_contains(column)).next()
+    }
+
     /// Get an iterator of mutable references to loop-blocks.
     pub fn loop_blocks_mut(&mut self) -> impl DoubleEndedIterator<Item = &mut CifLoop> + '_ {
         self.loops.iter_mut()
@@ -318,7 +356,7 @@ impl Display for CifData {
 /// Reads a CIF-formatted file.
 ///
 /// This function opens a file as a Returns a ``BufRead``, calls (``read_cif_buffer()``)[read_cif_buffer()]
-/// and returs all the data blocks it found.
+/// and returns all the data blocks it found.
 pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
 
     info!("Loading a CIF file: {}", input_fname);
@@ -418,6 +456,10 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
                 }
             }
         }
+    }
+    // --- close the very last loop that may be still open
+    if is_loop_open {
+        data_blocks.last_mut().unwrap().add_loop(current_loop.unwrap());
     }
     debug!("CIF structure loaded in: {:?}", start.elapsed());
 
