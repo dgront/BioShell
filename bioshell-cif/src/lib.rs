@@ -72,6 +72,17 @@ pub struct CifData {
     loops: Vec<CifLoop>
 }
 
+#[macro_export]
+macro_rules! unwrap_item_or_error {
+    ($cif_data:expr, $item_key:expr) => {
+        if let Some(val) = $cif_data.get_item($item_key) {
+            val
+        } else {
+            return Err(MissingCifDataKey{item_key: $item_key.to_string()})
+        }
+    };
+}
+
 /// Represents a single `_loop` of a CIF file.
 ///
 /// # Example
