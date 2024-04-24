@@ -1,6 +1,7 @@
 use std::env;
 use clap::{Parser};
-use bioshell_pdb::{load_pdb_file, Structure};
+use bioshell_cif::is_cif_file;
+use bioshell_pdb::{is_pdb_file, load_cif_file, load_pdb_file, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, IsCA, PdbAtomPredicate};
 
 #[derive(Parser, Debug)]
@@ -43,7 +44,14 @@ fn main() {
 
     let args = Args::parse();
     // ---------- INPUT section
-    let mut strctr = load_pdb_file(&args.infile).unwrap();
+    let mut strctr: Structure;
+    if is_pdb_file(&args.infile).is_ok_and(|f| f) {
+        strctr = load_pdb_file(&args.infile).unwrap();
+    } else if is_cif_file(&args.infile).is_ok_and(|f| f) {
+        strctr = load_cif_file(&args.infile).unwrap();
+    } else {
+        panic!("Can't recognize the format of the input file: {}", &args.infile);
+    }
 
     // ---------- FILTER section
     let mut filters: Vec<Box<dyn PdbAtomPredicate>> = vec![];
