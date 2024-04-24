@@ -39,7 +39,7 @@ mod load_cif;
 
 pub use structure::Structure;
 pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
-pub use load_pdb::{load_pdb_file, load_pdb_reader};
+pub use load_pdb::{load_pdb_file, load_pdb_reader, is_pdb_file};
 pub use assertions::*;
 pub use pdb_parsing_error::PDBError;
 pub use pdb_atom::{PdbAtom, same_residue_atoms};

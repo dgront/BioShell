@@ -19,4 +19,8 @@ pub enum CifError {
     #[error("The following mandatory data item can't be found in a CIF input: {item_key}")]
     /// CIF input contains more than one data block
     MissingCifDataKey {item_key: String},
+
+    #[error("Can't parse the following string: {item} into {type_name} type:\n{details}")]
+    /// The `item` string can't be parsed into a variable of `type_name` type
+    ItemParsingError {item: String, type_name: String, details: String},
 }

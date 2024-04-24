@@ -82,6 +82,33 @@ macro_rules! unwrap_item_or_error {
         }
     };
 }
+//format!("The `{}` string can't be parsed into a variable of {} type", $token, stringify!($type))
+
+/// Parses a data item into a given type or returns ItemParsingError error
+///
+/// # Example
+/// ```
+/// use bioshell_cif::CifError;
+/// use bioshell_cif::CifError::ItemParsingError;
+/// use bioshell_cif::parse_item_or_error;
+/// fn test_macro(token: &str) -> Result<i32, CifError> {
+///     let value = parse_item_or_error!(token, i32);
+///     return Ok(value);
+/// }
+/// assert!(test_macro("1").is_ok());
+/// assert!(test_macro("one").is_err());
+/// ```
+#[macro_export]
+macro_rules! parse_item_or_error {
+    ($token:expr, $type:ty) => {
+        match $token.parse::<$type>() {
+            Ok(val) => val,
+            Err(_) => return Err( ItemParsingError {
+                item: $token.to_string(), type_name: stringify!($type).to_string(), details: "".to_string(),
+            }),
+        }
+    };
+}
 
 /// Represents a single `_loop` of a CIF file.
 ///
@@ -330,7 +357,7 @@ impl CifData {
         self.loops.iter()
     }
 
-    /// Finds a loop block that contains a column of a given name
+    /// Finds a loop block that contains a column of a given name.
     ///
     /// Only the first sucha loop block may be accessed with  this method which is provided for
     /// cases when there is only one such a loop block
@@ -475,6 +502,40 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
     debug!("CIF structure loaded in: {:?}", start.elapsed());
 
     return data_blocks;
+}
+
+/// Returns true if a given string bears a meaningful value.
+///
+/// CIF format specification defines special values of '.' and '?' that represent data
+/// that are inapplicable or unknown, respectively. This helper function returns ``false``
+/// if a given  ``data_entry`` is one of these special characters.
+///
+/// # Example
+/// ```
+/// use bioshell_cif::entry_has_value;
+/// assert!(entry_has_value("1.6"));
+/// assert!(entry_has_value("A string"));
+/// assert!(!entry_has_value("."));
+/// assert!(!entry_has_value("?"));
+/// ```
+pub fn entry_has_value(data_entry: &str) -> bool { !(data_entry == "?" || data_entry == ".") }
+
+/// Returns a value parsed from a given string whenever it's not a special symbol.
+///
+/// This function returns the given ``default_val`` if  [`has_value()`](entry_has_value) returns false,
+/// otherwise it attempts to parse the given string into a desired type. *Note* that this function
+/// doesn't check for general parsing errors, e.g. parsing ``"1.3"`` into an ``i16`` type will fail.
+///
+/// # Example
+/// ```
+/// use bioshell_cif::value_or_default;
+/// assert_eq!(value_or_default::<i16>("34", 0), 34);
+/// assert_eq!(value_or_default::<i16>(".", 0), 0);
+/// assert_eq!(value_or_default::<i16>("?", 0), 0);
+/// ```
+///
+pub fn value_or_default<T: FromStr>(data_entry: &str, default_val: T) -> T {
+    if entry_has_value(data_entry) { data_entry.parse().ok().unwrap() } else { default_val }
 }
 
 /// Returns true if the input string starts and end with a semicolon, a single or a double quote.
