@@ -1,5 +1,7 @@
-use bioshell_cif::{CifData, CifError, unwrap_item_or_error};
+use bioshell_cif::{CifData};
 use bioshell_cif::CifError::MissingCifDataKey;
+use crate::{PDBError, value_or_missing_key_pdb_error};
+use crate::PDBError::CifParsingError;
 
 /// A unit cell of a crystal, containing its dimensions and angles
 pub struct UnitCell {
@@ -61,13 +63,17 @@ impl UnitCell {
         return UnitCell::new(a, b, c, alpha, beta, gamma, space_group, z);
     }
 
-    /// Creates a new UnitCell struct by extracting the necessary fields from a CIF-formatted data
+    /// Creates a new UnitCell struct by extracting the necessary fields from a CIF-formatted data.
     ///
-    /// # Example
+    /// Returns [`MissingCifDataKey`](MissingCifDataKey) error when at least one data item key can't
+    /// be found in the provided CIF block. In other words: all items shown in the example below
+    /// are mandatory for this method to return ``Ok(UnitCell)``.
+    ///
+    /// # Examples
     /// ```
     /// use std::io::BufReader;
     /// use bioshell_cif::read_cif_buffer;
-    /// use bioshell_pdb::{assert_delta, UnitCell};
+    /// use bioshell_pdb::{assert_delta, PDBError, UnitCell};
     /// let cell_data = "data_cryst_cell
     ///     _cell.length_a                         58.39
     ///     _cell.length_b                         86.70
@@ -80,17 +86,28 @@ impl UnitCell {
     /// ";
     /// let data_block = &read_cif_buffer(&mut BufReader::new(cell_data.as_bytes()))[0];
     /// let uc = UnitCell::from_cif_data(data_block).unwrap();
-    /// assert_delta!(uc.a, 58.39, 0.00001, "Incorrect unit cell dimension along a axis")
+    /// assert_delta!(uc.a, 58.39, 0.00001, "Incorrect unit cell dimension along a axis");
+    ///
+    /// let missing_data = "data_cryst_cell
+    ///     _cell.length_b                         86.70
+    ///     _cell.length_c                         46.27
+    ///     _cell.angle_alpha                      90.00
+    ///     _cell.angle_beta                       90.00
+    /// ";
+    /// let data_block = &read_cif_buffer(&mut BufReader::new(missing_data.as_bytes()))[0];
+    /// let uc = UnitCell::from_cif_data(data_block);
+    /// assert!(uc.is_err());
     /// ```
-    pub fn from_cif_data(cif_data: &CifData) -> Result<UnitCell, CifError> {
-        let a = unwrap_item_or_error!(cif_data, "_cell.length_a");
-        let b = unwrap_item_or_error!(cif_data, "_cell.length_b");
-        let c = unwrap_item_or_error!(cif_data, "_cell.length_c");
-        let alpha = unwrap_item_or_error!(cif_data, "_cell.angle_alpha");
-        let beta = unwrap_item_or_error!(cif_data, "_cell.angle_beta");
-        let gamma = unwrap_item_or_error!(cif_data, "_cell.angle_gamma");
-        let space_group: String = unwrap_item_or_error!(cif_data, "_symmetry.space_group_name_H-M");
-        let z = unwrap_item_or_error!(cif_data, "_cell.Z_PDB");
+    pub fn from_cif_data(cif_data: &CifData) -> Result<UnitCell, PDBError> {
+
+        let a = value_or_missing_key_pdb_error!(cif_data, "_cell.length_a", f64);
+        let b = value_or_missing_key_pdb_error!(cif_data, "_cell.length_b", f64);
+        let c = value_or_missing_key_pdb_error!(cif_data, "_cell.length_c", f64);
+        let alpha = value_or_missing_key_pdb_error!(cif_data, "_cell.angle_alpha", f64);
+        let beta = value_or_missing_key_pdb_error!(cif_data, "_cell.angle_beta", f64);
+        let gamma = value_or_missing_key_pdb_error!(cif_data, "_cell.angle_gamma", f64);
+        let space_group = value_or_missing_key_pdb_error!(cif_data, "_symmetry.space_group_name_H-M", String);
+        let z = value_or_missing_key_pdb_error!(cif_data, "_cell.Z_PDB", usize);
 
         return Ok(UnitCell::new(a, b, c, alpha, beta, gamma, &space_group, z));
     }

@@ -53,4 +53,14 @@ pub use remarks::{PDBRemarks};
 pub use unit_cell::{UnitCell};
 pub use load_cif::{load_cif_file, load_cif_reader};
 
+mod macros {
+    #[macro_export]
+    macro_rules! value_or_missing_key_pdb_error {
+        ($cif_data_block:expr, $data_key:expr, $casted_type:ty) => {
+            $cif_data_block.get_item::<$casted_type>($data_key)
+                .ok_or( MissingCifDataKey{ item_key: $data_key.to_string()}).map_err(|e|CifParsingError(e))?
+        };
+    }
+}
+
 

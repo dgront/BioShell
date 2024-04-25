@@ -1,20 +1,20 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::str::FromStr;
 use std::time::Instant;
 use log::{debug, info, warn};
 use bioshell_cif::{cif_columns_by_name, CifLoop, read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value};
-use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbTitle, Structure, UnitCell};
+use crate::{ExperimentalMethod, PdbAtom, PDBError, PdbHeader, PdbTitle, Structure, UnitCell};
 use crate::calc::Vec3;
 use bioshell_cif::CifError::{ExtraDataBlock, MissingCifDataKey, MissingCifLoopKey, ItemParsingError};
+use crate::PDBError::CifParsingError;
 
-pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, CifError> {
+pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     let start = Instant::now();
     let mut pdb_structure = Structure::new();
 
     let cif_data = read_cif_buffer(reader);
     if cif_data.len() > 1 {
-        return Err(ExtraDataBlock);
+        return Err(CifParsingError(ExtraDataBlock));
     }
     let cif_data_block = &cif_data[0];
 
@@ -50,11 +50,11 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, CifError> {
                         let data_line = row.join(" ");
                         return match e {
                             ItemParsingError { item, type_name, details: _ } => {
-                                Err(ItemParsingError {
+                                Err(CifParsingError(ItemParsingError {
                                     item, type_name, details: data_line,
-                                })
+                                }))
                             }
-                            _ => { Err(e) }
+                            _ => { Err(CifParsingError(e)) }
                         }
                     }
                 }
@@ -64,7 +64,7 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, CifError> {
         }
     } else {
         warn!("mmCIF data has no atoms: double check if it contains _atom_site loop block");
-        return Err(MissingCifLoopKey{ item_key: "_atom_site".to_string() });
+        return Err(CifParsingError(MissingCifLoopKey{ item_key: "_atom_site".to_string() }));
     }
 
 
@@ -73,10 +73,7 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, CifError> {
     pdb_structure.title = cif_data_block.get_item("_struct.title").and_then(|t| Some(PdbTitle{ text: t }));
 
     // --- exp details and resolution
-    match cif_data_block.get_item::<String>("_exptl.method") {
-        Some(methods) => pdb_structure.methods = ExperimentalMethod::from_expdata_line(&methods),
-        None => return Err(MissingCifDataKey{ item_key: "_exptl.method".to_string() })
-    }
+    pdb_structure.methods = ExperimentalMethod::from_cif_data(cif_data_block);
     pdb_structure.resolution = cif_data_block.get_item("_refine.ls_d_res_high");
 
     // --- crystallography parameters
@@ -89,7 +86,7 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, CifError> {
 
 /// Reads a [`Structure`](Structure) from a PDB file
 ///
-pub fn load_cif_file(file_name: &str) -> Result<Structure, CifError> {
+pub fn load_cif_file(file_name: &str) -> Result<Structure, PDBError> {
 
     info!("Loading an mmCIF deposit: {}", file_name);
 
@@ -97,8 +94,6 @@ pub fn load_cif_file(file_name: &str) -> Result<Structure, CifError> {
     let reader = BufReader::new(file);
     return load_cif_reader(reader);
 }
-
-
 
 /// A helper function to create an atom based on given string tokens
 fn create_pdb_atom(tokens: &[&str; 15], pos: Vec3) -> Result<PdbAtom, CifError> {

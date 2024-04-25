@@ -1,4 +1,5 @@
 use thiserror::Error;
+use bioshell_cif::CifError;
 use crate::ResidueId;
 
 /// Errors that may appear while using the bioshell-pdb crate
@@ -47,4 +48,8 @@ pub enum PDBError {
     #[error("The number of atoms in model {model_index} is different than the number of atoms in the first model")]
     /// A requested model has different number of atoms that the first model
     WrongAtomsNumberInModel {model_index: usize},
+
+    #[error("A Cif parser returned an error")]
+    /// A Cif parser returned an error which is stored inside this enum variant
+    CifParsingError(#[from] CifError),
 }

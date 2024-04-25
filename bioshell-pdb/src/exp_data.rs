@@ -1,6 +1,8 @@
 use std::fmt;
+use bioshell_cif::CifData;
 
-/// Represents experimental method types used to determine a macromolecular assembly structure
+/// Represents experimental method types used to determine a structure of a macromolecular assembly.
+///
 #[derive(Debug, PartialEq)]
 pub enum ExperimentalMethod {
     /// X-ray diffraction method
@@ -67,7 +69,8 @@ impl ExperimentalMethod {
         let extracted_line = if line.starts_with("EXPDTA") { &line[10..] } else { line };
         let expdata_entries: Vec<&str> = extracted_line.trim().split(';').map(|s| s.trim()).collect();
         for entry in expdata_entries {
-            let tokens: Vec<&str> = entry.split_whitespace().collect();
+            let entry_only = entry.replace("\'", "");
+            let tokens: Vec<&str> = entry_only.split_whitespace().collect();
             if let Some(method) = match tokens.as_slice() {
                 ["X-RAY", "DIFFRACTION"] => Some(ExperimentalMethod::XRay),
                 ["FIBER", "DIFFRACTION"] => Some(ExperimentalMethod::FiberDiffraction),
@@ -84,5 +87,21 @@ impl ExperimentalMethod {
             }
         }
         return methods;
+    }
+
+    pub fn from_cif_data(cif_data_block: &CifData) -> Vec<ExperimentalMethod> {
+        let mut output: Vec<ExperimentalMethod> = vec![];
+
+        if let Some(methods) = cif_data_block.get_item::<String>("_exptl.method") {
+            output.extend(ExperimentalMethod::from_expdata_line(&methods));
+        }
+        if let Some(exp_loop) = cif_data_block.first_loop("_exptl.method") {
+            let idx = exp_loop.column_index("_exptl.method").unwrap();
+            for row in exp_loop.rows() {
+                output.extend(ExperimentalMethod::from_expdata_line(&row[idx]));
+            }
+        }
+
+        return output;
     }
 }

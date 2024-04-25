@@ -72,17 +72,6 @@ pub struct CifData {
     loops: Vec<CifLoop>
 }
 
-#[macro_export]
-macro_rules! unwrap_item_or_error {
-    ($cif_data:expr, $item_key:expr) => {
-        if let Some(val) = $cif_data.get_item($item_key) {
-            val
-        } else {
-            return Err(MissingCifDataKey{item_key: $item_key.to_string()})
-        }
-    };
-}
-//format!("The `{}` string can't be parsed into a variable of {} type", $token, stringify!($type))
 
 /// Parses a data item into a given type or returns ItemParsingError error
 ///
@@ -464,7 +453,8 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
                     let key_val = split_into_strings(ls, false);
                     if key_val.len() != 2 {
                         let next_line = read_string("", &mut line_iter);
-                        if ! is_quoted_string(&next_line.trim()) {
+                        let next_line_tr = next_line.trim();
+                        if (! is_quoted_string(next_line_tr)) && next_line_tr.find(' ').is_some() {
                             panic!("{}", format!("A single data item line should contain exactly two tokens: a key and its value; {} values found in the line: {}",
                                                  key_val.len(), &ls));
                         }
