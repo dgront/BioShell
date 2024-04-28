@@ -38,6 +38,7 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Lines};
+use std::ops::{Index, IndexMut};
 use std::str::FromStr;
 use std::time::Instant;
 use log::{debug, info};
@@ -48,7 +49,7 @@ use bioshell_io::split_into_strings;
 /// Returns true if a given file is in CIF format.
 ///
 /// This function simply tests whether the first data line of a given file starts with ``data_``.
-/// Otherwise it returns ``false``. When the file can't be open returns I/O error..
+/// Otherwise it returns ``false``. When the file can't be open returns I/O error.
 pub fn is_cif_file(file_path: &str) -> io::Result<bool> {
     let file = File::open(file_path)?;
     let reader = io::BufReader::new(file);
@@ -313,8 +314,23 @@ impl CifData {
     /// ```
     pub fn name(&self) -> &str { &self.name }
 
-    /// Add a given loop to this block
+    /// Add a given loop to this data block
     pub fn add_loop(&mut self, a_loop: CifLoop) { self.loops.push(a_loop)}
+
+    /// Add a new data item to this data block.
+    ///
+    /// Note that the same results may be achieved by inserting data directly to the internal ``HashMap``
+    /// returned by [``data_items_mut()``](data_items_mut()) method.
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_cif::CifData;
+    /// let mut m = CifData::new("atomic_mass");
+    /// m.add_item("C", "12.011");
+    /// m.add_item("O", "15.999");
+    /// # assert_eq!(m.data_items().len(), 2);
+    /// ```
+    pub fn add_item(&mut self, key: &str, data: &str) { self.data_items.insert(key.to_string(),data.to_string()); }
 
     /// Returns a data item value assigned to a given key
     ///
@@ -338,7 +354,16 @@ impl CifData {
     /// Read access to data items of this block
     pub fn data_items(&self) -> &HashMap<String, String> { &self.data_items }
 
-    /// Mutable access to data items of this block
+    /// Mutable access to data items of this block.
+    ///
+    /// This method allows to modify the set of items stored by data block
+    /// # Example
+    /// ```
+    /// use bioshell_cif::CifData;
+    /// let mut m = CifData::new("atomic_mass");
+    /// m.data_items_mut().insert("O".to_string(), "15.999".to_string());
+    /// # assert_eq!(m.data_items().len(), 1);
+    /// ```
     pub fn data_items_mut(&mut self) -> &mut HashMap<String, String> { &mut self.data_items }
 
     /// Get an iterator of references to loop-blocks.
@@ -377,6 +402,42 @@ impl Display for CifData {
             writeln!(f, "{}",a_loop).ok();
         }
         Ok(())
+    }
+}
+
+impl Index<&str> for CifData {
+    type Output = String;
+
+    /// Access data items of a CifData struct with indexing operator
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_cif::CifData;
+    /// let mut z = CifData::new("atomic_number");
+    /// z.add_item("C", "6");
+    /// assert_eq!(z["C"], "6".to_string());
+    /// ```
+    fn index(&self, key: &str) -> &Self::Output {
+        self.data_items.get(key).expect(&format!("CifData key not found: {}", key))
+    }
+}
+
+impl IndexMut<&str> for CifData {
+
+    /// Mutable access to data items of a CifData struct with indexing operator
+    ///
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_cif::CifData;
+    /// let mut z = CifData::new("atomic_number");
+    /// z.add_item("O", "6");
+    /// z["O"] = "8".to_string();
+    /// assert_eq!(z["O"], "8".to_string());
+    fn index_mut(&mut self, key: &str) -> &mut Self::Output {
+        self.data_items
+            .entry(String::from(key))
+            .or_insert(String::new())
     }
 }
 

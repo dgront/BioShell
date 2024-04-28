@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-/// Errors that may appear while using the bioshell-cif crate
+/// Errors that may result while using the bioshell-cif crate
 #[derive(Debug, Error)]
 pub enum CifError {
 
