@@ -21,20 +21,25 @@ impl PdbTitle {
     ///
     /// According to the PDB file format, the `TITLE` record may be split into multiple lines.
     /// This method allows build the full record by appending lines that follow the first one
-    ///
-    /// # Example
-    /// ```
-    /// use bioshell_pdb::PdbTitle;
-    /// let mut title = PdbTitle::from_pdb_line("TITLE     A NOVEL, HIGHLY STABLE FOLD OF THE IMMUNOGLOBULIN BINDING");
-    /// title.append_pdb_line("TITLE    2 DOMAIN OF STREPTOCOCCAL PROTEIN G ");
-    /// assert_eq!(title.to_string(),
-    ///                    String::from("A NOVEL, HIGHLY STABLE FOLD OF THE IMMUNOGLOBULIN BINDING DOMAIN OF STREPTOCOCCAL PROTEIN G"))
-    /// ```
     pub fn append_pdb_line(&mut self, line: &str) {
         self.text.push_str(line[10..].trim_end());
     }
 
     pub fn to_string(&self) -> String {
         self.text.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::pdb_title::PdbTitle;
+
+    #[test]
+    fn test_pdb_title() {
+        let line = "TITLE     PHOSPHOGLYCERATE KINASE FROM TRYPANOSOMA BRUCEI BISUBSTRATE           ";
+        let expected_text = "PHOSPHOGLYCERATE KINASE FROM TRYPANOSOMA BRUCEI BISUBSTRATE";
+        let pdb_title = PdbTitle::from_pdb_line(line);
+
+        assert_eq!(pdb_title.to_string(), expected_text);
     }
 }

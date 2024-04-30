@@ -7,7 +7,10 @@ use log::{debug, info};
 use bioshell_io::open_file;
 use bioshell_seq::chemical::{ResidueTypeManager, ResidueTypeProperties};
 use bioshell_seq::sequence::Sequence;
-use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbHelix, PDBRemarks, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
+use crate::pdb_title::PdbTitle;
+use crate::pdb_header::PdbHeader;
+use crate::remarks::PDBRemarks;
+use crate::{ExperimentalMethod, PdbAtom, PdbHelix, PdbSheet, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
 use crate::calc::Vec3;
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::PDBError;
@@ -34,13 +37,15 @@ use crate::pdb_parsing_error::PDBError;
 pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
 
     let start = Instant::now();
-    let mut pdb_structure = Structure::new();
+    let mut pdb_structure = Structure::new("");
 
     let mut helices: Vec<PdbHelix> = vec![];
     let mut strands: Vec<PdbSheet> = vec![];
     let mut remarks = PDBRemarks::new();
     let mut seqres: Vec<String> = vec![];
     let mut model_id = 0;
+    let mut title : Option<PdbTitle> = None;
+    let mut header: Option<PdbHeader> = None;
     pdb_structure.model_coordinates.push(vec![]);
 
     for line in reader.lines() {
@@ -61,16 +66,16 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
                 }
             }
             "HEADER" => {
-                pdb_structure.header = PdbHeader::new(&line);
+                header = PdbHeader::new(&line);
             },
             "EXPDTA" => {
                 pdb_structure.methods = ExperimentalMethod::from_expdata_line(&line);
             },
             "TITLE" => {
-                if pdb_structure.title == None {
-                    pdb_structure.title = Some(PdbTitle::from_pdb_line(&line));
+                if title == None {
+                    title = Some(PdbTitle::from_pdb_line(&line));
                 } else {
-                    let title = pdb_structure.title.as_mut().unwrap();
+                    let title = title.as_mut().unwrap();
                     title.append_pdb_line(&line);
                 }
             },
@@ -134,6 +139,16 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
 
     // ---------- Extract values stored in remarks
     pdb_structure.resolution = remarks.resolution();
+
+    pdb_structure.title = match title {
+        None => None,
+        Some(title) => {Some(title.to_string())}
+    };
+    if let Some(header) = header {
+        pdb_structure.classification = Some(header.classification);
+        pdb_structure.id_code = header.id_code;
+        pdb_structure.dep_date = Some(header.dep_date);
+    }
 
     pdb_structure.entity_sequences = parse_seqres_records(seqres);
 

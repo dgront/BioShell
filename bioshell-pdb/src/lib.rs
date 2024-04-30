@@ -44,12 +44,9 @@ pub use assertions::*;
 pub use pdb_parsing_error::PDBError;
 pub use pdb_atom::{PdbAtom, same_residue_atoms};
 pub use residue_id::{ResidueId, residue_id_from_ter_record};
-pub use pdb_header::PdbHeader;
-pub use pdb_title::PdbTitle;
 pub use pdb_helix::PdbHelix;
 pub use pdb_sheet::PdbSheet;
 pub use exp_data::{ExperimentalMethod};
-pub use remarks::{PDBRemarks};
 pub use unit_cell::{UnitCell};
 pub use load_cif::{load_cif_file, load_cif_reader};
 

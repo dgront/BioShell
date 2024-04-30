@@ -22,7 +22,7 @@ use crate::PDBError::IncorrectlyFormattedTER;
 /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
 /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
 /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-/// # let strctr = Structure::from_iterator(atoms.iter());
+/// # let strctr = Structure::from_iterator("1xyz", atoms.iter());
 /// let res_id = ResidueId::new("A", 68, ' ');
 /// let get_res = ByResidue::new(res_id);
 /// # let mut cnt = 0;

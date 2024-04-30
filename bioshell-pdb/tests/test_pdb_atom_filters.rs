@@ -22,7 +22,7 @@ const lines:  [&str;15] = [
 #[test]
 fn test_backbone_filtering() {
     let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    let mut strctr = Structure::from_iterator(atoms.iter());
+    let mut strctr = Structure::from_iterator("1xyz", atoms.iter());
     let bb = IsBackbone{};
     let bb_count = strctr.atoms().iter().filter(|a|bb.check(a)).count();
     assert_eq!(bb_count, 12);
@@ -34,9 +34,9 @@ fn test_backbone_filtering() {
 #[test]
 fn structure_from_iterator() {
     let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    let strctr = Structure::from_iterator(atoms.iter());
+    let strctr = Structure::from_iterator("1xyz", atoms.iter());
     let bb = IsBackbone{};
-    let bb_strctr = Structure::from_iterator(strctr.atoms().iter().filter(|a|bb.check(a)));
+    let bb_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a|bb.check(a)));
     assert_eq!(bb_strctr.count_atoms(), 12);
 }
 
@@ -44,7 +44,7 @@ fn structure_from_iterator() {
 #[test]
 fn iterate_over_residues() {
     let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    let strctr = Structure::from_iterator(atoms.iter());
+    let strctr = Structure::from_iterator("1xyz", atoms.iter());
 
     let same_res = SameResidue{};
     let n_res = strctr.atoms().windows(2).filter(|a| !same_res.check(&a[0],&a[1])).count() + 1;
@@ -54,7 +54,7 @@ fn iterate_over_residues() {
 #[test]
 fn residues_of_a_chain() {
     let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    let strctr = Structure::from_iterator(atoms.iter());
+    let strctr = Structure::from_iterator("1xyz", atoms.iter());
 
     let chain_a = ByChain::new("A");
     let residues = Structure::residue_ids_from_atoms(strctr.atoms().iter().filter(|a| chain_a.check(a)));

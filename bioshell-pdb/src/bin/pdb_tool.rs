@@ -74,13 +74,12 @@ fn main() {
         }
     }
     if args.info {
+        println!("id_code: {:?}",strctr.id_code);
         println!("methods: {:?}",strctr.methods);
-        if let Some(res) = strctr.resolution {
-            println!("resolution: {}", res);
-        }
-        if let Some(unit_cell) = &strctr.unit_cell {
-            println!("space group: {}", unit_cell.space_group);
-        }
+        if let Some(class) = &strctr.classification { println!("classification: {}", class); }
+        if let Some(title) = &strctr.title { println!("title: {}", title); }
+        if let Some(res) = strctr.resolution { println!("resolution: {}", res); }
+        if let Some(unit_cell) = &strctr.unit_cell { println!("space group: {}", unit_cell.space_group); }
         println!("models: {}", strctr.count_models());
     }
 }

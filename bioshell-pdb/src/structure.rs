@@ -8,8 +8,6 @@ use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypePropert
 use bioshell_seq::sequence::Sequence;
 
 use crate::pdb_atom::{PdbAtom, same_residue_atoms};
-use crate::pdb_header::PdbHeader;
-use crate::pdb_title::PdbTitle;
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
 use crate::pdb_parsing_error::PDBError;
 use crate::pdb_parsing_error::PDBError::{NoSuchAtom, NoSuchResidue};
@@ -38,7 +36,7 @@ use crate::secondary_structure::SecondaryStructure;
 ///                      "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
 ///                      "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
 /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-/// let strctr = Structure::from_iterator(atoms.iter());
+/// let strctr = Structure::from_iterator("1xyz", atoms.iter());
 /// # assert_eq!(strctr.count_atoms(), 4);
 /// ```
 ///
@@ -55,7 +53,7 @@ use crate::secondary_structure::SecondaryStructure;
 /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
 /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
 /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-/// # let strctr = Structure::from_iterator(atoms.iter());
+/// # let strctr = Structure::from_iterator("1xyz", atoms.iter());
 /// let is_ca = IsCA;
 /// # let mut n_ca = 0;
 /// for ca in  strctr.atoms().iter().filter(|a| is_ca.check(&a)) {
@@ -71,7 +69,7 @@ use crate::secondary_structure::SecondaryStructure;
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
 /// use bioshell_pdb::pdb_atom_filters::{IsWater, PdbAtomPredicate};
-/// # let mut strctr = Structure::new();
+/// # let mut strctr = Structure::new("1xyz");
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
 /// let hoh = IsWater;
@@ -82,7 +80,7 @@ use crate::secondary_structure::SecondaryStructure;
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
 /// use bioshell_pdb::pdb_atom_filters::{IsHydrogen, PdbAtomPredicate};
-/// # let mut strctr = Structure::new();
+/// # let mut strctr = Structure::new("1xyz");
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    149  CA  GLY A   9      10.920  -2.963   0.070  1.00  0.18           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    153  HA2 GLY A   9      10.848  -2.565  -0.927  1.00  0.20           H"));
 /// let is_h = IsHydrogen;
@@ -91,10 +89,26 @@ use crate::secondary_structure::SecondaryStructure;
 /// ```
 ///
 pub struct Structure {
-    pub header: Option<PdbHeader>,
-    pub title: Option<PdbTitle>,
+    /// classifies the molecule(s)
+    ///
+    /// This field should contain one of classifications from a curated list available at the [wwPDB website](http://www.wwpdb.org/)
+    pub classification: Option<String>,
+    /// deposition date
+    pub dep_date: Option<String>,
+    /// Four-character PDB code of this deposit, such as `2GB1` or `4HHB`
+    pub id_code: String,
+    /// title for a PDB entry
+    ///
+    /// This value is extracted either from a `TITLE` record of a PDB-formatted file
+    /// or from a "_struct.title" entry of an mmCIF data.
+    ///
+    /// See  the [official documentation of the `TITLE` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect2.html#TITLE) for details
+    pub title: Option<String>,
+    /// describes how this structure was determined experimentally
     pub methods: Vec<ExperimentalMethod>,
+    /// experimental resolution, when available
     pub resolution: Option<f64>,
+    /// unit cell parameters, when available
     pub unit_cell: Option<UnitCell>,
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
@@ -106,9 +120,11 @@ pub struct Structure {
 
 impl Structure {
     /// Create a new empty [`Structure`] that contains no atoms.
-    pub fn new() -> Self {
+    pub fn new(id_code: &str) -> Self {
         Self {
-            header: None,
+            classification: None,
+            dep_date: None,
+            id_code: id_code.to_string(),
             title: None,
             methods: vec![],
             resolution: None,
@@ -131,20 +147,20 @@ impl Structure {
     ///```
     /// # use bioshell_pdb::{PdbAtom, Structure};
     /// # use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
-    /// let mut strctr = Structure::new();
+    /// let mut strctr = Structure::new("1xyz");
     /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
     /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
     /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
     /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
     /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
     /// let bb = IsBackbone{};
-    /// let bb_strctr = Structure::from_iterator(strctr.atoms().iter().filter(|a|bb.check(a)));
+    /// let bb_strctr = Structure::from_iterator(&strctr.id_code, strctr.atoms().iter().filter(|a|bb.check(a)));
     /// # assert_eq!(bb_strctr.count_atoms(), 4);
     /// ```
-    pub fn from_iterator<'a, T: Iterator+Clone>(iter: T) -> Structure
+    pub fn from_iterator<'a, T: Iterator+Clone>(id_code: &str, iter: T) -> Structure
         where T: Iterator<Item=&'a PdbAtom> {
 
-        let mut strctr = Structure::new();
+        let mut strctr = Structure::new(id_code);
         for a in iter { strctr.atoms.push(a.clone()) }
         strctr.update();
 
@@ -166,7 +182,7 @@ impl Structure {
     /// Counts atoms of this [`Structure`](Structure)
     /// ```
     /// # use bioshell_pdb::{PdbAtom, Structure};
-    /// let mut strctr = Structure::new();
+    /// let mut strctr = Structure::new("1xyz");
     /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N"));
     /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"));
     /// assert_eq!(strctr.count_atoms(), 2);
@@ -176,7 +192,7 @@ impl Structure {
     /// Counts residues of this [`Structure`](Structure)
     /// ```
     /// # use bioshell_pdb::{PdbAtom, Structure};
-    /// let mut strctr = Structure::new();
+    /// let mut strctr = Structure::new("1xyz");
     /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N"));
     /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"));
     /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
@@ -192,7 +208,7 @@ impl Structure {
     /// Counts chains of this [`Structure`](Structure)
     /// ```
     /// # use bioshell_pdb::{PdbAtom, Structure};
-    /// let mut strctr = Structure::new();
+    /// let mut strctr = Structure::new("1xyz");
     /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"));
     /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA B  68      25.790  28.757  29.513  1.00 16.12           C"));
     ///
@@ -224,7 +240,7 @@ impl Structure {
     /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// # let strctr = Structure::from_iterator(atoms.iter());
+    /// # let strctr = Structure::from_iterator("1xyz", atoms.iter());
     /// let a = strctr.atom(&ResidueId::new("A", 69, ' ')," CA ").unwrap();
     /// assert_eq!(a.name, " CA ");
     /// # assert_eq!(a.res_seq, 69);
@@ -274,7 +290,7 @@ impl Structure {
     /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// # let strctr = Structure::from_iterator(atoms.iter());
+    /// # let strctr = Structure::from_iterator("1xyz", atoms.iter());
     /// let chain_A_atoms = strctr.atoms_in_chain("A");
     /// # assert_eq!(chain_A_atoms.len(),4);
     /// ```
@@ -291,7 +307,7 @@ impl Structure {
     /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// # let strctr = Structure::from_iterator(atoms.iter());
+    /// # let strctr = Structure::from_iterator("1xyz", atoms.iter());
     /// let res_atoms = strctr.atoms_in_residue(&ResidueId::new("A", 68, ' ')).unwrap();
     /// # assert_eq!(res_atoms.count(),2);
     /// ```
@@ -348,7 +364,7 @@ impl Structure {
     ///                      "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
     ///                      "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// let strctr = Structure::from_iterator(atoms.iter());
+    /// let strctr = Structure::from_iterator("1xyz", atoms.iter());
     /// assert_eq!(strctr.residue_ids().len(), 2);
     /// assert_eq!(strctr.residue_ids()[0].res_seq, 68);
     /// assert_eq!(strctr.residue_ids()[1].res_seq, 69);
@@ -363,7 +379,7 @@ impl Structure {
     /// use bioshell_seq::chemical::StandardResidueType;
     /// let pdb_lines = vec!["ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"];
     /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// let strctr = Structure::from_iterator(atoms.iter());
+    /// let strctr = Structure::from_iterator("1xyz", atoms.iter());
     /// let res_type = strctr.residue_type(&ResidueId::new("A", 68, ' ')).unwrap();
     /// assert_eq!(res_type.code3, "ALA");
     /// assert_eq!(res_type.parent_type, StandardResidueType::ALA);
@@ -415,10 +431,7 @@ impl Structure {
             }
         }
 
-        if let Some(header) = &self.header {
-            return Sequence::from_attrs(format!("{}:{}", header.id_code, chain_id), aa);
-        }
-        return Sequence::from_attrs(format!(":{}", chain_id), aa);
+        return Sequence::from_attrs(format!("{}:{}", &self.id_code, chain_id), aa);
     }
 
     /// Provides a secondary structure of a given chain.

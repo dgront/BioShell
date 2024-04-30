@@ -2,15 +2,15 @@ use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info, warn};
 use bioshell_cif::{cif_columns_by_name, CifLoop, read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value};
-use crate::{ExperimentalMethod, PdbAtom, PDBError, PdbHeader, PdbTitle, Structure, UnitCell};
+use crate::{ExperimentalMethod, PdbAtom, PDBError, Structure, UnitCell, value_or_missing_key_pdb_error};
 use crate::calc::Vec3;
-use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError};
+use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError, MissingCifDataKey};
 use bioshell_io::open_file;
 use crate::PDBError::CifParsingError;
 
 pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     let start = Instant::now();
-    let mut pdb_structure = Structure::new();
+    let mut pdb_structure = Structure::new("");
 
     let cif_data = read_cif_buffer(reader);
     if cif_data.len() > 1 {
@@ -69,8 +69,10 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
 
 
     // --- header data
-    pdb_structure.header = PdbHeader::from_cif(cif_data_block);
-    pdb_structure.title = cif_data_block.get_item("_struct.title").and_then(|t| Some(PdbTitle{ text: t }));
+    pdb_structure.classification = cif_data_block.get_item("_struct_keywords.pdbx_keywords");
+    pdb_structure.id_code = value_or_missing_key_pdb_error!(cif_data_block, "_entry.id", String);
+    pdb_structure.dep_date = cif_data_block.get_item("_pdbx_database_status.recvd_initial_deposition_date");
+    pdb_structure.title = cif_data_block.get_item("_struct.title");
 
     // --- exp details and resolution
     pdb_structure.methods = ExperimentalMethod::from_cif_data(cif_data_block);

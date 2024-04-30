@@ -12,7 +12,7 @@
 //! ```
 //! use bioshell_pdb::{PdbAtom, Structure};
 //! use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
-//! let mut strctr = Structure::new();
+//! let mut strctr = Structure::new("1xyz");
 //! strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
 //! strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 //! strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
@@ -28,7 +28,7 @@
 //! ```
 //! # use bioshell_pdb::{PdbAtom, Structure};
 //! # use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
-//! # let mut strctr = Structure::new();
+//! # let mut strctr = Structure::new("1xyz");
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
@@ -42,14 +42,14 @@
 //! ```
 //! # use bioshell_pdb::{PdbAtom, Structure};
 //! # use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
-//! # let mut strctr = Structure::new();
+//! # let mut strctr = Structure::new("1xyz");
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
 //! # let bb = IsBackbone;
-//! let bb_strctr = Structure::from_iterator(strctr.atoms().iter().filter(|b| bb.check(b)));
+//! let bb_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|b| bb.check(b)));
 //! ```
 
 use crate::{PdbAtom, ResidueId};
@@ -78,7 +78,7 @@ impl PdbAtomPredicate for AlwaysPass {
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
 /// use bioshell_pdb::pdb_atom_filters::{ByChain, PdbAtomPredicate};
-/// let mut strctr = Structure::new();
+/// let mut strctr = Structure::new("1xyz");
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA B  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// let select_chain_A = ByChain::new("A");
@@ -101,7 +101,7 @@ impl PdbAtomPredicate for ByChain {
 /// ```
 /// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
 /// use bioshell_pdb::pdb_atom_filters::{ByResidue, PdbAtomPredicate};
-/// let mut strctr = Structure::new();
+/// let mut strctr = Structure::new("1xyz");
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA B  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// let select_ala_A = ByResidue::new(ResidueId::new("A", 69, ' '));
@@ -125,7 +125,7 @@ impl PdbAtomPredicate for ByResidue {
 /// ```
 /// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
 /// use bioshell_pdb::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
-/// let mut strctr = Structure::new();
+/// let mut strctr = Structure::new("1xyz");
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  67      25.790  28.757  29.513  1.00 16.12           C"));
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"));
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  CA  ALA A  68A     25.790  28.757  29.513  1.00 16.12           C"));
@@ -171,7 +171,7 @@ impl PdbAtomPredicate for ByResidueRange {
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
 /// use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
-/// # let mut strctr = Structure::new();
+/// # let mut strctr = Structure::new("1xyz");
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C"));
@@ -196,7 +196,7 @@ impl PdbAtomPredicate for IsBackbone {
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
 /// use bioshell_pdb::pdb_atom_filters::{IsCA, PdbAtomPredicate};
-/// # let mut strctr = Structure::new();
+/// # let mut strctr = Structure::new("1xyz");
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
@@ -249,7 +249,7 @@ impl PdbAtomPredicate for IsHydrogen {
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
 /// use bioshell_pdb::pdb_atom_filters::{IsWater, PdbAtomPredicate};
-/// # let mut strctr = Structure::new();
+/// # let mut strctr = Structure::new("1xyz");
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
 /// let hoh = IsWater;
