@@ -35,15 +35,14 @@ pub use cif_errors::*;
 
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader, Lines};
+use std::io::{BufRead, Lines};
 use std::ops::{Index, IndexMut};
 use std::str::FromStr;
 use std::time::Instant;
 use log::{debug, info};
 
-use bioshell_io::split_into_strings;
+use bioshell_io::{open_file, split_into_strings};
 
 
 /// Returns true if a given file is in CIF format.
@@ -51,8 +50,7 @@ use bioshell_io::split_into_strings;
 /// This function simply tests whether the first data line of a given file starts with ``data_``.
 /// Otherwise it returns ``false``. When the file can't be open returns I/O error.
 pub fn is_cif_file(file_path: &str) -> io::Result<bool> {
-    let file = File::open(file_path)?;
-    let reader = io::BufReader::new(file);
+    let reader = open_file(file_path)?;
 
     for line in reader.lines() {
         let line = line?;
@@ -449,11 +447,9 @@ pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
 
     info!("Loading a CIF file: {}", input_fname);
 
-    let file = match File::open(input_fname) {
-        Ok(file) => file,
-        Err(e) => return Err(e)
-    };
-    return Ok(read_cif_buffer(&mut BufReader::new(file)));
+    let reader = open_file(input_fname)?;
+
+    return Ok(read_cif_buffer(reader));
 }
 
 /// Reads a CIF-formatted data from a buffer.

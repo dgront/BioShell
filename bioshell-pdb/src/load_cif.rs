@@ -1,11 +1,11 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info, warn};
 use bioshell_cif::{cif_columns_by_name, CifLoop, read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value};
 use crate::{ExperimentalMethod, PdbAtom, PDBError, PdbHeader, PdbTitle, Structure, UnitCell};
 use crate::calc::Vec3;
-use bioshell_cif::CifError::{ExtraDataBlock, MissingCifDataKey, MissingCifLoopKey, ItemParsingError};
+use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError};
+use bioshell_io::open_file;
 use crate::PDBError::CifParsingError;
 
 pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
@@ -84,14 +84,13 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     return Ok(pdb_structure);
 }
 
-/// Reads a [`Structure`](Structure) from a PDB file
+/// Reads a [`Structure`](Structure) from a mmCIF file
 ///
 pub fn load_cif_file(file_name: &str) -> Result<Structure, PDBError> {
 
     info!("Loading an mmCIF deposit: {}", file_name);
+    let reader = open_file(file_name)?;
 
-    let file = File::open(file_name)?;
-    let reader = BufReader::new(file);
     return load_cif_reader(reader);
 }
 

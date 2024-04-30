@@ -4,6 +4,7 @@ use std::io;
 use std::io::{BufRead, BufReader};
 use std::time::Instant;
 use log::{debug, info};
+use bioshell_io::open_file;
 use bioshell_seq::chemical::{ResidueTypeManager, ResidueTypeProperties};
 use bioshell_seq::sequence::Sequence;
 use crate::{ExperimentalMethod, PdbAtom, PdbHeader, PdbHelix, PDBRemarks, PdbSheet, PdbTitle, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
@@ -196,8 +197,7 @@ fn parse_seqres_records(seqres_records: Vec<String>) -> HashMap<String, Sequence
 /// ``REMARK``, ``ATOM`` or ``HETATM``.
 /// Otherwise it returns ``false``. When the file can't be open returns I/O error..
 pub fn is_pdb_file(file_path: &str) -> io::Result<bool> {
-    let file = File::open(file_path)?;
-    let reader = io::BufReader::new(file);
+    let reader = open_file(file_path)?;
 
     let pdb_starts_with = ["HEADER", "ATOM", "HETATM", "REMARK"];
     for line in reader.lines() {

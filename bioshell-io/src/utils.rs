@@ -1,5 +1,5 @@
 use std::ffi::OsStr;
-use std::io::{BufRead, BufReader, stdout};
+use std::io::{BufRead, BufReader, Error, stdout, ErrorKind};
 use std::io::stderr;
 use std::io::Write;
 use std::path::Path;
@@ -78,10 +78,10 @@ pub fn out_writer(out_fname: &str, if_append: bool) -> Box<dyn Write>{
 }
 
 /// Reads real values from a file in the tab-separated format
-pub fn read_tsv(fname: &str) -> Vec<Vec<f64>> { read_csv_tsv(fname, b'\t') }
+pub fn read_tsv(fname: &str) -> Result<Vec<Vec<f64>>, Error> { read_csv_tsv(fname, b'\t') }
 
 /// Reads real values from a file in the coma-separated format
-pub fn read_csv(fname: &str) -> Vec<Vec<f64>> { read_csv_tsv(fname, b',') }
+pub fn read_csv(fname: &str) -> Result<Vec<Vec<f64>>, Error> { read_csv_tsv(fname, b',') }
 
 /// Check if all fields of the given record are not empty
 fn is_record_ok(rec: &StringRecord) -> bool {
@@ -96,53 +96,60 @@ fn is_record_ok(rec: &StringRecord) -> bool {
     return flag;
 }
 
-fn read_csv_tsv(fname:&str, delimiter:u8) -> Vec<Vec<f64>> {
+fn read_csv_tsv(fname:&str, delimiter:u8) -> Result<Vec<Vec<f64>>, Error> {
 
     // --- this BioShell utility handles all I/O expceptions
-    let reader = open_file(fname);
+    let reader = open_file(fname)?;
 
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
         .delimiter(delimiter)
         .from_reader(reader);
+
     let mut data : Vec<Vec<f64>> = Vec::new();
     for record in rdr.records() {
         if let Ok(r) = &record {
             if !is_record_ok(r) { continue; }
-            let row : Vec<f64> = r.iter().map(|e| {
-                match e.parse::<f64>(){
-                    Ok(v) => v,
-                    Err(_err) => panic!("Problem while parsing a float value: {}\nThe last record was: {:?}", e, &record),
-                }
+
+            let row: Result<Vec<f64>, _> = r.iter().map(|e| {
+                e.parse::<f64>()
             }).collect();
+
+            let row = match row {
+                Ok(values) => values,
+                Err(_err) => {
+                    return Err(Error::new(ErrorKind::Other, format!("Problem while parsing a float value; the last record was: {:?}", &record)));
+                }
+            };
+
             data.push(row);
         }
     }
 
-    return data;
+    return Ok(data);
 }
 
 /// Opens a file for reading.
 ///
 /// This function can open a regular file or a gzipped one, as determined by the extension
 /// of the input file name. A boxed reader to the content is returned.
-pub fn open_file(filename: &str) -> Box<dyn BufRead> {
+pub fn open_file(filename: &str) -> Result<Box<dyn BufRead>, Error> {
     if filename.len() == 0 {
         panic!("\nCouldn't open file - file name is an empty string!");
     }
     let path = Path::new(filename);
     let file = match File::open(&path) {
-        Err(why) => panic!("\nCouldn't open file '{}': {}", path.display(), why),
+        Err(why) => {return Err(why)},
         Ok(file) => file,
     };
 
     if path.extension() == Some(OsStr::new("gz")) {
-        Box::new(BufReader::with_capacity(
+        Ok(Box::new(BufReader::with_capacity(
             128 * 1024,
             read::GzDecoder::new(file),
-        ))
+        )))
     } else {
-        Box::new(BufReader::with_capacity(128 * 1024, file))
+        Ok(Box::new(BufReader::with_capacity(128 * 1024, file)))
     }
 }
 
