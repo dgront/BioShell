@@ -1,12 +1,11 @@
 use std::io::Write;
 use std::ops::Range;
 use rand::{Rng};
-use bioshell_pdb::{load_pdb_file, Structure};
+use bioshell_pdb::{load_pdb_file, PDBError, Structure};
 use bioshell_pdb::calc::Vec3;
-use bioshell_pdb::nerf::restore_linear_chain;
 use bioshell_pdb::pdb_atom_filters::{IsCA, PdbAtomPredicate};
-use bioshell_pdb::pdb_parsing_error::PDBError;
 use bioshell_io::out_writer;
+use bioshell_builder::nerf::restore_linear_chain;
 
 /// SURPASS-alpha system holds coordinates of all atoms
 ///

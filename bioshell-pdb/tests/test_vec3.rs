@@ -29,4 +29,19 @@ mod test_vec3 {
         let d = Vec3::from_array(&[0.0, 1.0, 1.0]);
         assert!(dihedral_angle4(&a, &b, &c, &d) > 0.0);
     }
+
+    #[test]
+    fn vec3_arithmetic() {
+        let mut v0 = Vec3::from_float(3.45);
+        assert!(f64::abs(v0.x - 3.45)  < 1e-5);
+        assert!(f64::abs(v0.y - 3.45)  < 1e-5);
+        assert!(f64::abs(v0.z - 3.45)  < 1e-5);
+
+        v0.normalize();
+        assert!(f64::abs(v0.length() - 1.0)  < 1e-5);
+        let v1 = v0.clone();
+        assert!(f64::abs(Vec3::dot(&v0, &v1) - 1.0) < 1e-5);
+        v0 *= -1.0;
+        assert!(f64::abs(Vec3::dot(&v0, &v1) + 1.0) < 1e-5);
+    }
 }

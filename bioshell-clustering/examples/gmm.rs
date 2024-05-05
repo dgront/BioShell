@@ -1,12 +1,13 @@
 use std::env;
+use std::io::Error;
 use nalgebra::{DMatrix, DVector};
 use clap::{Parser};
 use log::{debug, info};
 
 use bioshell_statistics::{MultiNormalDistribution, OnlineMultivariateStatistics};
 use bioshell_clustering::em::expectation_maximization;
-use bioshell_clustering::euclidean_distance_squared;
 use bioshell_clustering::kmeans::KMeans;
+use bioshell_datastructures::euclidean_distance_squared;
 use bioshell_io::{read_tsv};
 
 
@@ -67,14 +68,14 @@ fn run_once(args: &Args, sample: &mut Vec<Vec<f64>>,
     return likelihood;
 }
 
-fn main() {
+fn main() -> Result<(), Error> {
 
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     env_logger::init();
 
     let args = Args::parse();
 
-    let mut sample = read_tsv(&args.infile);
+    let mut sample = read_tsv(&args.infile)?;
     let n_dim: usize = sample[0].len();
     let n_data = sample.len();
     info!("{} rows loaded, data dimension is {}", n_data, n_dim);
@@ -102,4 +103,6 @@ fn main() {
         println!("\t{{'n': {:5}, {} }},", best_weights[i], &best_normals[i]);
     }
     println!("]");
+
+    Ok(())
 }

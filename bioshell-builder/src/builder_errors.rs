@@ -20,4 +20,8 @@ pub enum BuilderError {
     /// Make sure its name is properly spelled and it has actually been defined in the respective InternalAtomDefinition entry
     DihedralAngleNotFound {residue_index: usize, dihedral_name: String},
 
+    #[error("I/O error occurred while reading a required file")]
+    /// I/O error occurred while reading a sequence file
+    Io(#[from] std::io::Error),
+
 }

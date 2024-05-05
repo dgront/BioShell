@@ -1,3 +1,4 @@
+use std::io::Error;
 use clap::{Parser};
 
 use bioshell_statistics::{Estimable, MultiNormalDistribution};
@@ -14,12 +15,12 @@ struct Args {
     infile: String,
 }
 
-fn main() {
+fn main() -> Result<(), Error> {
 
     let args = Args::parse();
 
     let fname = args.infile;
-    let sample = read_tsv(&fname);
+    let sample = read_tsv(&fname)?;
     let n_dim: usize = sample[0].len();
     let n_data = sample.len();
     println!("{} rows loaded, data dimension is {}", n_data, n_dim);
@@ -28,4 +29,6 @@ fn main() {
     let mut normal = MultiNormalDistribution::new(n_dim);
     normal.estimate(&sample);
     println!("{}", &normal);
+
+    Ok(())
 }

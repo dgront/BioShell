@@ -7,7 +7,7 @@
 //! within a given distance from a query. For the latter use (performed by [`find_within()`](find_within())).
 //!
 //! ```rust
-//! use bioshell_numerical::distance::euclidean_distance_squared;
+//! use bioshell_datastructures::euclidean_distance_squared;
 //! use bioshell_datastructures::kd_tree::{create_kd_tree, find_nearest, find_within};
 //! let mut points = [[0.1, 0.2], [0.2, 0.2], [1.1, 1.2], [2.2, 2.2]];
 //! let root = create_kd_tree(&mut points, 2).unwrap();
@@ -73,7 +73,7 @@ pub fn create_kd_tree<T>(data: &mut [T], dimensionality: usize) -> Option<Box<Bi
 /// * `distance` - distance function
 ///
 /// ```rust
-/// use bioshell_numerical::distance::euclidean_distance_squared;
+/// use bioshell_datastructures::euclidean_distance_squared;
 /// use bioshell_datastructures::kd_tree::{create_kd_tree, find_nearest};
 /// let mut points = [[0.1, 0.2], [0.2, 0.2], [1.1, 1.2], [2.2, 2.2]];
 /// let root = create_kd_tree(&mut points, 2).unwrap();
@@ -123,7 +123,7 @@ pub fn find_nearest<'a, T, F>(tree_root: &'a Box<BinaryTreeNode<KdTreeData<T>>>,
 ///
 /// ```rust
 /// use bioshell_datastructures::kd_tree::{create_kd_tree, find_within};
-/// use bioshell_numerical::distance::euclidean_distance_squared;
+/// use bioshell_datastructures::euclidean_distance_squared;
 /// let mut points = [[0.1, 0.2], [0.2, 0.2], [1.1, 1.2], [2.2, 2.2]];
 /// let root = create_kd_tree(&mut points, 2).unwrap();
 /// let query = [0.3, 0.3];

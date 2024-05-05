@@ -1,10 +1,11 @@
 use std::env;
+use std::io::Error;
 use std::iter::zip;
 use clap::{Parser};
 use log::{info};
-use bioshell_clustering::euclidean_distance_squared;
 
 use bioshell_clustering::kmeans::KMeans;
+use bioshell_datastructures::euclidean_distance_squared;
 use bioshell_io::{read_tsv};
 
 
@@ -28,7 +29,7 @@ struct Args {
 }
 
 
-fn main() {
+fn main() -> Result<(), Error> {
 
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     env_logger::init();
@@ -36,7 +37,7 @@ fn main() {
     let args = Args::parse();
 
     let fname = args.infile;
-    let sample = read_tsv(&fname);
+    let sample = read_tsv(&fname)?;
     let n_dim: usize = sample[0].len();
     let n_data = sample.len();
     info!("{} rows loaded, data dimension is {}", n_data, n_dim);
@@ -48,4 +49,6 @@ fn main() {
         println!("{:?} {}", v, c)
     }
     info!("# Error: {err}");
+
+    Ok(())
 }

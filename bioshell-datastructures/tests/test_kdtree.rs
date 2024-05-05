@@ -1,21 +1,20 @@
 
 #[cfg(test)]
 mod test_kdtree {
-    use bioshell_numerical::Vec3;
-    use bioshell_numerical::distance::euclidean_distance_squared;
+    use bioshell_datastructures::euclidean_distance_squared;
     use bioshell_datastructures::{depth_first_inorder, BinaryTreeNode, collect_values};
     use bioshell_datastructures::kd_tree::{create_kd_tree, find_nearest, find_within, KdTreeData};
 
     use rand::rngs::SmallRng;
     use rand::SeedableRng;
     use rand::Rng;
+    use bioshell_pdb::calc::Vec3;
 
     #[test]
     fn test_kd_tree() {
         let mut data = vec![vec![0.0, 0.5], vec![0.7, 0.5], vec![0.8, 1.1]];
         create_kd_tree(&mut data, 2);
     }
-
 
     #[test]
     fn test_k1_tree() {

@@ -4,7 +4,8 @@ use bioshell_builder::{BuilderError, InternalCoordinatesDatabase, KinematicAtomT
 use bioshell_cif::read_cif_buffer;
 use bioshell_io::open_file;
 use bioshell_pdb::{PdbAtom};
-use bioshell_seq::sequence::FastaIterator;
+use bioshell_seq::sequence::{FastaIterator, load_sequences};
+use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -23,7 +24,7 @@ fn build(aa_codes: Vec<String>, chain_id: &str) -> Result<Vec<PdbAtom>, BuilderE
     let mut output: Vec<PdbAtom> = vec![];
 
     let mut residue_manager = InternalCoordinatesDatabase::new();
-    let mut cif_reader = open_file("./data/bb_topo.cif");
+    let mut cif_reader = open_file("./data/bb_topo.cif")?;
     let data_blocks = read_cif_buffer(&mut cif_reader);
     residue_manager.load_from_cif_data(data_blocks);
 
@@ -40,19 +41,19 @@ fn build(aa_codes: Vec<String>, chain_id: &str) -> Result<Vec<PdbAtom>, BuilderE
 }
 
 
-fn main() {
+fn main() -> Result<(), SequenceError> {
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     env_logger::init();
 
     let args = Args::parse();
     // ---------- INPUT section
-    let reader = open_file(&args.infasta);
-    let seq_iter = FastaIterator::new(reader);
+    let seq = load_sequences(&args.infasta, "target")?;
     let mut sequences: Vec<(String, String)> = vec![];
-    for sequence in seq_iter {
+    for sequence in &seq {
         let id = String::from(sequence.id());
         sequences.push((sequence.to_string(), id));
     }
 
+    Ok(())
 }
 

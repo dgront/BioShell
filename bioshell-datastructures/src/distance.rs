@@ -19,7 +19,7 @@ use std::ops::Index;
 /// * `dimensionality` - the number of dimensions for each of the two points
 ///
 /// ```rust
-/// use bioshell_clustering::euclidean_distance_squared;
+/// use bioshell_datastructures::euclidean_distance_squared;
 /// let d = euclidean_distance_squared(&[0.1, 0.1], &[0.2, 0.2], 2);
 /// assert!((d-0.02).abs() < 0.000001);
 /// let d = euclidean_distance_squared(&vec![0.1, 0.1], &vec![0.2, 0.2], 2);

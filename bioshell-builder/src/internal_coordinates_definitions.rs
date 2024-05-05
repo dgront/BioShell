@@ -296,7 +296,7 @@ impl InternalCoordinatesDatabase {
                     if ext == "cif" || ext == "CIF" {
                         let fname = path.to_str().unwrap();
                         info!("Reading a file in CIF format: {}", &fname);
-                        let mut cif_reader = open_file(fname);
+                        let mut cif_reader = open_file(fname)?;
                         let data_blocks = read_cif_buffer(&mut cif_reader);
                         out.load_from_cif_data(data_blocks);
                     }
@@ -312,7 +312,7 @@ impl InternalCoordinatesDatabase {
         for block in data {
             if let Some(loop_block) = block.loop_blocks().next() {
                 let name = block.name();
-                let vec = self.map.entry(name.clone()).or_insert(vec![]);
+                let vec = self.map.entry(name.to_string()).or_insert(vec![]);
                 for row in loop_block.rows() {
                     let def = InternalAtomDefinition::from_strings(row);
                     match def {

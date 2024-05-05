@@ -9,14 +9,14 @@ keywords = ["bioshell"]
 
 [workspace]
 members = [
-    "bioshell-io",
     "bioshell-builder",
+    "bioshell-cif",
+    "bioshell-clustering",
+    "bioshell-datastructures",
+    "bioshell-io",
+    "bioshell-pdb",
     "bioshell-seq",
     "bioshell-statistics",
-    "bioshell-clustering",
-    "bioshell-cif",
-    "bioshell-pdb",
-    "bioshell-datastructures",
     "surpass",
 ]
 
@@ -39,8 +39,9 @@ nalgebra = "0.31.1"
 log = "0.4.0"
 env_logger = "0.9.0"
 
-#[[bin]]
-
+[[bin]]
+name = "bioshell"
+path = "./bin/bioshell.rs"
 
 [package.metadata.docs.rs]
 # To build locally use

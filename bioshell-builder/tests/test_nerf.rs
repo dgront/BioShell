@@ -13,7 +13,7 @@ const ILE_PDB: [&str;8] = ["ATOM      1  N   ILE A   1       0.000   0.000   0.0
 mod nerf_test {
     use std::f64::consts::PI;
     use bioshell_pdb::calc::{Vec3, dihedral_angle4, planar_angle3};
-    use bioshell_pdb::nerf::{restore_branched_chain, restore_linear_chain, restore_atom};
+    use bioshell_builder::nerf::{restore_branched_chain, restore_linear_chain, restore_atom};
     use bioshell_pdb::{assert_delta, PdbAtom};
     use crate::ILE_PDB;
 

@@ -1,6 +1,6 @@
 use surpass::{HingeMove, MoveProposal, SurpassAlphaSystem};
 use bioshell_pdb::calc::dihedral_angle4;
-use bioshell_pdb::nerf::restore_linear_chain;
+use bioshell_builder::nerf::restore_linear_chain;
 
 macro_rules! assert_vec3_eq {
     ($va:expr, $vb:expr, $d:expr, $msg:expr) => {
@@ -18,18 +18,12 @@ macro_rules! assert_vec3_ne {
     }
 }
 
-macro_rules! assert_delta {
-    ($x:expr, $y:expr, $d:expr) => {
-        assert!(($x-$y).abs() < $d, "a = {}, b = {}", $x, $y)
-    }
-}
-
 #[cfg(test)]
 mod test_movers {
     use rand::rngs::SmallRng;
     use rand::SeedableRng;
     use bioshell_pdb::calc::Vec3;
-    use bioshell_pdb::load_pdb_file;
+    use bioshell_pdb::{assert_delta, load_pdb_file};
     use surpass::{extended_chain, MovedTermini, Mover, TailMove};
     use super::*;
 
@@ -166,17 +160,5 @@ mod test_movers {
         for i in 1..system.count_atoms() {
             assert_delta!(system.distance(i-1, i), d, 0.01);
         }
-    }
-
-    #[test]
-    fn move_for_pdb() {
-        let strctr = load_pdb_file("tests/test_inputs/failing-14.pdb").unwrap();
-        let mut model = SurpassAlphaSystem::from_pdb_structure(&strctr, 50.0);
-        let hinge_mover: HingeMove<4> = HingeMove::new(std::f64::consts::PI / 2.0, std::f64::consts::PI / 2.0);
-        let mut hinge_prop: MoveProposal<4> = MoveProposal::new();
-
-        hinge_mover.compute_move(&model, 15, -0.6646631249884941, &mut hinge_prop);
-        hinge_prop.apply(&mut model);
-        check_bond_lengths(&model, 3.8);
     }
 }

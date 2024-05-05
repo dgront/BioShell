@@ -1,10 +1,12 @@
 use std::env;
+use std::io::Error;
 use clap::{Parser};
-use bioshell_clustering::{CartesianPoints, euclidean_distance_squared};
+use bioshell_clustering::{CartesianPoints};
 use bioshell_clustering::optics::{Optics};
 use bioshell_io::{read_tsv, out_writer};
 
 use log::{error, info};
+use bioshell_datastructures::euclidean_distance_squared;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -25,14 +27,14 @@ struct Args {
 /// A simple application that performs clustering with the OPTICS method
 /// USAGE:
 ///     optics -h
-fn main() {
+fn main() -> Result<(), Error> {
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     env_logger::init();
 
     let args = Args::parse();
 
     // ---------- input data
-    let sample = read_tsv(&args.infile);
+    let sample = read_tsv(&args.infile)?;
     info!("{} rows loaded, data dimension is {}", sample.len(), sample[0].len());
 
     // ---------- clustering parameters
@@ -66,4 +68,6 @@ fn main() {
             write!(out, "\n").ok();
         }
     }
+
+    Ok(())
 }
