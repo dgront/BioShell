@@ -29,8 +29,7 @@ fn test_residue_types() {
     assert!(result.is_err());
 
     // ---------- Create a new residue type
-    let alm = ResidueType{parent_type: StandardResidueType::ALA, code3:String::from("ALM"), chem_compound_type: MonomerType::PeptideLinking};
-
+    let alm = ResidueType::from_attrs("ALM", StandardResidueType::ALA, MonomerType::PeptideLinking);
     // ---------- Create a new RT manager, it should preload all the 29 standard residue types
     let mut mgr = ResidueTypeManager::get();
     assert_eq!(mgr.count(), 29);
@@ -42,7 +41,7 @@ fn test_residue_types() {
     // ---------- ... but ALN hasn't been registered yet
     assert!(mgr.by_code3(&String::from("ALN")).is_none());
     mgr.register_residue_type(alm);
-    let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
+    let aln = ResidueType::from_attrs("ALN", StandardResidueType::ALA, MonomerType::PeptideLinking);
     mgr.register_residue_type(aln);
     assert_eq!(mgr.count(), 31);
 

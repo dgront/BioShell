@@ -9,7 +9,7 @@ pub enum PDBError {
     /// Invalid format of a PDB line
     InvalidFormat {broken_pdb_line: String},
 
-    #[error("General I/O error occurred while reading a file")]
+    #[error("General I/O error occurred while reading a PDB or mmCIF file")]
     /// I/O error occurred while reading a PDB or a CIF file
     Io(#[from] std::io::Error),
 
@@ -48,6 +48,10 @@ pub enum PDBError {
     #[error("The number of atoms in model {model_index} is different than the number of atoms in the first model")]
     /// A requested model has different number of atoms that the first model
     WrongAtomsNumberInModel {model_index: usize},
+
+    #[error("Unknown chemical compound type {compound_type} used to define monomer {compound_id}")]
+    /// Can't parse a chemical component type
+    IncorrectCompoundTypeName {compound_id: String, compound_type: String},
 
     #[error("A Cif parser returned an error")]
     /// A Cif parser returned an error which is stored inside this enum variant

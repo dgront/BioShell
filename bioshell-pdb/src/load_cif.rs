@@ -1,12 +1,13 @@
 use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info, warn};
-use bioshell_cif::{cif_columns_by_name, CifLoop, read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value};
+use bioshell_cif::{cif_columns_by_name, CifLoop, read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value, CifData};
 use crate::{ExperimentalMethod, PdbAtom, PDBError, Structure, UnitCell, value_or_missing_key_pdb_error};
 use crate::calc::Vec3;
 use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError, MissingCifDataKey};
 use bioshell_io::open_file;
-use crate::PDBError::CifParsingError;
+use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
+use crate::PDBError::{CifParsingError, IncorrectCompoundTypeName};
 
 pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     let start = Instant::now();
@@ -124,4 +125,25 @@ fn create_pdb_atom(tokens: &[&str; 15], pos: Vec3) -> Result<PdbAtom, CifError> 
     };
 
     return Ok(a);
+}
+
+fn load_residue_types(cif_data_block: &CifData) -> Result<(), PDBError>{
+    if let Some(monomers_loop) = cif_data_block.first_loop("_chem_comp.id") {
+        cif_columns_by_name!(MonomersData, "_chem_comp.id", "_chem_comp.type",);
+
+        let extractor = MonomersData::new(monomers_loop)?;
+        let mut tokens = [""; 2];
+        let mut rts = ResidueTypeManager::get();
+        for row in monomers_loop.rows() {
+            extractor.data_items(&row, &mut tokens);
+            match  MonomerType::try_from(tokens[1]) {
+                Ok(chem_type) => {
+                    let rt = ResidueType::from_attrs(tokens[0], StandardResidueType::UNK, chem_type);
+                    rts.register_residue_type(rt);
+                }
+                Err(_) => {return Err(IncorrectCompoundTypeName{ compound_id: tokens[0].to_string(), compound_type: tokens[1].to_string()})}
+            };
+        }
+    }
+    Ok(())
 }

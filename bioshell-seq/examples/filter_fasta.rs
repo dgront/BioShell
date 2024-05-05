@@ -11,6 +11,7 @@ use std::time::Instant;
 
 use bioshell_seq::sequence::{FastaIterator, count_residue_type, Sequence, IsProtein, IsNucleic, SequenceFilter};
 use bioshell_io::{open_file, out_writer};
+use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
 #[clap(name = "filter_fasta")]
@@ -57,7 +58,7 @@ fn first_word_of_description(description: &str) -> String {
 }
 
 
-pub fn main() {
+pub fn main() -> Result<(), SequenceError> {
 
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     env_logger::init();
@@ -80,7 +81,7 @@ pub fn main() {
     let mut if_fasta_retrieve = false;
     if let Some(qfile) = args.match_subsequences {
         if_fasta_retrieve = true;
-        let reader = open_file(&qfile);
+        let reader = open_file(&qfile)?;
         let seq_iter = FastaIterator::new(reader);
         for sequence in seq_iter {
             let id = String::from(sequence.id());
@@ -102,7 +103,7 @@ pub fn main() {
         }
     }
 
-    let reader = open_file(&fname);
+    let reader = open_file(&fname)?;
     let seq_iter = FastaIterator::new(reader);
     let mut cnt_all: usize = 0;
     let mut cnt_ok: usize = 0;
@@ -192,4 +193,6 @@ pub fn main() {
 
     info!("{} sequences processed in {:?}, {} of them printed in FASTA format",
         cnt_all, start.elapsed(), cnt_ok);
+
+    Ok(())
 }

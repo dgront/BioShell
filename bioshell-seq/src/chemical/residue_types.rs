@@ -1,49 +1,99 @@
 use std::collections::HashMap;
-use std::str::SplitWhitespace;
 use std::sync::{Mutex, MutexGuard};
 use clap::__macro_refs::once_cell::sync::Lazy;
 
 /// Defines the types of monomers - residue types that are biomolecular building blocks.
 ///
-/// The set of possible types is a shortened version of the full list of possibilities found in PDB files.
-/// Each of these types has a single-letter code assigned (such as ``'P'`` for proteins and ``'S'`` for sacharides);
-/// these codes are used by [`try_from()`](ResidueType::try_from) method to create a [`ResidueType`](ResidueType)
+/// The set of possible types has been taken from [*this list*](https://mmcif.wwpdb.org/dictionaries/mmcif_pdbx_v50.dic/Items/_chem_comp.type.html):
+/// This list will most likely grow over time and it is not recommended to exhaustively match against it.
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
 #[repr(i8)]
 pub enum MonomerType {
-    /// standard amino acid, single-character code: ``'P'``
+    // Peptide-related
     PeptideLinking = 0,
-    /// standard deoxy-nucleotide, single-character code: ``'D'``
-    DNALinking,
-    /// standard nucleotide, single-character code: ``'R'``
+    LPeptideLinking,
+    LPeptideCOOH,
+    LPeptideNH3,
+    DBetaPeptide,
+    CGammaLinking,
+    DGammaPeptide,
+    CDeltaLinking,
+    DPeptideCOOH,
+    DPeptideNH3,
+    DPeptideLinking,
+    LBetaPeptideCGammaLinking,
+    LGammaPeptideCDeltaLinking,
+    PeptideLike,
+
+    // RNA-related
     RNALinking,
-    /// a sugar residue, single-character code: ``'S'``
-    Sacharide,
-    /// most likely a ligand, single-character code: ``'N'``
+    LRNALinking,
+    RNAOH3PrimeTerminus,
+    RNAOH5PrimeTerminus,
+
+    // DNA-related
+    DNALinking,
+    LDNALinking,
+    DNAOH3PrimeTerminus,
+    DNAOH5PrimeTerminus,
+
+    // Saccharides
+    Saccharide,
+    LSaccharide,
+    LSaccharideAlphaLinking,
+    LSaccharideBetaLinking,
+    DSaccharide,
+    DSaccharideAlphaLinking,
+    DSaccharideBetaLinking,
+
+    // Other
     NonPolymer,
-    /// anything else, single-character code: ``'O'``
-    OTHER
+    Other,
 }
 
-impl TryFrom<char> for MonomerType {
+
+impl TryFrom<&str> for MonomerType {
     type Error = String;
 
-    /// Returns a ``MonomerType`` for its one-letter code
-    ///
-    /// # Example
-    /// ```rust
-    /// use bioshell_seq::chemical::MonomerType;
-    /// assert_eq!(MonomerType::try_from('P').unwrap(), MonomerType::PeptideLinking);
-    /// ```
-    fn try_from(value: char) -> Result<Self, Self::Error> {
-        match value {
-            'P' => Ok(MonomerType::PeptideLinking),
-            'D' => Ok(MonomerType::DNALinking),
-            'R' => Ok(MonomerType::RNALinking),
-            'S' => Ok(MonomerType::Sacharide),
-            'N' => Ok(MonomerType::NonPolymer),
-            'O' => Ok(MonomerType::OTHER),
-            _ => {Err(format!("Can't find a MonomerType for the one-letter code: {}!", value))}
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        // Remove whitespace and capitalize the input string
+        let cleaned_value: String = value.trim().to_ascii_uppercase().chars()
+            .filter(|c| !c.is_whitespace() && *c != '-').collect();
+
+        // Match the cleaned string to the enum variants
+        match cleaned_value.as_str() {
+            "DBETAPEPTIDE" => Ok(MonomerType::DBetaPeptide),
+            "CGAMMALINKING" => Ok(MonomerType::CGammaLinking),
+            "DGAMMAPEPTIDE" => Ok(MonomerType::DGammaPeptide),
+            "CDELTALINKING" => Ok(MonomerType::CDeltaLinking),
+            "DPEPTIDECOOH" => Ok(MonomerType::DPeptideCOOH),
+            "DPEPTIDENH3" => Ok(MonomerType::DPeptideNH3),
+            "DPEPTIDELINKING" => Ok(MonomerType::DPeptideLinking),
+            "DSACCHARIDE" => Ok(MonomerType::DSaccharide),
+            "DSACCHARIDEALPHALINKING" => Ok(MonomerType::DSaccharideAlphaLinking),
+            "DSACCHARIDEBETALINKING" => Ok(MonomerType::DSaccharideBetaLinking),
+            "DNAOH3PRIMETERMINUS" => Ok(MonomerType::DNAOH3PrimeTerminus),
+            "DNAOH5PRIMETERMINUS" => Ok(MonomerType::DNAOH5PrimeTerminus),
+            "DNALINKING" => Ok(MonomerType::DNALinking),
+            "LDNALINKING" => Ok(MonomerType::LDNALinking),
+            "LRNALINKING" => Ok(MonomerType::LRNALinking),
+            "LBETAPEPTIDECGAMMALINKING" => Ok(MonomerType::LBetaPeptideCGammaLinking),
+            "LGAMMAPEPTIDECDELTALINKING" => Ok(MonomerType::LGammaPeptideCDeltaLinking),
+            "LPEPTIDECOOH" => Ok(MonomerType::LPeptideCOOH),
+            "LPEPTIDENH3" => Ok(MonomerType::LPeptideNH3),
+            "LPEPTIDELINKING" => Ok(MonomerType::LPeptideLinking),
+            "LSACCHARIDE" => Ok(MonomerType::LSaccharide),
+            "LSACCHARIDEALPHALINKING" => Ok(MonomerType::LSaccharideAlphaLinking),
+            "LSACCHARIDEBETALINKING" => Ok(MonomerType::LSaccharideBetaLinking),
+            "RNAOH3PRIMETERMINUS" => Ok(MonomerType::RNAOH3PrimeTerminus),
+            "RNAOH5PRIMETERMINUS" => Ok(MonomerType::RNAOH5PrimeTerminus),
+            "RNALINKING" => Ok(MonomerType::RNALinking),
+            "NONPOLYMER" => Ok(MonomerType::NonPolymer),
+            "OTHER" => Ok(MonomerType::Other),
+            "PEPTIDELINKING" => Ok(MonomerType::PeptideLinking),
+            "PEPTIDELIKE" => Ok(MonomerType::PeptideLike),
+            "SACCHARIDE" => Ok(MonomerType::Saccharide),
+            _ => Err(format!("Unknown chemical: {}", value)),
         }
     }
 }
@@ -76,7 +126,7 @@ pub trait ResidueTypeProperties {
 /// # Example
 /// ```rust
 /// use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
-/// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
+/// let aln = ResidueType::from_attrs("ALN", StandardResidueType::ALA, MonomerType::PeptideLinking);
 /// assert_eq!(aln.code3, String::from("ALN"));
 /// assert_eq!(aln.parent_type, StandardResidueType::ALA);
 /// assert_eq!(aln.chem_compound_type, MonomerType::PeptideLinking);
@@ -91,31 +141,12 @@ pub struct ResidueType {
     pub chem_compound_type: MonomerType,
 }
 
-impl TryFrom<String> for ResidueType {
-    type Error = &'static str;
-
-    /// Parses a string into a ``ResidueType`` instance.
-    ///
-    /// Expected string format: ``"ALN A P"``, where ``"ALN"`` is a three-letter code (
-    /// in this example its _NAPHTHALEN-2-YL-3-ALANINE_, represented by ``"ALN"``),
-    /// ``'A'`` is the one-letter code of its parent standard residue type (which is alanine)
-    /// and ``'P'`` encodes is its monomer type (``MonomerType::PeptideLinking`` in this case)
-    ///
-    /// # Examples
-    /// ```rust
-    /// use bioshell_seq::chemical::ResidueType;
-    /// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
-    /// ```
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        let mut tokens: SplitWhitespace = value.split_whitespace();
-        let code3 = String::from(tokens.next().unwrap());
-        let code1: char = tokens.next().unwrap().chars().next().unwrap();
-        let type1: char = tokens.next().unwrap().chars().next().unwrap();
-        let parent_type = StandardResidueType::try_from(code1).unwrap();
-        let chem_compound_type = MonomerType::try_from(type1).unwrap();
-        return Ok(ResidueType { code3, parent_type, chem_compound_type });
+impl ResidueType {
+    pub fn from_attrs(code3: &str, parent_type: StandardResidueType, chem_compound_type: MonomerType) -> Self {
+        ResidueType { code3: code3.to_string(), parent_type, chem_compound_type, }
     }
 }
+
 
 /// Provides unique integer ID for each registered ResidueType
 ///
@@ -124,7 +155,7 @@ impl TryFrom<String> for ResidueType {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
+/// use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
 ///
 /// let mut mgr = ResidueTypeManager::get();
 /// // --- This should pass, as all standard residue types (including alanine) are preloaded by a constructor
@@ -134,7 +165,7 @@ impl TryFrom<String> for ResidueType {
 /// assert_eq!(mgr.count(), 29);
 /// // --- ALN hasn't been inserted yet
 /// assert!(mgr.by_code3(&String::from("ALN")).is_none());
-/// let aln = ResidueType::try_from(String::from("ALN A P")).unwrap();
+/// let aln = ResidueType::from_attrs("ALN", StandardResidueType::ALA, MonomerType::PeptideLinking);
 /// mgr.register_residue_type(aln);
 /// assert!(mgr.by_code3(&String::from("ALN")).is_some());
 /// // --- ALN residue type has been registered at index the 29
@@ -355,7 +386,7 @@ define_res_types! {
     G 23 'g' "G" DNALinking,
     T 24 't' "T" DNALinking,
     U 25 'u' "U" RNALinking,
-    GAP 26 '-' "GAP" OTHER,
-    GPE 27 '_' "GPE" OTHER,
-    UNL 28 'Z' "UNL" OTHER
+    GAP 26 '-' "GAP" Other,
+    GPE 27 '_' "GPE" Other,
+    UNL 28 'Z' "UNL" Other
 }

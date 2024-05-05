@@ -33,3 +33,15 @@ macro_rules! assert_delta {
         assert!(($a-$b).abs() < $delta, "{} : a = {}, b = {}", $msg, $a, $b)
     };
 }
+
+/// Checks if the returned error is as expected
+///
+#[macro_export]
+macro_rules! assert_error {
+    ($expression:expr, $($pattern:tt)+) => {
+        match $expression {
+            $($pattern)+ => (),
+            ref e => panic!("expected `{}` but got `{:?}`", stringify!($($pattern)+), e),
+        }
+    }
+}

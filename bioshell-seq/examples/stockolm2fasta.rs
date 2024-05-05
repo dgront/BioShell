@@ -4,6 +4,7 @@ use log::{info};
 
 use bioshell_seq::sequence::{Sequence, remove_gaps_by_sequence, StockholmIterator};
 use bioshell_io::open_file;
+use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
 #[clap(name = "stockholm2fasta")]
@@ -16,14 +17,14 @@ struct Args {
     if_remove: Option<String>
 }
 
-pub fn main() {
+pub fn main() -> Result<(), SequenceError> {
 
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     env_logger::init();
     let args = Args::parse();
     let fname= args.infile;
 
-    let mut reader = open_file(&fname);
+    let mut reader = open_file(&fname)?;
 
     let mut seq = StockholmIterator::from_stockholm_reader(&mut reader);
 
@@ -42,4 +43,6 @@ pub fn main() {
     }
     for s in &seq { println!("{}", s); }
     info!("{} sequences printed in FASTA format",seq.len());
+
+    Ok(())
 }

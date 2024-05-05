@@ -1,11 +1,14 @@
 use std::env;
 use clap::{Parser};
+#[allow(unused_imports)]
 use log::{debug, info};
 
-use bioshell_seq::sequence::{clone_ungapped, count_identical, FastaIterator, len_ungapped, ProfileColumnOrder, remove_gaps, Sequence, SequenceProfile, StockholmIterator, AlwaysTrue, DescriptionContains, SequenceFilter};
+use bioshell_seq::sequence::{clone_ungapped, count_identical, len_ungapped, ProfileColumnOrder,
+            SequenceProfile, StockholmIterator, AlwaysTrue, DescriptionContains, SequenceFilter};
 
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::msa::MSA;
+use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
 #[clap(name = "check_msa")]
@@ -37,7 +40,7 @@ struct Args {
     out_fasta: Option<String>,
 }
 
-pub fn main() {
+pub fn main() -> Result<(), SequenceError> {
 
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     env_logger::init();
@@ -46,7 +49,7 @@ pub fn main() {
     let mut msa: MSA = MSA::default();
     // ---------- Read input MSA in the CLW (clustal-w) format
     if let Some(fname) = args.in_clw {
-        let mut reader = open_file(&fname);
+        let mut reader = open_file(&fname)?;
         let seq = StockholmIterator::from_stockholm_reader(&mut reader);
         msa = match MSA::from_sequences(seq) {
             Ok(msa) => msa,
@@ -112,4 +115,5 @@ pub fn main() {
             }
         }
     }
+    Ok(())
 }
