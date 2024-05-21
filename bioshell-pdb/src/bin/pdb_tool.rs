@@ -27,7 +27,7 @@ struct Args {
     /// keep only selected chains
     #[clap(long, group = "select")]
     select_chain: Option<String>,
-    /// keep only alpha-carbond
+    /// keep only alpha-carbon atoms
     #[clap(long, group = "select")]
     select_ca: bool,
 }

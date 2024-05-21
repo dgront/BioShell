@@ -52,6 +52,7 @@
 //! let bb_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|b| bb.check(b)));
 //! ```
 
+use bioshell_seq::chemical::ResidueType;
 use crate::{PdbAtom, ResidueId};
 
 /// A handy filter to process atoms of a [`Structure`](crate::Structure) with iterators.
@@ -62,12 +63,12 @@ pub trait PdbAtomPredicate {
     fn check(&self, a: &PdbAtom) -> bool;
 }
 
-pub struct AlwaysPass;
-
 /// Always returns `true`
 ///
 /// Declare this [`PdbAtomPredicate`](PdbAtomPredicate) when you have to use one but you don't want
 /// to skip any atoms
+pub struct AlwaysPass;
+
 impl PdbAtomPredicate for AlwaysPass {
     fn check(&self, _a: &PdbAtom) -> bool {true}
 }
@@ -109,6 +110,25 @@ impl PdbAtomPredicate for ByChain {
 /// assert_eq!(ala_A.len(), 1);
 /// ```
 pub struct ByResidue {res_id: ResidueId }
+
+impl ByResidue {
+    pub fn new(res_id: ResidueId) -> ByResidue { ByResidue { res_id } }
+}
+
+/// Returns `true` if an atom belongs to a certain residue.
+///
+/// # Examples
+/// ```
+/// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{ByResidue, PdbAtomPredicate};
+/// let mut strctr = Structure::new("1xyz");
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA B  69      25.790  28.757  29.513  1.00 16.12           C"));
+/// let select_ala_A = ByResidue::new(ResidueId::new("A", 69, ' '));
+/// let ala_A: Vec<PdbAtom> = strctr.atoms().iter().filter(|a| select_ala_A.check(a)).cloned().collect();
+/// assert_eq!(ala_A.len(), 1);
+/// ```
+pub struct ByResidueType {res_type: ResidueType }
 
 impl ByResidue {
     pub fn new(res_id: ResidueId) -> ByResidue { ByResidue { res_id } }

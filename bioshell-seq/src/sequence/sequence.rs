@@ -12,6 +12,7 @@ use crate::msa::MSA;
 ///
 /// In `Rust` a char data type takes four bytes, which is not needed for biological alphabets. Therefore
 /// the [`Sequence`](Sequence) struct stores an amino acid or a nucleic sequence as `Vec<u8>`.
+///
 pub struct Sequence {
     /// identifies this sequence
     description: String,

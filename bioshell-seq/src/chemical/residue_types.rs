@@ -150,7 +150,7 @@ impl ResidueType {
 
 /// Provides unique integer ID for each registered ResidueType
 ///
-/// The standard residue types (amino aicds, bases, etc) are registered by default. User can add
+/// The standard residue types (amino acids, bases, etc) are registered by default. User can add
 /// additional, non-standard residue types into a manager.
 ///
 /// # Examples
