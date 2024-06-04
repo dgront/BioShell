@@ -105,6 +105,37 @@ impl PdbAtomPredicate for MatchAny {
     }
 }
 
+/// Returns `true` if every of predicated contained in this predicate is `true`
+///
+/// ```rust
+/// use bioshell_pdb::pdb_atom_filters::{ByResidueType, IsCA, MatchAll};
+/// let mut gly_and_ca = MatchAll::new();
+/// gly_and_ca.add_predicate(Box::new(IsCA));
+/// gly_and_ca.add_predicate(Box::new(ByResidueType::new("GLY")));
+/// ```
+pub struct MatchAll {
+    predicates: Vec<Box<dyn PdbAtomPredicate>>
+}
+
+impl MatchAll {
+    pub fn new() -> MatchAll { MatchAll{ predicates: vec![] } }
+
+    /// Adds a new condition to this composite predicate
+    pub fn add_predicate(&mut self, test: Box<dyn PdbAtomPredicate>) {
+        self.predicates.push(test);
+    }
+}
+
+impl PdbAtomPredicate for MatchAll {
+
+    fn check(&self, a: &PdbAtom) -> bool {
+        for p in &self.predicates {
+            if !p.check(a) { return false }
+        }
+        return true;
+    }
+}
+
 /// Returns `true` if an atom belongs to a certain chain.
 ///
 /// # Examples
