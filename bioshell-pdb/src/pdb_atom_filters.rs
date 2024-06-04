@@ -52,7 +52,7 @@
 //! let bb_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|b| bb.check(b)));
 //! ```
 
-use bioshell_seq::chemical::ResidueType;
+use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
 use crate::{PdbAtom, ResidueId};
 
 /// A handy filter to process atoms of a [`Structure`](crate::Structure) with iterators.
@@ -60,6 +60,7 @@ use crate::{PdbAtom, ResidueId};
 /// Structs implementing [`PdbAtomPredicate`](PdbAtomPredicate) trait can be used as predicates
 /// while filtering Rust iterators. Example below shows how to iterate over backbone atoms
 pub trait PdbAtomPredicate {
+    /// Returns `true` if this predicate is satisfied
     fn check(&self, a: &PdbAtom) -> bool;
 }
 
@@ -71,6 +72,37 @@ pub struct AlwaysPass;
 
 impl PdbAtomPredicate for AlwaysPass {
     fn check(&self, _a: &PdbAtom) -> bool {true}
+}
+
+/// Returns `true` if any of predicated contained in this predicate is `true`
+///
+/// ```rust
+/// use bioshell_pdb::pdb_atom_filters::{ByResidueType, MatchAny};
+/// let mut gly_or_ala = MatchAny::new();
+/// gly_or_ala.add_predicate(Box::new(ByResidueType::new("ALA")));
+/// gly_or_ala.add_predicate(Box::new(ByResidueType::new("GLY")));
+/// ```
+pub struct MatchAny {
+    predicates: Vec<Box<dyn PdbAtomPredicate>>
+}
+
+impl MatchAny {
+    pub fn new() -> MatchAny { MatchAny{ predicates: vec![] } }
+
+    /// Adds a new condition to this composite predicate
+    pub fn add_predicate(&mut self, test: Box<dyn PdbAtomPredicate>) {
+        self.predicates.push(test);
+    }
+}
+
+impl PdbAtomPredicate for MatchAny {
+
+    fn check(&self, a: &PdbAtom) -> bool {
+        for p in &self.predicates {
+            if p.check(a) { return true }
+        }
+        return false;
+    }
 }
 
 /// Returns `true` if an atom belongs to a certain chain.
@@ -115,27 +147,55 @@ impl ByResidue {
     pub fn new(res_id: ResidueId) -> ByResidue { ByResidue { res_id } }
 }
 
+impl PdbAtomPredicate for ByResidue {
+    fn check(&self, a: &PdbAtom) -> bool { self.res_id.check(a) }
+}
+
 /// Returns `true` if an atom belongs to a certain residue.
 ///
 /// # Examples
 /// ```
 /// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
-/// use bioshell_pdb::pdb_atom_filters::{ByResidue, PdbAtomPredicate};
+/// use bioshell_pdb::pdb_atom_filters::{ByResidueType, PdbAtomPredicate};
 /// let mut strctr = Structure::new("1xyz");
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA B  69      25.790  28.757  29.513  1.00 16.12           C"));
-/// let select_ala_A = ByResidue::new(ResidueId::new("A", 69, ' '));
-/// let ala_A: Vec<PdbAtom> = strctr.atoms().iter().filter(|a| select_ala_A.check(a)).cloned().collect();
-/// assert_eq!(ala_A.len(), 1);
+/// let select_ala = ByResidueType::new("ALA");
+/// let all_ala: Vec<PdbAtom> = strctr.atoms().iter().filter(|a| select_ala.check(a)).cloned().collect();
+/// assert_eq!(all_ala.len(), 2);
 /// ```
-pub struct ByResidueType {res_type: ResidueType }
+pub struct ByResidueType {res_type: String }
 
-impl ByResidue {
-    pub fn new(res_id: ResidueId) -> ByResidue { ByResidue { res_id } }
+impl ByResidueType {
+
+    pub fn new(res_type: &str) -> ByResidueType { ByResidueType { res_type: res_type.to_string() } }
 }
 
-impl PdbAtomPredicate for ByResidue {
-    fn check(&self, a: &PdbAtom) -> bool { self.res_id.check(a) }
+impl PdbAtomPredicate for ByResidueType {
+    fn check(&self, a: &PdbAtom) -> bool { self.res_type == a.res_name }
+}
+
+/// Returns `true` if an atom belongs to an aromatic residue.
+///
+/// # Examples
+/// ```
+/// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{ByResidueRange, IsAromatic, PdbAtomPredicate};
+/// let mut strctr = Structure::new("1xyz");
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  67      25.790  28.757  29.513  1.00 16.12           C"));
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    516  CA  TRP A  68      25.790  28.757  29.513  1.00 16.12           C"));
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  CA  TYR A  68A     25.790  28.757  29.513  1.00 16.12           C"));
+/// strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CA  HIS A  69      25.790  28.757  29.513  1.00 16.12           C"));
+/// let aro = IsAromatic;
+/// let cnt = strctr.atoms().iter().filter(|a| aro.check(a)).count();
+/// assert_eq!(cnt, 3);
+/// ```
+pub struct IsAromatic;
+
+impl PdbAtomPredicate for IsAromatic {
+    fn check(&self, a: &PdbAtom) -> bool {
+        return  a.res_name == "TRP" || a.res_name == "TYR" || a.res_name == "PHE" || a.res_name == "HIS";
+    }
 }
 
 /// Returns `true` if an atom belongs to a given residue range.
