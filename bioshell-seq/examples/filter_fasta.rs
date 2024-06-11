@@ -49,6 +49,10 @@ struct Args {
     /// print sequences whose description contains a certain substring, e.g. CYP1A or "DNA BINDING"
     #[clap(long)]
     description_contains: Option<String>,
+    /// sort sequences by length
+    #[clap(long, action)]
+    sort: bool,
+
 }
 
 fn first_word_of_description(description: &str) -> String {
@@ -115,6 +119,9 @@ pub fn main() -> Result<(), SequenceError> {
     let nucleic_filter = IsNucleic;
     let mut represented_sequences: HashMap<u64, Vec<String>> = HashMap::new();
 
+    let mut output_seq: Option<Vec<Sequence>> = if args.sort { Some(vec![]) } else { None };
+    
+
     let start = Instant::now();
     for sequence in seq_iter {
         cnt_all += 1;
@@ -174,7 +181,11 @@ pub fn main() -> Result<(), SequenceError> {
             }
         }
         cnt_ok += 1;
-        println!("{}", sequence);
+        if let Some(v) = &mut output_seq {
+            v.push(sequence);
+        } else {
+            println!("{}", sequence);
+        }
     }
 
     if let Some(fname) = args.map_identical {
@@ -189,6 +200,11 @@ pub fn main() -> Result<(), SequenceError> {
             }
             let _ = stream.write(b"\n");
         }
+    }
+
+    if let Some(v) = &mut output_seq {
+        v.sort_by(|si, sj| {si.len().cmp(&sj.len())});
+        for sequence in v { println!("{}", sequence); }
     }
 
     info!("{} sequences processed in {:?}, {} of them printed in FASTA format",
