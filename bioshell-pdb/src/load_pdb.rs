@@ -1,7 +1,6 @@
 use std::collections::HashMap;
-use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info};
 use bioshell_io::open_file;
@@ -164,9 +163,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
 pub fn load_pdb_file(file_name: &str) -> Result<Structure, PDBError> {
 
     info!("Loading a PDB deposit: {}", file_name);
-
-    let file = File::open(file_name)?;
-    let reader = BufReader::new(file);
+    let reader = open_file(file_name)?;
     return load_pdb_reader(reader);
 }
 
