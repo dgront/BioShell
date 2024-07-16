@@ -330,7 +330,9 @@ impl CifData {
     /// ```
     pub fn add_item(&mut self, key: &str, data: &str) { self.data_items.insert(key.to_string(),data.to_string()); }
 
-    /// Returns a data item value assigned to a given key
+    /// Returns a data item value assigned to a given key.
+    ///
+    /// If that key can't be found in a given data block, returns ``None``.
     ///
     /// # Example
     /// ```

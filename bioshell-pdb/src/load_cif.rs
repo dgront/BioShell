@@ -68,7 +68,6 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
         return Err(CifParsingError(MissingCifLoopKey{ item_key: "_atom_site".to_string() }));
     }
 
-
     // --- header data
     pdb_structure.classification = cif_data_block.get_item("_struct_keywords.pdbx_keywords");
     pdb_structure.id_code = value_or_missing_key_pdb_error!(cif_data_block, "_entry.id", String);
@@ -78,6 +77,8 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     // --- exp details and resolution
     pdb_structure.methods = ExperimentalMethod::from_cif_data(cif_data_block);
     pdb_structure.resolution = cif_data_block.get_item("_refine.ls_d_res_high");
+    pdb_structure.r_factor = cif_data_block.get_item("_refine.ls_R_factor_obs");
+    pdb_structure.r_free = cif_data_block.get_item("_refine.ls_R_factor_R_free");
 
     // --- crystallography parameters
     pdb_structure.unit_cell = if let Ok(uc) = UnitCell::from_cif_data(cif_data_block) { Some(uc) } else { None };
