@@ -108,6 +108,10 @@ pub struct Structure {
     pub methods: Vec<ExperimentalMethod>,
     /// experimental resolution, when available
     pub resolution: Option<f64>,
+    /// R-factor value, when available
+    pub r_factor: Option<f64>,
+    /// R-free value, when available
+    pub r_free: Option<f64>,
     /// unit cell parameters, when available
     pub unit_cell: Option<UnitCell>,
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
@@ -128,6 +132,8 @@ impl Structure {
             title: None,
             methods: vec![],
             resolution: None,
+            r_factor: None,
+            r_free: None,
             unit_cell: None,
             ter_atoms: Default::default(),
             atoms: vec![],

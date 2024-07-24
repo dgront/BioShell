@@ -30,6 +30,9 @@ struct Args {
     /// keep only alpha-carbon atoms
     #[clap(long, group = "select")]
     select_ca: bool,
+    /// be more verbose and log program actions on the screen
+    #[clap(short, long, short='v')]
+    verbose: bool
 }
 
 fn filter(strctr: &mut Structure, filters: &Vec<Box<dyn PdbAtomPredicate>>) {
@@ -39,10 +42,14 @@ fn filter(strctr: &mut Structure, filters: &Vec<Box<dyn PdbAtomPredicate>>) {
 }
 
 fn main() {
+    let args = Args::parse();
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    if args.verbose {
+        env::set_var("RUST_LOG", "debug");
+    }
     env_logger::init();
 
-    let args = Args::parse();
+
     // ---------- INPUT section
     let mut strctr: Structure;
     if is_pdb_file(&args.infile).is_ok_and(|f| f) {
@@ -79,6 +86,9 @@ fn main() {
         if let Some(class) = &strctr.classification { println!("classification: {}", class); }
         if let Some(title) = &strctr.title { println!("title: {}", title); }
         if let Some(res) = strctr.resolution { println!("resolution: {}", res); }
+        if let Some(r_fact) = strctr.r_factor { println!("r_factor: {}", r_fact); }
+        if let Some(r_free) = strctr.r_free { println!("r_free: {}", r_free); }
+        // if let Some(rf) = strctr.r { println!("resolution: {}", res); }
         if let Some(unit_cell) = &strctr.unit_cell { println!("space group: {}", unit_cell.space_group); }
         println!("models: {}", strctr.count_models());
     }
