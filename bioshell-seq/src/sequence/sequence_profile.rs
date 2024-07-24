@@ -118,7 +118,7 @@ impl SequenceProfile {
     ///                                    Sequence::from_str("seq-3", "ctaagg"),
     ///                                    Sequence::from_str("seq-4", "cttaga")]).unwrap();
     /// let profile = SequenceProfile::new(ProfileColumnOrder::dna_standard(), &msa);
-    /// assert_eq!(profile.most_probable_sequence().to_string(), String::from("cttaga"));
+    /// assert_eq!(profile.most_probable_sequence().to_string(0), String::from("cttaga"));
     /// ```
     pub fn most_probable_sequence(&self) -> Sequence {
         return Sequence::new(&String::from("most probable sequence"), &self.most_probable_string());

@@ -12,7 +12,7 @@ fn create_sequence() {
         let sequence: String = String::from("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
         let seq = Sequence::new(&read_id, &sequence);
 
-        assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string())
+        assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string(0))
     }
     {
         let read_id = String::from("2gb1");
@@ -20,7 +20,7 @@ fn create_sequence() {
         let seq = Sequence::from_attrs(read_id, sequence);
 
         let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
-        assert_eq!(expected, seq.to_string());
+        assert_eq!(expected, seq.to_string(0));
 
         // ---------- Test the Display trait
         let expected_out = "> 2gb1\nMTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE\n";
@@ -66,7 +66,7 @@ fn iterate_fasta() {
 
     assert_eq!(2, records.len());
     assert_eq!(records[0].len(), 56);
-    assert_eq!(records[1].to_string(), "AQCEATIESNDAMQYDLKEMVVDKSCKQFTVHLKHVGKMAKSAMGHNWVLTKEADKEGVATDGMNAGLAQDYVKAGDTRVIAHTKVIGGGESDSVTFDVSKLTPGEAYAYFCSFPGHWAMMKGTLKLSN");
+    assert_eq!(records[1].to_string(0), "AQCEATIESNDAMQYDLKEMVVDKSCKQFTVHLKHVGKMAKSAMGHNWVLTKEADKEGVATDGMNAGLAQDYVKAGDTRVIAHTKVIGGGESDSVTFDVSKLTPGEAYAYFCSFPGHWAMMKGTLKLSN");
 }
 
 #[test]
@@ -81,7 +81,7 @@ fn read_stockholm() {
     assert_eq!(records[1].len(), 56);
     assert_eq!(records[0].description(), "2gb1A");
     assert_eq!(records[1].description(), "UniRef100_UPI0000D834FD");
-    let ss: String = records[1].to_string();
+    let ss: String = records[1].to_string(0);
     assert_eq!(ss, "HQYKLALNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
 }
 
@@ -93,7 +93,7 @@ fn convert_a3m() {
     a3m_to_fasta(&mut seqs, &A3mConversionMode::RemoveSmallCaps);
     let expected = "ABC";
     for s in seqs {
-        assert_eq!(s.to_string(), expected);
+        assert_eq!(s.to_string(0), expected);
     }
 }
 
@@ -122,12 +122,12 @@ UniRef90_UPI000F744328/389-447           -------TL----ES---TW-EK--PQE-----";
     let mut sequences: Vec<Sequence> = StockholmIterator::new(&mut reader).into_iter().collect();
     assert_eq!(19, sequences.len());
 
-    assert_eq!("-------TQ----QT---SW-LH--PVSQ----", sequences[8].to_string());
+    assert_eq!("-------TQ----QT---SW-LH--PVSQ----", sequences[8].to_string(0));
     let ref_seq = sequences[8].clone();
     remove_gaps_by_sequence(&ref_seq, &mut sequences);
 
-    assert_eq!("TKQTTWEKPA--", sequences[0].to_string());
-    assert_eq!("TQQTSWLHPVSQ", sequences[8].to_string());
+    assert_eq!("TKQTTWEKPA--", sequences[0].to_string(0));
+    assert_eq!("TQQTSWLHPVSQ", sequences[8].to_string(0));
 }
 
 #[test]
@@ -145,5 +145,13 @@ fn sequence_to_string() {
     bioshell_seq::sequence::remove_gaps(&mut sequence);
     let l = sequence.len();
     assert_eq!(l, 3);
-    assert_eq!(sequence.to_string(), String::from("PRF"));
+    assert_eq!(sequence.to_string(0), String::from("PRF"));
+}
+
+#[test]
+fn test_sequence_to_string_multiline() {
+    let sequence = Sequence::from_str("test_seq", "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
+    let expected_output = "MTYKLILNGK\nTLKGETTTEA\nVDAATAEKVF\nKQYANDNGVD\nGEWTYDDATK\nTFTVTE";
+
+    assert_eq!(sequence.to_string(10), expected_output);
 }

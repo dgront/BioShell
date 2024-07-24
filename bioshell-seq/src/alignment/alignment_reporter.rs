@@ -44,9 +44,9 @@ impl AlignmentReporter for PrintAsPairwise {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
         let q_name = format!("{:len$}", aligned_query.description_n(self.seq_name_width), len = self.seq_name_width);
         let t_name = format!("{:len$}", aligned_template.description_n(self.seq_name_width), len = self.seq_name_width);
-        let query_chunks: Vec<String> = aligned_query.to_string().chars().collect::<Vec<_>>()
+        let query_chunks: Vec<String> = aligned_query.to_string(0).chars().collect::<Vec<_>>()
                 .chunks(self.alignment_width).map(|chunk| chunk.into_iter().collect()).collect();
-        let template_chunks: Vec<String> = aligned_template.to_string().chars().collect::<Vec<_>>()
+        let template_chunks: Vec<String> = aligned_template.to_string(0).chars().collect::<Vec<_>>()
             .chunks(self.alignment_width).map(|chunk| chunk.into_iter().collect()).collect();
 
         let mut q_from = 1;

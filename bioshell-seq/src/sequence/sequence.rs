@@ -30,7 +30,7 @@ impl Sequence {
     /// let sequence: String = String::from("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
     /// let seq = Sequence::new(&seq_id, &sequence);
     ///
-    /// assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string())
+    /// assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string(0))
     /// ```
     pub fn new(description: &String, seq: &String) -> Self {
         Sequence {
@@ -50,7 +50,7 @@ impl Sequence {
     /// let seq = Sequence::from_attrs(seq_id, sequence);
     ///
     /// let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
-    /// assert_eq!(expected, seq.to_string());
+    /// assert_eq!(expected, seq.to_string(0));
     /// ```
     pub fn from_attrs(description: String, seq: Vec<u8>) -> Self {
         Sequence { description, seq}
@@ -65,7 +65,7 @@ impl Sequence {
     /// let seq = Sequence::from_str("2gb1", "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE");
     ///
     /// let expected = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
-    /// assert_eq!(expected, seq.to_string());
+    /// assert_eq!(expected, seq.to_string(0));
     /// ```
     pub fn from_str(description: &str, seq: &str) -> Self {
         Self { description: String::from(description), seq: seq.as_bytes().to_vec()}
@@ -136,7 +136,11 @@ impl Sequence {
 
     /// Creates a string representing this sequence.
     ///
-    /// The returned string contains only the sequence itself without description.
+    /// The returned string contains only the sequence itself without description, with each line
+    /// containing up to `line_width` characters. This allows the sequence to be displayed in a
+    /// formatted way, for example in a FASTA file. To get the whole sequence as a single string,
+    /// use ``line_width = 0`` or set it to a large value, e.g. ``line_width = usize::MAX``.
+    ///
     /// # Example
     /// ```rust
     /// use bioshell_seq::sequence::Sequence;
@@ -144,9 +148,22 @@ impl Sequence {
     /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     /// let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
     /// let seq = Sequence::from_attrs(header, sequence.to_vec());
-    /// assert_eq!(seq.to_string(), "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV");
+    /// assert_eq!(seq.to_string(0), "LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV");
     /// ```
-    pub fn to_string(&self) -> String { String::from_utf8(self.seq.clone()).unwrap() }
+    pub fn to_string(&self, line_width: usize) -> String {
+        if line_width == 0 {
+            return String::from_utf8(self.seq.clone()).unwrap();
+        } else {
+            let seq_str = String::from_utf8(self.seq.clone()).unwrap();
+            seq_str.chars()
+                .collect::<Vec<_>>()
+                .chunks(line_width)
+                .map(|chunk| chunk.iter().collect::<String>())
+                .collect::<Vec<_>>()
+                .join("\n")
+        }
+
+    }
 
     fn filter_to_u8(seq: &String) -> Vec<u8> {
         seq.chars().filter(|c| c != &' ' && c != &'*').map(|c| c as u8).collect()
@@ -176,7 +193,8 @@ impl fmt::Display for Sequence {
     /// assert_eq!(actual, expected)
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "> {}\n{}\n", self.description(), self.to_string())
+        let line_width = f.width().unwrap_or(0);
+        write!(f, "> {}\n{}\n", self.description(), self.to_string(line_width))
     }
 }
 
@@ -379,7 +397,7 @@ pub enum A3mConversionMode {
 ///         Sequence::from_attrs(String::from("seq2"), "HQYKLALNGKTLKaqTTTEAVDAAT".as_bytes().to_vec())];
 ///
 /// a3m_to_fasta(&mut sequences, &RemoveSmallCaps);
-/// assert_eq!(sequences[0].to_string(), "MTYKLILNGKTLKTTTEAVDAAT");
+/// assert_eq!(sequences[0].to_string(0), "MTYKLILNGKTLKTTTEAVDAAT");
 /// ```
 pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
     match mode {
@@ -426,8 +444,8 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 /// let mut sequences = StockholmIterator::from_stockholm_reader(&mut reader);
 /// let ref_seq = sequences[8].clone();
 /// remove_gaps_by_sequence(&ref_seq, &mut sequences);
-/// assert_eq!("TKQTTWEKPA--", sequences[0].to_string());
-/// assert_eq!("TQQTSWLHPVSQ", sequences[8].to_string());
+/// assert_eq!("TKQTTWEKPA--", sequences[0].to_string(0));
+/// assert_eq!("TQQTSWLHPVSQ", sequences[8].to_string(0));
 /// ```
 pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequence>) {
 
@@ -435,7 +453,7 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
     // --- check if all the sequences are of the same length
     for i in 0..n_seq {
         if sequences[i].len() != reference.len() {
-            panic!("The following sequence has different length that the reference: {}", sequences[i].to_string());
+            panic!("The following sequence has different length that the reference: {}", sequences[i].to_string(0));
         }
     }
     // --- create the list of indexes of elements to be copied
@@ -527,7 +545,7 @@ pub fn len_ungapped_str(sequence: &str) -> usize {
 /// use bioshell_seq::sequence::{Sequence, remove_gaps};
 /// let mut sequence = Sequence::from_str("test_seq", "P-RF_");
 /// remove_gaps(&mut sequence);
-/// assert_eq!(sequence.to_string(), String::from("PRF"));
+/// assert_eq!(sequence.to_string(0), String::from("PRF"));
 /// ```
 pub fn remove_gaps(sequence: &mut Sequence) {
 
@@ -550,7 +568,7 @@ pub fn remove_gaps(sequence: &mut Sequence) {
 /// use bioshell_seq::sequence::{Sequence, clone_ungapped};
 /// let mut sequence = Sequence::from_str("test_seq", "P-RF_");
 /// let ungapped = clone_ungapped(&mut sequence);
-/// assert_eq!(ungapped.to_string(), String::from("PRF"));
+/// assert_eq!(ungapped.to_string(0), String::from("PRF"));
 /// ```
 pub fn clone_ungapped(sequence: &Sequence) -> Sequence {
 

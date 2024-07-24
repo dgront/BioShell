@@ -22,6 +22,9 @@ struct Args {
     /// remove sequences that are too short
     #[clap(short='l', long)]
     longer_than: Option<usize>,
+    /// length of each line of the output sequence; use 0 to print the whole sequence on a single line
+    #[clap(short='w', long, default_value_t = 80)]
+    out_width: usize,
     /// remove sequences that are too long
     #[clap(short='s', long)]
     shorter_than: Option<usize>,
@@ -68,6 +71,7 @@ pub fn main() -> Result<(), SequenceError> {
     env_logger::init();
     let args = Args::parse();
     let fname= args.infile;
+    let out_width = args.out_width;
 
     // ---------- Check is user wants to retrieve sequences by IDs
     let mut if_retrieve = false;
@@ -89,7 +93,7 @@ pub fn main() -> Result<(), SequenceError> {
         let seq_iter = FastaIterator::new(reader);
         for sequence in seq_iter {
             let id = String::from(sequence.id());
-            query_fasta.push((sequence.to_string(), id));
+            query_fasta.push((sequence.to_string(out_width), id));
         }
     }
 
@@ -147,7 +151,7 @@ pub fn main() -> Result<(), SequenceError> {
         // ---------- keep only sequences found in the input query fasta
         if if_fasta_retrieve {
             let mut if_found = false;
-            let sequence_as_str: String = sequence.to_string();
+            let sequence_as_str: String = sequence.to_string(out_width);
             for (seq, id) in &query_fasta {
                 let it: Vec<_>  = sequence_as_str.match_indices(seq).collect();
                 if it.len() > 0 {
@@ -159,7 +163,7 @@ pub fn main() -> Result<(), SequenceError> {
                     let new_id = format!("{} ({} {}:{}, {:6.2}%)",
                                          sequence.description(), id, from, from + hit.len(), perc);
                     let s = Sequence::new(&new_id, &sequence_as_str);
-                    println!("{}", s);
+                    println!("{:width$}", s, width = out_width);
                 }
             }
             if !if_found { debug!("Nothing found for {}",sequence.id()); }
@@ -184,7 +188,7 @@ pub fn main() -> Result<(), SequenceError> {
         if let Some(v) = &mut output_seq {
             v.push(sequence);
         } else {
-            println!("{}", sequence);
+            println!("{:width$}", sequence, width = out_width);
         }
     }
 
@@ -204,7 +208,7 @@ pub fn main() -> Result<(), SequenceError> {
 
     if let Some(v) = &mut output_seq {
         v.sort_by(|si, sj| {si.len().cmp(&sj.len())});
-        for sequence in v { println!("{}", sequence); }
+        for sequence in v { println!("{:width$}", sequence, width = out_width); }
     }
 
     info!("{} sequences processed in {:?}, {} of them printed in FASTA format",

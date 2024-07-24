@@ -189,8 +189,8 @@ pub fn aligned_strings(alignment: &AlignmentPath, query: &str, template: &str, g
 /// let query = Sequence::from_str("query","ALIV");
 /// let template = Sequence::from_str("template","ALRIV");
 /// let (aligned_query, aligned_template) = aligned_sequences(&alignment, &query, &template, '-');
-/// assert_eq!(aligned_query.to_string(), "AL-IV");
-/// assert_eq!(aligned_template.to_string(), "ALRIV");
+/// assert_eq!(aligned_query.to_string(0), "AL-IV");
+/// assert_eq!(aligned_template.to_string(0), "ALRIV");
 /// ```
 pub fn aligned_sequences(alignment: &AlignmentPath, query: &Sequence, template: &Sequence, gap_symbol: char) -> (Sequence, Sequence) {
     let (ali_q, ali_t) = aligned_symbols(alignment, query.as_u8(), template.as_u8(), gap_symbol as u8);
