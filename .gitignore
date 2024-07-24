@@ -13,3 +13,6 @@ ll
 oo
 ooo
 lll
+source/
+venv/
+pybioshell/Cargo.toml
