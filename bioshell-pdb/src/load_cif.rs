@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info, warn};
@@ -29,22 +30,24 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             "_atom_site.pdbx_PDB_model_num", "_atom_site.auth_seq_id",
         );
 
-        let extractor = PdbAtomData::new(atoms_loop)?;
-        let mut tokens = [""; 15];
+        let extractor = PdbAtomData::new(atoms_loop)?;      // extracts atom data from each loop entry
+        let mut tokens = [""; 15];                              // stores tokens from each extraction
+        let mut model_ids: HashMap<usize, usize> = HashMap::new();       // links model id to model index in the model_coordinates structure
         for row in atoms_loop.rows() {
             extractor.data_items(&row, &mut tokens);
-            let model_id = tokens[13].parse::<usize>().unwrap();
+            let model_id = tokens[13].parse::<usize>().unwrap();  // model_id of the current atom
+            if ! model_ids.contains_key(&model_id) {                    // if we have a new model...
+                model_ids.insert(model_id, model_ids.len());
+                pdb_structure.model_coordinates.push(vec![]);
+            }
+            let mdl_idx = model_ids[&model_id];
             let x = tokens[7].parse::<f64>().unwrap();
             let y = tokens[8].parse::<f64>().unwrap();
             let z = tokens[9].parse::<f64>().unwrap();
             let pos = Vec3::new(x, y, z);
 
-            if pdb_structure.model_coordinates.len() == model_id - 1 {
-                pdb_structure.model_coordinates.push(vec![]);
-            }
-
-            if model_id == 1 {
-                pdb_structure.model_coordinates[model_id-1].push(pos.clone());
+            if model_ids.len() == 1 {
+                pdb_structure.model_coordinates[mdl_idx].push(pos.clone());
                 match create_pdb_atom(&tokens, pos) {
                     Ok(a) => { pdb_structure.atoms.push(a); }
                     Err(e) => {
@@ -60,7 +63,7 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
                     }
                 }
             } else {
-                pdb_structure.model_coordinates[model_id-1].push(pos);
+                pdb_structure.model_coordinates[mdl_idx].push(pos);
             }
         }
     } else {

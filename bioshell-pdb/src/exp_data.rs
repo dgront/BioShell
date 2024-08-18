@@ -21,6 +21,8 @@ pub enum ExperimentalMethod {
     SolutionNMR,
     /// Solution scattering
     SolutionScattering,
+    /// Infrared spectroscopy
+    InfraredSpectroscopy,
     /// Theoretical model
     TheoreticalModel,
 }
@@ -44,7 +46,8 @@ impl ExperimentalMethod {
             ExperimentalMethod::FiberDiffraction => "FIBER DIFFRACTION",
             ExperimentalMethod::ElectronCrystallography => "ELECTRON CRYSTALLOGRAPHY",
             ExperimentalMethod::SolidStateNMR => "SOLID-STATE NMR",
-            ExperimentalMethod::SolutionScattering => "SOLUTION SCATTERING"
+            ExperimentalMethod::SolutionScattering => "SOLUTION SCATTERING",
+            ExperimentalMethod::InfraredSpectroscopy => {"INFRARED SPECTROSCOPY"}
         }
     }
 
@@ -81,6 +84,7 @@ impl ExperimentalMethod {
                 ["SOLID-STATE", "NMR"] => Some(ExperimentalMethod::SolidStateNMR),
                 ["SOLUTION", "SCATTERING"] => Some(ExperimentalMethod::SolutionScattering),
                 ["THEORETICAL", "MODEL"] => Some(ExperimentalMethod::TheoreticalModel),
+                ["INFRARED", "SPECTROSCOPY"] => Some(ExperimentalMethod::InfraredSpectroscopy),
                 _ => None,
             } {
                 methods.push(method);
