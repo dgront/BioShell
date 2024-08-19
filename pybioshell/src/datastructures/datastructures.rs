@@ -1,6 +1,3 @@
-[dependencies]
-pyo3 = { version = "0.18", features = ["extension-module"] }
-
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
