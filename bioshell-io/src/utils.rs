@@ -176,6 +176,7 @@ pub fn open_file(filename: &str) -> Result<Box<dyn BufRead>, Error> {
     }
 }
 
+
 /// Splits a string by a whitespace into strings that can contain a whitespace within
 ///
 /// Unlike the [`str::split_whitespace()`](str::split_whitespace) from the Rust standard library, this function
@@ -204,25 +205,64 @@ pub fn open_file(filename: &str) -> Result<Box<dyn BufRead>, Error> {
 /// assert_eq!(cif_tokens[3], "\"ADENOSINE-5'-MONOPHOSPHATE\"".to_string());
 /// ```
 pub fn split_into_strings(s: &str, if_remove_quotes: bool) -> Vec<String> {
-    let mut wrapped = false;
-    let mut quotation_style: Option<char> = None;
-    fn is_quoted(c: &char, quotation_style: &Option<char>) -> bool {
-        if let Some(q) = quotation_style { return c == q; }
-        return *c == '"' || *c == '\'';
+
+    let mut tokens: Vec<String> = Vec::new();
+    let mut iter = s.split_whitespace();
+    tokens.push(iter.next().unwrap().to_string());
+    for word in iter {
+        let mut token = tokens.last_mut().unwrap();
+        match quote_style(token) {
+            QuoteStyle::None | QuoteStyle::End(_) | QuoteStyle::Both(_) => { tokens.push(word.to_string()); }
+            QuoteStyle::Begin(c) => {
+                token.push_str(" ");
+                token.push_str(word);
+            }
+        }
     }
 
-    s.split(|c| {
-        if is_quoted(&c, &quotation_style) {
-            if quotation_style.is_none() { quotation_style = Some(c) }
-            wrapped = !wrapped;
-            if !wrapped { quotation_style=None; }
+    return tokens;
+}
+
+#[derive(PartialEq, Debug)]
+enum QuoteStyle {
+    None,
+    Begin(char),
+    End(char),
+    Both(char),
+}
+fn quote_style(token: &str) -> QuoteStyle {
+    let first_char = token.chars().next();
+    let last_char = token.chars().rev().next();
+
+    match (first_char, last_char) {
+        (Some(f), Some(l)) if f == l && is_quote_char(f) => QuoteStyle::Both(f),
+        (Some(f), _) if is_quote_char(f) => QuoteStyle::Begin(f),
+        (_, Some(l)) if is_quote_char(l) => QuoteStyle::End(l),
+        _ => QuoteStyle::None,
+    }
+}
+
+/// Checks if a character is a common quotation mark
+fn is_quote_char(c: char) -> bool { c == '"' || c == '\'' || c == '“' || c == '”' || c == '‘' || c == '’' }
+
+#[cfg(test)]
+mod tests {
+    use crate::utils::{quote_style, QuoteStyle};
+
+    #[test]
+    fn test_quote_style() {
+        let examples = [
+            ("\"Hello\"", QuoteStyle::Both('"')),
+            ("'World", QuoteStyle::Begin('\'')),
+            ("Rust'", QuoteStyle::End('\'')),
+            ("No quotes", QuoteStyle::None),
+            ("\"Fancy\"", QuoteStyle::Both('"')),
+            ("'Smart'", QuoteStyle::Both('\'')),
+            ("'Different\"", QuoteStyle::Begin('\'')),
+        ];
+
+        for (input, expected) in examples {
+            assert_eq!(quote_style(input), expected, "Failed on input: {}", input);
         }
-        c == ' ' && !wrapped
-    })
-        .map(|s|
-            if if_remove_quotes {s.replace("\"", "").replace("\'", "")}
-            else {s.to_string()}
-        ) // remove the quotation marks from the sub-strings
-        .filter(|s| s.len() > 0)
-        .collect()
+    }
 }

@@ -31,9 +31,18 @@ mod tests_io {
 
     #[test]
     fn test_split_string() {
-        let string = r#"5 non-polymer syn '2,2',2"-[1,2,3-BENZENE-TRIYLTRIS(OXY)]TRIS[N,N,N-TRIETHYLETHANAMINIUM]' 510.816"#;
-        let splitted: Vec<String> = split_into_strings(&string, true);
-        println!("{:?}", splitted);
-        assert_eq!(splitted.len(), 5);
+        let examples = [
+            (r#"5 non-polymer syn '2,2',2"-[1,2,3-BENZENE-TRIYLTRIS(OXY)]TRIS[N,N,N-TRIETHYLETHANAMINIUM]' 510.816"#, 5),
+            ("foo bar", 2),
+            ("'foo bar'", 1),
+            ("'foo bar' 'foo\" bar'", 2),
+        ];
+
+        for (string, expected) in examples {
+            let splitted: Vec<String> = split_into_strings(&string, false);
+            // println!("{:?}", splitted);
+            assert_eq!(splitted.len(), expected);
+        }
     }
+
 }
