@@ -21,7 +21,7 @@ use crate::CifError;
 /// O1 4.154 5.699 3.026 0.0
 /// C2 5.630 5.087 4.246 0.0";
 ///
-/// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_data.as_bytes()));
+/// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_data.as_bytes())).unwrap();
 /// let first_loop = data_blocks[0].loop_blocks().next().unwrap();
 /// cif_columns_by_name!(Cartesians, "_atom_site_x", "_atom_site_y", "_atom_site_z",);
 /// match Cartesians::new(&first_loop) {

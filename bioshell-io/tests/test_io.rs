@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests_io {
     use std::io::BufReader;
-    use bioshell_io::{open_file, read_csv, read_tsv};
+    use bioshell_io::{open_file, read_csv, read_tsv, split_into_strings};
 
     #[test]
     fn test_tsv_loading() {
@@ -26,5 +26,14 @@ mod tests_io {
         let data_f64: Vec<Vec<f64>> = read_csv(reader).expect("Can't parse f64.csv file!");
         assert_eq!(data_f64.len(), 2);
         assert_eq!(data_f64[1].len(), 3);
+    }
+
+
+    #[test]
+    fn test_split_string() {
+        let string = r#"5 non-polymer syn '2,2',2"-[1,2,3-BENZENE-TRIYLTRIS(OXY)]TRIS[N,N,N-TRIETHYLETHANAMINIUM]' 510.816"#;
+        let splitted: Vec<String> = split_into_strings(&string, true);
+        println!("{:?}", splitted);
+        assert_eq!(splitted.len(), 5);
     }
 }

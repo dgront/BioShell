@@ -29,9 +29,11 @@
 //!
 mod column_mapping;
 mod cif_errors;
+mod cif_line_iterator;
 
 pub use column_mapping::*;
 pub use cif_errors::*;
+use cif_line_iterator::CifLineIterator;
 
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
@@ -43,12 +45,12 @@ use std::time::Instant;
 use log::{debug, info};
 
 use bioshell_io::{open_file, split_into_strings};
-
+use crate::CifError::{DanglingDataItem, DataValuesOutsideLoop, MisplacedDataNameInLoop, MultilineStringOutsideDataItem, TooManyDataValues};
 
 /// Returns true if a given file is in CIF format.
 ///
 /// This function simply tests whether the first data line of a given file starts with ``data_``.
-/// Otherwise it returns ``false``. When the file can't be open returns I/O error.
+/// Otherwise, it returns ``false``. When the file can't be open returns I/O error.
 pub fn is_cif_file(file_path: &str) -> io::Result<bool> {
     let reader = open_file(file_path)?;
 
@@ -140,7 +142,6 @@ macro_rules! parse_item_or_error {
 pub struct CifLoop {
     column_names: Vec<String>,
     data_rows: Vec<Vec<String>>,
-    previous_row_incomplete: bool
 }
 
 impl CifLoop {
@@ -150,38 +151,52 @@ impl CifLoop {
     /// The newly created struct basically represents a table with named columns but with no data rows
     pub fn new(data_item_names: &[&str]) -> CifLoop {
         let cols: Vec<_> = data_item_names.iter().map(|e| e.to_string()).collect();
-        return CifLoop{ column_names: cols, data_rows: vec![], previous_row_incomplete: false };
+        return CifLoop{ column_names: cols, data_rows: vec![] };
     }
 
     /// Add a new column to this loop block.
     ///
     /// Adding columns is possible only before any data is inserted; once any data has been inserted,
     /// this method will panic.
-    pub fn add_column(&mut self, column_name: &str) {
+    pub fn add_column(&mut self, column_name: &str) -> Result<(), CifError> {
         if self.data_rows.len() > 0 {
-            panic!("Attempted column insertion for a loop-block that already contains some data!");
+            return Err(MisplacedDataNameInLoop{ data_name: column_name.to_string() });
         }
         self.column_names.push(column_name.to_string());
+        Ok(())
     }
 
     /// Add a new row of data.
     ///
     /// The provided row of data must contain the same number of entries as the number of columns
     /// in this loop-block; otherwise this method will panic.
-    pub fn add_data_row(&mut self, row: Vec<String>) {
+    pub fn add_data_row(&mut self, row: Vec<String>) -> Result<(), CifError> {
+
+        if self.last_row_complete() && row.len() == self.column_names.len() {
+            self.data_rows.push(row);
+            return Ok(());
+        } else {
+            for v in row {
+                self.add_data(&v);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Add a new data value to the most recent row.
+    ///
+    /// If the very last row contains the same number of entries as the number of columns,
+    /// this method starts a new row.
+    pub fn add_data(&mut self, data_value: &String) {
 
         let n_columns = self.column_names.len();
 
-        if self.previous_row_incomplete {
-            let last_vec: &mut Vec<String> = self.data_rows.last_mut().unwrap();
-            last_vec.extend(row);
-            if last_vec.len() == n_columns { self.previous_row_incomplete = false; }
-            else if last_vec.len() > n_columns {
-                panic!("Provided row of data doesn't match the number of columns!\nThe previous row was incomplete; the combined rows are: {:?}", &last_vec);
-            }
+        if self.last_row_complete() {   // --- start a new row by inserting a new vector holding the given entry
+            self.data_rows.push(vec![data_value.to_string()]);
         } else {
-            self.previous_row_incomplete = row.len()!=n_columns;
-            self.data_rows.push(row);
+            let last_vec: &mut Vec<String> = self.data_rows.last_mut().unwrap();
+            last_vec.push(data_value.to_string());
         }
     }
 
@@ -217,7 +232,7 @@ impl CifLoop {
     /// O1 4.154 5.699 3.026
     /// C2 5.630 5.087 4.246
     /// ";
-    /// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_block.as_bytes()));
+    /// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_block.as_bytes())).unwrap();
     /// # assert_eq!(data_blocks.len(), 1);
     /// # assert_eq!(data_blocks[0].name(),"loop_example");
     /// let a_loop = data_blocks[0].loop_blocks().next().unwrap();
@@ -238,6 +253,14 @@ impl CifLoop {
             Some(idx) => { Some(&mut self.data_rows[row_index][idx]) }
         };
     }
+
+    fn last_row_complete(&self) -> bool {
+        if let Some(last_row) = self.data_rows.last() {
+            return last_row.len() == self.column_names.len();
+        }
+        // if no data rows are present, we want to start one
+        return true;
+    }
 }
 
 impl Display for CifLoop {
@@ -257,7 +280,7 @@ impl Display for CifLoop {
     /// #
     /// ";
     /// let mut reader = BufReader::new(cif_block.as_bytes());
-    /// let data_blocks = read_cif_buffer(&mut reader);
+    /// let data_blocks = read_cif_buffer(&mut reader).unwrap();
     /// assert_eq!(data_blocks.len(), 1);
     /// assert_eq!(data_blocks[0].name(),"some_name");
     /// let a_loop = data_blocks[0].loop_blocks().next().unwrap();
@@ -306,7 +329,7 @@ impl CifData {
     /// use bioshell_cif::read_cif_buffer;
     /// let cif_block = "data_first_block";
     /// let mut reader = BufReader::new(cif_block.as_bytes());
-    /// let data_blocks = read_cif_buffer(&mut reader);
+    /// let data_blocks = read_cif_buffer(&mut reader).unwrap();
     /// assert_eq!(data_blocks.len(), 1);
     /// assert_eq!(data_blocks[0].name(),"first_block");
     /// ```
@@ -343,7 +366,8 @@ impl CifData {
     /// _refine.ls_d_res_high                            1.6
     /// ";
     /// let mut reader = BufReader::new(cif_block.as_bytes());
-    /// let data_block = &read_cif_buffer(&mut reader)[0];
+    /// let blocks = read_cif_buffer(&mut reader).unwrap();
+    /// let data_block = &blocks[0];
     /// assert_eq!(data_block.get_item("_entry.id"), Some("1AZP".to_string()));
     /// assert_eq!(data_block.get_item("_refine.ls_d_res_high"), Some(1.6));
     /// ```
@@ -445,14 +469,68 @@ impl IndexMut<&str> for CifData {
 ///
 /// This function opens a file as a Returns a ``BufRead``, calls (``read_cif_buffer()``)[read_cif_buffer()]
 /// and returns all the data blocks it found.
-pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
+pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, CifError> {
 
     info!("Loading a CIF file: {}", input_fname);
 
     let reader = open_file(input_fname)?;
 
-    return Ok(read_cif_buffer(reader));
+    return read_cif_buffer(reader);
 }
+
+enum CifLine {
+    DataBlock(String),          // starts a new block, e.g. data_1AZP
+    DataItem(String, String),   // e.g. _atom_site.group_PDB "A"
+    LoopBlock,                  // starts a new loop block, always loop_
+    MultilineString(String),    // a multi-line string
+    DataName(String),           // name of a column within a loop block, e.g. _atom_site.group_PDB
+    DataValues(Vec<String>),    // values of a row in a loop block, e.g. "A"
+    EmptyLine,              // empty line
+}
+
+fn trim_view(s: &str) -> &str {
+    let start = s.find(|c: char| !c.is_whitespace()).unwrap_or(0);
+    let end = s.rfind(|c: char| !c.is_whitespace()).map_or(0, |i| i + 1);
+    &s[start..end]
+}
+
+impl FromStr for CifLine {
+    type Err = CifError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let trimmed_s: &str = trim_view(s);
+        // --- empty string or a comment, e.g. "# this is a comment" ---
+        if trimmed_s.len() == 0 || trimmed_s.starts_with("#") {
+            return Ok(CifLine::EmptyLine);
+        }
+        // --- we start a new data block, e.g. "data_block_name" ---
+        if trimmed_s.starts_with("data_") {
+            return Ok(CifLine::DataBlock(trimmed_s[5..].to_string()));
+        }
+        // --- the name of a column in a loop block
+        if trimmed_s.starts_with("_") {
+            let mut data_item = split_into_strings(trimmed_s, false);
+            if data_item.len() == 1 {
+                return Ok(CifLine::DataName(data_item[0].to_string()));
+            } else if data_item.len() == 2 {
+                return Ok(CifLine::DataItem(data_item.swap_remove(0), data_item.swap_remove(0)));
+            } else {
+                return Err(CifError::InvalidCifLine{ line: s.to_string() });
+            }
+        }
+        // --- a new loop block starts
+        if trimmed_s.starts_with("loop_") {
+            return Ok(CifLine::LoopBlock);
+        }
+        // --- load a multiline string
+        if trimmed_s.starts_with(";") {
+            return Ok(CifLine::MultilineString(trimmed_s.to_string()));
+        }
+        // --- load a data line split into tokens
+        return Ok(CifLine::DataValues(split_into_strings(trimmed_s, false)));
+    }
+}
+
 
 /// Reads a CIF-formatted data from a buffer.
 ///
@@ -469,88 +547,115 @@ pub fn read_cif_file(input_fname: &str) -> Result<Vec<CifData>, io::Error> {
 /// ";
 /// let mut reader = BufReader::new(cif_block.as_bytes());
 /// let data_blocks = read_cif_buffer(&mut reader);
+/// assert!(data_blocks.is_ok());
+/// let data_blocks = data_blocks.unwrap();
 /// assert_eq!(data_blocks.len(), 1);
 /// # assert_eq!(data_blocks[0].get_item("_chem_comp.id"), Some("ALA".to_string()));
 /// ```
-pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Vec<CifData> {
-
+pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Result<Vec<CifData>, CifError> {
     let mut data_blocks: Vec<CifData> = vec![];
     let mut current_loop: Option<CifLoop> = None;
-    // let mut current_loop = CifLoop{ column_names: vec![], data_rows: vec![] };
-    let mut is_loop_open: bool = false;
+    let mut data_item_open: Option<String> = None;
 
     let start = Instant::now();
-    let mut line_iter = buffer.lines();
+    let mut line_iter = CifLineIterator::new(buffer.lines());
+
+
     while let Some(line) = line_iter.next() {
-        if let Some(line_ok) = line.ok() {
-            let ls = line_ok.trim();
-            // ---------- skip empty content and comments
-            if ls.len() == 0 || ls.starts_with("#") {
-                if is_loop_open {
-                    data_blocks.last_mut().unwrap().add_loop(current_loop.unwrap());
+        let cif_line = CifLine::from_str(&line);
+        match cif_line {
+
+            // --- propagate errors
+            Err(e) => { return Err(e); }
+
+            // --- we have a new loop
+            Ok(CifLine::LoopBlock) => {
+                // --- close the previous loop if any and open a new one
+                if let Some(a_loop) = current_loop {
+                    data_blocks.last_mut().unwrap().add_loop(a_loop);
                     current_loop = None;
                 }
-                is_loop_open = false;
-                continue;
+                current_loop = Some(CifLoop { column_names: vec![], data_rows: vec![] });
             }
 
-            if ls.starts_with("data_") {        // --- start a new data block
-                let mut parts = ls.splitn(2, '_');
-                let block_name = parts.nth(1).unwrap();
-                info!("new data block found: {}",&block_name);
-                data_blocks.push(CifData::new(block_name));
-            } else if ls.starts_with('_') {
-                if is_loop_open {         // --- Add a key to the current loop block
-                    if let Some(a_loop) = &mut current_loop {
-                        a_loop.add_column(ls);
-                    } else {
-                        panic!("Attempt to add a column with no loop open");
-                    }
-                } else {
-                    if data_blocks.len() == 0 { panic!("Found data entries outside any data block!")}
-                    let last_block = data_blocks.last_mut().unwrap();
-                    let key_val = split_into_strings(ls, false);
-                    if key_val.len() != 2 {
-                        let next_line = read_string("", &mut line_iter);
-                        let next_line_tr = next_line.trim();
-                        if (! is_quoted_string(next_line_tr)) && next_line_tr.find(' ').is_some() {
-                            panic!("{}", format!("A single data item line should contain exactly two tokens: a key and its value; {} values found in the line: {}",
-                                                 key_val.len(), &ls));
-                        }
-                        last_block.data_items_mut().insert(key_val[0].clone(), next_line.trim().to_string());
-                    } else {
-                        last_block.data_items_mut().insert(key_val[0].clone(), key_val[1].clone());
-                    }
+            // --- we have a new data block
+            Ok(CifLine::DataBlock(block_name)) => {
+                // --- close the previous loop
+                if let Some(a_loop) = current_loop {
+                    data_blocks.last_mut().unwrap().add_loop(a_loop);
+                    current_loop = None;
                 }
-            } else if ls.starts_with("loop_") {
-                if data_blocks.len() == 0 { panic!("Found data loop outside any data block!")}
-                if is_loop_open {
-                    data_blocks.last_mut().unwrap().add_loop(current_loop.unwrap());
+                data_blocks.push(CifData::new(&block_name));
+            }
+
+            // --- key-value pair
+            Ok(CifLine::DataItem(key, val)) => {
+                // --- close the previous loop
+                if let Some(a_loop) = current_loop {
+                    data_blocks.last_mut().unwrap().add_loop(a_loop);
+                    current_loop = None;
                 }
-                current_loop = Some(CifLoop{ column_names: vec![], data_rows: vec![], previous_row_incomplete: false });
-                is_loop_open = true;
-            } else {        // --- the last possibility: data rows inside a loop block
+                data_blocks.last_mut().unwrap().data_items_mut().insert(key, val);
+            }
+
+            Ok(CifLine::MultilineString(val)) => {
                 if let Some(a_loop) = &mut current_loop {
-                    if ls.starts_with(';') {
-                        let vec = vec![read_string(ls, &mut line_iter)];
-                        a_loop.add_data_row(vec);
-                    }
-                    else {
-                        a_loop.add_data_row(split_into_strings(ls, false));
-                    }
+                    a_loop.add_data(&val);
                 } else {
-                    panic!("Attempt to add a loop row with no loop open!");
+                    if data_item_open.is_some() {
+                        data_blocks.last_mut().unwrap().data_items_mut().insert(data_item_open.unwrap(), val);
+                        data_item_open = None;
+                    } else {
+                        return Err(MultilineStringOutsideDataItem {data_value: val.to_string() });
+                    }
                 }
             }
+
+            // --- data name as the only token in a line; may be a loop column or a data item
+            Ok(CifLine::DataName(data_name)) => {
+                if current_loop.is_some() {
+                    if current_loop.as_ref().unwrap().count_rows() == 0 {
+                        current_loop.as_mut().unwrap().add_column(&data_name)?;
+                    } else {
+                        data_blocks.last_mut().unwrap().add_loop(current_loop.unwrap());
+                        current_loop = None
+                    }
+                }
+                if current_loop.is_none() {
+                    if data_item_open.is_none() {
+                        data_item_open = Some(data_name);
+                    } else {
+                        return Err(DanglingDataItem { data_name: data_name.to_string() });
+                    }
+                }
+            }
+
+            // --- a row of data values, may be a single value as well
+            Ok(CifLine::DataValues(mut data_values)) => {
+                if let Some(a_loop) = &mut current_loop {       // may be a loop data row
+                    a_loop.add_data_row(data_values)?;
+                } else {
+                    if data_item_open.is_some() && data_values.len() == 1 {
+                        data_blocks.last_mut().unwrap().data_items_mut().insert(data_item_open.unwrap(), data_values.swap_remove(0));
+                        data_item_open = None;
+                    } else {
+                        return Err(DataValuesOutsideLoop { breaking_line: line.to_string() });
+                    }
+                }
+            }
+            Ok(CifLine::EmptyLine) => {}
         }
     }
+
     // --- close the very last loop that may be still open
-    if is_loop_open {
-        data_blocks.last_mut().unwrap().add_loop(current_loop.unwrap());
+    if let Some(loop_block) = current_loop {
+        data_blocks.last_mut().unwrap().add_loop(loop_block);
     }
+
     debug!("CIF structure loaded in: {:?}", start.elapsed());
 
-    return data_blocks;
+    return Ok(data_blocks);
+
 }
 
 /// Returns true if a given string bears a meaningful value.

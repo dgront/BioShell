@@ -14,7 +14,7 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     let start = Instant::now();
     let mut pdb_structure = Structure::new("");
 
-    let cif_data = read_cif_buffer(reader);
+    let cif_data = read_cif_buffer(reader)?;
     if cif_data.len() > 1 {
         return Err(CifParsingError(ExtraDataBlock));
     }

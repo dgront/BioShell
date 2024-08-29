@@ -1,52 +1,61 @@
-use std::io::BufReader;
-use bioshell_cif::*;
 
 
-#[test]
-fn read_cif_file() {
-    let mut reader = BufReader::new(ALA_CIF.as_bytes());
-    let data_blocks = read_cif_buffer(&mut reader);
-    assert_eq!(data_blocks.len(), 1);
-    assert_eq!(data_blocks[0].loop_blocks().count(), 5);
-    // println!("{}",data_blocks[0]);
+#[cfg(test)]
+mod tests {
+    use std::io::BufReader;
+    use bioshell_cif::*;
+    #[test]
+    fn read_cif_file() {
+        let mut reader = BufReader::new(ALA_CIF.as_bytes());
+        let data_blocks = read_cif_buffer(&mut reader);
+        assert!(data_blocks.is_ok());
+        let data_blocks = data_blocks.unwrap();
+        assert_eq!(data_blocks.len(), 1);
+        assert_eq!(data_blocks[0].loop_blocks().count(), 5);
+        // println!("{}",data_blocks[0]);
 
-    let mut reader = BufReader::new(BB_.as_bytes());
-    let data_blocks = read_cif_buffer(&mut reader);
-    assert_eq!(data_blocks.len(), 1);
-    assert_eq!(data_blocks[0].loop_blocks().count(), 1);
-    let a_loop = data_blocks[0].loop_blocks().next().unwrap();
-    assert_eq!(a_loop.column_names().count(), 9);
-    // println!("{}",data_blocks[0]);
-}
+        let mut reader = BufReader::new(BB_.as_bytes());
+        let data_blocks = read_cif_buffer(&mut reader);
+        assert!(data_blocks.is_ok());
+        let data_blocks = data_blocks.unwrap();
+        assert_eq!(data_blocks.len(), 1);
+        assert_eq!(data_blocks[0].loop_blocks().count(), 1);
+        let a_loop = data_blocks[0].loop_blocks().next();
+        assert!(a_loop.is_some());
+        assert_eq!(a_loop.unwrap().column_names().count(), 9);
+        // println!("{}",data_blocks[0]);
+    }
 
-#[test]
-fn test_data_formatter() {
-    let cif_block = "data_ALA
+    #[test]
+    fn test_data_formatter() {
+        let cif_block = "data_ALA
 _chem_comp.id                                    ALA
 _chem_comp.name                                  ALANINE
 _chem_comp.type                                  'L-PEPTIDE LINKING'
 _chem_comp.pdbx_type                             ATOMP
 ";
-    let expected = "data_ALA
+        let expected = "data_ALA
 _chem_comp.id        ALA
 _chem_comp.name      ALANINE
 _chem_comp.pdbx_type ATOMP
 _chem_comp.type      'L-PEPTIDE LINKING'
 ";
-    let mut reader = BufReader::new(cif_block.as_bytes());
-    let data_blocks = read_cif_buffer(&mut reader);
-    assert_eq!(data_blocks.len(), 1);
-    assert_eq!(data_blocks[0].name(),"ALA");
-    let out = format!("{}", data_blocks[0]);
-    let mut lines: Vec<&str> = out.lines().collect::<Vec<&str>>()[1..].to_vec();
-    lines.sort();
-    let out = lines.iter().fold(String::from("data_ALA"), |a, b| a + b + "\n");
-    assert_eq!(out, expected);
-}
+        let mut reader = BufReader::new(cif_block.as_bytes());
+        let data_blocks = read_cif_buffer(&mut reader);
+        assert!(data_blocks.is_ok());
+        let data_blocks = data_blocks.unwrap();
+        assert_eq!(data_blocks.len(), 1);
+        assert_eq!(data_blocks[0].name(), "ALA");
+        let out = format!("{}", data_blocks[0]);
+        let mut lines: Vec<&str> = out.lines().collect::<Vec<&str>>()[1..].to_vec();
+        lines.sort();
+        let out = lines.iter().fold(String::from("data_ALA"), |a, b| a + b + "\n");
+        assert_eq!(out, expected);
+    }
 
-#[test]
-fn test_loop_formatter() {
-    let cif_block = "data_some_name
+    #[test]
+    fn test_loop_formatter() {
+        let cif_block = "data_some_name
     loop_
     _first_column
     _second_column
@@ -55,7 +64,7 @@ fn test_loop_formatter() {
     'value C' 2
 
     ";
-    let expected = "loop_
+        let expected = "loop_
 _first_column
 _second_column
 'value A' 1
@@ -63,40 +72,91 @@ _second_column
 'value C' 2
 
 ";
-    let mut reader = BufReader::new(cif_block.as_bytes());
-    let data_blocks = read_cif_buffer(&mut reader);
-    assert_eq!(data_blocks.len(), 1);
-    assert_eq!(data_blocks[0].name(),"some_name");
-    let a_loop = data_blocks[0].loop_blocks().next().unwrap();
-    let out = format!("{}", a_loop);
+        let mut reader = BufReader::new(cif_block.as_bytes());
+        let data_blocks = read_cif_buffer(&mut reader);
+        assert!(data_blocks.is_ok());
+        let data_blocks = data_blocks.unwrap();
+        assert_eq!(data_blocks.len(), 1);
+        assert_eq!(data_blocks[0].name(), "some_name");
+        let a_loop = data_blocks[0].loop_blocks().next().unwrap();
+        let out = format!("{}", a_loop);
 
-    assert_eq!(out, expected);
-}
+        assert_eq!(out, expected);
+    }
 
-#[test]
-fn build_cif_loop() {
-    let mut data_loop = CifLoop::new(&["_symmetry_equiv_pos_site_id"]);
-    assert_eq!(data_loop.count_columns(), 1);
-    data_loop.add_column("_symmetry_equiv_pos_as_xyz");
-    assert_eq!(data_loop.count_columns(), 2);
-    data_loop.add_data_row(vec!["1", "x,y,z"].iter().map(|&s| s.to_string()).collect());
-    data_loop.add_data_row(vec!["2", "x,y,z"].iter().map(|&s| s.to_string()).collect());
-    assert_eq!(data_loop.count_rows(), 2);
-    *data_loop.entry_mut(0, "_symmetry_equiv_pos_as_xyz").unwrap() = "-x,-y,-z".to_string();
-    println!("{}", data_loop);
-    let txt = format!("{}",data_loop);
-    let expected = "loop_
+    #[test]
+    fn build_cif_loop() {
+        let mut data_loop = CifLoop::new(&["_symmetry_equiv_pos_site_id"]);
+        assert_eq!(data_loop.count_columns(), 1);
+        let _ = data_loop.add_column("_symmetry_equiv_pos_as_xyz");
+        assert_eq!(data_loop.count_columns(), 2);
+        let _ = data_loop.add_data_row(vec!["1", "x,y,z"].iter().map(|&s| s.to_string()).collect());
+        let _ = data_loop.add_data_row(vec!["2", "x,y,z"].iter().map(|&s| s.to_string()).collect());
+        assert_eq!(data_loop.count_rows(), 2);
+        *data_loop.entry_mut(0, "_symmetry_equiv_pos_as_xyz").unwrap() = "-x,-y,-z".to_string();
+        println!("{}", data_loop);
+        let txt = format!("{}", data_loop);
+        let expected = "loop_
 _symmetry_equiv_pos_site_id
 _symmetry_equiv_pos_as_xyz
 1 -x,-y,-z
 2 x,y,z
 
 ";
-    assert_eq!(txt, expected);
-}
+        assert_eq!(txt, expected);
+    }
 
-#[allow(non_upper_case_globals)]
-static ALA_CIF: &'static str = r#"data_ALA
+    #[test]
+    fn parse_edge_cases() {
+
+        // ---------- multiline data value
+        let mut reader = BufReader::new(edge_multiline_value.as_bytes());
+        let data_blocks = read_cif_buffer(&mut reader);
+        assert!(data_blocks.is_ok());
+        let data_blocks = data_blocks.unwrap();
+        assert_eq!(data_blocks.len(), 1);
+        assert_eq!(data_blocks[0].data_items().len(), 1);
+
+        // ---------- data value in the next line after data key
+        let mut reader = BufReader::new(edge_data_in_next_line.as_bytes());
+        let data_blocks = read_cif_buffer(&mut reader).unwrap();
+        assert_eq!(data_blocks.len(), 1);
+
+        // ---------- data name as a single token in a line just after a loop
+        let mut reader = BufReader::new(edge_data_name_after_loop.as_bytes());
+        let data_blocks = read_cif_buffer(&mut reader).unwrap();
+        assert_eq!(data_blocks.len(), 1);
+    }
+
+    #[allow(non_upper_case_globals)]
+    static edge_multiline_value: &'static str = r#"data_ALA
+_chem_comp.name
+;
+multiline
+;
+    #"#;
+
+    static edge_data_in_next_line: &'static str = r#"data_1crr
+_struct.entry_id                  1CRR
+_struct.title
+'THE SOLUTION STRUCTURE AND DYNAMICS OF RAS P21.'
+_struct.pdbx_model_details        ?
+"#;
+
+    static edge_data_name_after_loop: &'static str = r#"data_2jnw
+_struct.entry_id                  2JNW
+loop_
+_atom_type.symbol
+C
+H
+N
+_pdbx_nmr_refine.details
+;XPLOR-NIH was used.
+;
+"#;
+
+    #[allow(non_upper_case_globals)]
+    static ALA_CIF: &'static str = r#"data_ALA
 #
 _chem_comp.id                                    ALA
 _chem_comp.name                                  ALANINE
@@ -209,7 +269,7 @@ ALA "Create component"  1999-07-08 RCSB
 ALA "Modify descriptor" 2011-06-04 RCSB
 #"#;
 
-const BB_: &str = "data_bb_
+    const BB_: &str = "data_bb_
 loop_
 _res_name
 _atom_a_name
@@ -225,3 +285,4 @@ _dihedral_angle_name
 'bb ' ' C  ' ' N  ' ' CA ' ' C  ' 1.523258 110.0 -180.0 phi
 'bb ' ' N  ' ' CA ' ' C  ' ' O  ' 1.231015 121.0  180.0 -
 #";
+}

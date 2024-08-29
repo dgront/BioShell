@@ -55,7 +55,7 @@ mod macros {
     macro_rules! value_or_missing_key_pdb_error {
         ($cif_data_block:expr, $data_key:expr, $casted_type:ty) => {
             $cif_data_block.get_item::<$casted_type>($data_key)
-                .ok_or( MissingCifDataKey{ item_key: $data_key.to_string()}).map_err(|e|CifParsingError(e))?
+                .ok_or( MissingCifDataKey{ data_name: $data_key.to_string()}).map_err(|e|CifParsingError(e))?
         };
     }
 }
