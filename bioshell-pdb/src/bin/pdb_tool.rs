@@ -1,5 +1,6 @@
 use std::env;
 use clap::{Parser};
+use log::info;
 use bioshell_cif::is_cif_file;
 use bioshell_pdb::{is_pdb_file, load_cif_file, load_pdb_file, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, IsCA, PdbAtomPredicate};
@@ -49,6 +50,11 @@ fn main() {
     }
     env_logger::init();
 
+    let build_time = env!("BUILD_TIME");
+    let git_commit_md5 = env!("GIT_COMMIT_MD5");
+
+    info!("Build time: {}", build_time);
+    info!("Git commit MD5 sum: {}", git_commit_md5);
 
     // ---------- INPUT section
     let mut strctr: Structure;
