@@ -32,10 +32,10 @@ mod tests_io {
     #[test]
     fn test_split_string() {
         let examples = [
-            // (r#"5 non-polymer syn '2,2',2"-[1,2,3-BENZENE-TRIYLTRIS(OXY)]TRIS[N,N,N-TRIETHYLETHANAMINIUM]' 510.816"#, 5),
-            // ("foo bar", 2),
-            // ("'foo bar'", 1),
-            // ("'foo bar' 'foo\" bar'", 2),
+            (r#"5 non-polymer syn '2,2',2"-[1,2,3-BENZENE-TRIYLTRIS(OXY)]TRIS[N,N,N-TRIETHYLETHANAMINIUM]' 510.816"#, 5),
+            ("foo bar", 2),
+            ("'foo bar'", 1),
+            ("'foo bar' 'foo\" bar'", 2),
             ("' : statistics at the very beginning when nothing is done yet'",1),
         ];
 

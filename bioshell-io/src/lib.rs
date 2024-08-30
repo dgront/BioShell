@@ -71,4 +71,7 @@
 //!
 #![allow(clippy::needless_return)]
 mod utils;
+mod split_into_strings;
+
 pub use utils::*;
+pub use split_into_strings::*;
