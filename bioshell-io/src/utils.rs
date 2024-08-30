@@ -231,6 +231,11 @@ enum QuoteStyle {
     Both(char),
 }
 fn quote_style(token: &str) -> QuoteStyle {
+    // --- a special case when a token is a quote character itself
+    if token.len() == 1 && is_quote_char(token.chars().next().unwrap()) {
+        return QuoteStyle::Begin(token.chars().next().unwrap());
+    }
+
     let first_char = token.chars().next();
     let last_char = token.chars().rev().next();
 
