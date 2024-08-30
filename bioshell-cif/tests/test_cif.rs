@@ -136,6 +136,7 @@ multiline
 ;
     #"#;
 
+    #[allow(non_upper_case_globals)]
     static edge_data_in_next_line: &'static str = r#"data_1crr
 _struct.entry_id                  1CRR
 _struct.title
@@ -143,6 +144,7 @@ _struct.title
 _struct.pdbx_model_details        ?
 "#;
 
+    #[allow(non_upper_case_globals)]
     static edge_data_name_after_loop: &'static str = r#"data_2jnw
 _struct.entry_id                  2JNW
 loop_

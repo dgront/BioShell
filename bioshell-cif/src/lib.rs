@@ -190,8 +190,6 @@ impl CifLoop {
     /// this method starts a new row.
     pub fn add_data(&mut self, data_value: &String) {
 
-        let n_columns = self.column_names.len();
-
         if self.last_row_complete() {   // --- start a new row by inserting a new vector holding the given entry
             self.data_rows.push(vec![data_value.to_string()]);
         } else {
