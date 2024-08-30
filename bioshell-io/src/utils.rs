@@ -220,6 +220,8 @@ pub fn split_into_strings(s: &str, if_remove_quotes: bool) -> Vec<String> {
         }
     }
 
+    if if_remove_quotes { remove_paired_quotes(&mut tokens) }
+
     return tokens;
 }
 
@@ -250,9 +252,26 @@ fn quote_style(token: &str) -> QuoteStyle {
 /// Checks if a character is a common quotation mark
 fn is_quote_char(c: char) -> bool { c == '"' || c == '\'' || c == '“' || c == '”' || c == '‘' || c == '’' }
 
+/// Removes paired quotes from each string in a vector
+fn remove_paired_quotes(strings: &mut [String]) {
+
+    for s in strings {
+        if s.len() >= 2 {
+            let first_char = s.chars().next().unwrap();
+            let last_char = s.chars().last().unwrap();
+            // Check if the first and last characters are the same type of quote
+            if (first_char == '\'' || first_char == '"') && first_char == last_char {
+                // Remove the first and last characters in place
+                s.remove(0); // Remove first character
+                s.pop();     // Remove last character
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::utils::{quote_style, QuoteStyle};
+    use crate::utils::{quote_style, QuoteStyle, remove_paired_quotes};
 
     #[test]
     fn test_quote_style() {
@@ -268,6 +287,37 @@ mod tests {
 
         for (input, expected) in examples {
             assert_eq!(quote_style(input), expected, "Failed on input: {}", input);
+        }
+    }
+
+
+    #[test]
+    fn test_remove_paired_quotes() {
+        let mut strings = vec![
+            String::from("'hello'"),
+            String::from("\"world\""),
+            String::from("no_quotes"),
+            String::from("'mismatched\""),
+            String::from("''"),
+            String::from("\"\""),
+            String::from("single'"),
+            String::from("\"double\""),
+        ];
+
+        let expected_results = vec![
+            String::from("hello"),
+            String::from("world"),
+            String::from("no_quotes"),
+            String::from("'mismatched\""),
+            String::from(""),
+            String::from(""),
+            String::from("single'"),
+            String::from("double"),
+        ];
+        remove_paired_quotes(&mut strings);
+
+        for (i, (result, expected)) in strings.iter().zip(expected_results.iter()).enumerate() {
+            assert_eq!(result, expected, "Mismatch at index {}: got '{}', expected '{}'", i, result, expected);
         }
     }
 }
