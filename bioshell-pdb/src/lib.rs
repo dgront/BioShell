@@ -36,6 +36,7 @@ mod exp_data;
 mod remarks;
 mod unit_cell;
 mod load_cif;
+mod entity;
 
 pub use structure::Structure;
 pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
@@ -49,6 +50,7 @@ pub use pdb_sheet::PdbSheet;
 pub use exp_data::{ExperimentalMethod};
 pub use unit_cell::{UnitCell};
 pub use load_cif::{load_cif_file, load_cif_reader};
+pub use entity::{EntitySource, EntityType, Entity};
 
 mod macros {
     #[macro_export]

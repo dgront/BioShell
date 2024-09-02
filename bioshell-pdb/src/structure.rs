@@ -11,7 +11,7 @@ use crate::pdb_atom::{PdbAtom, same_residue_atoms};
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
 use crate::pdb_parsing_error::PDBError;
 use crate::pdb_parsing_error::PDBError::{NoSuchAtom, NoSuchResidue};
-use crate::{ExperimentalMethod, ResidueId, UnitCell};
+use crate::{Entity, ExperimentalMethod, ResidueId, UnitCell};
 use crate::calc::Vec3;
 use crate::PDBError::WrongAtomsNumberInModel;
 use crate::secondary_structure::SecondaryStructure;
@@ -117,9 +117,12 @@ pub struct Structure {
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
     pub(crate) model_coordinates: Vec<Vec<Vec3>>,
+    // id of each residue given it's index
     pub(crate) residue_ids: Vec<ResidueId>,
+    // range of atoms that belong to i-th residue
     pub(crate) atoms_for_residueid: Vec<Range<usize>>,
-    pub(crate) entity_sequences: HashMap<String, Sequence>
+    pub(crate) entity_sequences: HashMap<String, Sequence>,
+    entities: HashMap<String, Entity>,
 }
 
 impl Structure {
@@ -141,7 +144,7 @@ impl Structure {
             residue_ids: vec![],
             atoms_for_residueid: vec![],
             entity_sequences: Default::default(),
-            // atoms_for_residue: HashMap::default()
+            entities: Default::default(),
         }
     }
 
@@ -228,6 +231,9 @@ impl Structure {
     /// Counts models i.e. distinct conformations of this [`Structure`](Structure)
     pub fn count_models(&self) -> usize { self.model_coordinates.len() }
 
+    /// Provides the number of entities of this [`Structure`](Structure)
+    pub fn count_entities(&self) -> usize { self.entities.len() }
+
     pub fn set_model(&mut self, i_model: usize) -> Result<(), PDBError> {
         if self.model_coordinates[i_model].len() != self.atoms.len() {
             return Err(WrongAtomsNumberInModel { model_index: i_model });
@@ -275,6 +281,10 @@ impl Structure {
 
     /// Provides mutable access to atoms of this  [`Structure`](Structure)
     pub fn atoms_mut(&mut self) -> &mut Vec<PdbAtom> { &mut self.atoms }
+
+    /// Provides an iterator over references to the keys of the `entities` map.
+    ///
+    pub fn entity_ids(&self) -> impl Iterator<Item = &String> { self.entities.keys() }
 
     /// Creates a vector that holds string identifiers for all chains of this [`Structure`](Structure)
     ///

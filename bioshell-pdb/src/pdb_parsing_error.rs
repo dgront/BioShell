@@ -53,7 +53,11 @@ pub enum PDBError {
     /// Can't parse a chemical component type
     IncorrectCompoundTypeName {compound_id: String, compound_type: String},
 
-    #[error("A Cif parser returned an error")]
+    #[error("Cif parser returned an error")]
     /// A Cif parser returned an error which is stored inside this enum variant
     CifParsingError(#[from] CifError),
+
+    #[error("The following string {data_value} can't be parsed into an enum {enum_name} variant")]
+    /// A given string can't be parsed into an enum variant
+    CantParseEnumVariant {data_value: String, enum_name: String},
 }
