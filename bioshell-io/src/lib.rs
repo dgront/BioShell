@@ -47,9 +47,9 @@
 //! ```
 //! # use std::io;
 //! # fn main() -> Result<(), io::Error> {
-//! use bioshell_io::{open_file, read_csv};
+//! use bioshell_io::{open_file, read_delimited_values};
 //! let reader = open_file("tests/test_files/f64.csv")?;
-//! let data_f64: Vec<Vec<f64>> = read_csv(reader)?;
+//! let data_f64: Vec<Vec<f64>> = read_delimited_values(reader, b',')?;
 //! # assert_eq!(data_f64.len(), 2);
 //! # assert_eq!(data_f64[1].len(), 3);
 //! # Ok(())

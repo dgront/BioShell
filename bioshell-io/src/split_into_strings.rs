@@ -32,7 +32,7 @@ pub fn split_into_strings(s: &str, if_remove_quotes: bool) -> Vec<String> {
     let mut iter = s.split_whitespace();
     tokens.push(iter.next().unwrap().to_string());
     for word in iter {
-        let mut token = tokens.last_mut().unwrap();
+        let token = tokens.last_mut().unwrap();
         match quote_style(token) {
             QuoteStyle::None | QuoteStyle::End(_) | QuoteStyle::Both(_) => { tokens.push(word.to_string()); }
             QuoteStyle::Begin(_) => {
