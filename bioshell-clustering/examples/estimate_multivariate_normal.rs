@@ -2,7 +2,7 @@ use std::io::Error;
 use clap::{Parser};
 
 use bioshell_statistics::{Estimable, MultiNormalDistribution};
-use bioshell_io::{read_tsv};
+use bioshell_io::{open_file, read_delimited_values};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -19,8 +19,9 @@ fn main() -> Result<(), Error> {
 
     let args = Args::parse();
 
-    let fname = args.infile;
-    let sample = read_tsv(&fname)?;
+    let fname = &args.infile;
+    let reader = open_file(fname).expect(&format!("Can't open {} file!", fname));
+    let sample = read_delimited_values(reader, b'\t')?;
     let n_dim: usize = sample[0].len();
     let n_data = sample.len();
     println!("{} rows loaded, data dimension is {}", n_data, n_dim);

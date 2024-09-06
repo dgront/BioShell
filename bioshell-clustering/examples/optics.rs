@@ -3,7 +3,7 @@ use std::io::Error;
 use clap::{Parser};
 use bioshell_clustering::{CartesianPoints};
 use bioshell_clustering::optics::{Optics};
-use bioshell_io::{read_tsv, out_writer};
+use bioshell_io::{read_delimited_values, out_writer, open_file};
 
 use log::{error, info};
 use bioshell_datastructures::euclidean_distance_squared;
@@ -34,7 +34,9 @@ fn main() -> Result<(), Error> {
     let args = Args::parse();
 
     // ---------- input data
-    let sample = read_tsv(&args.infile)?;
+    let fname = &args.infile;
+    let reader = open_file(fname).expect(&format!("Can't open {} file!", fname));
+    let sample = read_delimited_values(reader, b'\t')?;
     info!("{} rows loaded, data dimension is {}", sample.len(), sample[0].len());
 
     // ---------- clustering parameters

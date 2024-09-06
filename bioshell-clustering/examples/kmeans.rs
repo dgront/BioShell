@@ -6,7 +6,7 @@ use log::{info};
 
 use bioshell_clustering::kmeans::KMeans;
 use bioshell_datastructures::euclidean_distance_squared;
-use bioshell_io::{read_tsv};
+use bioshell_io::{open_file, read_delimited_values};
 
 
 #[derive(Parser, Debug)]
@@ -36,8 +36,9 @@ fn main() -> Result<(), Error> {
 
     let args = Args::parse();
 
-    let fname = args.infile;
-    let sample = read_tsv(&fname)?;
+    let fname = &args.infile;
+    let reader = open_file(fname).expect(&format!("Can't open {} file!", fname));
+    let sample = read_delimited_values(reader, b'\t')?;
     let n_dim: usize = sample[0].len();
     let n_data = sample.len();
     info!("{} rows loaded, data dimension is {}", n_data, n_dim);
