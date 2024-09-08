@@ -1,7 +1,7 @@
 //! Utility functions to facilitate I/O operations for bioshell crates
 //!
-//! A few code fragments that have been frequently used by bioshell crates were refactored into
-//! utility functions and gathered within ``bioshell-io`` crate. While the set of these functions will
+//! A few functions that have been frequently used by bioshell crates were refactored
+//! and gathered within ``bioshell-io`` crate. While the set of these functions will
 //! be most likely growing, currently the crate allows for:
 //!
 //! # Opening an input stream, which might be gzip'ed
@@ -42,19 +42,46 @@
 //! # Reading ``.csv`` and ``.tsv`` files
 //!
 //! Actually, bioshell utilizes ``csv`` crate to read ``.csv`` and ``.tsv`` files. The extra job
-//! that [read_tsv()] and [read_csv()] functions do is automated parsing to a statically defined type, e.g. ``f64``:
+//! that [read_delimited_values()] function do is automated parsing to a table of statically defined type, e.g. ``f64``.
+//! The [read_delimited_columns()] function stores values column-wise.
 //!
 //! ```
 //! # use std::io;
 //! # fn main() -> Result<(), io::Error> {
-//! use bioshell_io::{open_file, read_delimited_values};
+//! use bioshell_io::{open_file, read_delimited_columns, read_delimited_values};
 //! let reader = open_file("tests/test_files/f64.csv")?;
 //! let data_f64: Vec<Vec<f64>> = read_delimited_values(reader, b',')?;
 //! # assert_eq!(data_f64.len(), 2);
 //! # assert_eq!(data_f64[1].len(), 3);
+//! let reader = open_file("tests/test_files/f64.csv")?;
+//! let columns_f64: Vec<Vec<f64>> = read_delimited_columns(reader, b',')?;
+//! # assert_eq!(columns_f64.len(), 3);
+//! # assert_eq!(columns_f64[1].len(), 2);
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! # Reading white-space delimited files
+//!
+//! Flat text tables of values delimited by white-space characters may be loaded
+//! both row-wise with  [read_whitespace_delimited_values()] and column-wise with [read_whitespace_delimited_columns()]
+//!
+//! ```
+//! # use std::io;
+//! # fn main() -> Result<(), io::Error> {
+//! use bioshell_io::{open_file, read_whitespace_delimited_columns, read_whitespace_delimited_values};
+//! let reader = open_file("tests/test_files/numbers.txt")?;
+//! let data_f64: Vec<Vec<f64>> = read_whitespace_delimited_values(reader)?;
+//! # assert_eq!(data_f64.len(), 2);
+//! # assert_eq!(data_f64[1].len(), 3);
+//! let reader = open_file("tests/test_files/numbers.txt")?;
+//! let columns_f32: Vec<Vec<f32>> = read_whitespace_delimited_columns(reader)?;
+//! # assert_eq!(columns_f32.len(), 3);
+//! # assert_eq!(columns_f32[1].len(), 2);
+//! # Ok(())
+//! # }
+//! ```
+
 //!
 //! # Splitting a string into tokens by whitespaces
 //!

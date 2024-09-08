@@ -214,19 +214,16 @@ where T: FromStr+Clone,R: BufRead,
     Ok(table.table.data)
 }
 
-struct Table<T:FromStr> {
-    data: Vec<Vec<T>>,
-    n_rows_loaded: usize,
-}
+struct Table<T:FromStr> { data: Vec<Vec<T>>, }
 
 trait InsertRow<T: FromStr> {
     fn insert_row<'a>(&mut self, row: impl Iterator<Item=&'a str>) -> Result<(), Error>;
 }
 
 impl<T: FromStr+Clone> Table<T> {
-    pub fn new_empty() -> Self { Table { data: vec![], n_rows_loaded: 0 } }
+    pub fn new_empty() -> Self { Table { data: vec![] } }
     pub fn new_allocated(n_rows: usize, n_columns: usize, val: T) -> Self {
-        Table { data:  vec![vec![val; n_rows]; n_columns], n_rows_loaded: 0 }
+        Table { data:  vec![vec![val; n_rows]; n_columns]}
     }
 }
 
@@ -251,6 +248,7 @@ struct TableOfColumns<T:FromStr+Clone> { table: Table<T>, }
 
 impl<T: FromStr+Clone> InsertRow<T> for TableOfColumns<T> {
     fn insert_row<'a>(&mut self, row: impl Iterator<Item=&'a str>) -> Result<(), Error> {
+
         let row: Vec<T> = row.into_iter()
             .map(|field| {
                 field.parse::<T>().map_err(|_e| {
