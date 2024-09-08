@@ -109,7 +109,7 @@ fn is_record_ok(rec: &StringRecord) -> bool {
 /// # Ok(())
 /// }
 /// ```
-pub fn read_delimited_values<T: FromStr, R: BufRead>(reader: R, delimiter:u8) -> Result<Vec<Vec<T>>, Error> {
+pub fn read_delimited_values<T: FromStr+Clone, R: BufRead>(reader: R, delimiter:u8) -> Result<Vec<Vec<T>>, Error> {
 
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
@@ -117,7 +117,7 @@ pub fn read_delimited_values<T: FromStr, R: BufRead>(reader: R, delimiter:u8) ->
         .comment(Some(b'#'))
         .from_reader(reader);
 
-    let mut table: TableOfRows<T> = TableOfRows{ data: vec![] };
+    let mut table: TableOfRows<T> = TableOfRows{ table: Table::new_empty() };
     for record in rdr.records() {
         if let Ok(r) = &record {
             if !is_record_ok(r) { continue; }
@@ -125,7 +125,7 @@ pub fn read_delimited_values<T: FromStr, R: BufRead>(reader: R, delimiter:u8) ->
         }
     }
 
-    return Ok(table.data);
+    return Ok(table.table.data);
 }
 
 /// Reads a file that is delimited with a given character and returns data loaded column-wise
@@ -162,7 +162,7 @@ pub fn read_delimited_columns<T: FromStr+Clone, R: BufRead>(reader: R, delimiter
         .comment(Some(b'#'))
         .from_reader(reader);
 
-    let mut table: TableOfColumns<T> = TableOfColumns { data: vec![] };
+    let mut table: TableOfColumns<T> = TableOfColumns { table: Table::new_empty() };
     for record in rdr.records() {
         if let Ok(r) = &record {
             if !is_record_ok(r) { continue; }
@@ -170,7 +170,7 @@ pub fn read_delimited_columns<T: FromStr+Clone, R: BufRead>(reader: R, delimiter
         }
     }
 
-    return Ok(table.data);
+    return Ok(table.table.data);
 }
 
 
@@ -178,9 +178,9 @@ pub fn read_delimited_columns<T: FromStr+Clone, R: BufRead>(reader: R, delimiter
 ///
 /// The function assumes that the number of columns is constant across all rows.
 pub fn read_whitespace_delimited_values<T, R>(reader: R) -> Result<Vec<Vec<T>>, Error>
-where T: FromStr,R: BufRead,
+where T: FromStr+Clone,R: BufRead,
 {
-    let mut table: TableOfRows<T> = TableOfRows{ data: vec![] };
+    let mut table: TableOfRows<T> = TableOfRows{ table: Table::new_empty() };
     for line in reader.lines() {
         let line = line?;  // Read the line (handle I/O errors)
         if line.is_empty() || line.starts_with('#') { // Skip empty lines and comments
@@ -190,7 +190,7 @@ where T: FromStr,R: BufRead,
         table.insert_row(fields_iter)?;
     }
 
-    Ok(table.data)
+    Ok(table.table.data)
 }
 
 /// Reads whitespace-separated data from a `BufReader` and stores it column-wise  in a `Vec<Vec<T>>`.
@@ -199,7 +199,7 @@ where T: FromStr,R: BufRead,
 pub fn read_whitespace_delimited_columns<T, R>(reader: R) -> Result<Vec<Vec<T>>, Error>
 where T: FromStr+Clone,R: BufRead,
 {
-    let mut table: TableOfColumns<T> = TableOfColumns { data: vec![] };
+    let mut table: TableOfColumns<T> = TableOfColumns { table: Table::new_empty() };
     let start = Instant::now();
 
     for line in reader.lines() {
@@ -211,13 +211,26 @@ where T: FromStr+Clone,R: BufRead,
     }
     debug!("text file loaded in: {:?}", start.elapsed());
 
-    Ok(table.data)
+    Ok(table.table.data)
+}
+
+struct Table<T:FromStr> {
+    data: Vec<Vec<T>>,
+    n_rows_loaded: usize,
 }
 
 trait InsertRow<T: FromStr> {
     fn insert_row<'a>(&mut self, row: impl Iterator<Item=&'a str>) -> Result<(), Error>;
 }
-struct TableOfRows<T:FromStr> { data: Vec<Vec<T>>, }
+
+impl<T: FromStr+Clone> Table<T> {
+    pub fn new_empty() -> Self { Table { data: vec![], n_rows_loaded: 0 } }
+    pub fn new_allocated(n_rows: usize, n_columns: usize, val: T) -> Self {
+        Table { data:  vec![vec![val; n_rows]; n_columns], n_rows_loaded: 0 }
+    }
+}
+
+struct TableOfRows<T:FromStr> { table: Table<T>, }
 
 impl<T: FromStr> InsertRow<T> for TableOfRows<T> {
     fn insert_row<'a>(&mut self, row: impl Iterator<Item=&'a str>) -> Result<(), Error> {
@@ -228,19 +241,14 @@ impl<T: FromStr> InsertRow<T> for TableOfRows<T> {
                 })
             }).collect::<Result<Vec<T>, Error>>()?;
 
-        self.data.push(row);
+        self.table.data.push(row);
         Ok(())
     }
 }
 
-struct TableOfColumns<T:FromStr+Clone> { data: Vec<Vec<T>>, }
+struct TableOfColumns<T:FromStr+Clone> { table: Table<T>, }
 
-impl<T: FromStr+Clone> TableOfColumns<T> {
-    fn new_empty() -> Self { TableOfColumns { data: vec![] } }
-    fn new_allocated(n_rows: usize, n_columns: usize, val: T) -> Self {
-        TableOfColumns { data:  vec![vec![val; n_rows]; n_columns]}
-    }
-}
+
 impl<T: FromStr+Clone> InsertRow<T> for TableOfColumns<T> {
     fn insert_row<'a>(&mut self, row: impl Iterator<Item=&'a str>) -> Result<(), Error> {
         let row: Vec<T> = row.into_iter()
@@ -250,9 +258,9 @@ impl<T: FromStr+Clone> InsertRow<T> for TableOfColumns<T> {
                 })
             }).collect::<Result<Vec<T>, Error>>()?;
 
-        if self.data.len() == 0 {
-            for v in row.into_iter() { self.data.push(vec![v]); }
-        } else { for (i, v) in row.into_iter().enumerate() { self.data[i].push(v); } }
+        if self.table.data.len() == 0 {
+            for v in row.into_iter() { self.table.data.push(vec![v]); }
+        } else { for (i, v) in row.into_iter().enumerate() { self.table.data[i].push(v); } }
 
         Ok(())
     }

@@ -1,6 +1,7 @@
 use rustfft::{FftPlanner, num_complex::Complex};
 use std::iter::zip;
 
+/// Computes the autocorrelation of 3D vectors.
 pub fn autocorrelate_vectors(x: &Vec<f64>, y: &Vec<f64>, z: &Vec<f64>) -> Vec<f64> {
     let n = x.len();
 
