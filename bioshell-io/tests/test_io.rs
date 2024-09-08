@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests_io {
     use std::io::BufReader;
-    use bioshell_io::{open_file, read_delimited_columns, read_delimited_values, split_into_strings};
+    use bioshell_io::{open_file, read_delimited_columns, read_delimited_values, read_whitespace_delimited_columns, read_whitespace_delimited_values, split_into_strings};
 
     #[test]
     fn test_tsv_loading() {
@@ -34,6 +34,22 @@ mod tests_io {
         let data_f64: Vec<Vec<f64>> = read_delimited_columns(reader, b',').expect("Can't parse f64.csv file!");
         assert_eq!(data_f64.len(), 3);
         assert_eq!(data_f64[1].len(), 2);
+    }
+
+    #[test]
+    fn load_whitespace_delimited_values() {
+        let reader = open_file("tests/test_files/string.tsv").expect("Can't open string.tsv file!");
+        let data_str: Vec<Vec<String>> = read_whitespace_delimited_values(reader).expect("Can't parse string.tsv file!");
+        assert_eq!(data_str.len(), 3);
+        assert_eq!(data_str[0].len(), 2);
+    }
+
+    #[test]
+    fn load_whitespace_delimited_columns() {
+        let reader = open_file("tests/test_files/string.tsv").expect("Can't open string.tsv file!");
+        let data_str: Vec<Vec<String>> = read_whitespace_delimited_columns(reader).expect("Can't parse string.tsv file!");
+        assert_eq!(data_str.len(), 2);
+        assert_eq!(data_str[0].len(), 3);
     }
 
     #[test]

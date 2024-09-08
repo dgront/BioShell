@@ -1,13 +1,13 @@
 use std::ffi::OsStr;
-use std::io::{BufRead, BufReader, Error, stdout, ErrorKind};
-use std::io::stderr;
-use std::io::Write;
+use std::io::{BufRead, BufReader, Error, stdout, stderr, ErrorKind, Write};
 use std::path::Path;
 use std::fs::{File};
 use csv;
 use csv::StringRecord;
 use flate2::read;
-
+use std::str::FromStr;
+use std::time::Instant;
+use log::debug;
 
 /// Creates a `Writer` object.
 ///
@@ -91,7 +91,7 @@ fn is_record_ok(rec: &StringRecord) -> bool {
 /// assert_eq!(data_f64[0].len(), 4);
 /// let buffer = open_file("tests/test_files/string.tsv")?;
 /// let data_str: Vec<Vec<String>> = read_delimited_values(buffer, b'\t')?;
-/// # assert_eq!(data_str.len(), 2);
+/// # assert_eq!(data_str.len(), 3);
 /// # assert_eq!(data_str[0].len(), 2);
 /// # Ok(())
 /// # }
@@ -109,7 +109,7 @@ fn is_record_ok(rec: &StringRecord) -> bool {
 /// # Ok(())
 /// }
 /// ```
-pub fn read_delimited_values<T: std::str::FromStr, R: BufRead>(reader: R, delimiter:u8) -> Result<Vec<Vec<T>>, Error> {
+pub fn read_delimited_values<T: FromStr, R: BufRead>(reader: R, delimiter:u8) -> Result<Vec<Vec<T>>, Error> {
 
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
@@ -117,31 +117,44 @@ pub fn read_delimited_values<T: std::str::FromStr, R: BufRead>(reader: R, delimi
         .comment(Some(b'#'))
         .from_reader(reader);
 
-    let mut data : Vec<Vec<T>> = Vec::new();
+    let mut table: TableOfRows<T> = TableOfRows{ data: vec![] };
     for record in rdr.records() {
         if let Ok(r) = &record {
             if !is_record_ok(r) { continue; }
-
-            let row: Result<Vec<T>, _> = r.iter().map(|e| {
-                e.parse::<T>()
-            }).collect();
-
-            let row = match row {
-                Ok(values) => values,
-                Err(_err) => {
-                    return Err(Error::new(ErrorKind::Other, format!("Problem while parsing a float value; the last record was: {:?}", &record)));
-                }
-            };
-
-            data.push(row);
+            table.insert_row(r.into_iter())?;
         }
     }
 
-    return Ok(data);
+    return Ok(table.data);
 }
 
 /// Reads a file that is delimited with a given character and returns data loaded column-wise
-pub fn read_delimited_columns<T: std::str::FromStr, R: BufRead>(reader: R, delimiter:u8) -> Result<Vec<Vec<T>>, Error> {
+///
+/// The function can handle both tab-separated and comma-separated files.
+///
+/// # Examples
+///
+/// Read a tab-separated file:
+/// ```
+/// use std::io::BufReader;
+/// # use std::io;
+/// use bioshell_io::{open_file, read_delimited_columns};
+/// # fn main() -> Result<(), io::Error> {
+/// let txt_f64 = "1.0\t2.0\t3.0\t4.0
+/// 5.0\t6.0\t7.0\t8.0
+/// 9.0\t10.0\t11.0\t12.0
+/// ";
+/// let data_f64: Vec<Vec<f64>> = read_delimited_columns(BufReader::new(txt_f64.as_bytes()), b'\t').unwrap();
+/// assert_eq!(data_f64.len(), 4);
+/// assert_eq!(data_f64[0].len(), 3);
+/// let buffer = open_file("tests/test_files/string.tsv")?;
+/// let data_str: Vec<Vec<String>> = read_delimited_columns(buffer, b'\t')?;
+/// # assert_eq!(data_str.len(), 2);
+/// # assert_eq!(data_str[0].len(), 3);
+/// # Ok(())
+/// # }
+/// ```
+pub fn read_delimited_columns<T: FromStr+Clone, R: BufRead>(reader: R, delimiter:u8) -> Result<Vec<Vec<T>>, Error> {
 
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
@@ -149,39 +162,100 @@ pub fn read_delimited_columns<T: std::str::FromStr, R: BufRead>(reader: R, delim
         .comment(Some(b'#'))
         .from_reader(reader);
 
-    let mut data : Vec<Vec<T>> = Vec::new();
-    let mut records = rdr.records();
-    if let Some(Ok(r)) = records.next() {
-        let row: Result<Vec<T>, _> = r.iter().map(|e| { e.parse::<T>() }).collect();
-        match row {
-            Ok(values) => {
-                for v in values.into_iter() { data.push(vec![v]); }
-            },
-            Err(_err) => {
-                return Err(Error::new(ErrorKind::Other, format!("Problem while parsing a float value; the last record was: {:?}", &r)));
-            }
-        };
-
-    }
+    let mut table: TableOfColumns<T> = TableOfColumns { data: vec![] };
     for record in rdr.records() {
         if let Ok(r) = &record {
             if !is_record_ok(r) { continue; }
-
-            let row: Result<Vec<T>, _> = r.iter().map(|e| { e.parse::<T>() }).collect();
-
-            match row {
-                Ok(values) => {
-                    for (i,v) in values.into_iter().enumerate() { data[i].push(v); }
-                }
-                Err(_err) => {
-                    return Err(Error::new(ErrorKind::Other, format!("Problem while parsing a float value; the last record was: {:?}", &record)));
-                }
-            };
-
+            table.insert_row(r.into_iter())?;
         }
     }
 
-    return Ok(data);
+    return Ok(table.data);
+}
+
+
+/// Reads whitespace-separated data from a `BufReader` and stores it in a `Vec<Vec<T>>`.
+///
+/// The function assumes that the number of columns is constant across all rows.
+pub fn read_whitespace_delimited_values<T, R>(reader: R) -> Result<Vec<Vec<T>>, Error>
+where T: FromStr,R: BufRead,
+{
+    let mut table: TableOfRows<T> = TableOfRows{ data: vec![] };
+    for line in reader.lines() {
+        let line = line?;  // Read the line (handle I/O errors)
+        if line.is_empty() || line.starts_with('#') { // Skip empty lines and comments
+            continue;
+        }
+        let fields_iter = line.split_whitespace();
+        table.insert_row(fields_iter)?;
+    }
+
+    Ok(table.data)
+}
+
+/// Reads whitespace-separated data from a `BufReader` and stores it column-wise  in a `Vec<Vec<T>>`.
+///
+/// The function assumes that the number of columns is constant across all rows.
+pub fn read_whitespace_delimited_columns<T, R>(reader: R) -> Result<Vec<Vec<T>>, Error>
+where T: FromStr+Clone,R: BufRead,
+{
+    let mut table: TableOfColumns<T> = TableOfColumns { data: vec![] };
+    let start = Instant::now();
+
+    for line in reader.lines() {
+        let line = line?;  // Read the line (handle I/O errors)
+        if line.is_empty() || line.starts_with('#') { // Skip empty lines and comments
+            continue;
+        }
+        table.insert_row(line.split_whitespace())?;
+    }
+    debug!("text file loaded in: {:?}", start.elapsed());
+
+    Ok(table.data)
+}
+
+trait InsertRow<T: FromStr> {
+    fn insert_row<'a>(&mut self, row: impl Iterator<Item=&'a str>) -> Result<(), Error>;
+}
+struct TableOfRows<T:FromStr> { data: Vec<Vec<T>>, }
+
+impl<T: FromStr> InsertRow<T> for TableOfRows<T> {
+    fn insert_row<'a>(&mut self, row: impl Iterator<Item=&'a str>) -> Result<(), Error> {
+        let row: Vec<T> = row.into_iter()
+            .map(|field| {
+                field.parse::<T>().map_err(|_e| {
+                    Error::new(ErrorKind::InvalidData, format!("Failed to parse field: {}", field))
+                })
+            }).collect::<Result<Vec<T>, Error>>()?;
+
+        self.data.push(row);
+        Ok(())
+    }
+}
+
+struct TableOfColumns<T:FromStr+Clone> { data: Vec<Vec<T>>, }
+
+impl<T: FromStr+Clone> TableOfColumns<T> {
+    fn new_empty() -> Self { TableOfColumns { data: vec![] } }
+    fn new_allocated(n_rows: usize, n_columns: usize, val: T) -> Self {
+        TableOfColumns { data:  vec![vec![val; n_rows]; n_columns]}
+    }
+}
+impl<T: FromStr+Clone> InsertRow<T> for TableOfColumns<T> {
+    fn insert_row<'a>(&mut self, row: impl Iterator<Item=&'a str>) -> Result<(), Error> {
+        let row: Vec<T> = row.into_iter()
+            .map(|field| {
+                field.parse::<T>().map_err(|_e| {
+                    Error::new(ErrorKind::InvalidData, format!("Failed to parse field: {}", field))
+                })
+            }).collect::<Result<Vec<T>, Error>>()?;
+
+        if self.data.len() == 0 {
+            for v in row.into_iter() { self.data.push(vec![v]); }
+        } else { for (i, v) in row.into_iter().enumerate() { self.data[i].push(v); } }
+
+        Ok(())
+    }
 }
 
 /// Opens a file for reading.
@@ -219,3 +293,11 @@ pub fn open_file(filename: &str) -> Result<Box<dyn BufRead>, Error> {
     }
 }
 
+/// Counts the number of rows in a text file.
+pub fn count_rows(file_path: &str) -> Result<usize, Error> {
+    let file = File::open(file_path)?;
+    let reader = BufReader::new(file);
+    let row_count = reader.lines().count();
+
+    Ok(row_count)
+}
