@@ -1,8 +1,12 @@
 use pyo3::prelude::*;
-use pyo3::{Python, PyModule, PyClass, PyResult, pyclass, pymethods};
+use pyo3::types::PyString;
+use std::collections::HashMap;
+use pyo3::{Python, PyClass, PyResult, pyclass, pymethods};
+
 
 
 use bioshell_cif::CifLoop;
+use bioshell_cif::CifData;
 
 
 #[pyclass(name="CifLoop")]
@@ -13,220 +17,108 @@ pub struct PyCifLoop {
 #[pymethods]
 impl PyCifLoop {
     #[new]
-    pub fn new() -> Self {
-        PyCifLoop{data: CifLoop::new()}
+    pub fn new(data_item_names: Vec<String>) -> PyCifLoop {
+        let cols: Vec<&str> = data_item_names.iter().map(|s| s.as_str()).collect();
+        PyCifLoop {
+            data: CifLoop::new(&cols),
+        }
     }
 
-    pub fn add_column(&mut self, column: String){
-        self.data.add_column(column);
+    /// Add a new column
+    pub fn add_column(&mut self, column_name: String) -> PyResult<()> {
+        self.data.add_column(&column_name);
+        Ok(())
     }
 
-    pub fn add_data_row(&mut self, row: Vec<String>){
+    /// Add a new row of data
+    pub fn add_data_row(&mut self, row: Vec<String>) -> PyResult<()> {
         self.data.add_data_row(row);
+        Ok(())
     }
 
-    pub fn column_names(&self) -> Vec<String>{
-        self.data.column_names().map(|x| x.to_string()).collect()
+    /// Get the list of rows
+    pub fn rows(&self) -> Vec<Vec<String>> {
+        self.data.rows().cloned().collect()
     }
 
-    pub fn count_rows(&self) -> usize{
+    /// Get the list of column names
+    pub fn column_names(&self) -> Vec<String> {
+        self.data.column_names().cloned().collect()
+    }
+
+    /// Get the number of rows
+    pub fn count_rows(&self) -> usize {
         self.data.count_rows()
     }
 
-    pub fn count_columns(&self) -> usize{
+    /// Get the number of columns
+    pub fn count_columns(&self) -> usize {
         self.data.count_columns()
     }
 
-    pub fn column_index(&self, data_name: &str) -> Option<usize>{
-        self.data.column_index(data_name)
+    /// Find the index of a column by name
+    pub fn column_index(&self, data_name: String) -> Option<usize> {
+        self.data.column_index(&data_name)
     }
 
+    /// Check if a column name contains a specific substring
+    pub fn column_name_contains(&self, substring: String) -> bool {
+        self.data.column_name_contains(&substring)
+    }
+
+    /// Get a mutable reference to an entry (row and column) in the data
+    pub fn entry_mut(&mut self, row_index: usize, data_name: String) -> Option<String> {
+        self.data
+            .entry_mut(row_index, &data_name)
+            .map(|e| e.clone())  // Return a cloned version since we can't directly expose mutable references to Python
+    }
 }
 
-// #[pymethods]
-// impl PyCifLoop{
-//     #[new]
-//     pub fn new() -> Self {
-//         let cols : Vec<String> = data_items_names.iter().map(|x| x.to_string()).collect();
-//        return PyCifLoop{columm_mames: cols, data_rows: Vec::new(), previoous_row_incomplete: false};
-//     }
+#[pyclass(name = "CifData")]
+pub struct PyCifData {
+    data: CifData
+}
 
-//     fn add_column(&mut self, column: String){
-//        if self.data_rows.len() > 0{
-//            self.previous_row_incomplete = true;
-//            panic!("Cannot add column after adding data rows");
-//        }
-//        self.columm_mames.push(column_names.to_string());
-//     }
+#[pymethods]
+impl PyCifData {
+    #[new]
+    pub fn new(name: &str) -> Self {
+        PyCifData {
+            data: CifData::new(name),
+        }
+    }
 
-//     fn add_data_row(&mut self, row: Vec<String>){
-//         if row.len() != self.columm_mames.len(){
-//             panic!("Row length does not match column length");
-//         }
-//         if self.previoous_row_incomplete{
-//             panic!("Cannot add data row after adding incomplete data row");
-//         }
-//         self.data_rows.push(row);
-//     }    
-    
-//     fn column_names(&self)  -> impl Iterator<Item = &String> { 
-//         return self.columm_mames.iter();
-//     }     
+    pub fn name(&self) -> &str {
+        &self.data.name()
+    }
 
-//     fn data_rows(&self) -> impl Iterator<Item = &Vec<String>> {
-//         return self.data_rows.iter();
-//     }
-//     pub fn count_rows(&self) -> usize { self.data_rows.len() }
- 
-//     pub fn count_columns(&self) -> usize { self.column_names.len() }
-   
-//     pub fn column_index(&self, data_name: &str) -> Option<usize> {
-//         self.column_names.iter().position(|r| r == data_name)
-//     }
-// }
+    pub fn add_item(&mut self, key: &str, value: &str) -> PyResult<()> {
+        self.data.add_item(key, value);
+        Ok(())
+    }
 
-// #[pyclass(name="CifDataValue")]
-// #[derive(Debug,Clone)]
-// pub struct PyCifDataValue{
-//     value: CifDataValue
-// }
-   
+    pub fn get_item(&self, key: &str) -> Option<String> {
+        self.data.get_item(key)
+    }
 
-// #[pymethods]
-// impl PyCifDataValue{
-//     #[new]
-//     fn new_string(value: String) -> Self{
-//         PyCifDataValue::CifDataValueString(value)
-//     }
+    pub fn data_items(&self) -> HashMap<String, String> {
+        self.data.data_items().clone()
+    }
 
-//     #[new]
-//     fn new_float(value: f64) -> Self{
-//         PyCifDataValue::CifDataValueFloat(value)
-//     }
+    pub fn data_items_mut(&mut self) -> HashMap<String, String> {
+        self.data.data_items_mut().clone()
+    }
 
-//     #[new]
-//     fn new_int(value: i64) -> Self{
-//         PyCifDataValue::CifDataValueInt(value)
-//     }
+    //     pub fn add_loop(&mut self, a_loop: PyCifLoop) -> PyResult<()> {
+    //     self.data.add_loop(a_loop.into());
+    //     Ok(())
+    // }
 
-//     #[new]
-//     fn new_list(value: Vec<String>) -> Self{
-//         PyCifDataValue::CifDataValueList(value)
-//     }
+    // pub fn loop_blocks(&self) -> Vec<PyCifLoop> {
+    //     self.data.loop_blocks().map(|l| PyCifLoop { loop_: l.clone() }).collect()
+    // }
 
-//     #[new]
-//     fn new_loop(value: PyCifLoop) -> Self{
-//         PyCifDataValue::CifDataValueLoop(value)
-//     }
-
-//     #[new]
-//     fn new_block(value: PyCifData) -> Self{
-//         PyCifDataValue::CifDataValueBlock(value)
-//     }
-
-//     pub fn add_loop(&mut self, loop_: PyCifLoop){
-//         match self{
-//             PyCifDataValue::CifDataValueBlock(value) => value.add_loop(loop_),
-//             _ => panic!("Cannot add loop to non block value")
-//         }
-//     }
-
-//     pub fn add_item(&mut self, item: String, value: CifDataValue){
-//         match self{
-//             PyCifDataValue::CifDataValueBlock(value) => value.add_item(item, value),
-//             _ => panic!("Cannot add item to non block value")
-//         }
-//     }
-
-//     pub fn data_items(&self) -> Vec<(String, CifDataValue)>{
-//         match self{
-//             PyCifDataValue::CifDataValueBlock(value) => value.items(),
-//             _ => panic!("Cannot get data items from non block value")
-//         }
-//     }
-
-//     pub fn data_items_mut(&mut self) -> Vec<(String, CifDataValue)>{
-//         match self{
-//             PyCifDataValue::CifDataValueBlock(value) => value.items_mut(),
-//             _ => panic!("Cannot get data items from non block value")
-//         }
-//     }
-    
-//     pub fn loop_blocks(&mut self) -> impl DoubleEndedIterator<Item = &mut CifLoop> + '_ {
-//         match self{
-//             PyCifDataValue::CifDataValueBlock(value) => value.loops(),
-//             _ => panic!("Cannot get loop blocks from non block value")
-//         }
-//     }
-
-//     pub fn first_loop(&self) -> Option<PyCifLoop>{
-//         match self{
-//             PyCifDataValue::CifDataValueBlock(value) => value.loops().first().cloned(),
-//             _ => panic!("Cannot get first loop from non block value")
-//         }
-//     }    
-
-//     fn __str__(&self) -> String{
-//         match self{
-//             PyCifDataValue::CifDataValueString(value) => value.clone(),
-//             PyCifDataValue::CifDataValueFloat(value) => value.to_string(),
-//             PyCifDataValue::CifDataValueInt(value) => value.to_string(),
-//             PyCifDataValue::CifDataValueList(value) => format!("{:?}", value),
-//             PyCifDataValue::CifDataValueLoop(value) => value.to_string(),
-//             PyCifDataValue::CifDataValueBlock(value) => value.to_string(),
-//         }
-//     }
-// }
-
-
-// impl From<CifDataValue> for PyCifDataValue{
-//     fn from(cif_data_value: CifDataValue) -> Self{
-//         match cif_data_value{
-//             CifDataValue::String(value) => PyCifDataValue::CifDataValueString(value),
-//             CifDataValue::Float(value) => PyCifDataValue::CifDataValueFloat(value),
-//             CifDataValue::Int(value) => PyCifDataValue::CifDataValueInt(value),
-//             CifDataValue::List(value) => PyCifDataValue::CifDataValueList(value),
-//             CifDataValue::Loop(value) => PyCifDataValue::CifDataValueLoop(PyCifLoop::from(value)),
-//             CifDataValue::Block(value) => PyCifDataValue::CifDataValueBlock(PyCifData(value)),
-//         }
-//     }
-// }
-
-
-// #[pyclass(name="CifDataItem")]
-// #[derive(Debug,Clone)]
-// pub struct PyCifDataItem(CifDataItem);
-
-
-// #[pyclass(name="CifData")]
-// #[derive(Debug,Clone)]
-// pub struct PyCifData(CifData);
-
-// #[pymethods]
-// impl PyCifData{
-//     #[new]
-//     fn new() -> Self{
-//         PyCifData(CifData::new())
-//     }
-
-//     fn add_item(&mut self, item: String, value: CifDataValue){
-//         self.0.add_item(item, value);
-//     }
-
-//     fn add_loop(&mut self, cif_loop: PyCifLoop){
-//         self.0.add_loop(cif_loop.0);
-//     }
-
-//     fn items(&self) -> Vec<(String, CifDataValue)>{
-//         self.0.items().clone()
-//     }
-
-//     fn loops(&self) -> Vec<PyCifLoop>{
-//         self.0.loops().iter().map(|x| PyCifLoop(x.clone())).collect()
-//     }
-
-//     fn __str__(&self) -> String{
-//         self.0.to_string()
-//     }
-// }
-
+    // pub fn first_loop(&self, column: &str) -> Option<PyCifLoop> {
+    //     self.data.first_loop(column).map(|l| PyCifLoop { loop_: l.clone() })
+    // }
+}
