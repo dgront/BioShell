@@ -2,6 +2,7 @@ use std::env;
 use clap::{Parser};
 use log::info;
 use bioshell_cif::is_cif_file;
+use bioshell_io::out_writer;
 use bioshell_pdb::{is_pdb_file, load_cif_file, load_pdb_file, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, IsCA, PdbAtomPredicate};
 
@@ -16,6 +17,9 @@ struct Args {
     /// print FASTA sequence for every chain in each input file
     #[clap(short, long, short='f')]
     out_fasta: bool,
+    /// print selected structure in PDB format
+    #[clap(short, long)]
+    out_pdb: Option<String>,
     /// print secondary structure for every chain in each input file
     #[clap(long)]
     out_secondary: bool,
@@ -40,6 +44,12 @@ fn filter(strctr: &mut Structure, filters: &Vec<Box<dyn PdbAtomPredicate>>) {
     for f in filters {
         strctr.atoms_mut().retain(|a| f.check(&a));
     }
+}
+
+fn write_pdb(strctr: &Structure, fname: &str) {
+    let mut outstream = out_writer(fname, false);
+    for a in strctr.atoms() { write!(outstream, "{}\n", a).unwrap(); }
+    outstream.flush().unwrap();
 }
 
 fn main() {
@@ -97,6 +107,9 @@ fn main() {
         // if let Some(rf) = strctr.r { println!("resolution: {}", res); }
         if let Some(unit_cell) = &strctr.unit_cell { println!("space group: {}", unit_cell.space_group); }
         println!("models: {}", strctr.count_models());
+    }
+    if let Some(out_fname) = args.out_pdb {
+        write_pdb(&strctr, &out_fname);
     }
 }
 
