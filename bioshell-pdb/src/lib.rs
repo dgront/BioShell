@@ -50,7 +50,7 @@ pub use pdb_sheet::PdbSheet;
 pub use exp_data::{ExperimentalMethod};
 pub use unit_cell::{UnitCell};
 pub use load_cif::{load_cif_file, load_cif_reader};
-pub use entity::{EntitySource, EntityType, Entity};
+pub use entity::{EntitySource, EntityType, Entity, EntityPolyType};
 
 mod macros {
     #[macro_export]

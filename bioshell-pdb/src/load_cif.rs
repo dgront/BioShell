@@ -27,11 +27,11 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             "_atom_site.pdbx_PDB_ins_code",
             "_atom_site.Cartn_x", "_atom_site.Cartn_y", "_atom_site.Cartn_z",
             "_atom_site.occupancy", "_atom_site.B_iso_or_equiv", "_atom_site.type_symbol",
-            "_atom_site.pdbx_PDB_model_num", "_atom_site.auth_seq_id",
+            "_atom_site.pdbx_PDB_model_num", "_atom_site.auth_seq_id", "_atom_site.label_entity_id",
         );
 
         let extractor = PdbAtomData::new(atoms_loop)?;      // extracts atom data from each loop entry
-        let mut tokens = [""; 15];                              // stores tokens from each extraction
+        let mut tokens = [""; 16];                              // stores tokens from each extraction
         let mut model_ids: HashMap<usize, usize> = HashMap::new();       // links model id to model index in the model_coordinates structure
         for row in atoms_loop.rows() {
             extractor.data_items(&row, &mut tokens);
@@ -102,13 +102,14 @@ pub fn load_cif_file(file_name: &str) -> Result<Structure, PDBError> {
 }
 
 /// A helper function to create an atom based on given string tokens
-fn create_pdb_atom(tokens: &[&str; 15], pos: Vec3) -> Result<PdbAtom, CifError> {
+fn create_pdb_atom(tokens: &[&str; 16], pos: Vec3) -> Result<PdbAtom, CifError> {
 
     let serial = parse_item_or_error!(tokens[0], i32);
     let name = tokens[1].to_string();
     let alt_loc = value_or_default(tokens[2], ' ');
     let res_name = tokens[3].to_string();
     let chain_id = tokens[4].to_string();
+    let entity_id = tokens[15].to_string();
     let res_seq = if entry_has_value(tokens[5]) {
         parse_item_or_error!(tokens[5], i32)
     } else {
@@ -124,7 +125,7 @@ fn create_pdb_atom(tokens: &[&str; 15], pos: Vec3) -> Result<PdbAtom, CifError> 
     let secondary_struct_type: u8 = 12;
     let a = PdbAtom {
         serial, name, alt_loc, res_name,
-        chain_id, res_seq, i_code, pos, occupancy, temp_factor,
+        chain_id, entity_id, res_seq, i_code, pos, occupancy, temp_factor,
         element, charge, is_hetero_atom, secondary_struct_type,
     };
 

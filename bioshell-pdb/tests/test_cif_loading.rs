@@ -27,7 +27,8 @@ mod tests {
             _symmetry.space_group_name_H-M         'C 1 21 1'
             _cell.Z_PDB                            1
         ";
-        let data_block = &read_cif_buffer(&mut BufReader::new(missing_data.as_bytes()))[0];
+        let data_block = read_cif_buffer(&mut BufReader::new(missing_data.as_bytes())).unwrap();
+        let data_block= &data_block[0];
         let uc = UnitCell::from_cif_data(data_block);
         assert!(uc.is_err());
     }

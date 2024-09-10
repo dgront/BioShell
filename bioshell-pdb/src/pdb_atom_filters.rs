@@ -159,6 +159,18 @@ impl PdbAtomPredicate for ByChain {
     fn check(&self, a: &PdbAtom) -> bool { a.chain_id == self.chain_id }
 }
 
+/// Returns `true` if an atom belongs to a certain entity.
+///
+pub struct ByEntity {entity_id: String}
+
+impl ByEntity {
+    pub fn new(entity_id: &str) -> Self { Self { entity_id: String::from(entity_id) } }
+}
+
+impl PdbAtomPredicate for ByEntity {
+    fn check(&self, a: &PdbAtom) -> bool { a.entity_id == self.entity_id }
+}
+
 /// Returns `true` if an atom belongs to a certain residue.
 ///
 /// # Examples

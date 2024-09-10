@@ -104,7 +104,7 @@ impl Entity {
     /// # Example
     /// ```
     /// use bioshell_pdb::{Entity, EntitySource, EntityType};
-    /// let entity = Entity::from_strings("1", "HIV protease", "polymer", "man", 10916.0);
+    /// let entity = Entity::from_strings("1", "HIV protease", "polymer", "man", 10916.0).unwrap();
     /// assert_eq!(entity.id(), "1");
     /// assert_eq!(entity.description(), "HIV protease");
     /// assert_eq!(entity.entity_type(), EntityType::Polymer);
@@ -155,7 +155,7 @@ impl Entity {
     /// 1 polymer syn "DNA (5'-CD(*AP*AP*AP*)-3')" 894.663
     /// 2 water   nat water                        18.015
     /// "#;
-    /// let data_block = &read_cif_buffer(&mut BufReader::new(input_cif.as_bytes()))[0];
+    /// let data_block = &read_cif_buffer(&mut BufReader::new(input_cif.as_bytes())).unwrap()[0];
     /// let entities = Entity::from_cif_data(data_block).unwrap();
     /// ```
     pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<Entity>, PDBError> {
@@ -191,5 +191,49 @@ impl Entity {
             Ok(entities)
         }
     }
+}
 
+/// Enum representing different types of polymers for _entity_poly.type in an mmCIF file.
+///
+/// # Example
+/// ```
+/// use bioshell_pdb::EntityPolyType;
+/// let src_method: EntityPolyType = "Polypeptide(L)".parse().unwrap();
+/// assert_eq!(src_method, EntityPolyType::PolypeptideL);
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+pub enum EntityPolyType {
+    /// L polypeptide
+    PolypeptideL,
+    /// D polypeptide
+    PolypeptideD,
+    /// DNA polymer.
+    DNA,
+    /// RNA polymer.
+    RNA,
+    /// Polysaccharide polymer.
+    Polysaccharide,
+    /// Represents a peptide nucleic acid.
+    PeptideNucleicAcid,
+    /// Represents a hybrid polymer type.
+    Hybrid,
+    /// Represents other types of polymers not explicitly defined.
+    Other,
+}
+
+impl FromStr for EntityPolyType {
+    type Err = PDBError;
+    /// Parse a string and return the corresponding `EntityPolyType` enum variant.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "polypeptide(l)" => Ok(EntityPolyType::PolypeptideL),
+            "polypeptide(d)" => Ok(EntityPolyType::PolypeptideD),
+            "dna" => Ok(EntityPolyType::DNA),
+            "rna" => Ok(EntityPolyType::RNA),
+            "polysaccharide" => Ok(EntityPolyType::Polysaccharide),
+            "peptide nucleic acid" => Ok(EntityPolyType::PeptideNucleicAcid),
+            "hybrid" => Ok(EntityPolyType::Hybrid),
+            _ => Err(CantParseEnumVariant{ data_value: s.to_string(), enum_name: "EntityPolyType".to_string() }),
+        }
+    }
 }

@@ -84,7 +84,7 @@ impl UnitCell {
     ///     _symmetry.space_group_name_H-M         'C 1 21 1'
     ///     _cell.Z_PDB                            1
     /// ";
-    /// let data_block = &read_cif_buffer(&mut BufReader::new(cell_data.as_bytes()))[0];
+    /// let data_block = &read_cif_buffer(&mut BufReader::new(cell_data.as_bytes())).unwrap()[0];
     /// let uc = UnitCell::from_cif_data(data_block).unwrap();
     /// assert_delta!(uc.a, 58.39, 0.00001, "Incorrect unit cell dimension along a axis");
     ///
@@ -94,7 +94,7 @@ impl UnitCell {
     ///     _cell.angle_alpha                      90.00
     ///     _cell.angle_beta                       90.00
     /// ";
-    /// let data_block = &read_cif_buffer(&mut BufReader::new(missing_data.as_bytes()))[0];
+    /// let data_block = &read_cif_buffer(&mut BufReader::new(missing_data.as_bytes())).unwrap()[0];
     /// let uc = UnitCell::from_cif_data(data_block);
     /// assert!(uc.is_err());
     /// ```

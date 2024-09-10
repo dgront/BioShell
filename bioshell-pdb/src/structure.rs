@@ -117,7 +117,7 @@ pub struct Structure {
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
     pub(crate) model_coordinates: Vec<Vec<Vec3>>,
-    // id of each residue given it's index
+    // id of each residue given its index
     pub(crate) residue_ids: Vec<ResidueId>,
     // range of atoms that belong to i-th residue
     pub(crate) atoms_for_residueid: Vec<Range<usize>>,
@@ -286,6 +286,9 @@ impl Structure {
     ///
     pub fn entity_ids(&self) -> impl Iterator<Item = &String> { self.entities.keys() }
 
+    /// Provides information about a given entity
+    pub fn entity(&self, entity_id: &str) -> &Entity { &self.entities[entity_id] }
+
     /// Creates a vector that holds string identifiers for all chains of this [`Structure`](Structure)
     ///
     /// The vector is sorted alphabetically, regardless the order of chains in this [`Structure`](Structure)
@@ -333,7 +336,7 @@ impl Structure {
                 let range = self.atoms_for_residueid[pos].clone();
                 Ok(range.map(|i| &self.atoms[i]))
             },
-            Err(_) => Err(PDBError::NoSuchResidue{res_id: residue_id.clone()})
+            Err(_) => Err(NoSuchResidue{res_id: residue_id.clone()})
         }
     }
 

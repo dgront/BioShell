@@ -31,7 +31,7 @@ use crate::pdb_parsing_error::PDBError;
 ///
 /// let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
 /// let seq = strctr.sequence("A");
-/// assert_eq!(seq.to_string(), "MTYKLI");
+/// assert_eq!(seq.to_string(80), "MTYKLI");
 /// ```
 pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
 
@@ -235,8 +235,8 @@ mod tests {
         ];
 
         let sequences = parse_seqres_records(input);
-        assert_eq!(sequences["A"].to_string(), "AVCLMERGYFN".to_string());
-        assert_eq!(sequences["B"].to_string(), "KTQ".to_string());
+        assert_eq!(sequences["A"].to_string(80), "AVCLMERGYFN".to_string());
+        assert_eq!(sequences["B"].to_string(80), "KTQ".to_string());
     }
 }
 

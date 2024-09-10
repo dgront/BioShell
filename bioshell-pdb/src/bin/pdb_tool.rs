@@ -2,8 +2,9 @@ use std::env;
 use clap::{Parser};
 use log::info;
 use bioshell_cif::is_cif_file;
+use bioshell_io::{open_file, out_writer};
 use bioshell_pdb::{is_pdb_file, load_cif_file, load_pdb_file, Structure};
-use bioshell_pdb::pdb_atom_filters::{ByChain, IsCA, PdbAtomPredicate};
+use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, PdbAtomPredicate};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -16,6 +17,9 @@ struct Args {
     /// print FASTA sequence for every chain in each input file
     #[clap(short, long, short='f')]
     out_fasta: bool,
+    /// print selected structure in PDB format
+    #[clap(short, long)]
+    out_pdb: Option<String>,
     /// print secondary structure for every chain in each input file
     #[clap(long)]
     out_secondary: bool,
@@ -31,6 +35,9 @@ struct Args {
     /// keep only alpha-carbon atoms
     #[clap(long, group = "select")]
     select_ca: bool,
+    /// keep only selected entities
+    #[clap(long, group = "select")]
+    select_entity: Option<String>,
     /// be more verbose and log program actions on the screen
     #[clap(short, long, short='v')]
     verbose: bool
@@ -38,8 +45,26 @@ struct Args {
 
 fn filter(strctr: &mut Structure, filters: &Vec<Box<dyn PdbAtomPredicate>>) {
     for f in filters {
-        strctr.atoms_mut().retain(|a| !f.check(&a));
+        strctr.atoms_mut().retain(|a| f.check(&a));
     }
+}
+
+fn print_info(strctr: &Structure) {
+    println!("id_code: {:?}",strctr.id_code);
+    println!("methods: {:?}",strctr.methods);
+    if let Some(class) = &strctr.classification { println!("classification: {}", class); }
+    if let Some(title) = &strctr.title { println!("title: {}", title); }
+    if let Some(res) = strctr.resolution { println!("resolution: {}", res); }
+    if let Some(r_fact) = strctr.r_factor { println!("r_factor: {}", r_fact); }
+    if let Some(r_free) = strctr.r_free { println!("r_free: {}", r_free); }
+    if let Some(unit_cell) = &strctr.unit_cell { println!("space group: {}", unit_cell.space_group); }
+    println!("models: {}", strctr.count_models());
+}
+
+fn write_pdb(strctr: &Structure, fname: &str) {
+    let mut outstream = out_writer(fname, false);
+    for a in strctr.atoms() { write!(outstream, "{}\n", a).unwrap(); }
+    outstream.flush().unwrap();
 }
 
 fn main() {
@@ -71,7 +96,11 @@ fn main() {
     if let Some(chain_id) = args.select_chain {
         filters.push(Box::new(ByChain::new(&chain_id)));
     }
+    if let Some(entity_id) = args.select_entity {
+        filters.push(Box::new(ByEntity::new(&entity_id)));
+    }
     if args.select_ca { filters.push(Box::new(IsCA)); }
+    // ---------- Apply the filters
     filter(&mut strctr, &filters);
 
     // ---------- OUTPUT section
@@ -86,17 +115,10 @@ fn main() {
             println!("> {}\n{}", seq.description(), strctr.secondary(chain_id).to_string());
         }
     }
-    if args.info {
-        println!("id_code: {:?}",strctr.id_code);
-        println!("methods: {:?}",strctr.methods);
-        if let Some(class) = &strctr.classification { println!("classification: {}", class); }
-        if let Some(title) = &strctr.title { println!("title: {}", title); }
-        if let Some(res) = strctr.resolution { println!("resolution: {}", res); }
-        if let Some(r_fact) = strctr.r_factor { println!("r_factor: {}", r_fact); }
-        if let Some(r_free) = strctr.r_free { println!("r_free: {}", r_free); }
-        // if let Some(rf) = strctr.r { println!("resolution: {}", res); }
-        if let Some(unit_cell) = &strctr.unit_cell { println!("space group: {}", unit_cell.space_group); }
-        println!("models: {}", strctr.count_models());
+    if args.info { print_info(&strctr); }
+
+    if let Some(out_fname) = args.out_pdb {
+        write_pdb(&strctr, &out_fname);
     }
 }
 

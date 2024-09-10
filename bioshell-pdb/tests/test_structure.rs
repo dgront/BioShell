@@ -18,10 +18,10 @@ fn test_sequence_from_structure() {
     let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     let strctr = Structure::from_iterator("1xyz", atoms.iter());
     let seq = strctr.sequence("A");
-    assert_eq!(seq.to_string(), "MCGIA");
+    assert_eq!(seq.to_string(80), "MCGIA");
 
     let seq = strctr.sequence("B");
-    assert_eq!(seq.to_string(), "MACX");
+    assert_eq!(seq.to_string(80), "MACX");
 }
 
 #[allow(non_upper_case_globals)]
@@ -55,10 +55,10 @@ ATOM     78  CA  LEU B   5      -0.651  -2.752   2.466  1.00  0.11           C";
 fn test_loading_from_reader() {
     let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
     let seq = strctr.sequence("A");
-    assert_eq!(seq.to_string(), "MTYKLI");
+    assert_eq!(seq.to_string(80), "MTYKLI");
 
     let seq = strctr.sequence("B");
-    assert_eq!(seq.to_string(), "MTYKL");
+    assert_eq!(seq.to_string(80), "MTYKL");
 }
 
 #[test]

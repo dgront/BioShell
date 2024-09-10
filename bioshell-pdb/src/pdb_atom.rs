@@ -26,6 +26,7 @@ pub struct PdbAtom {
     pub alt_loc: char,
     pub res_name: String,
     pub chain_id: String,
+    pub entity_id: String,
     pub res_seq: i32,
     pub i_code: char,
     pub pos: Vec3,
@@ -48,6 +49,7 @@ impl PdbAtom {
             alt_loc: ' ',
             res_name: String::from("ALA"),
             chain_id: String::from("A"),
+            entity_id: String::from("1"),
             res_seq: 1,
             i_code: ' ',
             pos: Vec3::from_float(0.0),
@@ -87,9 +89,6 @@ impl PdbAtom {
         let res_seq = pdb_line[22..26].trim().parse::<i32>().unwrap();
         let i_code = pdb_line[26..27].chars().next().unwrap();
         let pos = Vec3::from_pdb_line(pdb_line);
-        // let x = pdb_line[30..38].trim().parse::<f64>().unwrap();
-        // let y = pdb_line[38..46].trim().parse::<f64>().unwrap();
-        // let z = pdb_line[46..54].trim().parse::<f64>().unwrap();
         let occupancy = pdb_line[54..60].trim().parse::<f64>().unwrap();
         let temp_factor = pdb_line[60..66].trim().parse::<f64>().unwrap();
         let element = if pdb_line.len()>=78 { Some(pdb_line[77..].trim().to_string()) } else { None };
@@ -98,13 +97,14 @@ impl PdbAtom {
             name,
             alt_loc,
             res_name,
-            chain_id,
+            chain_id: chain_id.clone(),
+            entity_id: chain_id,
             res_seq,
             i_code,
             pos,
             occupancy,
             temp_factor,
-            element: element,
+            element,
             charge: None,
             is_hetero_atom: pdb_line.starts_with("H"),
             secondary_struct_type: 12
