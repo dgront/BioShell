@@ -38,7 +38,7 @@ struct Args {
 
 fn filter(strctr: &mut Structure, filters: &Vec<Box<dyn PdbAtomPredicate>>) {
     for f in filters {
-        strctr.atoms_mut().retain(|a| !f.check(&a));
+        strctr.atoms_mut().retain(|a| f.check(&a));
     }
 }
 
