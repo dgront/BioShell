@@ -95,4 +95,9 @@ mod rototranslation_test {
             // println!("{}", another_vec);
         }
     }
+
+    #[test]
+    fn point_in_lcs() {
+        
+    }
 }

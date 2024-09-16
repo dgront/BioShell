@@ -7,7 +7,7 @@ use bioshell_pdb::{is_pdb_file, load_cif_file, load_pdb_file, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, IsCA, PdbAtomPredicate};
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[clap(author, version, about, long_about = None, arg_required_else_help = true)]
 /// Command line tool to operate on PDB files
 /// say pdb_tool -h to see options
 struct Args {
