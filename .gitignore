@@ -15,5 +15,8 @@ ooo
 lll
 source/
 venv/
+.venv/
+.Venv/
+Venv/
 pybioshell/Cargo.toml
 pybioshell/src/venv
