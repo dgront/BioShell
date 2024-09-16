@@ -1,0 +1,18 @@
+[package]
+name = "pybioshell"
+version = "0.1.0"
+edition = "2021"
+description = "Python bindings for BioShell using PyO3"
+license = "Apache-2.0"
+
+[dependencies]
+pyo3 = { version = "0.22.2", features = ["extension-module"] }
+bioshell-seq = { path = "../bioshell-seq" }
+bioshell-cif = { path = "../bioshell-cif" }
+lazy_static = "1.4"
+
+[lib]
+name = "residue_types"
+crate-type = ["cdylib"]
+[package.metadata.maturin]
+name = "pybioshell"
