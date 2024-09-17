@@ -1,8 +1,11 @@
-# To compile on Linux & MacOS:
+# Command to compile on MacOS :
 
-  - create a new virtual environment: ``python3 -m venv .venv``
-  - acticate it: ``source ./.venv/bin/activate``
-  - install requirements: ``pip install -r requirements.txt``
-  
-# To compile on Windows:
+1.  python -m venv .venv                //Create an virtual environment
+2.  source ./venv/bin/activate          //Activate virtual environment
+3.  pip install -r requirement.txt      //Install requirment
 
+# Command to compile on Windows :
+
+1.  python -m venv .venv                 //Create an virtual environment
+2.  .\.venv\Scripts\activate             //Activate virtual environment
+3.  pip install -r requirment.txt        //Install requirment
