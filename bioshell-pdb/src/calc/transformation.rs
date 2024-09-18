@@ -72,25 +72,36 @@ impl Rototranslation {
     /// \begin{align*}
     /// v_x & = ||v_{ab}+v_{bc}||\\
     /// v_y & = v_z \times v_x\\
-    /// v_z & = ||v_{ab}+v_{bc}||\\
+    /// v_z & = ||v_{ab}-v_{bc}||\\
     /// \end{align*}
     /// ```
     ///
     /// # Example
     /// ```
-    /// use bioshell_pdb::{assert_delta, assert_vec3_eq};
+    /// use bioshell_pdb::{assert_delta};
     /// use bioshell_pdb::calc::{Rototranslation, Vec3};
     /// let a = Vec3::new(0.0, 0.0, 0.0);
     /// let b = Vec3::new(2.0, 0.0, 2.0);
     /// let c = Vec3::new(4.0, 0.0, 0.0);
     /// let rot = Rototranslation::by_three_atoms(&a, &b, &c);
-    /// let x_exp = Vec3::new(1.0, 0.0, 0.0);
-    /// let y_exp = Vec3::new(0.0, 1.0, 0.0);
-    /// let z_exp = Vec3::new(0.0, 0.0, 1.0);
     /// let rot_m = rot.rotation_matrix();
     /// assert_delta!(rot_m.elem(0,0), 1.0, 0.000001);
-    /// assert_delta!(rot_m.elem(1,1), 1.0, 0.000001);
-    /// assert_delta!(rot_m.elem(2,2), 1.0, 0.000001);
+    /// # assert_delta!(rot_m.elem(1,1), 1.0, 0.000001);
+    /// # assert_delta!(rot_m.elem(2,2), 1.0, 0.000001);
+    /// # println!("{}", rot);
+    /// # let expected = r#"[  1.000  -0.000   0.000 ]     | vx -  2.000 |
+    /// # [  0.000   1.000   0.000 ]  *  | vy -  0.000 |
+    /// # [  0.000   0.000   1.000 ]     | vz -  2.000 |
+    /// # "#;
+    /// # assert_eq!(format!("{}", rot), expected);
+    /// ```
+    ///
+    /// The output printed should look like as below:
+    /// ```txt
+    /// [  1.000   0.000   0.000 ]     | vx -  2.000 |
+    /// [  0.000   1.000   0.000 ]  *  | vy -  0.000 |
+    /// [  0.000   0.000   1.000 ]     | vz -  2.000 |
+    ///
     /// ```
     pub fn by_three_atoms(a: &Vec3, b: &Vec3, c: &Vec3) -> Rototranslation {
 
@@ -154,3 +165,34 @@ impl Rototranslation {
 }
 
 
+// Define a macro to simplify printing a single row
+macro_rules! print_row {
+    ($f:expr, $array:expr, $row:expr, $op:expr, $vx:expr, $tb:expr, $res:expr) => {
+        writeln!(
+            $f,
+            "[ {:>6.3}  {:>6.3}  {:>6.3} ]  {}  | {} - {:>6.3} |{}",
+            $array[$row * 3], $array[$row * 3 + 1], $array[$row * 3 + 2], $op, $vx, $tb, $res
+        )
+    };
+}
+
+/// Implement the Display trait for Rototranslation
+impl fmt::Display for Rototranslation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let cx = self._origin.x;
+        let cy = self._origin.y;
+        let cz = self._origin.z;
+
+        if self.translate_back {
+            print_row!(f, self._rotation_matrix, 0, " ", "vx", cx, format!("   | {:>6.3} |", cx))?;
+            print_row!(f, self._rotation_matrix, 1, "*", "vy", cy, format!(" + | {:>6.3} |", cy))?;
+            print_row!(f, self._rotation_matrix, 2, " ", "vz", cz, format!("   | {:>6.3} |", cz))?;
+        } else {
+            print_row!(f, self._rotation_matrix, 0, " ", "vx", cx, "")?;
+            print_row!(f, self._rotation_matrix, 1, "*", "vy", cy, "")?;
+            print_row!(f, self._rotation_matrix, 2, " ", "vz", cz, "")?;
+        }
+
+        Ok(())
+    }
+}
