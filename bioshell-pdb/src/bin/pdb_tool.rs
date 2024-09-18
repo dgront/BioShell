@@ -26,6 +26,9 @@ struct Args {
     /// print basic information about a given structure
     #[clap(long)]
     info: bool,
+    /// print basic information about a given structure in the tsv format
+    #[clap(long)]
+    info_table: bool,
     /// break FASTA lines when longer that given cutoff
     #[clap(long, default_value="80")]
     out_fasta_width: usize,
@@ -59,6 +62,30 @@ fn print_info(strctr: &Structure) {
     if let Some(r_free) = strctr.r_free { println!("r_free: {}", r_free); }
     if let Some(unit_cell) = &strctr.unit_cell { println!("space group: {}", unit_cell.space_group); }
     println!("models: {}", strctr.count_models());
+}
+
+fn print_info_row(strctr: &Structure) {
+    print!("{:?}\t",strctr.id_code);
+    print!("{:?}\t",strctr.methods);
+    if let Some(class) = &strctr.classification { 
+        print!("{}\t", class); 
+    } else { print!("\t"); }
+    if let Some(title) = &strctr.title { 
+        print!("{}\t", title.replace("\n", " ")); 
+    } else { print!("\t"); }
+    if let Some(res) = strctr.resolution { 
+        print!("{}\t", res); 
+    } else { print!("\t"); }
+    if let Some(r_fact) = strctr.r_factor { 
+        print!("{}\t", r_fact); 
+    } else { print!("\t"); }
+    if let Some(r_free) = strctr.r_free { 
+        print!("{}\t", r_free); 
+    } else { print!("\t"); }
+    if let Some(unit_cell) = &strctr.unit_cell { 
+        print!("{}\t", unit_cell.space_group); 
+    } else { print!("\t"); }
+    print!("{}\n", strctr.count_models());
 }
 
 fn write_pdb(strctr: &Structure, fname: &str) {
@@ -116,6 +143,7 @@ fn main() {
         }
     }
     if args.info { print_info(&strctr); }
+    if args.info_table { print_info_row(&strctr); }
 
     if let Some(out_fname) = args.out_pdb {
         write_pdb(&strctr, &out_fname);
