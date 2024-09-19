@@ -11,6 +11,7 @@ use crate::pdb_header::PdbHeader;
 use crate::remarks::PDBRemarks;
 use crate::{ExperimentalMethod, PdbAtom, PdbHelix, PdbSheet, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
 use crate::calc::Vec3;
+use crate::crate_utils::find_deposit_file_name;
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::PDBError;
 
@@ -220,6 +221,49 @@ pub fn is_pdb_file(file_path: &str) -> io::Result<bool> {
     }
 
     return Ok(false);
+}
+
+static PDB_PREFIXES: [&str; 4] = ["pdb", "PDB", "pdb", ""];
+static PDB_SUFFIXES: [&str; 7] = [".ent", ".ent.gz", ".gz", ".pdb", ".PDB", ".pdb.gz", ""];
+
+/// Attempts to find a PDB file in a given directory.
+///
+/// Looks in the specified path for a file with a given PDB data, identified by
+/// a given PDB code. For a given 4-character ID (digit + 3 letters), the method checks
+/// the following possibilities:
+///
+/// - `given_path/1abc`
+/// - `given_path/1ABC`
+/// - `given_path/1abc.pdb`
+/// - `given_path/1ABC.pdb`
+/// - `given_path/1ABC.PDB`
+/// - `given_path/pdb1abc`
+/// - `given_path/PDB1ABC`
+/// - `given_path/pdb1abc.ent`
+/// - `given_path/PDB1ABC.ent`
+/// - `given_path/pdb1abc.ent.gz`
+/// - `given_path/PDB1ABC.ent.gz`
+/// - `given_path/ab/pdb1abc.ent`
+/// - `given_path/ab/pdb1abc.ent.gz`
+///
+/// where `1abc` and `1ABC` denote a lower-case and an upper-case PDB ID, respectively. Returns
+/// the name of the PDB file that was found or an error.
+///
+/// # Arguments
+///
+/// * `pdb_code` - A four-character PDB ID.
+/// * `pdb_path` - Directory to look into.
+///
+/// # Example
+/// ```
+/// use bioshell_pdb::find_pdb_file_name;
+/// let result = find_pdb_file_name("2gb1", "./tests/test_files/");
+/// assert!(result.is_ok());
+/// assert_eq!(result.unwrap(), "./tests/test_files/2gb1.pdb");
+/// ```
+///
+pub fn find_pdb_file_name(pdb_code: &str, pdb_path: &str) -> Result<String, io::Error> {
+    find_deposit_file_name(pdb_code, pdb_path, &PDB_PREFIXES, &PDB_SUFFIXES)
 }
 
 #[cfg(test)]

@@ -9,6 +9,7 @@ use crate::calc::Vec3;
 use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError, MissingCifDataKey};
 use bioshell_io::open_file;
 use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
+use crate::crate_utils::find_deposit_file_name;
 use crate::PDBError::{CifParsingError, IncorrectCompoundTypeName};
 
 pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
@@ -129,6 +130,47 @@ pub fn is_cif_file(file_path: &str) -> io::Result<bool> {
     }
 
     return Ok(false);
+}
+
+static CIF_PREFIXES: [&str; 2] = ["", "pdb"];
+static CIF_SUFFIXES: [&str; 6] = [".cif", ".cif.gz", ".gz", ".CIF", ".CIF.gz", ""];
+
+/// Attempts to find a CIF file in a given directory.
+///
+/// Looks in the specified path for a file with a given PDB data, identified by
+/// a given PDB code. For a given 4-character ID (digit + 3 letters), the method checks
+/// the following possibilities:
+///
+/// - `given_path/1abc`
+/// - `given_path/1ABC`
+/// - `given_path/1abc.cif`
+/// - `given_path/1ABC.cif`
+/// - `given_path/1ABC.CIF`
+/// - `given_path/pdb1abc`
+/// - `given_path/PDB1ABC`
+/// - `given_path/pdb1abc.cif`
+/// - `given_path/pdb1abc.cif.gz`
+/// - `given_path/ab/pdb1abc.cif`
+/// - `given_path/ab/pdb1abc.cif.gz`
+///
+/// where `1abc` and `1ABC` denote a lower-case and an upper-case PDB ID, respectively. Returns
+/// the name of the PDB file that was found or an error.
+///
+/// # Arguments
+///
+/// * `pdb_code` - A four-character PDB ID.
+/// * `pdb_path` - Directory to look into.
+///
+/// # Example
+/// ```
+/// use bioshell_pdb::find_cif_file_name;
+/// let result = find_cif_file_name("2gb1", "./tests/test_files/");
+/// assert!(result.is_ok());
+/// assert_eq!(result.unwrap(), "./tests/test_files/2gb1.cif");
+/// ```
+///
+pub fn find_cif_file_name(pdb_code: &str, pdb_path: &str) -> Result<String, io::Error> {
+    find_deposit_file_name(pdb_code, pdb_path, &CIF_PREFIXES, &CIF_SUFFIXES)
 }
 
 /// A helper function to create an atom based on given string tokens
