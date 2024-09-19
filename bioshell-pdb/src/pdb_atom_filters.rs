@@ -290,14 +290,28 @@ impl PdbAtomPredicate for ByResidueRange {
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
 /// let bb = IsBackbone;
 /// let bb_count = strctr.atoms().iter().filter(|b| bb.check(b)).count();
-/// # assert_eq!(bb_count, 4);
+/// assert_eq!(bb_count, 4);        // there are 4 backbone atoms in the structure
+/// let mut a = PdbAtom::new();
+/// a.name = String::from("N");
+/// assert!(bb.check(&a));          // the predicate can handle incorrectly padded atom names
 /// ```
 pub struct IsBackbone;
 
+macro_rules! format_name {
+    ($name:expr) => {
+        match $name.len() {
+            4 => $name,                    // Return the reference if the length is 4
+            _ => Box::leak(format!("{:^4}", $name).into_boxed_str()), // Format and leak the reference
+        }
+    };
+}
+
 impl PdbAtomPredicate for IsBackbone {
     fn check(&self, a: &PdbAtom) -> bool {
-        a.name == " CA " || a.name == " C  " || a.name == " N  " || a.name == " O  " || a.name == " H  " || a.name == " OXT"
-            || a.name == " HA " || a.name == " HA2" || a.name == " HA3"
+
+        let name: &str = format_name!(&a.name);
+        name == " CA " || name == " C  " || name == " N  " || name == " O  " || name == " H  " || name == " OXT"
+            || name == " HA " || name == " HA2" || name == " HA3"
     }
 }
 
@@ -314,11 +328,18 @@ impl PdbAtomPredicate for IsBackbone {
 /// let ca = IsCA;
 /// let ca_count = strctr.atoms().iter().filter(|a| ca.check(a)).count();
 /// # assert_eq!(ca_count, 1);
+///
+/// let mut a = PdbAtom::new();
+/// a.name = String::from("CA");
+/// assert!(ca.check(&a));          // the predicate can handle incorrectly padded atom names
 /// ```
 pub struct IsCA;
 
 impl PdbAtomPredicate for IsCA {
-    fn check(&self, a: &PdbAtom) -> bool { a.name == " CA " }
+    fn check(&self, a: &PdbAtom) -> bool {
+        let name: &str = format_name!(&a.name);
+        name == " CA "
+    }
 }
 
 /// Returns `true` if an atom is a hydrogen.

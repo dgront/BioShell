@@ -5,9 +5,13 @@ use crate::ResidueId;
 /// Errors that may appear while using the bioshell-pdb crate
 #[derive(Debug, Error)]
 pub enum PDBError {
+    #[error("Invalid file format: {file_name}")]
+    /// A given file is neither a PDB nor an mmCIF file
+    InvalidFileFormat {file_name: String},
+
     #[error("Invalid PDB file format: {broken_pdb_line}")]
     /// Invalid format of a PDB line
-    InvalidFormat {broken_pdb_line: String},
+    InvalidPdbLineFormat {broken_pdb_line: String},
 
     #[error("General I/O error occurred while reading a PDB or mmCIF file")]
     /// I/O error occurred while reading a PDB or a CIF file
