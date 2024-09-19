@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io;
 use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info, warn};
@@ -101,6 +102,35 @@ pub fn load_cif_file(file_name: &str) -> Result<Structure, PDBError> {
     return load_cif_reader(reader);
 }
 
+/// Returns true if a given file is in CIF format.
+///
+/// This function simply tests whether the first non-empty data line of a given file starts with ``data_``,
+/// Otherwise, it returns ``false``. When the file can't be open returns I/O error.
+///
+/// # Examples
+/// ```
+/// use bioshell_cif::is_cif_file;
+/// let try_2gb1 = is_cif_file("./tests/test_files/2gb1.cif");
+/// assert!(try_2gb1.is_ok());
+/// assert!(try_2gb1.unwrap());
+/// let try_2gb1 = is_cif_file("./tests/test_files/2gb1.pdb");
+/// assert!(try_2gb1.is_ok());
+/// assert!(!try_2gb1.unwrap());
+/// ```
+pub fn is_cif_file(file_path: &str) -> io::Result<bool> {
+    let reader = open_file(file_path)?;
+
+    let cif_starts_with = ["data_"];
+    for line in reader.lines() {
+        let line = line?;
+        if !line.is_empty() {
+            return Ok(cif_starts_with.iter().any(|s|line.starts_with(s)));
+        }
+    }
+
+    return Ok(false);
+}
+
 /// A helper function to create an atom based on given string tokens
 fn create_pdb_atom(tokens: &[&str; 15], pos: Vec3) -> Result<PdbAtom, CifError> {
 
@@ -151,3 +181,4 @@ fn load_residue_types(cif_data_block: &CifData) -> Result<(), PDBError>{
     }
     Ok(())
 }
+

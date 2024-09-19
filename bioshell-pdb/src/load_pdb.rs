@@ -31,7 +31,7 @@ use crate::pdb_parsing_error::PDBError;
 ///
 /// let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
 /// let seq = strctr.sequence("A");
-/// assert_eq!(seq.to_string(), "MTYKLI");
+/// assert_eq!(seq.to_string(100), "MTYKLI");
 /// ```
 pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
 
@@ -207,7 +207,7 @@ fn parse_seqres_records(seqres_records: Vec<String>) -> HashMap<String, Sequence
 ///
 /// This function simply tests whether the first data line of a given file starts with ``HEADER``,
 /// ``REMARK``, ``ATOM`` or ``HETATM``.
-/// Otherwise it returns ``false``. When the file can't be open returns I/O error..
+/// Otherwise, it returns ``false``. When the file can't be open returns I/O error..
 pub fn is_pdb_file(file_path: &str) -> io::Result<bool> {
     let reader = open_file(file_path)?;
 
@@ -235,8 +235,8 @@ mod tests {
         ];
 
         let sequences = parse_seqres_records(input);
-        assert_eq!(sequences["A"].to_string(), "AVCLMERGYFN".to_string());
-        assert_eq!(sequences["B"].to_string(), "KTQ".to_string());
+        assert_eq!(sequences["A"].to_string(100), "AVCLMERGYFN".to_string());
+        assert_eq!(sequences["B"].to_string(100), "KTQ".to_string());
     }
 }
 
