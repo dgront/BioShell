@@ -36,7 +36,7 @@ pub use cif_errors::*;
 use cif_line_iterator::CifLineIterator;
 
 use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::io;
 use std::io::{BufRead, Lines};
 use std::ops::{Index, IndexMut};
@@ -371,6 +371,30 @@ impl CifData {
     /// ```
     pub fn get_item<T: FromStr>(&self, key: &str) -> Option<T> {
         self.data_items.get(key).and_then(|value| value.parse().ok())
+    }
+
+    /// Returns a data item value assigned to a given key or a default value.
+    ///
+    /// # Example
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_cif::read_cif_buffer;
+    /// let cif_block = "data_1AZP
+    /// _entry.id                                        1AZP
+    /// _refine.ls_d_res_high                            1.6
+    /// ";
+    /// let mut reader = BufReader::new(cif_block.as_bytes());
+    /// let blocks = read_cif_buffer(&mut reader).unwrap();
+    /// let data_block = &blocks[0];
+    /// assert_eq!(data_block.get_item_or_default("_entry.id", "1ABC".to_string()), "1AZP".to_string());
+    /// assert_eq!(data_block.get_item_or_default("_refine.ls_d_res_lo", 1.8), 1.8);
+    /// ```
+    pub fn get_item_or_default<T: FromStr>(&self, key: &str, default_val: T) -> T where <T as FromStr>::Err: Debug {
+        if let Some(value) = self.data_items.get(key) {
+            value.parse().unwrap()
+        } else {
+            default_val
+        }
     }
 
     /// Read access to data items of this block
