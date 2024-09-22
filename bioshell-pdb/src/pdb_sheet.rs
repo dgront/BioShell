@@ -129,7 +129,7 @@ impl PdbSheet {
                 let helix = new_sheet(&tokens)?;
                 strands.push(helix);
             }
-            return Ok(strands);
-        } else { Err(CifParsingError{ 0: MissingCifLoopKey {item_key: "_struct_sheet_range.id".to_string()} } ) }
+        }
+        return Ok(strands);
     }
 }

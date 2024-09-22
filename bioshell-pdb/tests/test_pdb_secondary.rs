@@ -13,7 +13,7 @@ mod tests {
         assert_eq!(helices.len(), 1);
         let helix = &helices[0];
         assert_eq!(helix.length, 15);
-        assert_eq!(helix.ser_num, 1);
+        assert_eq!(helix.ser_num, "1");
         assert_eq!(helix.init_chain_id, "A");
         assert_eq!(helix.end_chain_id, "A");
         assert_eq!(helix.init_seq_num, 22);

@@ -10,10 +10,11 @@ use bioshell_cif::CifError::{ItemParsingError, MissingCifDataKey};
 ///
 /// Refer to the [official documentation of the `HELIX` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect5.html#HELIX)
 pub struct PdbHelix {
-    /// Serial number of the helix.
+
+    /// Unique identifier for the helix.
     ///
-    /// As defined by the PDB standard, it should start at 1  and increases incrementally.
-    pub ser_num: i32,
+    /// In a PDB file it is an integer number, but in a CIF file it is a string.
+    pub ser_num: String,
     /// Helix  identifier.
     ///
     /// In addition to a serial number, each helix is given an alphanumeric character helix identifier.
@@ -106,7 +107,7 @@ impl PdbHelix {
     pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<PdbHelix>, PDBError> {
         fn new_helix(tokens: &[&str]) -> Result<PdbHelix, CifError> {
             Ok(PdbHelix {
-                ser_num: 0,
+                ser_num: "1".to_string(),
                 helix_id: tokens[0].to_string(),
                 init_res_name: tokens[1].to_string(),
                 init_chain_id: tokens[2].to_string(),
@@ -144,7 +145,7 @@ impl PdbHelix {
                 let mut end_i_code = value_or_missing_key_pdb_error!(cif_data, "_struct_conf.pdbx_end_PDB_ins_code", char);
                 if end_i_code == '?' || end_i_code == '.' { end_i_code = ' '; }
                 helices.push(PdbHelix {
-                    ser_num: cif_data.get_item_or_default("_struct_conf.pdbx_PDB_helix_id", 0),
+                    ser_num: cif_data.get_item_or_default("_struct_conf.pdbx_PDB_helix_id", "1".to_string()),
                     helix_id: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.id", String),
                     init_res_name: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.beg_label_comp_id", String),
                     init_chain_id: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.beg_label_asym_id", String),
