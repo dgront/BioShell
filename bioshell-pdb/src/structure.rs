@@ -11,7 +11,7 @@ use crate::pdb_atom::{PdbAtom, same_residue_atoms};
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
 use crate::pdb_parsing_error::PDBError;
 use crate::pdb_parsing_error::PDBError::{NoSuchAtom, NoSuchResidue};
-use crate::{Entity, ExperimentalMethod, ResidueId, UnitCell};
+use crate::{Entity, ExperimentalMethod, ResidueId, SecondaryStructureTypes, UnitCell};
 use crate::calc::Vec3;
 use crate::PDBError::WrongAtomsNumberInModel;
 use crate::secondary_structure::SecondaryStructure;
@@ -455,10 +455,10 @@ impl Structure {
     /// Residues listed after the `TER` record are not included in the sequence returned by this method
     pub fn secondary(&self, chain_id: &str) -> SecondaryStructure {
         let ter_resid = self.ter_residue(chain_id);
-        let mut sec: Vec<u8> = vec![];
+        let mut sec: Vec<SecondaryStructureTypes> = vec![];
         for i_res in 0..self.residue_ids.len() {
             if self.residue_ids[i_res].chain_id == chain_id {
-                sec.push(self.atoms[self.atoms_for_residueid[i_res].start].secondary_struct_type);
+                sec.push(self.atoms[self.atoms_for_residueid[i_res].start].secondary_struct_type.clone());
             }
             if self.residue_ids[i_res]==ter_resid { break }
         }

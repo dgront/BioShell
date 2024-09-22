@@ -125,7 +125,10 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
         let to = helices[i].end_res_id();
         let check = ByResidueRange::new(from,to);
         for a in &mut pdb_structure.atoms {
-            if check.check(a) { a.secondary_struct_type = helices[i].helix_class }
+            if check.check(a) {
+                a.secondary_struct_type
+                    = SecondaryStructureTypes::from_pdb_class(helices[i].helix_class as usize)
+            }
         }
     }
     for i in 0..strands.len() {
@@ -133,7 +136,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
         let to = strands[i].end_res_id();
         let check = ByResidueRange::new(from,to);
         for a in &mut pdb_structure.atoms {
-            if check.check(a) { a.secondary_struct_type = SecondaryStructureTypes::Strand as u8 }
+            if check.check(a) { a.secondary_struct_type = SecondaryStructureTypes::Strand  }
         }
     }
 

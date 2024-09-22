@@ -92,14 +92,14 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     for h in &helices {
         let range = ByResidueRange::new(h.init_res_id(), h.end_res_id());
         pdb_structure.atoms.iter_mut().for_each(|a| if range.check(a) {
-            a.secondary_struct_type = SecondaryStructureTypes::RightAlphaHelix as u8
+            a.secondary_struct_type = SecondaryStructureTypes::RightAlphaHelix
         });
     }
     let strands = PdbSheet::from_cif_data(cif_data_block)?;
     for s in &strands {
         let range = ByResidueRange::new(s.init_res_id(), s.end_res_id());
         pdb_structure.atoms.iter_mut().for_each(|a| if range.check(a) {
-            a.secondary_struct_type = SecondaryStructureTypes::Strand as u8
+            a.secondary_struct_type = SecondaryStructureTypes::Strand
         });
     }
 
@@ -211,7 +211,7 @@ fn create_pdb_atom(tokens: &[&str; 15], pos: Vec3) -> Result<PdbAtom, CifError> 
     let element = Some(tokens[12].to_string());
     let charge = None;
     let is_hetero_atom = false;
-    let secondary_struct_type: u8 = 12;
+    let secondary_struct_type = SecondaryStructureTypes::Coil;
     let a = PdbAtom {
         serial, name, alt_loc, res_name,
         chain_id, res_seq, i_code, pos, occupancy, temp_factor,

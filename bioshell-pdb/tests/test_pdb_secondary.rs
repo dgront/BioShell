@@ -2,7 +2,7 @@
 mod tests {
     use std::io::BufReader;
     use bioshell_cif::read_cif_buffer;
-    use bioshell_pdb::{load_cif_reader, PdbHelix, PdbSheet};
+    use bioshell_pdb::{load_cif_reader, PdbHelix, PdbSheet, SecondaryStructure};
 
     #[test]
     fn helices_from_cif() {
@@ -53,5 +53,12 @@ mod tests {
 
         assert_eq!(strctr.secondary("A").to_string(),
                    "CEEEEEECCCCCCEEEEEECCHHHHHHHHHHHHHHHCCCCCEEEEECCCCEEEEEC");
+    }
+
+    #[test]
+    fn create_secondary_structure() {
+        let sec_str = SecondaryStructure::new(10);
+        assert_eq!(sec_str.len(), 10);
+        assert_eq!(sec_str.hec_code(5), b'C');
     }
 }
