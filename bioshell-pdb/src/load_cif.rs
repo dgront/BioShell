@@ -4,12 +4,13 @@ use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info, warn};
 use bioshell_cif::{cif_columns_by_name, CifLoop, read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value, CifData};
-use crate::{ExperimentalMethod, PdbAtom, PDBError, Structure, UnitCell, value_or_missing_key_pdb_error};
+use crate::{ExperimentalMethod, PdbAtom, PDBError, PdbHelix, PdbSheet, SecondaryStructureTypes, Structure, UnitCell, value_or_missing_key_pdb_error};
 use crate::calc::Vec3;
 use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError, MissingCifDataKey};
 use bioshell_io::open_file;
 use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
 use crate::crate_utils::find_deposit_file_name;
+use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::PDBError::{CifParsingError, IncorrectCompoundTypeName};
 
 pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
@@ -84,6 +85,23 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     pdb_structure.resolution = cif_data_block.get_item("_refine.ls_d_res_high");
     pdb_structure.r_factor = cif_data_block.get_item("_refine.ls_R_factor_obs");
     pdb_structure.r_free = cif_data_block.get_item("_refine.ls_R_factor_R_free");
+
+    // todo: fix the helix type! Now it's only an alpha helix
+    // --- secondary structure
+    let helices = PdbHelix::from_cif_data(cif_data_block)?;
+    for h in &helices {
+        let range = ByResidueRange::new(h.init_res_id(), h.end_res_id());
+        pdb_structure.atoms.iter_mut().for_each(|a| if range.check(a) {
+            a.secondary_struct_type = SecondaryStructureTypes::RightAlphaHelix as u8
+        });
+    }
+    let strands = PdbSheet::from_cif_data(cif_data_block)?;
+    for s in &strands {
+        let range = ByResidueRange::new(s.init_res_id(), s.end_res_id());
+        pdb_structure.atoms.iter_mut().for_each(|a| if range.check(a) {
+            a.secondary_struct_type = SecondaryStructureTypes::Strand as u8
+        });
+    }
 
     // --- crystallography parameters
     pdb_structure.unit_cell = if let Ok(uc) = UnitCell::from_cif_data(cif_data_block) { Some(uc) } else { None };
