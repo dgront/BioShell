@@ -104,7 +104,7 @@ impl Entity {
     /// # Example
     /// ```
     /// use bioshell_pdb::{Entity, EntitySource, EntityType};
-    /// let entity = Entity::from_strings("1", "HIV protease", "polymer", "man", 10916.0);
+    /// let entity = Entity::from_strings("1", "HIV protease", "polymer", "man", 10916.0).unwrap();
     /// assert_eq!(entity.id(), "1");
     /// assert_eq!(entity.description(), "HIV protease");
     /// assert_eq!(entity.entity_type(), EntityType::Polymer);
@@ -155,7 +155,7 @@ impl Entity {
     /// 1 polymer syn "DNA (5'-CD(*AP*AP*AP*)-3')" 894.663
     /// 2 water   nat water                        18.015
     /// "#;
-    /// let data_block = &read_cif_buffer(&mut BufReader::new(input_cif.as_bytes()))[0];
+    /// let data_block = &read_cif_buffer(&mut BufReader::new(input_cif.as_bytes())).unwrap()[0];
     /// let entities = Entity::from_cif_data(data_block).unwrap();
     /// ```
     pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<Entity>, PDBError> {

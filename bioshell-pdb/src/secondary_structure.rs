@@ -7,7 +7,7 @@ use crate::SecondaryStructureTypes::{Coil, LeftAlphaHelix, LeftGammaHelix, LeftO
 /// [`SecondaryStructureTypes`](SecondaryStructureTypes) enum provides also the
 /// [`Coil`](Coil) type, which is not a secondary structure type per se,
 /// nevertheless is a necessary symbol to provide a secondary structure string for a polypeptide chain.
-#[repr(i8)]
+#[repr(u8)]
 #[derive(PartialEq, Debug)]
 pub enum SecondaryStructureTypes {
     RightAlphaHelix = 1,
@@ -23,7 +23,6 @@ pub enum SecondaryStructureTypes {
     Strand = 11,
     Coil = 12,
 }
-
 
 impl SecondaryStructureTypes {
     /// Returns a single byte in the 3-letter `HEC` code that describes this secondary structure element type
