@@ -95,7 +95,7 @@ impl PdbHelix {
     /// use std::io::BufReader;
     /// use bioshell_cif::read_cif_buffer;
     /// use bioshell_pdb::PdbHelix;
-    /// let cif_data = include_str!("tests/test_files/2gb1.cif");
+    /// let cif_data = include_str!("../tests/test_files/2gb1.cif");
     /// let reader = BufReader::new(cif_data.as_bytes());
     /// let cif_data = read_cif_buffer(reader).unwrap();
     /// let helices = PdbHelix::from_cif_data(&cif_data[0]).unwrap();

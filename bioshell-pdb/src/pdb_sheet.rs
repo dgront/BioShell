@@ -1,4 +1,7 @@
-use crate::ResidueId;
+use bioshell_cif::{cif_columns_by_name, CifData, CifError, CifLoop, entry_has_value, parse_item_or_error};
+use bioshell_cif::CifError::{MissingCifLoopKey, ItemParsingError};
+use crate::{PDBError, ResidueId};
+use crate::PDBError::CifParsingError;
 
 /// Corresponds to a SHEET record.
 ///
@@ -81,4 +84,52 @@ impl PdbSheet {
     /// ```
     pub fn end_res_id(&self) -> ResidueId { ResidueId::new(&self.end_chain_id, self.end_seq_num, self.end_i_code)}
 
+    /// Lists all beta-sheets found in a given structure
+    ///
+    /// # Example
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_cif::read_cif_buffer;
+    /// use bioshell_pdb::PdbSheet;
+    /// let cif_data = include_str!("../tests/test_files/2gb1.cif");
+    /// let reader = BufReader::new(cif_data.as_bytes());
+    /// let cif_data = read_cif_buffer(reader).unwrap();
+    /// let sheets = PdbSheet::from_cif_data(&cif_data[0]).unwrap();
+    /// assert_eq!(sheets.len(), 4);
+    /// ```
+    pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<PdbSheet>, PDBError> {
+        fn new_sheet(tokens: &[&str]) -> Result<PdbSheet, CifError> {
+            Ok(PdbSheet {
+                strand: parse_item_or_error!(tokens[1], i32),
+                sheet_id: tokens[0].to_string(),
+                num_strands: 0,
+                init_res_name: tokens[2].to_string(),
+                init_chain_id: tokens[3].to_string(),
+                init_seq_num: parse_item_or_error!(tokens[4], i32),
+                init_i_code: if !entry_has_value(tokens[5]) { ' ' } else { tokens[5].chars().nth(0).unwrap() },
+                end_res_name: tokens[6].to_string(),
+                end_chain_id: tokens[7].to_string(),
+                end_seq_num: parse_item_or_error!(tokens[8], i32),
+                end_i_code: if !entry_has_value(tokens[9]) { ' ' } else { tokens[9].chars().nth(0).unwrap() },
+                sense: 0,
+            })
+        }
+        let mut strands: Vec<PdbSheet> = Vec::new();
+        if let Some(strands_loop) = cif_data.first_loop("_struct_sheet_range.id") {
+            cif_columns_by_name!(EntityData, "_struct_sheet_range.sheet_id","_struct_sheet_range.id",
+                "_struct_sheet_range.beg_label_comp_id","_struct_sheet_range.beg_label_asym_id",
+                "_struct_sheet_range.beg_label_seq_id","_struct_sheet_range.pdbx_beg_PDB_ins_code",
+                "_struct_sheet_range.end_label_comp_id","_struct_sheet_range.end_label_asym_id",
+                "_struct_sheet_range.end_label_seq_id","_struct_sheet_range.pdbx_end_PDB_ins_code",
+            );
+            let extractor = EntityData::new(strands_loop)?;
+            let mut tokens = [""; 10];
+            for row in strands_loop.rows() {
+                extractor.data_items(&row, &mut tokens);
+                let helix = new_sheet(&tokens)?;
+                strands.push(helix);
+            }
+            return Ok(strands);
+        } else { Err(CifParsingError{ 0: MissingCifLoopKey {item_key: "_struct_sheet_range.id".to_string()} } ) }
+    }
 }
