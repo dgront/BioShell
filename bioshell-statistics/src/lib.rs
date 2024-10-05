@@ -18,6 +18,7 @@ mod histograms;
 mod distributions;
 mod descriptive;
 mod autocorrelation;
+mod histogram_nd;
 
 pub use descriptive::{OnlineMultivariateStatistics, OnlineMultivariateWeighted, QuantileP2,
                       avg, avg_weighted, var, var_weighted, cov, cov_weighted, avg_var_weighted};
@@ -25,3 +26,4 @@ pub use descriptive::{OnlineMultivariateStatistics, OnlineMultivariateWeighted, 
 pub use histograms::{Histogram};
 pub use distributions::{NormalDistribution, MultiNormalDistribution, Estimable, Distribution};
 pub use autocorrelation::{autocorrelate_vectors};
+pub use histogram_nd::{HistogramND};
