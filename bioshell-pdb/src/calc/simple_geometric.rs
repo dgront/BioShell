@@ -22,6 +22,10 @@ pub fn distance(ai: &PdbAtom, aj:&PdbAtom) -> f64 {
     return ai.pos.distance_to(&aj.pos);
 }
 
+/// Computes the Phi dihedral angle for a given amino acid residue.
+///
+/// Returns a [`PDBError::NoSuchAtom`](PDBError::NoSuchAtom) if the requested residue
+/// or the preceding one misses any of the required atoms.
 ///
 /// # Example
 /// ```
@@ -50,6 +54,8 @@ pub fn phi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, PDBError> {
 
 /// Computes the Psi dihedral angle for a given amino acid residue.
 ///
+/// Returns a [`PDBError::NoSuchAtom`](PDBError::NoSuchAtom) if the requested residue
+/// or the following one misses any of the required atoms.
 /// # Example
 /// ```
 /// use bioshell_pdb::{assert_delta, PdbAtom, ResidueId, Structure};
