@@ -65,7 +65,7 @@ pub fn phi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, PDBError> {
 /// ```
 pub fn psi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, PDBError> {
     let i_residue = strctr.residue_pos(which_res)?;
-    if i_residue == strctr.atoms_for_residueid.len() - 1 { return Ok(0.0); }
+    if i_residue == strctr.atoms_for_residue_id.len() - 1 { return Ok(0.0); }
     let next_res = strctr.residue_ids[i_residue + 1].clone();
     let n = strctr.atom(&which_res," N  ")?;
     let ca = strctr.atom(&which_res," CA ")?;

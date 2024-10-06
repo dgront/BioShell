@@ -117,10 +117,10 @@ pub struct Structure {
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
     pub(crate) model_coordinates: Vec<Vec<Vec3>>,
-    // id of each residue given it's index
+    /// id of each residue, in the order of their appearance in the structure;
     pub(crate) residue_ids: Vec<ResidueId>,
-    // range of atoms that belong to i-th residue
-    pub(crate) atoms_for_residueid: Vec<Range<usize>>,
+    /// range of atoms that belong to i-th residue; order is the same as in `residue_ids`
+    pub(crate) atoms_for_residue_id: Vec<Range<usize>>,
     pub(crate) entity_sequences: HashMap<String, Sequence>,
     entities: HashMap<String, Entity>,
 }
@@ -142,7 +142,7 @@ impl Structure {
             atoms: vec![],
             model_coordinates: vec![],
             residue_ids: vec![],
-            atoms_for_residueid: vec![],
+            atoms_for_residue_id: vec![],
             entity_sequences: Default::default(),
             entities: Default::default(),
         }
@@ -259,7 +259,7 @@ impl Structure {
     /// ```
     pub fn atom(&self, res_id: &ResidueId, name: &str) -> Result<&PdbAtom, PDBError> {
         let i_residue = self.residue_pos(res_id)?;
-        let range = &self.atoms_for_residueid[i_residue];
+        let range = &self.atoms_for_residue_id[i_residue];
         for i in range.start..range.end {
             if self.atoms[i].name == name { return Ok(&self.atoms[i]) }
         }
@@ -269,7 +269,7 @@ impl Structure {
     /// Provides mutable access to an atom
     pub fn atom_mut(&mut self, res_id: &ResidueId, name: &str) -> Result<&mut PdbAtom, PDBError> {
         let i_residue = self.residue_pos(res_id)?;
-        let range = &self.atoms_for_residueid[i_residue];
+        let range = &self.atoms_for_residue_id[i_residue];
         for i in range.start..range.end {
             if self.atoms[i].name == name { return Ok(&mut self.atoms[i]) }
         }
@@ -330,10 +330,10 @@ impl Structure {
     pub fn atoms_in_residue(&self, residue_id: &ResidueId) -> Result<impl Iterator<Item = &PdbAtom>, PDBError> {
         match self.residue_ids.binary_search(residue_id) {
             Ok(pos) =>  {
-                let range = self.atoms_for_residueid[pos].clone();
+                let range = self.atoms_for_residue_id[pos].clone();
                 Ok(range.map(|i| &self.atoms[i]))
             },
-            Err(_) => Err(PDBError::NoSuchResidue{res_id: residue_id.clone()})
+            Err(_) => Err(NoSuchResidue{res_id: residue_id.clone()})
         }
     }
 
@@ -387,9 +387,8 @@ impl Structure {
     /// ```
     pub fn residue_ids(&self) -> &Vec<ResidueId> { &self.residue_ids }
 
-    /// Returns the type of a residue.
+    /// Returns the chemical type of residue as a [`ResidueType`] object.
     ///
-    /// The type is provided as a [`ResidueType`] object.
     /// ```
     /// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
     /// use bioshell_seq::chemical::StandardResidueType;
@@ -410,7 +409,7 @@ impl Structure {
                 return Err(PDBError::UnknownResidueType { res_type: atom.res_name.clone()});
             }
         } else {                        // --- atom doesn't exist
-            return Err(PDBError::NoSuchResidue { res_id: res_id.clone() });
+            return Err(NoSuchResidue { res_id: res_id.clone() });
         }
     }
 
@@ -437,7 +436,7 @@ impl Structure {
         let mut aa: Vec<u8> = vec![];
         for i_res in 0..self.residue_ids.len() {
             if self.residue_ids[i_res].chain_id == chain_id {
-                let resname = &self.atoms[self.atoms_for_residueid[i_res].start].res_name;
+                let resname = &self.atoms[self.atoms_for_residue_id[i_res].start].res_name;
                 if let Some(restype) = ResidueTypeManager::get().by_code3(resname) {
                     aa.push(u8::try_from(restype.parent_type.code1()).unwrap());
                 } else {
@@ -458,7 +457,7 @@ impl Structure {
         let mut sec: Vec<SecondaryStructureTypes> = vec![];
         for i_res in 0..self.residue_ids.len() {
             if self.residue_ids[i_res].chain_id == chain_id {
-                sec.push(self.atoms[self.atoms_for_residueid[i_res].start].secondary_struct_type.clone());
+                sec.push(self.atoms[self.atoms_for_residue_id[i_res].start].secondary_struct_type.clone());
             }
             if self.residue_ids[i_res]==ter_resid { break }
         }
@@ -530,18 +529,19 @@ impl Structure {
     }
 
     pub(crate) fn setup_atom_ranges(&mut self) {
-        self.atoms_for_residueid.clear();
+        self.atoms_for_residue_id.clear();
+        self.residue_ids.clear();
         let mut first_of_res: usize = 0;
-        let mut res_id = ResidueId::try_from(&self.atoms[0]).unwrap();
+        let mut res_id = ResidueId::try_from(&self.atoms[0]).unwrap();  // never fails
         for i_atom in 1..self.atoms.len() {
             if ! same_residue_atoms(&self.atoms[first_of_res], &self.atoms[i_atom]) {
-                self.atoms_for_residueid.push(first_of_res..i_atom);
+                self.atoms_for_residue_id.push(first_of_res..i_atom);
                 self.residue_ids.push(res_id);
                 first_of_res = i_atom;
                 res_id = ResidueId::try_from(&self.atoms[first_of_res]).unwrap();
             }
         }
-        self.atoms_for_residueid.push(first_of_res..self.atoms.len());
+        self.atoms_for_residue_id.push(first_of_res..self.atoms.len());
         self.residue_ids.push(res_id);
     }
 

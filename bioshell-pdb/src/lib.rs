@@ -28,6 +28,7 @@ mod pdb_sheet;
 mod pdb_atom;
 mod assertions;
 pub mod pdb_atom_filters;
+pub mod residue_filters;
 pub mod calc;
 
 mod residue_id;

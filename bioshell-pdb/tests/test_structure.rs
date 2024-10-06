@@ -2,7 +2,7 @@ use std::io::BufReader;
 use bioshell_pdb::{load_pdb_reader, PdbAtom, ResidueId, Structure};
 
 #[allow(non_upper_case_globals)]
-const lines:  [&str;9] = [
+const lines_ca:  [&str;9] = [
     "ATOM    514  CA  MET A  60      26.532  28.200  28.365  1.00 17.85           N",
     "ATOM    515  CA  CYS A  61      25.790  28.757  29.513  1.00 16.12           C",
     "ATOM    516  CA  GLY A  62      26.891  29.054  30.649  1.00 15.28           C",
@@ -13,15 +13,39 @@ const lines:  [&str;9] = [
     "ATOM    516  CA  CYS B  63      26.891  29.054  30.649  1.00 15.28           C",
     "ATOM    518  CA  ALW B  64      25.155  27.554  29.987  1.00 21.91           C"];
 
+#[allow(non_upper_case_globals)]
+const  lines_ala: [&str; 5] = [
+    "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+    "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C",
+    "ATOM    516  C   ALA A  69      26.891  29.054  30.649  1.00 15.28           C",
+    "ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O",
+    "ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C",
+];
+
 #[test]
 fn test_sequence_from_structure() {
-    let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    let atoms: Vec<PdbAtom> = lines_ca.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     let strctr = Structure::from_iterator("1xyz", atoms.iter());
     let seq = strctr.sequence("A");
     assert_eq!(seq.to_string(80), "MCGIA");
 
     let seq = strctr.sequence("B");
     assert_eq!(seq.to_string(80), "MACX");
+}
+
+#[test]
+fn struct_from_pushed_atoms() {
+    let mut strctr = Structure::new("1xyz");
+    for line in lines_ala {
+        let atom = PdbAtom::from_atom_line(line);
+        strctr.push_atom(atom);
+    }
+    let seq = strctr.sequence("A");
+    assert_eq!(seq.to_string(80), "A");
+
+    let ca_result = strctr.atom(&ResidueId::new("A", 69, ' '), " CA ");
+    let ca = ca_result.unwrap();
+    assert_eq!(ca.serial, 515);
 }
 
 #[allow(non_upper_case_globals)]
