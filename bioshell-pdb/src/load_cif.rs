@@ -195,7 +195,7 @@ pub fn find_cif_file_name(pdb_code: &str, pdb_path: &str) -> Result<String, io::
 fn create_pdb_atom(tokens: &[&str; 15], pos: Vec3) -> Result<PdbAtom, CifError> {
 
     let serial = parse_item_or_error!(tokens[0], i32);
-    let name = tokens[1].to_string();
+    let name = format!("{:^4}", tokens[1]);
     let alt_loc = value_or_default(tokens[2], ' ');
     let res_name = tokens[3].to_string();
     let chain_id = tokens[4].to_string();
