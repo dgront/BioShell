@@ -21,6 +21,10 @@ pub enum PDBError {
     /// Residue corresponding to a given `res_id` could not be located
     NoSuchResidue {res_id: ResidueId},
 
+    #[error("Residue is a terminal one: {res_id}, proceeding or following residue is a terminal can't be located")]
+    /// Residue following or proceeding the given `res_id` could not be located
+    ResidueAtTerminus {res_id: ResidueId},
+
     #[error("Atom not found: {atom_name} in the residue {res_id}")]
     /// Atom named `atom_name` could not be located in a residue `res_id`
     NoSuchAtom {atom_name: String, res_id: ResidueId},
