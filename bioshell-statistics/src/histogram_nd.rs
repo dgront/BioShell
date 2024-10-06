@@ -46,7 +46,16 @@ impl<const N: usize> HistogramND<N> {
         }
     }
 
-    /// Inserts a value (observation) to this histogram
+    /// Inserts a new observation to this histogram
+    ///
+    /// # Examples
+    /// ```
+    /// use bioshell_statistics::HistogramND;
+    /// let mut h2 = HistogramND::<2>::by_bin_widths([0.1, 0.1]);
+    /// h2.insert([0.1, 0.1]);
+    /// let mut h5 = HistogramND::<5>::by_bin_widths([0.1, 0.1, 0.1, 0.1, 0.1]);
+    /// h5.insert([0.1, 0.3, 0.5, 0.7, 0.9]);
+    /// ```
     pub fn insert(&mut self, x: [f64; N]) {
         let bin_id = self.which_bin(&x);
         if let Some(count) = self.data.get_mut(&bin_id) {
