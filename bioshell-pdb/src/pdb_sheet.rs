@@ -34,32 +34,28 @@ pub struct PdbSheet {
     pub end_seq_num: i32,
     /// insertion code of the terminal residue  for this strand
     pub end_i_code: char,
-    /// sense of strand with respect to previous strand in the sheet.
-    ///
-    /// 0 if first strand, 1 if  parallel,and -1 if anti-parallel
-    pub sense: i8,
 }
 
 impl PdbSheet {
 
     /// Creates a [`PdbSheet`](PdbSheet) struct from a relevant PDB-formatted line.
-    pub fn from_sheet_line(line: &str) -> PdbSheet {
+    pub fn from_sheet_line(line: &str) -> Result<PdbSheet, PDBError> {
 
-        let strand = line[7..10].trim().parse().unwrap();
+        let strand = line[7..10].trim().parse().map_err(|_| PDBError::InvalidPdbLineFormat { broken_pdb_line: line.to_string() })?;
         let sheet_id = line[11..14].trim().to_string();
-        let num_strands = line[14..16].trim().parse().unwrap();
+        let num_strands = line[14..16].trim().parse().map_err(|_| PDBError::InvalidPdbLineFormat { broken_pdb_line: line.to_string() })?;
         let init_res_name = line[17..20].trim().to_string();
         let init_chain_id = line[21..22].to_string();
-        let init_seq_num = line[22..26].trim().parse().unwrap();
-        let init_i_code = line.chars().nth(26).unwrap();
+        let init_seq_num = line[22..26].trim().parse().map_err(|_| PDBError::InvalidPdbLineFormat { broken_pdb_line: line.to_string() })?;
+        let init_i_code = line.chars().nth(26).ok_or(PDBError::InvalidPdbLineFormat { broken_pdb_line: line.to_string() })?;
 
         let end_res_name = line[28..31].trim().to_string();
         let end_chain_id = line[32..33].to_string();
-        let end_seq_num = line[33..37].trim().parse().unwrap();
-        let end_i_code = line.chars().nth(37).unwrap();
-        let sense = line[38..40].trim().parse().unwrap();
-        PdbSheet { strand, sheet_id, num_strands, init_res_name, init_chain_id, init_seq_num, init_i_code,
-            end_res_name, end_chain_id, end_seq_num, end_i_code, sense }
+        let end_seq_num = line[33..37].trim().parse().map_err(|_| PDBError::InvalidPdbLineFormat { broken_pdb_line: line.to_string() })?;
+        let end_i_code = line.chars().nth(37).ok_or(PDBError::InvalidPdbLineFormat { broken_pdb_line: line.to_string() })?;
+
+        Ok(PdbSheet { strand, sheet_id, num_strands, init_res_name, init_chain_id, init_seq_num, init_i_code,
+            end_res_name, end_chain_id, end_seq_num, end_i_code })
     }
 
     /// Creates [`ResidueId`](ResidueId) struct that identifies the first residue of this helix
@@ -111,7 +107,6 @@ impl PdbSheet {
                 end_chain_id: tokens[7].to_string(),
                 end_seq_num: parse_item_or_error!(tokens[8], i32),
                 end_i_code: if !entry_has_value(tokens[9]) { ' ' } else { tokens[9].chars().nth(0).unwrap() },
-                sense: 0,
             })
         }
         let mut strands: Vec<PdbSheet> = Vec::new();

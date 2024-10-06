@@ -85,7 +85,7 @@ pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
             }
             "SHEET" => {
                 let strand = PdbSheet::from_sheet_line(&line);
-                strands.push(strand);
+                strands.push(strand?);
             }
             "ATOM" | "HETATM" => {
                 if model_id == 0 {
