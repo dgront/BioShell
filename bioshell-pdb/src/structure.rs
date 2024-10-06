@@ -73,8 +73,8 @@ use crate::secondary_structure::SecondaryStructure;
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
 /// let hoh = IsWater;
-/// strctr.atoms_mut().retain(|a| !hoh.check(&a));
-/// # assert_eq!(strctr.count_atoms(), 1);
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !hoh.check(&a)));
+/// # assert_eq!(new_strctr.count_atoms(), 1);
 /// ```
 /// Another example removes all hydrogen atoms:
 /// ```
@@ -84,8 +84,8 @@ use crate::secondary_structure::SecondaryStructure;
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    149  CA  GLY A   9      10.920  -2.963   0.070  1.00  0.18           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    153  HA2 GLY A   9      10.848  -2.565  -0.927  1.00  0.20           H"));
 /// let is_h = IsHydrogen;
-/// strctr.atoms_mut().retain(|a| !is_h.check(&a));
-/// # assert_eq!(strctr.count_atoms(), 1);
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !is_h.check(&a)));
+/// # assert_eq!(new_strctr.count_atoms(), 1);
 /// ```
 ///
 pub struct Structure {
@@ -280,7 +280,7 @@ impl Structure {
     pub fn atoms(&self) -> &Vec<PdbAtom> { &self.atoms }
 
     /// Provides mutable access to atoms of this  [`Structure`](Structure)
-    pub fn atoms_mut(&mut self) -> &mut Vec<PdbAtom> { &mut self.atoms }
+    // pub fn atoms_mut(&mut self) -> &mut Vec<PdbAtom> { &mut self.atoms }
 
     /// Provides an iterator over references to the keys of the `entities` map.
     ///
@@ -521,11 +521,12 @@ impl Structure {
     ///
     /// This method should be called after any change to the atoms of this Structure
     pub(crate) fn update(&mut self) {
+        if self.atoms.is_empty() { return; }
+
         // --- sort atoms, just in case
         self.sort();
         // --- assign atom range for every residue
         self.setup_atom_ranges();
-        // --- check if we've got all the atoms i.e. the number of keys in ranges is the same as the sice of residue_ids
     }
 
     pub(crate) fn setup_atom_ranges(&mut self) {

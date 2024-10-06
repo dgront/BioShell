@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::ops::Range;
 
 /// Provides N-dimensional histogram of N-dimensional data.
 ///

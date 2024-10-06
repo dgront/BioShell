@@ -360,8 +360,8 @@ impl PdbAtomPredicate for IsCA {
 /// ATOM    154  HA3 GLY A   9      11.018  -2.149   0.770  1.00  0.21           H";
 /// let mut strctr = load_pdb_reader(BufReader::new(gly_pdb.as_bytes())).unwrap();
 /// let is_h = IsHydrogen;
-/// strctr.atoms_mut().retain(|a| !is_h.check(a));
-/// # assert_eq!(strctr.count_atoms(), 4);
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !is_h.check(&a)));
+/// # assert_eq!(new_strctr.count_atoms(), 4);
 /// ```
 pub struct IsHydrogen;
 
@@ -385,9 +385,9 @@ impl PdbAtomPredicate for IsHydrogen {
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
 /// let hoh = IsWater;
-/// strctr.atoms_mut().retain(|a| !hoh.check(&a));
-/// # assert_eq!(strctr.count_atoms(), 1);
-/// # assert_eq!(strctr.atoms()[0].name, " CA ");
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !hoh.check(&a)));
+/// # assert_eq!(new_strctr.count_atoms(), 1);
+/// # assert_eq!(new_strctr.atoms()[0].name, " CA ");
 /// ```
 pub struct IsWater;
 
