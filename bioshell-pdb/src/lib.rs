@@ -28,6 +28,7 @@ mod pdb_sheet;
 mod pdb_atom;
 mod assertions;
 pub mod pdb_atom_filters;
+pub mod residue_filters;
 pub mod calc;
 
 mod residue_id;
@@ -37,10 +38,11 @@ mod remarks;
 mod unit_cell;
 mod load_cif;
 mod entity;
+pub(crate) mod crate_utils;
 
 pub use structure::Structure;
 pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
-pub use load_pdb::{load_pdb_file, load_pdb_reader, is_pdb_file};
+pub use load_pdb::{load_pdb_file, load_pdb_reader, is_pdb_file, find_pdb_file_name};
 pub use assertions::*;
 pub use pdb_parsing_error::PDBError;
 pub use pdb_atom::{PdbAtom, same_residue_atoms};
@@ -49,7 +51,7 @@ pub use pdb_helix::PdbHelix;
 pub use pdb_sheet::PdbSheet;
 pub use exp_data::{ExperimentalMethod};
 pub use unit_cell::{UnitCell};
-pub use load_cif::{load_cif_file, load_cif_reader};
+pub use load_cif::{load_cif_file, load_cif_reader, is_cif_file, find_cif_file_name};
 pub use entity::{EntitySource, EntityType, Entity, EntityPolyType};
 
 mod macros {

@@ -4,10 +4,10 @@ use log::info;
 use bioshell_cif::is_cif_file;
 use bioshell_io::{open_file, out_writer};
 use bioshell_pdb::{is_pdb_file, load_cif_file, load_pdb_file, Structure};
-use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, PdbAtomPredicate};
+use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, MatchAll, PdbAtomPredicate};
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[clap(author, version, about, long_about = None, arg_required_else_help = true)]
 /// Command line tool to operate on PDB files
 /// say pdb_tool -h to see options
 struct Args {
@@ -33,10 +33,10 @@ struct Args {
     #[clap(long, default_value="80")]
     out_fasta_width: usize,
     /// keep only selected chains
-    #[clap(long, group = "select")]
+    #[clap(long)]
     select_chain: Option<String>,
     /// keep only alpha-carbon atoms
-    #[clap(long, group = "select")]
+    #[clap(long)]
     select_ca: bool,
     /// keep only selected entities
     #[clap(long, group = "select")]
@@ -46,11 +46,13 @@ struct Args {
     verbose: bool
 }
 
-fn filter(strctr: &mut Structure, filters: &Vec<Box<dyn PdbAtomPredicate>>) {
-    for f in filters {
-        strctr.atoms_mut().retain(|a| f.check(&a));
-    }
+
+fn filter<F: PdbAtomPredicate>(strctr: &Structure, filter: &F) -> Structure {
+
+    let atoms_iter = strctr.atoms().iter().filter(|a| filter.check(a));
+    return Structure::from_iterator(&strctr.id_code, atoms_iter);
 }
+
 
 fn print_info(strctr: &Structure) {
     println!("id_code: {:?}",strctr.id_code);
@@ -119,16 +121,16 @@ fn main() {
     }
 
     // ---------- FILTER section
-    let mut filters: Vec<Box<dyn PdbAtomPredicate>> = vec![];
+    let mut multi_filter = MatchAll::new();
     if let Some(chain_id) = args.select_chain {
-        filters.push(Box::new(ByChain::new(&chain_id)));
+        info!("Selecting only chain {}", &chain_id);
+        multi_filter.add_predicate(Box::new(ByChain::new(&chain_id)));
     }
-    if let Some(entity_id) = args.select_entity {
-        filters.push(Box::new(ByEntity::new(&entity_id)));
+    if args.select_ca {
+        info!("Selecting only alpha-carbon atoms");
+        multi_filter.add_predicate(Box::new(IsCA));
     }
-    if args.select_ca { filters.push(Box::new(IsCA)); }
-    // ---------- Apply the filters
-    filter(&mut strctr, &filters);
+    strctr = filter(&strctr, &multi_filter);
 
     // ---------- OUTPUT section
     if args.out_fasta {

@@ -9,7 +9,8 @@ use bioshell_seq::scoring::{SubstitutionMatrixList};
 use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
-#[clap(name = "needleman_wunsh")]
+#[clap(author, version,name = "needleman_wunsh")]
+#[clap(allow_hyphen_values = true)]
 #[clap(about = "Calculates global sequence alignment of amino acid sequences", long_about = None)]
 struct Args {
     /// query sequence(s): either a FASTA string or a name of a file in FASTA format

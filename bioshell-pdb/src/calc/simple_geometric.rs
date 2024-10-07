@@ -22,6 +22,11 @@ pub fn distance(ai: &PdbAtom, aj:&PdbAtom) -> f64 {
     return ai.pos.distance_to(&aj.pos);
 }
 
+/// Computes the Phi dihedral angle for a given amino acid residue.
+///
+/// Returns a [`PDBError::NoSuchAtom`](PDBError::NoSuchAtom) if the requested residue
+/// or the preceding one misses any of the required atoms. Also returns
+/// [`PDBError::ResidueAtChainBreak`](PDBError::ResidueAtTerminus) it the preceding residue can't be found.
 ///
 /// # Example
 /// ```
@@ -38,8 +43,13 @@ pub fn distance(ai: &PdbAtom, aj:&PdbAtom) -> f64 {
 /// ```
 pub fn phi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, PDBError> {
     let i_residue = strctr.residue_pos(which_res)?;
-    if i_residue == 0 { return Ok(0.0); }
+    if i_residue == 0 {
+        return Err(PDBError::ResidueAtTerminus { res_id: which_res.clone() });
+    }
     let prev_res = strctr.residue_ids[i_residue-1].clone();
+    if prev_res.chain_id != which_res.chain_id {
+        return Err(PDBError::ResidueAtTerminus { res_id: which_res.clone() });
+    }
     let c_prev = strctr.atom(&prev_res," C  ")?;
     let n = strctr.atom(&which_res," N  ")?;
     let ca = strctr.atom(&which_res," CA ")?;
@@ -49,6 +59,10 @@ pub fn phi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, PDBError> {
 }
 
 /// Computes the Psi dihedral angle for a given amino acid residue.
+///
+/// Returns a [`PDBError::NoSuchAtom`](PDBError::NoSuchAtom) if the requested residue
+/// or the following one misses any of the required atoms. Also returns
+/// [`PDBError::ResidueAtChainBreak`](PDBError::ResidueAtTerminus) it the following residue can't be found.
 ///
 /// # Example
 /// ```
@@ -65,8 +79,13 @@ pub fn phi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, PDBError> {
 /// ```
 pub fn psi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, PDBError> {
     let i_residue = strctr.residue_pos(which_res)?;
-    if i_residue == strctr.atoms_for_residueid.len() - 1 { return Ok(0.0); }
+    if i_residue == strctr.atoms_for_residue_id.len() - 1 {
+        return Err(PDBError::ResidueAtTerminus { res_id: which_res.clone() });
+    }
     let next_res = strctr.residue_ids[i_residue + 1].clone();
+    if next_res.chain_id != which_res.chain_id {
+        return Err(PDBError::ResidueAtTerminus { res_id: which_res.clone() });
+    }
     let n = strctr.atom(&which_res," N  ")?;
     let ca = strctr.atom(&which_res," CA ")?;
     let c = strctr.atom(&which_res," C  ")?;

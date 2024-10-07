@@ -302,14 +302,28 @@ impl PdbAtomPredicate for ByResidueRange {
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
 /// let bb = IsBackbone;
 /// let bb_count = strctr.atoms().iter().filter(|b| bb.check(b)).count();
-/// # assert_eq!(bb_count, 4);
+/// assert_eq!(bb_count, 4);        // there are 4 backbone atoms in the structure
+/// let mut a = PdbAtom::new();
+/// a.name = String::from("N");
+/// assert!(bb.check(&a));          // the predicate can handle incorrectly padded atom names
 /// ```
 pub struct IsBackbone;
 
+macro_rules! format_name {
+    ($name:expr) => {
+        match $name.len() {
+            4 => $name,                    // Return the reference if the length is 4
+            _ => Box::leak(format!("{:^4}", $name).into_boxed_str()), // Format and leak the reference
+        }
+    };
+}
+
 impl PdbAtomPredicate for IsBackbone {
     fn check(&self, a: &PdbAtom) -> bool {
-        a.name == " CA " || a.name == " C  " || a.name == " N  " || a.name == " O  " || a.name == " H  " || a.name == " OXT"
-            || a.name == " HA " || a.name == " HA2" || a.name == " HA3"
+
+        let name: &str = format_name!(&a.name);
+        name == " CA " || name == " C  " || name == " N  " || name == " O  " || name == " H  " || name == " OXT"
+            || name == " HA " || name == " HA2" || name == " HA3"
     }
 }
 
@@ -326,11 +340,18 @@ impl PdbAtomPredicate for IsBackbone {
 /// let ca = IsCA;
 /// let ca_count = strctr.atoms().iter().filter(|a| ca.check(a)).count();
 /// # assert_eq!(ca_count, 1);
+///
+/// let mut a = PdbAtom::new();
+/// a.name = String::from("CA");
+/// assert!(ca.check(&a));          // the predicate can handle incorrectly padded atom names
 /// ```
 pub struct IsCA;
 
 impl PdbAtomPredicate for IsCA {
-    fn check(&self, a: &PdbAtom) -> bool { a.name == " CA " }
+    fn check(&self, a: &PdbAtom) -> bool {
+        let name: &str = format_name!(&a.name);
+        name == " CA "
+    }
 }
 
 /// Returns `true` if an atom is a hydrogen.
@@ -351,8 +372,8 @@ impl PdbAtomPredicate for IsCA {
 /// ATOM    154  HA3 GLY A   9      11.018  -2.149   0.770  1.00  0.21           H";
 /// let mut strctr = load_pdb_reader(BufReader::new(gly_pdb.as_bytes())).unwrap();
 /// let is_h = IsHydrogen;
-/// strctr.atoms_mut().retain(|a| !is_h.check(a));
-/// # assert_eq!(strctr.count_atoms(), 4);
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !is_h.check(&a)));
+/// # assert_eq!(new_strctr.count_atoms(), 4);
 /// ```
 pub struct IsHydrogen;
 
@@ -376,9 +397,9 @@ impl PdbAtomPredicate for IsHydrogen {
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
 /// let hoh = IsWater;
-/// strctr.atoms_mut().retain(|a| !hoh.check(&a));
-/// # assert_eq!(strctr.count_atoms(), 1);
-/// # assert_eq!(strctr.atoms()[0].name, " CA ");
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !hoh.check(&a)));
+/// # assert_eq!(new_strctr.count_atoms(), 1);
+/// # assert_eq!(new_strctr.atoms()[0].name, " CA ");
 /// ```
 pub struct IsWater;
 

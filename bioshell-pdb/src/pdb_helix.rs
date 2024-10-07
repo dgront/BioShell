@@ -1,4 +1,7 @@
-use crate::ResidueId;
+use bioshell_cif::{cif_columns_by_name, CifData, parse_item_or_error, CifLoop, CifError, entry_has_value};
+use crate::{PDBError, ResidueId, value_or_missing_key_pdb_error};
+use crate::PDBError::CifParsingError;
+use bioshell_cif::CifError::{ItemParsingError, MissingCifDataKey};
 
 /// Corresponds to a HELIX record.
 ///
@@ -7,10 +10,11 @@ use crate::ResidueId;
 ///
 /// Refer to the [official documentation of the `HELIX` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect5.html#HELIX)
 pub struct PdbHelix {
-    /// Serial number of the helix.
+
+    /// Unique identifier for the helix.
     ///
-    /// As defined by the PDB standard, it should start at 1  and increases incrementally.
-    pub ser_num: i32,
+    /// In a PDB file it is an integer number, but in a CIF file it is a string.
+    pub ser_num: String,
     /// Helix  identifier.
     ///
     /// In addition to a serial number, each helix is given an alphanumeric character helix identifier.
@@ -84,4 +88,79 @@ impl PdbHelix {
     /// assert_eq!(pdb_helix.end_res_id(), ResidueId::new("A", 11, ' '));
     /// ```
     pub fn end_res_id(&self) -> ResidueId { ResidueId::new(&self.end_chain_id, self.end_seq_num, self.end_i_code)}
+
+    /// Lists all helices from a given structure
+    ///
+    /// # Example
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_cif::read_cif_buffer;
+    /// use bioshell_pdb::PdbHelix;
+    /// let cif_data = include_str!("../tests/test_files/2gb1.cif");
+    /// let reader = BufReader::new(cif_data.as_bytes());
+    /// let cif_data = read_cif_buffer(reader).unwrap();
+    /// let helices = PdbHelix::from_cif_data(&cif_data[0]).unwrap();
+    /// assert_eq!(helices.len(), 1);
+    /// let helix = &helices[0];
+    /// assert_eq!(helix.length, 15);
+    /// ```
+    pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<PdbHelix>, PDBError> {
+        fn new_helix(tokens: &[&str]) -> Result<PdbHelix, CifError> {
+            Ok(PdbHelix {
+                ser_num: "1".to_string(),
+                helix_id: tokens[0].to_string(),
+                init_res_name: tokens[1].to_string(),
+                init_chain_id: tokens[2].to_string(),
+                init_seq_num: parse_item_or_error!(tokens[3], i32),
+                init_i_code: if !entry_has_value(tokens[4]) { ' ' } else { tokens[4].chars().nth(0).unwrap() },
+                end_res_name: tokens[5].to_string(),
+                end_chain_id: tokens[6].to_string(),
+                end_seq_num: parse_item_or_error!(tokens[7], i32),
+                end_i_code: if !entry_has_value(tokens[4]) { ' ' } else { tokens[8].chars().nth(0).unwrap() },
+                helix_class: 1,
+                comment: String::new(),
+                length: 0,
+            })
+        }
+        let mut helices: Vec<PdbHelix> = Vec::new();
+        if let Some(helix_loop) = cif_data.first_loop("_struct_conf.id") {
+            cif_columns_by_name!(EntityData, "_struct_conf.id",
+                "_struct_conf.beg_label_comp_id", "_struct_conf.beg_label_asym_id",
+                "_struct_conf.beg_label_seq_id", "_struct_conf.pdbx_beg_PDB_ins_code",
+                "_struct_conf.end_label_comp_id", "_struct_conf.end_label_asym_id",
+                "_struct_conf.end_label_seq_id", "_struct_conf.pdbx_end_PDB_ins_code",
+            );
+            let extractor = EntityData::new(helix_loop)?;
+            let mut tokens = [""; 9];
+            for row in helix_loop.rows() {
+                extractor.data_items(&row, &mut tokens);
+                let helix = new_helix(&tokens)?;
+                helices.push(helix);
+            }
+            return Ok(helices);
+        } else {
+            if cif_data.data_items().contains_key("_struct_conf.id") {
+                let mut init_i_code = value_or_missing_key_pdb_error!(cif_data, "_struct_conf.pdbx_beg_PDB_ins_code", char);
+                if init_i_code == '?' || init_i_code == '.' { init_i_code = ' '; }
+                let mut end_i_code = value_or_missing_key_pdb_error!(cif_data, "_struct_conf.pdbx_end_PDB_ins_code", char);
+                if end_i_code == '?' || end_i_code == '.' { end_i_code = ' '; }
+                helices.push(PdbHelix {
+                    ser_num: cif_data.get_item_or_default("_struct_conf.pdbx_PDB_helix_id", "1".to_string()),
+                    helix_id: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.id", String),
+                    init_res_name: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.beg_label_comp_id", String),
+                    init_chain_id: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.beg_label_asym_id", String),
+                    init_seq_num: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.beg_label_seq_id", i32),
+                    init_i_code,
+                    end_res_name: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.end_label_comp_id", String),
+                    end_chain_id: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.end_label_asym_id", String),
+                    end_seq_num: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.end_label_seq_id", i32),
+                    end_i_code,
+                    helix_class: cif_data.get_item_or_default("_struct_conf.pdbx_PDB_helix_class", 0),
+                    comment: String::new(),
+                    length: cif_data.get_item_or_default("_struct_conf.pdbx_PDB_helix_length", 0),
+                });
+            }
+            Ok(helices)
+        }
+    }
 }

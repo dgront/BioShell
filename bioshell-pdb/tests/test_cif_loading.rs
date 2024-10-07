@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use std::io::BufReader;
-    use bioshell_cif::read_cif_buffer;
+    use bioshell_cif::{is_cif_file, read_cif_buffer};
     use bioshell_pdb::{load_cif_reader, UnitCell};
 
     #[allow(non_upper_case_globals)]
@@ -27,9 +27,21 @@ mod tests {
             _symmetry.space_group_name_H-M         'C 1 21 1'
             _cell.Z_PDB                            1
         ";
-        let data_block = read_cif_buffer(&mut BufReader::new(missing_data.as_bytes())).unwrap();
-        let data_block= &data_block[0];
+        let data_block = &read_cif_buffer(&mut BufReader::new(missing_data.as_bytes())).unwrap();
+        let data_block = &data_block[0];
         let uc = UnitCell::from_cif_data(data_block);
         assert!(uc.is_err());
+    }
+
+    #[test]
+    fn test_if_cif() {
+        let try_2gb1 = is_cif_file("./tests/test_files/2gb1.cif");
+        assert!(try_2gb1.is_ok());
+        assert!(try_2gb1.unwrap());
+        let try_2gb1 = is_cif_file("./tests/test_files/2gb1.pdb");
+        assert!(try_2gb1.is_ok());
+        assert!(!try_2gb1.unwrap());
+        let try_2gb1 = is_cif_file("./tests/test_files/2gb1.blabla");
+        assert!(try_2gb1.is_err());
     }
 }

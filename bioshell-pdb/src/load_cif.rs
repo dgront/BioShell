@@ -1,13 +1,16 @@
 use std::collections::HashMap;
+use std::io;
 use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info, warn};
 use bioshell_cif::{cif_columns_by_name, CifLoop, read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value, CifData};
-use crate::{ExperimentalMethod, PdbAtom, PDBError, Structure, UnitCell, value_or_missing_key_pdb_error};
+use crate::{ExperimentalMethod, PdbAtom, PDBError, PdbHelix, PdbSheet, SecondaryStructureTypes, Structure, UnitCell, value_or_missing_key_pdb_error};
 use crate::calc::Vec3;
 use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError, MissingCifDataKey};
 use bioshell_io::open_file;
 use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
+use crate::crate_utils::find_deposit_file_name;
+use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::PDBError::{CifParsingError, IncorrectCompoundTypeName};
 
 pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
@@ -83,6 +86,23 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     pdb_structure.r_factor = cif_data_block.get_item("_refine.ls_R_factor_obs");
     pdb_structure.r_free = cif_data_block.get_item("_refine.ls_R_factor_R_free");
 
+    // todo: fix the helix type! Now it's only an alpha helix
+    // --- secondary structure
+    let helices = PdbHelix::from_cif_data(cif_data_block)?;
+    for h in &helices {
+        let range = ByResidueRange::new(h.init_res_id(), h.end_res_id());
+        pdb_structure.atoms.iter_mut().for_each(|a| if range.check(a) {
+            a.secondary_struct_type = SecondaryStructureTypes::RightAlphaHelix
+        });
+    }
+    let strands = PdbSheet::from_cif_data(cif_data_block)?;
+    for s in &strands {
+        let range = ByResidueRange::new(s.init_res_id(), s.end_res_id());
+        pdb_structure.atoms.iter_mut().for_each(|a| if range.check(a) {
+            a.secondary_struct_type = SecondaryStructureTypes::Strand
+        });
+    }
+
     // --- crystallography parameters
     pdb_structure.unit_cell = if let Ok(uc) = UnitCell::from_cif_data(cif_data_block) { Some(uc) } else { None };
     pdb_structure.update();
@@ -101,11 +121,81 @@ pub fn load_cif_file(file_name: &str) -> Result<Structure, PDBError> {
     return load_cif_reader(reader);
 }
 
+/// Returns true if a given file is in CIF format.
+///
+/// This function simply tests whether the first non-empty data line of a given file starts with ``data_``,
+/// Otherwise, it returns ``false``. When the file can't be open returns I/O error.
+///
+/// # Examples
+/// ```
+/// use bioshell_cif::is_cif_file;
+/// let try_2gb1 = is_cif_file("./tests/test_files/2gb1.cif");
+/// assert!(try_2gb1.is_ok());
+/// assert!(try_2gb1.unwrap());
+/// let try_2gb1 = is_cif_file("./tests/test_files/2gb1.pdb");
+/// assert!(try_2gb1.is_ok());
+/// assert!(!try_2gb1.unwrap());
+/// ```
+pub fn is_cif_file(file_path: &str) -> io::Result<bool> {
+    let reader = open_file(file_path)?;
+
+    let cif_starts_with = ["data_"];
+    for line in reader.lines() {
+        let line = line?;
+        if !line.is_empty() {
+            return Ok(cif_starts_with.iter().any(|s|line.starts_with(s)));
+        }
+    }
+
+    return Ok(false);
+}
+
+static CIF_PREFIXES: [&str; 2] = ["", "pdb"];
+static CIF_SUFFIXES: [&str; 6] = [".cif", ".cif.gz", ".gz", ".CIF", ".CIF.gz", ""];
+
+/// Attempts to find a CIF file in a given directory.
+///
+/// Looks in the specified path for a file with a given PDB data, identified by
+/// a given PDB code. For a given 4-character ID (digit + 3 letters), the method checks
+/// the following possibilities:
+///
+/// - `given_path/1abc`
+/// - `given_path/1ABC`
+/// - `given_path/1abc.cif`
+/// - `given_path/1ABC.cif`
+/// - `given_path/1ABC.CIF`
+/// - `given_path/pdb1abc`
+/// - `given_path/PDB1ABC`
+/// - `given_path/pdb1abc.cif`
+/// - `given_path/pdb1abc.cif.gz`
+/// - `given_path/ab/pdb1abc.cif`
+/// - `given_path/ab/pdb1abc.cif.gz`
+///
+/// where `1abc` and `1ABC` denote a lower-case and an upper-case PDB ID, respectively. Returns
+/// the name of the PDB file that was found or an error.
+///
+/// # Arguments
+///
+/// * `pdb_code` - A four-character PDB ID.
+/// * `pdb_path` - Directory to look into.
+///
+/// # Example
+/// ```
+/// use bioshell_pdb::find_cif_file_name;
+/// let result = find_cif_file_name("2gb1", "./tests/test_files/");
+/// assert!(result.is_ok());
+/// assert_eq!(result.unwrap(), "./tests/test_files/2gb1.cif");
+/// ```
+///
+pub fn find_cif_file_name(pdb_code: &str, pdb_path: &str) -> Result<String, io::Error> {
+    find_deposit_file_name(pdb_code, pdb_path, &CIF_PREFIXES, &CIF_SUFFIXES)
+}
+
 /// A helper function to create an atom based on given string tokens
 fn create_pdb_atom(tokens: &[&str; 16], pos: Vec3) -> Result<PdbAtom, CifError> {
 
     let serial = parse_item_or_error!(tokens[0], i32);
-    let name = tokens[1].to_string();
+    let name = format!("{:^4}", tokens[1]);
     let alt_loc = value_or_default(tokens[2], ' ');
     let res_name = tokens[3].to_string();
     let chain_id = tokens[4].to_string();
@@ -122,7 +212,7 @@ fn create_pdb_atom(tokens: &[&str; 16], pos: Vec3) -> Result<PdbAtom, CifError> 
     let element = Some(tokens[12].to_string());
     let charge = None;
     let is_hetero_atom = false;
-    let secondary_struct_type: u8 = 12;
+    let secondary_struct_type = SecondaryStructureTypes::Coil;
     let a = PdbAtom {
         serial, name, alt_loc, res_name,
         chain_id, entity_id, res_seq, i_code, pos, occupancy, temp_factor,
@@ -152,3 +242,4 @@ fn load_residue_types(cif_data_block: &CifData) -> Result<(), PDBError>{
     }
     Ok(())
 }
+

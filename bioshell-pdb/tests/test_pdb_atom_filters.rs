@@ -2,11 +2,12 @@
 mod tests {
     use std::io::BufReader;
     use itertools::assert_equal;
-    use bioshell_pdb::{load_pdb_reader, PdbAtom, Structure};
+    use bioshell_pdb::{load_cif_reader, load_pdb_reader, PdbAtom, Structure};
     use bioshell_pdb::pdb_atom_filters::{ByChain, ByResidue, ByResidueType, IsAromatic, IsBackbone, IsCA, MatchAll, MatchAny, PdbAtomPredicate, PdbAtomPredicate2, SameResidue};
 
     #[allow(non_upper_case_globals)]
     const pdb_2gb1:  &str = include_str!("./test_files/2gb1.pdb");
+    const pdb_2fdo:  &str = include_str!("./test_files/2fdo.cif");
 
     #[allow(non_upper_case_globals)]
     const lines: [&str; 15] = [
@@ -33,9 +34,6 @@ mod tests {
         let bb = IsBackbone {};
         let bb_count = strctr.atoms().iter().filter(|a| bb.check(a)).count();
         assert_eq!(bb_count, 12);
-
-        strctr.atoms_mut().retain(|a| !bb.check(a));
-        assert_eq!(strctr.count_atoms(), 3);
     }
 
     #[test]
@@ -83,6 +81,14 @@ mod tests {
     }
 
     #[test]
+    fn test_chain_filtering() {
+        let by_chain_a = ByChain::new("A");
+        let strctr = load_cif_reader(BufReader::new(pdb_2fdo.as_bytes())).unwrap();
+        let chain_a_atoms = strctr.atoms().iter().filter(|a| by_chain_a.check(a)).collect::<Vec<_>>();
+        assert_eq!(chain_a_atoms.len(), 710);
+    }
+
+    #[test]
     fn aromatic_residues() {
         let strctr = load_pdb_reader(BufReader::new(pdb_2gb1.as_bytes())).unwrap();
 
@@ -101,7 +107,7 @@ mod tests {
         filter.add_predicate(Box::new(ByResidueType::new("ALA")));
         filter.add_predicate(Box::new(ByResidueType::new("GLY")));
 
-        let aro_res_count: usize = strctr.atoms().iter().filter(|a| filter.check(a)).count();
-        assert_eq!(aro_res_count, 88);
+        let ala_gly_res_count: usize = strctr.atoms().iter().filter(|a| filter.check(a)).count();
+        assert_eq!(ala_gly_res_count, 88);
     }
 }

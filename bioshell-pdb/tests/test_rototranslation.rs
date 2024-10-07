@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod rototranslation_test {
-    use bioshell_pdb::assert_delta;
+    use bioshell_pdb::{assert_delta, assert_vec3_eq};
     use bioshell_pdb::calc::{Vec3, Rototranslation};
 
     #[test]
@@ -94,5 +94,24 @@ mod rototranslation_test {
             rot.apply_mut(&mut another_vec);
             // println!("{}", another_vec);
         }
+    }
+
+    #[test]
+    fn point_in_lcs() {
+        let prev_p = Vec3::new(-3.0, -1.0, 0.0);
+        let the_p = Vec3::new(0.0, 0.0, 0.0);
+        let next_p = Vec3::new(3.0, -1.0, 0.0);
+        let rot = Rototranslation::by_three_atoms(&prev_p, &the_p, &next_p);
+        let result = format!("{}", rot);
+        let expected = r#"[  1.000   0.000   0.000 ]     | vx -  0.000 |
+[  0.000   0.000   1.000 ]  *  | vy -  0.000 |
+[  0.000  -1.000   0.000 ]     | vz -  0.000 |
+"#;
+        assert_eq!(result, expected);
+        // println!("{}", rot);
+        let mut p = Vec3::new(0.0, 0.0, -3.0);
+        rot.apply_mut(&mut p);
+        let expected = Vec3::new(0.0, -3.0, 0.0);
+        assert_vec3_eq!(p, expected, 0.000001, "incorrect vector");
     }
 }

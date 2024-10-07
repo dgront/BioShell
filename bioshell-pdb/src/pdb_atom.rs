@@ -35,7 +35,7 @@ pub struct PdbAtom {
     pub element: Option<String>,
     pub charge: Option<String>,
     pub is_hetero_atom: bool,
-    pub secondary_struct_type: u8,
+    pub secondary_struct_type: SecondaryStructureTypes,
 }
 
 impl PdbAtom {
@@ -57,7 +57,7 @@ impl PdbAtom {
             temp_factor: 0.0,
             element: Some(String::from("C")),
             is_hetero_atom: false,
-            secondary_struct_type: SecondaryStructureTypes::Coil as u8,
+            secondary_struct_type: SecondaryStructureTypes::Coil,
             charge: None
         }
     }
@@ -107,14 +107,20 @@ impl PdbAtom {
             element,
             charge: None,
             is_hetero_atom: pdb_line.starts_with("H"),
-            secondary_struct_type: 12
+            secondary_struct_type: SecondaryStructureTypes::Coil,
         };
     }
 
-    pub fn hec_code(&self) -> u8 {
-        let sec_str_type = SecondaryStructureTypes::from_pdb_class(self.secondary_struct_type as usize);
-        SecondaryStructureTypes::hec_code(&sec_str_type)
-    }
+    /// Returns a secondary structure code of the residue this atom belongs to.
+    ///
+    /// # Examples
+    /// ```
+    /// use bioshell_pdb::{PdbAtom, SecondaryStructureTypes};
+    /// let a = PdbAtom::from_atom_line("ATOM     33  CA AARG A  -3      12.353  85.696  94.456  0.50 36.67           C");
+    /// assert_eq!(a.secondary_struct_type, SecondaryStructureTypes::Coil);
+    /// assert_eq!(a.hec_code(), b'C');
+    /// ```
+    pub fn hec_code(&self) -> u8 { self.secondary_struct_type.hec_code() }
 }
 
 impl PartialEq<Self> for PdbAtom {
