@@ -45,7 +45,7 @@ use std::time::Instant;
 use log::{debug, info};
 
 use bioshell_io::{open_file, split_into_strings};
-use crate::CifError::{DanglingDataItem, DataValuesOutsideLoop, MisplacedDataNameInLoop, MultilineStringOutsideDataItem, TooManyDataValues};
+use crate::CifError::{DanglingDataItem, DataValuesOutsideLoop, MisplacedDataNameInLoop, MultilineStringOutsideDataItem};
 
 /// Returns true if a given file is in CIF format.
 ///
@@ -594,8 +594,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Result<Vec<CifData>, CifError> 
             Ok(CifLine::LoopBlock) => {
                 // --- close the previous loop if any and open a new one
                 if let Some(a_loop) = current_loop {
-                    data_blocks.last_mut().unwrap().add_loop(a_loop);
-                    current_loop = None;
+                    add_loop_to_last_block(&mut data_blocks, a_loop)?;
                 }
                 current_loop = Some(CifLoop { column_names: vec![], data_rows: vec![] });
             }
@@ -604,7 +603,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Result<Vec<CifData>, CifError> 
             Ok(CifLine::DataBlock(block_name)) => {
                 // --- close the previous loop
                 if let Some(a_loop) = current_loop {
-                    data_blocks.last_mut().unwrap().add_loop(a_loop);
+                    add_loop_to_last_block(&mut data_blocks, a_loop)?;
                     current_loop = None;
                 }
                 data_blocks.push(CifData::new(&block_name));
@@ -614,7 +613,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Result<Vec<CifData>, CifError> 
             Ok(CifLine::DataItem(key, val)) => {
                 // --- close the previous loop
                 if let Some(a_loop) = current_loop {
-                    data_blocks.last_mut().unwrap().add_loop(a_loop);
+                    add_loop_to_last_block(&mut data_blocks, a_loop)?;
                     current_loop = None;
                 }
                 data_blocks.last_mut().unwrap().data_items_mut().insert(key, val);
@@ -639,7 +638,7 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Result<Vec<CifData>, CifError> 
                     if current_loop.as_ref().unwrap().count_rows() == 0 {
                         current_loop.as_mut().unwrap().add_column(&data_name)?;
                     } else {
-                        data_blocks.last_mut().unwrap().add_loop(current_loop.unwrap());
+                        add_loop_to_last_block(&mut data_blocks, current_loop.unwrap())?;
                         current_loop = None
                     }
                 }
@@ -671,13 +670,20 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Result<Vec<CifData>, CifError> 
 
     // --- close the very last loop that may be still open
     if let Some(loop_block) = current_loop {
-        data_blocks.last_mut().unwrap().add_loop(loop_block);
+        add_loop_to_last_block(&mut data_blocks, loop_block)?;
     }
 
     debug!("CIF structure loaded in: {:?}", start.elapsed());
 
     return Ok(data_blocks);
+}
 
+// Helper function to add a loop to the last block in the ``data_blocks`` vector.
+fn add_loop_to_last_block(data_blocks: &mut Vec<CifData>, loop_block: CifLoop) -> Result<(), CifError> {
+    if let Some(last_block) = data_blocks.last_mut() {
+        last_block.add_loop(loop_block);
+        return Ok(());
+    } else { return Err(CifError::NoDataBlock); }
 }
 
 /// Returns true if a given string bears a meaningful value.

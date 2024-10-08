@@ -19,9 +19,9 @@ mod tests {
             assert_eq!(cif_data.len(), 1);
             let entities = Entity::from_cif_data(&cif_data[0]).unwrap();
             assert_eq!(entities.len(), *num_entities);
-
         }
     }
+
     #[test]
     fn check_5edw_entities() {
         let reader = BufReader::new(cif_5edw.as_bytes());

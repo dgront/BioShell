@@ -1,7 +1,6 @@
-use bioshell_cif::{cif_columns_by_name, CifData, CifError, CifLoop, entry_has_value, parse_item_or_error};
-use bioshell_cif::CifError::{MissingCifLoopKey, ItemParsingError};
+use bioshell_cif::{CifData, CifError, CifTable, entry_has_value, parse_item_or_error};
+use bioshell_cif::CifError::{ItemParsingError};
 use crate::{PDBError, ResidueId};
-use crate::PDBError::CifParsingError;
 
 /// Corresponds to a SHEET record.
 ///
@@ -62,10 +61,13 @@ impl PdbSheet {
     ///
     /// # Example
     /// ```
-    /// use bioshell_pdb::{PdbSheet, ResidueId};
+    /// use bioshell_pdb::{PdbSheet, ResidueId, PDBError};
+    /// # fn main() -> Result<(), PDBError> {
     /// let sheet_line = "SHEET    1   A 5 THR A 107  ARG A 110  0";
-    /// let pdb_strand = PdbSheet::from_sheet_line(sheet_line);
+    /// let pdb_strand = PdbSheet::from_sheet_line(sheet_line)?;
     /// assert_eq!(pdb_strand.init_res_id(), ResidueId::new("A", 107, ' '));
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn init_res_id(&self) -> ResidueId { ResidueId::new(&self.init_chain_id, self.init_seq_num, self.init_i_code)}
 
@@ -73,10 +75,13 @@ impl PdbSheet {
     ///
     /// # Example
     /// ```
-    /// use bioshell_pdb::{PdbSheet, ResidueId};
-    /// let helix_line = "SHEET    1   A 5 THR A 107  ARG A 110  0";
-    /// let pdb_helix = PdbSheet::from_sheet_line(helix_line);
-    /// assert_eq!(pdb_helix.end_res_id(), ResidueId::new("A", 110, ' '));
+    /// use bioshell_pdb::{PdbSheet, ResidueId, PDBError};
+    /// # fn main() -> Result<(), PDBError> {
+    /// let strand_line = "SHEET    1   A 5 THR A 107  ARG A 110  0";
+    /// let pdb_strand = PdbSheet::from_sheet_line(strand_line)?;
+    /// assert_eq!(pdb_strand.end_res_id(), ResidueId::new("A", 110, ' '));
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn end_res_id(&self) -> ResidueId { ResidueId::new(&self.end_chain_id, self.end_seq_num, self.end_i_code)}
 
@@ -86,12 +91,15 @@ impl PdbSheet {
     /// ```
     /// use std::io::BufReader;
     /// use bioshell_cif::read_cif_buffer;
-    /// use bioshell_pdb::PdbSheet;
+    /// use bioshell_pdb::{PdbSheet,PDBError};
+    /// # fn main() -> Result<(), PDBError> {
     /// let cif_data = include_str!("../tests/test_files/2gb1.cif");
     /// let reader = BufReader::new(cif_data.as_bytes());
     /// let cif_data = read_cif_buffer(reader).unwrap();
-    /// let sheets = PdbSheet::from_cif_data(&cif_data[0]).unwrap();
+    /// let sheets = PdbSheet::from_cif_data(&cif_data[0])?;
     /// assert_eq!(sheets.len(), 4);
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<PdbSheet>, PDBError> {
         fn new_sheet(tokens: &[&str]) -> Result<PdbSheet, CifError> {
@@ -110,19 +118,15 @@ impl PdbSheet {
             })
         }
         let mut strands: Vec<PdbSheet> = Vec::new();
-        if let Some(strands_loop) = cif_data.first_loop("_struct_sheet_range.id") {
-            cif_columns_by_name!(EntityData, "_struct_sheet_range.sheet_id","_struct_sheet_range.id",
-                "_struct_sheet_range.beg_label_comp_id","_struct_sheet_range.beg_label_asym_id",
-                "_struct_sheet_range.beg_label_seq_id","_struct_sheet_range.pdbx_beg_PDB_ins_code",
-                "_struct_sheet_range.end_label_comp_id","_struct_sheet_range.end_label_asym_id",
-                "_struct_sheet_range.end_label_seq_id","_struct_sheet_range.pdbx_end_PDB_ins_code",
-            );
-            let extractor = EntityData::new(strands_loop)?;
-            let mut tokens = [""; 10];
-            for row in strands_loop.rows() {
-                extractor.data_items(&row, &mut tokens);
-                let helix = new_sheet(&tokens)?;
-                strands.push(helix);
+        if let Some(strands_loop) = cif_data.first_loop("_struct_sheet_range") {
+            let strands_table = CifTable::new(strands_loop, ["sheet_id",
+                ".id", "beg_label_comp_id","beg_label_asym_id", "beg_label_seq_id",
+                "pdbx_beg_PDB_ins_code", "end_label_comp_id","end_label_asym_id",
+                "end_label_seq_id","pdbx_end_PDB_ins_code",]
+            )?;
+            for tokens in strands_table.iter() {
+                let strand = new_sheet(&tokens)?;
+                strands.push(strand);
             }
         }
         return Ok(strands);

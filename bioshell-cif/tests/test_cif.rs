@@ -107,6 +107,23 @@ _symmetry_equiv_pos_as_xyz
     }
 
     #[test]
+    fn test_cif_table() -> Result<(), CifError> {
+        let cif_str = "data_loop
+loop_
+_symmetry_equiv_pos.site_id
+_symmetry_equiv_pos.as_xyz
+1 -x,-y,-z
+2 x,y,z
+";
+        let mut reader = BufReader::new(cif_str.as_bytes());
+        let data_blocks = read_cif_buffer(&mut reader)?;
+        let cif_loop = data_blocks[0].first_loop("_symmetry_equiv_pos").ok_or(CifError::MissingCifLoopKey { item_key: "_symmetry_equiv_pos".to_string() })?;
+        let cif_table = CifTable::new(cif_loop,["site_id", "as_xyz"])?;
+        assert_eq!(cif_table.iter().count(), 2);
+        Ok(())
+    }
+
+    #[test]
     fn parse_edge_cases() {
 
         // ---------- multiline data value

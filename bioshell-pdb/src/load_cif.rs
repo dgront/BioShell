@@ -3,7 +3,7 @@ use std::io;
 use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info, warn};
-use bioshell_cif::{cif_columns_by_name, CifLoop, read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value, CifData};
+use bioshell_cif::{CifLoop, read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value, CifData, CifTable};
 use crate::{ExperimentalMethod, PdbAtom, PDBError, PdbHelix, PdbSheet, SecondaryStructureTypes, Structure, UnitCell, value_or_missing_key_pdb_error};
 use crate::calc::Vec3;
 use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError, MissingCifDataKey};
@@ -23,21 +23,14 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     }
     let cif_data_block = &cif_data[0];
 
-    if let Some(atoms_loop) = cif_data_block.first_loop("_atom_site.id") {
-        cif_columns_by_name!(PdbAtomData, "_atom_site.id",
-            "_atom_site.label_atom_id", "_atom_site.label_alt_id",
-            "_atom_site.label_comp_id", "_atom_site.label_asym_id", "_atom_site.label_seq_id",
-            "_atom_site.pdbx_PDB_ins_code",
-            "_atom_site.Cartn_x", "_atom_site.Cartn_y", "_atom_site.Cartn_z",
-            "_atom_site.occupancy", "_atom_site.B_iso_or_equiv", "_atom_site.type_symbol",
-            "_atom_site.pdbx_PDB_model_num", "_atom_site.auth_seq_id",
-        );
+    if let Some(atoms_loop) = cif_data_block.first_loop("_atom_site") {
+        let atoms_tokens = CifTable::new(atoms_loop, ["id", "label_atom_id",
+            "label_alt_id", "label_comp_id", "label_asym_id", "label_seq_id", "pdbx_PDB_ins_code",
+            "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol",
+            "pdbx_PDB_model_num", "auth_seq_id", ])?;
 
-        let extractor = PdbAtomData::new(atoms_loop)?;      // extracts atom data from each loop entry
-        let mut tokens = [""; 15];                              // stores tokens from each extraction
         let mut model_ids: HashMap<usize, usize> = HashMap::new();       // links model id to model index in the model_coordinates structure
-        for row in atoms_loop.rows() {
-            extractor.data_items(&row, &mut tokens);
+        for tokens in atoms_tokens.iter() {
             let model_id = tokens[13].parse::<usize>().unwrap();  // model_id of the current atom
             if ! model_ids.contains_key(&model_id) {                    // if we have a new model...
                 model_ids.insert(model_id, model_ids.len());
@@ -54,7 +47,7 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
                 match create_pdb_atom(&tokens, pos) {
                     Ok(a) => { pdb_structure.atoms.push(a); }
                     Err(e) => {
-                        let data_line = row.join(" ");
+                        let data_line = tokens.join(" ");
                         return match e {
                             ItemParsingError { item, type_name, details: _ } => {
                                 Err(CifParsingError(ItemParsingError {
@@ -222,14 +215,10 @@ fn create_pdb_atom(tokens: &[&str; 15], pos: Vec3) -> Result<PdbAtom, CifError> 
 }
 
 fn load_residue_types(cif_data_block: &CifData) -> Result<(), PDBError>{
-    if let Some(monomers_loop) = cif_data_block.first_loop("_chem_comp.id") {
-        cif_columns_by_name!(MonomersData, "_chem_comp.id", "_chem_comp.type",);
-
-        let extractor = MonomersData::new(monomers_loop)?;
-        let mut tokens = [""; 2];
+    if let Some(monomers_loop) = cif_data_block.first_loop("_chem_comp") {
+        let monomers = CifTable::new(monomers_loop,["id", "type",])?;
         let mut rts = ResidueTypeManager::get();
-        for row in monomers_loop.rows() {
-            extractor.data_items(&row, &mut tokens);
+        for tokens in monomers.iter() {
             match  MonomerType::try_from(tokens[1]) {
                 Ok(chem_type) => {
                     let rt = ResidueType::from_attrs(tokens[0], StandardResidueType::UNK, chem_type);

@@ -1,4 +1,4 @@
-use bioshell_cif::{cif_columns_by_name, CifData, parse_item_or_error, CifLoop, CifError, entry_has_value};
+use bioshell_cif::{CifData, parse_item_or_error, CifError, entry_has_value, CifTable};
 use crate::{PDBError, ResidueId, value_or_missing_key_pdb_error};
 use crate::PDBError::CifParsingError;
 use bioshell_cif::CifError::{ItemParsingError, MissingCifDataKey};
@@ -123,18 +123,15 @@ impl PdbHelix {
             })
         }
         let mut helices: Vec<PdbHelix> = Vec::new();
-        if let Some(helix_loop) = cif_data.first_loop("_struct_conf.id") {
-            cif_columns_by_name!(EntityData, "_struct_conf.id",
-                "_struct_conf.beg_label_comp_id", "_struct_conf.beg_label_asym_id",
-                "_struct_conf.beg_label_seq_id", "_struct_conf.pdbx_beg_PDB_ins_code",
-                "_struct_conf.end_label_comp_id", "_struct_conf.end_label_asym_id",
-                "_struct_conf.end_label_seq_id", "_struct_conf.pdbx_end_PDB_ins_code",
-            );
-            let extractor = EntityData::new(helix_loop)?;
-            let mut tokens = [""; 9];
-            for row in helix_loop.rows() {
-                extractor.data_items(&row, &mut tokens);
-                let helix = new_helix(&tokens)?;
+        if let Some(helix_loop) = cif_data.first_loop("_struct_conf") {
+            let helix_table = CifTable::new(helix_loop, ["id",
+                "beg_label_comp_id", "beg_label_asym_id", "beg_label_seq_id",
+                "pdbx_beg_PDB_ins_code", "end_label_comp_id", "end_label_asym_id",
+                "end_label_seq_id", "pdbx_end_PDB_ins_code"
+            ])?;
+
+            for row in helix_table.iter() {
+                let helix = new_helix(&row)?;
                 helices.push(helix);
             }
             return Ok(helices);
