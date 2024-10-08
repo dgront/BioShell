@@ -16,6 +16,10 @@ pub enum CifError {
     /// CIF input contains more than one data block
     ExtraDataBlock,
 
+    #[error("CIF input must contain at least one data block!")]
+    /// CIF input must contain at least one data block!
+    NoDataBlock,
+
     #[error("Can't parse the following CIF line: {line}")]
     /// Can't parse a CIF
     InvalidCifLine {line: String },

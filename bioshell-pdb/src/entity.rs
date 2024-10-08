@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use bioshell_cif::{cif_columns_by_name, CifData, CifLoop, CifError};
+use bioshell_cif::{CifData, CifLoop, CifError, CifTable};
 use crate::{PDBError, value_or_missing_key_pdb_error};
 use crate::PDBError::{CantParseEnumVariant, CifParsingError};
 use bioshell_cif::CifError::{ItemParsingError, MissingCifDataKey};
@@ -161,15 +161,10 @@ impl Entity {
     pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<Entity>, PDBError> {
         let mut entities = Vec::new();
 
-        if let Some(entity_loop) = cif_data.first_loop("_entity.id") {
-            cif_columns_by_name!(EntityData, "_entity.id",
-                "_entity.pdbx_description", "_entity.type",
-                "_entity.src_method", "_entity.formula_weight",
-            );
-            let extractor = EntityData::new(entity_loop)?;
-            let mut tokens = [""; 5];
-            for row in entity_loop.rows() {
-                extractor.data_items(&row, &mut tokens);
+        if let Some(entity_loop) = cif_data.first_loop("_entity.") {
+            let entity_table = CifTable::new(entity_loop, ["id", "pdbx_description", "type", "src_method", "formula_weight",])?;
+
+            for tokens in entity_table.iter() {
                 if let Ok(mass) = tokens[4].parse::<f64>() {
                     entities.push(Entity::from_strings(tokens[0], tokens[1], tokens[2], tokens[3], mass)?);
                 } else {

@@ -1,16 +1,15 @@
-use crate::CifError;
-/// Provides easy and efficient access to data stored in [`CifLoop`](crate::CifLoop)
+use crate::{CifError, CifLoop};
+
+/// Provides access to data stored in selected columns of a [`CifLoop`](CifLoop).
 ///
-/// Column names provided by a user are converted to integer indexes accessing respective columns.
+/// The purpose of this struct is to simplify access data stored in a loop block. It allows to iterate over
+/// rows of a loop block and unpack values of selected columns at the same time.
 ///
-/// This macro fails an assertion when any of `va` coordinates differs from the corresponding
-/// coordinate of `vb` vector by more than `delta`
-///
-/// # Example
 /// ```
 /// use std::io::BufReader;
-/// use bioshell_cif::{cif_columns_by_name, read_cif_buffer, CifLoop, CifError};
+/// use bioshell_cif::{read_cif_buffer, CifLoop, CifError, CifTable};
 ///
+/// # fn main() -> Result<(), CifError> {
 /// let cif_data = "data_coords
 /// loop_
 /// _atom_site_label
@@ -21,58 +20,102 @@ use crate::CifError;
 /// O1 4.154 5.699 3.026 0.0
 /// C2 5.630 5.087 4.246 0.0";
 ///
-/// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_data.as_bytes())).unwrap();
-/// let first_loop = data_blocks[0].loop_blocks().next().unwrap();
-/// cif_columns_by_name!(Cartesians, "_atom_site_x", "_atom_site_y", "_atom_site_z",);
-/// match Cartesians::new(&first_loop) {
-///     Ok(get_xyz) => {
-///             let mut xyz = [""; 3];
-///             for row in first_loop.rows() {
-///             get_xyz.data_items(row, &mut xyz);
-///         }
+/// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_data.as_bytes()))?;
+/// if let Some(cif_loop) = data_blocks[0].loop_blocks().next() {
+///     let cif_table = CifTable::new(cif_loop, ["_atom_site_x", "_atom_site_y", "_atom_site_z"]);
+///     for [x, y, z] in cif_table.iter() {
+///         println!("{} {} {}", x, y, z);
 ///     }
-///     Err(e) => {panic!("{}",e)}
 /// }
+/// # Ok(())
+/// # }
 /// ```
-#[macro_export]
-macro_rules! cif_columns_by_name {
-    (
-        $struct_name:ident,
-        $(
-            $value:expr,
-        )*
-    ) => {
-        #[derive(Debug)]
-        struct $struct_name {
-             values: [usize; {
-                let count = 0usize $(+ { let _ = stringify!($value); 1usize })*;
-                count
-            }],
-        }
-
-        impl $struct_name {
-            pub fn new(loop_block: &CifLoop) -> Result<$struct_name, CifError> {
-
-                let values = [
-                    $(
-                        match loop_block.column_index($value) {
-                            Some(num) => num,
-                            None => return Err(CifError::MissingCifLoopKey{item_key: $value.to_string()})
-                        },
-                    )*
-                ];
-                Ok($struct_name { values })
-            }
-
-            pub fn data_items<'a>(&self, row: &'a Vec<String>, output: &mut [&'a str])  {
-
-                for (output_index, &selected_index) in self.values.iter().enumerate() {
-                    if let Some(s) = row.get(selected_index) {
-                       output[output_index] = s;
-                    }
-                }
-            }
-        }
-    };
+/// It allows to provide column names only partially, as long as they are unique:
+/// ```
+/// use std::io::BufReader;
+/// use bioshell_cif::{read_cif_buffer, CifLoop, CifError, CifTable};
+/// # fn main() -> Result<(), CifError> {
+/// let cif_data = "data_5edw
+/// loop_
+/// _pdbx_audit_revision_history.ordinal
+/// _pdbx_audit_revision_history.data_content_type
+/// _pdbx_audit_revision_history.major_revision
+/// _pdbx_audit_revision_history.minor_revision
+/// _pdbx_audit_revision_history.revision_date
+/// 1 'Structure model' 1 0 2016-11-02
+/// 2 'Structure model' 1 1 2017-11-22
+/// 3 'Structure model' 1 2 2023-09-27";
+/// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_data.as_bytes()))?;
+/// if let Some(revisions) = data_blocks[0].first_loop("_pdbx_audit_revision_history") {
+///     let rev_table = CifTable::new(revisions, ["revision_date"]);
+///     for [date] in rev_table.iter() {
+///         println!("{}", date);
+///     }
+/// # assert_eq!(rev_table.iter().count(), 3);
+/// }
+/// # Ok(())
+/// # }
+/// ```
+///
+pub struct CifTable<'a, const N: usize> {
+    cif_loop: &'a CifLoop,
+    column_indices: [usize; N],  // Use a constant-sized array for the indices
 }
+
+impl<'a, const N: usize> CifTable<'a, N> {
+    pub fn new(cif_loop: &'a CifLoop, selected_columns: [&str; N]) -> Result<Self, CifError> {
+        // Find the indices of the selected column names in the original loop
+        let mut column_indices = [0; N];
+        for (i, &col_name) in selected_columns.iter().enumerate() {
+            let pos = cif_loop.column_names.iter().position(|name| name.contains(col_name));
+            if let Some(index) = pos {
+                column_indices[i] = index;
+            } else {
+                return Err(CifError::MissingCifLoopKey { item_key: col_name.to_string() });
+            }
+        }
+
+        Ok(CifTable { cif_loop, column_indices, })
+    }
+
+    // Method to return an iterator over the filtered rows, borrowing from the table
+    pub fn iter(&'a self) -> CifTableIter<'a, 'a, N> {
+        CifTableIter {
+            cif_table: self,
+            row_index: 0,
+            internal_array: [""; N],  // Internal array allocated once
+        }
+    }
+}
+
+/// Iterator for CifTable provides a reference to an array of &str containing the requested data entries
+pub struct CifTableIter<'a, 'b, const N: usize> {
+    cif_table: &'b CifTable<'a, N>,  // Borrowing from CifTable
+    row_index: usize,
+    internal_array: [&'a str; N],    // Internal array to store references with the same lifetime as the loop data
+}
+
+impl<'a, 'b, const N: usize> Iterator for CifTableIter<'a, 'b, N> {
+    type Item = [&'a str; N];  // Return a reference to an array of &str of length N
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.row_index >= self.cif_table.cif_loop.data_rows.len() {
+            return None;  // No more rows to iterate
+        }
+
+        // Get the current row
+        let current_row = &self.cif_table.cif_loop.data_rows[self.row_index];
+        self.row_index += 1;
+
+        // Populate the internal array with references to the selected columns
+        for (i, &col_idx) in self.cif_table.column_indices.iter().enumerate() {
+            self.internal_array[i] = &current_row[col_idx];
+        }
+
+        // Return a reference to the internal array
+        Some(self.internal_array)
+    }
+}
+
+
 
