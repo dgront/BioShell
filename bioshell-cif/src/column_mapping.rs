@@ -63,7 +63,7 @@ pub struct CifTable<'a, const N: usize> {
 impl<'a, const N: usize> CifTable<'a, N> {
     pub fn new(cif_data_block: &'a CifData, selected_loop: &str, selected_columns: [&str; N]) -> Result<Self, CifError> {
 
-        let cif_loop = cif_data_block.first_loop(selected_loop).ok_or(CifError::MissingCifLoopKey { item_key: selected_loop.to_string() })?;
+        let cif_loop = cif_data_block.get_loop(selected_loop).ok_or(CifError::MissingCifLoopKey { item_key: selected_loop.to_string() })?;
 
         // Find the indices of the selected column names in the original loop
         let mut column_indices = [0; N];

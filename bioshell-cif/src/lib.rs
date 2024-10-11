@@ -417,12 +417,12 @@ impl CifData {
         self.loops.iter()
     }
 
-    /// Finds a loop block that contains a column of a given name.
+    /// Finds a loop block that contains a given entry name.
     ///
-    /// Only the first sucha loop block may be accessed with  this method which is provided for
-    /// cases when there is only one such a loop block
-    pub fn first_loop(&self, column: &str) -> Option<&CifLoop> {
-        self.loops.iter().filter(|l| l.column_name_contains(column)).next()
+    /// The provided ``data_name`` doesn't have to be a full name of an entry. Partial name is also accepted
+    /// as long as it is unique.
+    pub fn get_loop(&self, data_name: &str) -> Option<&CifLoop> {
+        self.loops.iter().filter(|l| l.column_name_contains(data_name)).next()
     }
 
     /// Get an iterator of mutable references to loop-blocks.
