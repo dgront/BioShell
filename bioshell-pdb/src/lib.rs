@@ -52,7 +52,7 @@ pub use pdb_sheet::PdbSheet;
 pub use exp_data::{ExperimentalMethod};
 pub use unit_cell::{UnitCell};
 pub use load_cif::{load_cif_file, load_cif_reader, is_cif_file, find_cif_file_name};
-pub use entity::{EntitySource, EntityType, Entity, EntityPolyType};
+pub use entity::{EntitySource, EntityType, Entity, PolymerEntityType, PolymerEntity};
 
 mod macros {
     #[macro_export]

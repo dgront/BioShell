@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 use bioshell_cif::{CifData, CifLoop, CifError, CifTable};
 use crate::{PDBError, value_or_missing_key_pdb_error};
 use crate::PDBError::{CantParseEnumVariant, CifParsingError};
 use bioshell_cif::CifError::{ItemParsingError, MissingCifDataKey};
+use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
 
 /// Represents the different types of entities in CIF data.
 ///
@@ -192,12 +194,12 @@ impl Entity {
 ///
 /// # Example
 /// ```
-/// use bioshell_pdb::EntityPolyType;
-/// let src_method: EntityPolyType = "Polypeptide(L)".parse().unwrap();
-/// assert_eq!(src_method, EntityPolyType::PolypeptideL);
+/// use bioshell_pdb::PolymerEntityType;
+/// let src_method: PolymerEntityType = "Polypeptide(L)".parse().unwrap();
+/// assert_eq!(src_method, PolymerEntityType::PolypeptideL);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
-pub enum EntityPolyType {
+pub enum PolymerEntityType {
     /// L polypeptide
     PolypeptideL,
     /// D polypeptide
@@ -206,29 +208,101 @@ pub enum EntityPolyType {
     DNA,
     /// RNA polymer.
     RNA,
-    /// Polysaccharide polymer.
-    Polysaccharide,
+    /// L polysaccharide polymer.
+    PolysaccharideL,
+    /// D polysaccharide polymer.
+    PolysaccharideD,
     /// Represents a peptide nucleic acid.
     PeptideNucleicAcid,
     /// Represents a hybrid polymer type.
-    Hybrid,
-    /// Represents other types of polymers not explicitly defined.
     Other,
 }
 
-impl FromStr for EntityPolyType {
+impl FromStr for PolymerEntityType {
     type Err = PDBError;
     /// Parse a string and return the corresponding `EntityPolyType` enum variant.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "polypeptide(l)" => Ok(EntityPolyType::PolypeptideL),
-            "polypeptide(d)" => Ok(EntityPolyType::PolypeptideD),
-            "dna" => Ok(EntityPolyType::DNA),
-            "rna" => Ok(EntityPolyType::RNA),
-            "polysaccharide" => Ok(EntityPolyType::Polysaccharide),
-            "peptide nucleic acid" => Ok(EntityPolyType::PeptideNucleicAcid),
-            "hybrid" => Ok(EntityPolyType::Hybrid),
+        let tmp = s.trim_matches('\'').to_lowercase();
+        match tmp.as_str() {
+            "polypeptide(l)" => Ok(PolymerEntityType::PolypeptideL),
+            "polypeptide(d)" => Ok(PolymerEntityType::PolypeptideD),
+            "dna" => Ok(PolymerEntityType::DNA),
+            "rna" => Ok(PolymerEntityType::RNA),
+            "polysaccharide(l)" => Ok(PolymerEntityType::PolysaccharideL),
+            "polysaccharide(d)" => Ok(PolymerEntityType::PolysaccharideD),
+            "polydeoxyribonucleotide" => Ok(PolymerEntityType::DNA),
+            "polyribonucleotide" => Ok(PolymerEntityType::RNA),
+            "other" => Ok(PolymerEntityType::Other),
             _ => Err(CantParseEnumVariant{ data_value: s.to_string(), enum_name: "EntityPolyType".to_string() }),
         }
     }
+}
+
+pub struct PolymerEntity {
+    entity_id: String,
+    poly_type: PolymerEntityType,
+    chain_ids: Vec<String>,
+    monomer_sequence: Vec<ResidueType>,
+}
+
+impl PolymerEntity {
+    pub fn from_str(entity_id: &str, poly_type: &str, chain_ids: Vec<String>, monomer_sequence: Vec<String>) -> Result<Self, PDBError> {
+        let poly_type = PolymerEntityType::from_str(poly_type)?;
+        let mgr = ResidueTypeManager::get();
+        let mut monomers = vec![];
+        for code in monomer_sequence {
+            let m = mgr.by_code3(&code).ok_or(PDBError::UnknownResidueType{res_type: code.clone()})?;
+            monomers.push(m.clone());
+        }
+        Ok(PolymerEntity {
+            entity_id: entity_id.to_string(),
+            poly_type,
+            chain_ids,
+            monomer_sequence: monomers,
+        })
+    }
+
+    pub fn from_cif_data(cif_data: &CifData) -> Result<Option<Vec<PolymerEntity>>, PDBError> {
+        // ------------- HasMap to store data extracted from cif_data
+        let mut entities: HashMap<String, (String, Vec<String>, Vec<String>)> = HashMap::new();
+        // ------------- Extract the list of all polymer entities
+        if let Some(poly_entity_loop) = cif_data.first_loop("_entity_poly.") {
+            let entity_table = CifTable::new(poly_entity_loop, ["entity_id", "type", "pdbx_strand_id"])?;
+            for [entity_id, poly_type, chain_ids] in entity_table.iter() {
+                let chain_ids: Vec<String> = chain_ids.split(',').map(|s| s.to_string()).collect();
+                entities.insert(entity_id.to_string(), (poly_type.to_string(), chain_ids, Vec::new()));
+            }
+        } else {
+            // --- no polymer entities found!
+            return Ok(None);
+        }
+        // ------------- Extract the sequence for each of the polymer entities
+        if let Some(poly_seq_loop) = cif_data.first_loop("_entity_poly_seq.") {
+            let entity_table = CifTable::new(poly_seq_loop, ["entity_id", "mon_id"])?;
+            for [entity_id, mon_id] in entity_table.iter() {
+                let entity_id = entity_id.to_string();
+                let mon_id = mon_id.to_string();
+                if let Some((_, _, seq)) = entities.get_mut(&entity_id) {
+                    seq.push(mon_id);
+                }
+            }
+        } else {
+            return Err(CifParsingError(CifError::MissingCifLoopKey { item_key: "_entity_poly_seq.".to_string() }));
+        }
+        // ------------- Convert the data into PolymerEntity objects and return them
+        let mut poly_entities: Vec<PolymerEntity> = vec![];
+        for (entity_id, (poly_type, chain_ids, monomer_sequence)) in entities {
+            poly_entities.push(PolymerEntity::from_str(&entity_id, &poly_type, chain_ids, monomer_sequence).unwrap());
+        }
+
+        Ok(Some(poly_entities))
+    }
+
+    pub fn entity_id(&self) -> &str { &self.entity_id }
+
+    pub fn monomer_sequence(&self) -> &Vec<ResidueType> { &self.monomer_sequence }
+
+    pub fn entity_type(&self) -> &PolymerEntityType { &self.poly_type }
+
+    pub fn chain_ids(&self) -> &Vec<String> { &self.chain_ids }
 }
