@@ -32,7 +32,7 @@ fn test_residue_types() {
     let alm = ResidueType::from_attrs("ALM", StandardResidueType::ALA, MonomerType::PeptideLinking);
     // ---------- Create a new RT manager, it should preload all the 29 standard residue types
     let mut mgr = ResidueTypeManager::get();
-    assert_eq!(mgr.count(), 29);
+    assert_eq!(mgr.count(), 33);
 
     // ---------- ALA should be already in the manager
     let ala = mgr.by_code3(&String::from("ALA"));
@@ -43,7 +43,7 @@ fn test_residue_types() {
     mgr.register_residue_type(alm);
     let aln = ResidueType::from_attrs("ALN", StandardResidueType::ALA, MonomerType::PeptideLinking);
     mgr.register_residue_type(aln);
-    assert_eq!(mgr.count(), 31);
+    assert_eq!(mgr.count(), 35);
 
     // ---------- code1() for ALN
     assert_eq!(mgr.by_code3("ALN").unwrap().parent_type.code1(), 'A');

@@ -350,7 +350,7 @@ macro_rules! define_res_types {
             /// }
             /// assert_eq!(n_aa, 21);       // 20 standard amino acids + UNK
             /// ```
-            pub const TYPES: [Self; 29] = [
+            pub const TYPES: [Self; 33] = [
             $(
                 Self::$name,
             )*
@@ -381,12 +381,16 @@ define_res_types! {
     TYR 18 'Y' "TYR" PeptideLinking,
     VAL 19 'V' "VAL" PeptideLinking,
     UNK 20 'X' "UNK" PeptideLinking,
-    A 21 'a' "A" DNALinking,
-    C 22 'c' "C" DNALinking,
-    G 23 'g' "G" DNALinking,
-    T 24 't' "T" DNALinking,
+    A 21 'a' "A" RNALinking,
+    C 22 'c' "C" RNALinking,
+    G 23 'g' "G" RNALinking,
+    T 24 't' "T" RNALinking,
     U 25 'u' "U" RNALinking,
-    GAP 26 '-' "GAP" Other,
-    GPE 27 '_' "GPE" Other,
-    UNL 28 'Z' "UNL" Other
+    DA 26 'a' "DA" DNALinking,
+    DC 27 'c' "DC" DNALinking,
+    DG 28 'g' "DG" DNALinking,
+    DT 29 't' "DT" DNALinking,
+    GAP 30 '-' "GAP" Other,
+    GPE 31 '_' "GPE" Other,
+    UNL 32 'Z' "UNL" Other
 }
