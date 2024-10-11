@@ -116,9 +116,8 @@ _symmetry_equiv_pos.as_xyz
 2 x,y,z
 ";
         let mut reader = BufReader::new(cif_str.as_bytes());
-        let data_blocks = read_cif_buffer(&mut reader)?;
-        let cif_loop = data_blocks[0].first_loop("_symmetry_equiv_pos").ok_or(CifError::MissingCifLoopKey { item_key: "_symmetry_equiv_pos".to_string() })?;
-        let cif_table = CifTable::new(cif_loop,["site_id", "as_xyz"])?;
+        let data_block = &read_cif_buffer(&mut reader)?[0];
+        let cif_table = CifTable::new(data_block, "_symmetry_equiv_pos",["site_id", "as_xyz"])?;
         assert_eq!(cif_table.iter().count(), 2);
         Ok(())
     }

@@ -1,4 +1,4 @@
-use crate::{CifError, CifLoop};
+use crate::{CifData, CifError, CifLoop};
 
 /// Provides access to data stored in selected columns of a [`CifLoop`](CifLoop).
 ///
@@ -20,12 +20,11 @@ use crate::{CifError, CifLoop};
 /// O1 4.154 5.699 3.026 0.0
 /// C2 5.630 5.087 4.246 0.0";
 ///
-/// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_data.as_bytes()))?;
-/// if let Some(cif_loop) = data_blocks[0].loop_blocks().next() {
-///     let cif_table = CifTable::new(cif_loop, ["_atom_site_x", "_atom_site_y", "_atom_site_z"]);
-///     for [x, y, z] in cif_table.iter() {
-///         println!("{} {} {}", x, y, z);
-///     }
+/// let data_block = &read_cif_buffer(&mut BufReader::new(cif_data.as_bytes()))?[0];
+///
+/// let cif_table = CifTable::new(data_block, "_atom_site_", ["_atom_site_x", "_atom_site_y", "_atom_site_z"])?;
+/// for [x, y, z] in cif_table.iter() {
+///     println!("{} {} {}", x, y, z);
 /// }
 /// # Ok(())
 /// # }
@@ -45,14 +44,13 @@ use crate::{CifError, CifLoop};
 /// 1 'Structure model' 1 0 2016-11-02
 /// 2 'Structure model' 1 1 2017-11-22
 /// 3 'Structure model' 1 2 2023-09-27";
-/// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_data.as_bytes()))?;
-/// if let Some(revisions) = data_blocks[0].first_loop("_pdbx_audit_revision_history") {
-///     let rev_table = CifTable::new(revisions, ["revision_date"]);
-///     for [date] in rev_table.iter() {
-///         println!("{}", date);
-///     }
-/// # assert_eq!(rev_table.iter().count(), 3);
+/// let data_block = &read_cif_buffer(&mut BufReader::new(cif_data.as_bytes()))?[0];///
+/// let rev_table = CifTable::new(data_block, "_pdbx_audit_revision_history", ["revision_date"])?;
+/// for [date] in rev_table.iter() {
+///     println!("{}", date);
 /// }
+/// # assert_eq!(rev_table.iter().count(), 3);
+///
 /// # Ok(())
 /// # }
 /// ```
@@ -63,7 +61,10 @@ pub struct CifTable<'a, const N: usize> {
 }
 
 impl<'a, const N: usize> CifTable<'a, N> {
-    pub fn new(cif_loop: &'a CifLoop, selected_columns: [&str; N]) -> Result<Self, CifError> {
+    pub fn new(cif_data_block: &'a CifData, selected_loop: &str, selected_columns: [&str; N]) -> Result<Self, CifError> {
+
+        let cif_loop = cif_data_block.first_loop(selected_loop).ok_or(CifError::MissingCifLoopKey { item_key: selected_loop.to_string() })?;
+
         // Find the indices of the selected column names in the original loop
         let mut column_indices = [0; N];
         for (i, &col_name) in selected_columns.iter().enumerate() {
