@@ -1,7 +1,6 @@
 use bioshell_cif::{CifData, parse_item_or_error, CifError, entry_has_value, CifTable};
-use crate::{PDBError, ResidueId, value_or_missing_key_pdb_error};
-use crate::PDBError::CifParsingError;
-use bioshell_cif::CifError::{ItemParsingError, MissingCifDataKey};
+use crate::{PDBError, ResidueId};
+use bioshell_cif::CifError::{ItemParsingError};
 
 /// Corresponds to a HELIX record.
 ///
@@ -89,7 +88,9 @@ impl PdbHelix {
     /// ```
     pub fn end_res_id(&self) -> ResidueId { ResidueId::new(&self.end_chain_id, self.end_seq_num, self.end_i_code)}
 
-    /// Lists all helices from a given structure
+    /// Lists all helices from a given structure.
+    ///
+    /// Note, that the returned vector may be empty if the structure does not contain any helix.
     ///
     /// # Example
     /// ```
@@ -119,45 +120,20 @@ impl PdbHelix {
                 end_i_code: if !entry_has_value(tokens[4]) { ' ' } else { tokens[8].chars().nth(0).unwrap() },
                 helix_class: 1,
                 comment: String::new(),
-                length: 0,
+                length: parse_item_or_error!(tokens[9], i32),
             })
         }
         let mut helices: Vec<PdbHelix> = Vec::new();
-        if let Some(helix_loop) = cif_data.first_loop("_struct_conf") {
-            let helix_table = CifTable::new(helix_loop, ["id",
-                "beg_label_comp_id", "beg_label_asym_id", "beg_label_seq_id",
-                "pdbx_beg_PDB_ins_code", "end_label_comp_id", "end_label_asym_id",
-                "end_label_seq_id", "pdbx_end_PDB_ins_code"
-            ])?;
+        let helix_table = CifTable::new(cif_data, "_struct_conf.",
+["id",  "beg_label_comp_id", "beg_label_asym_id", "beg_label_seq_id",
+            "pdbx_beg_PDB_ins_code", "end_label_comp_id", "end_label_asym_id",
+            "end_label_seq_id", "pdbx_end_PDB_ins_code", "pdbx_PDB_helix_length",
+        ])?;
 
-            for row in helix_table.iter() {
-                let helix = new_helix(&row)?;
-                helices.push(helix);
-            }
-            return Ok(helices);
-        } else {
-            if cif_data.data_items().contains_key("_struct_conf.id") {
-                let mut init_i_code = value_or_missing_key_pdb_error!(cif_data, "_struct_conf.pdbx_beg_PDB_ins_code", char);
-                if init_i_code == '?' || init_i_code == '.' { init_i_code = ' '; }
-                let mut end_i_code = value_or_missing_key_pdb_error!(cif_data, "_struct_conf.pdbx_end_PDB_ins_code", char);
-                if end_i_code == '?' || end_i_code == '.' { end_i_code = ' '; }
-                helices.push(PdbHelix {
-                    ser_num: cif_data.get_item_or_default("_struct_conf.pdbx_PDB_helix_id", "1".to_string()),
-                    helix_id: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.id", String),
-                    init_res_name: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.beg_label_comp_id", String),
-                    init_chain_id: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.beg_label_asym_id", String),
-                    init_seq_num: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.beg_label_seq_id", i32),
-                    init_i_code,
-                    end_res_name: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.end_label_comp_id", String),
-                    end_chain_id: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.end_label_asym_id", String),
-                    end_seq_num: value_or_missing_key_pdb_error!(cif_data, "_struct_conf.end_label_seq_id", i32),
-                    end_i_code,
-                    helix_class: cif_data.get_item_or_default("_struct_conf.pdbx_PDB_helix_class", 0),
-                    comment: String::new(),
-                    length: cif_data.get_item_or_default("_struct_conf.pdbx_PDB_helix_length", 0),
-                });
-            }
-            Ok(helices)
+        for row in helix_table.iter() {
+            let helix = new_helix(&row)?;
+            helices.push(helix);
         }
+        return Ok(helices);
     }
 }

@@ -3,7 +3,7 @@ use std::io;
 use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info, warn};
-use bioshell_cif::{CifLoop, read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value, CifData, CifTable};
+use bioshell_cif::{read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value, CifData, CifTable};
 use crate::{ExperimentalMethod, PdbAtom, PDBError, PdbHelix, PdbSheet, SecondaryStructureTypes, Structure, UnitCell, value_or_missing_key_pdb_error};
 use crate::calc::Vec3;
 use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError, MissingCifDataKey};
@@ -24,48 +24,43 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     let cif_data_block = &cif_data[0];
 
 
-    if let Some(atoms_loop) = cif_data_block.first_loop("_atom_site") {
-        let atoms_tokens = CifTable::new(atoms_loop, ["id", "label_atom_id",
-            "label_alt_id", "label_comp_id", "label_asym_id", "label_seq_id", "pdbx_PDB_ins_code",
-            "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol",
-            "pdbx_PDB_model_num", "auth_seq_id", "label_entity_id"])?;
+    let atoms_tokens = CifTable::new(cif_data_block, "_atom_site",["id", "label_atom_id",
+        "label_alt_id", "label_comp_id", "label_asym_id", "label_seq_id", "pdbx_PDB_ins_code",
+        "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol",
+        "pdbx_PDB_model_num", "auth_seq_id", "label_entity_id"])?;
 
-        let mut model_ids: HashMap<usize, usize> = HashMap::new();       // links model id to model index in the model_coordinates structure
-        for tokens in atoms_tokens.iter() {
-            let model_id = tokens[13].parse::<usize>().unwrap();  // model_id of the current atom
-            if ! model_ids.contains_key(&model_id) {                    // if we have a new model...
-                model_ids.insert(model_id, model_ids.len());
-                pdb_structure.model_coordinates.push(vec![]);
-            }
-            let mdl_idx = model_ids[&model_id];
-            let x = tokens[7].parse::<f64>().unwrap();
-            let y = tokens[8].parse::<f64>().unwrap();
-            let z = tokens[9].parse::<f64>().unwrap();
-            let pos = Vec3::new(x, y, z);
+    let mut model_ids: HashMap<usize, usize> = HashMap::new();       // links model id to model index in the model_coordinates structure
+    for tokens in atoms_tokens.iter() {
+        let model_id = tokens[13].parse::<usize>().unwrap();  // model_id of the current atom
+        if ! model_ids.contains_key(&model_id) {                    // if we have a new model...
+            model_ids.insert(model_id, model_ids.len());
+            pdb_structure.model_coordinates.push(vec![]);
+        }
+        let mdl_idx = model_ids[&model_id];
+        let x = tokens[7].parse::<f64>().unwrap();
+        let y = tokens[8].parse::<f64>().unwrap();
+        let z = tokens[9].parse::<f64>().unwrap();
+        let pos = Vec3::new(x, y, z);
 
-            if model_ids.len() == 1 {
-                pdb_structure.model_coordinates[mdl_idx].push(pos.clone());
-                match create_pdb_atom(&tokens, pos) {
-                    Ok(a) => { pdb_structure.atoms.push(a); }
-                    Err(e) => {
-                        let data_line = tokens.join(" ");
-                        return match e {
-                            ItemParsingError { item, type_name, details: _ } => {
-                                Err(CifParsingError(ItemParsingError {
-                                    item, type_name, details: data_line,
-                                }))
-                            }
-                            _ => { Err(CifParsingError(e)) }
+        if model_ids.len() == 1 {
+            pdb_structure.model_coordinates[mdl_idx].push(pos.clone());
+            match create_pdb_atom(&tokens, pos) {
+                Ok(a) => { pdb_structure.atoms.push(a); }
+                Err(e) => {
+                    let data_line = tokens.join(" ");
+                    return match e {
+                        ItemParsingError { item, type_name, details: _ } => {
+                            Err(CifParsingError(ItemParsingError {
+                                item, type_name, details: data_line,
+                            }))
                         }
+                        _ => { Err(CifParsingError(e)) }
                     }
                 }
-            } else {
-                pdb_structure.model_coordinates[mdl_idx].push(pos);
             }
+        } else {
+            pdb_structure.model_coordinates[mdl_idx].push(pos);
         }
-    } else {
-        warn!("mmCIF data has no atoms: double check if it contains _atom_site loop block");
-        return Err(CifParsingError(MissingCifLoopKey{ item_key: "_atom_site".to_string() }));
     }
 
     // --- header data
@@ -79,6 +74,9 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     pdb_structure.resolution = cif_data_block.get_item("_refine.ls_d_res_high");
     pdb_structure.r_factor = cif_data_block.get_item("_refine.ls_R_factor_obs");
     pdb_structure.r_free = cif_data_block.get_item("_refine.ls_R_factor_R_free");
+    if let Some(keywds) = cif_data_block.get_item::<String>("_struct_keywords.text") {
+        pdb_structure.keywords = keywds.split(",").map(|s| s.to_string()).collect();
+    }
 
     // todo: fix the helix type! Now it's only an alpha helix
     // --- secondary structure
@@ -217,18 +215,16 @@ fn create_pdb_atom(tokens: &[&str; 16], pos: Vec3) -> Result<PdbAtom, CifError> 
 }
 
 fn load_residue_types(cif_data_block: &CifData) -> Result<(), PDBError>{
-    if let Some(monomers_loop) = cif_data_block.first_loop("_chem_comp") {
-        let monomers = CifTable::new(monomers_loop,["id", "type",])?;
-        let mut rts = ResidueTypeManager::get();
-        for tokens in monomers.iter() {
-            match  MonomerType::try_from(tokens[1]) {
-                Ok(chem_type) => {
-                    let rt = ResidueType::from_attrs(tokens[0], StandardResidueType::UNK, chem_type);
-                    rts.register_residue_type(rt);
-                }
-                Err(_) => {return Err(IncorrectCompoundTypeName{ compound_id: tokens[0].to_string(), compound_type: tokens[1].to_string()})}
-            };
-        }
+    let monomers = CifTable::new(cif_data_block, "_chem_comp.",["id", "type",])?;
+    let mut rts = ResidueTypeManager::get();
+    for tokens in monomers.iter() {
+        match  MonomerType::try_from(tokens[1]) {
+            Ok(chem_type) => {
+                let rt = ResidueType::from_attrs(tokens[0], StandardResidueType::UNK, chem_type);
+                rts.register_residue_type(rt);
+            }
+            Err(_) => {return Err(IncorrectCompoundTypeName{ compound_id: tokens[0].to_string(), compound_type: tokens[1].to_string()})}
+        };
     }
     Ok(())
 }

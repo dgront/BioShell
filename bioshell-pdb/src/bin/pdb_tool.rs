@@ -63,6 +63,7 @@ fn print_info(strctr: &Structure) {
     if let Some(r_fact) = strctr.r_factor { println!("r_factor: {}", r_fact); }
     if let Some(r_free) = strctr.r_free { println!("r_free: {}", r_free); }
     if let Some(unit_cell) = &strctr.unit_cell { println!("space group: {}", unit_cell.space_group); }
+    if strctr.keywords.len() > 0 { println!("keywords: {}", strctr.keywords.join(", ")); }
     println!("models: {}", strctr.count_models());
 }
 

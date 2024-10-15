@@ -48,7 +48,7 @@ mod tests {
     fn load_polymer_entities() -> Result<(), PDBError> {
         let reader = BufReader::new(cif_5edw.as_bytes());
         let cif_data = read_cif_buffer(reader).unwrap();
-        let entities = PolymerEntity::from_cif_data(&cif_data[0])?.unwrap();
+        let entities = PolymerEntity::from_cif_data(&cif_data[0])?;
         assert_eq!(entities.len(), 3);
         let result = vec![(341, PolypeptideL), (19, DNA), (13, DNA)];
         for entity in entities {

@@ -99,7 +99,7 @@ impl ExperimentalMethod {
         if let Some(methods) = cif_data_block.get_item::<String>("_exptl.method") {
             output.extend(ExperimentalMethod::from_expdata_line(&methods));
         }
-        if let Some(exp_loop) = cif_data_block.first_loop("_exptl.method") {
+        if let Some(exp_loop) = cif_data_block.get_loop("_exptl.method") {
             let idx = exp_loop.column_index("_exptl.method").unwrap();
             for row in exp_loop.rows() {
                 output.extend(ExperimentalMethod::from_expdata_line(&row[idx]));

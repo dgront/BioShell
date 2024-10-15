@@ -95,6 +95,8 @@ pub struct Structure {
     pub classification: Option<String>,
     /// deposition date
     pub dep_date: Option<String>,
+    /// placeholder for keywords, which may be empty
+    pub keywords: Vec<String>,
     /// Four-character PDB code of this deposit, such as `2GB1` or `4HHB`
     pub id_code: String,
     /// title for a PDB entry
@@ -131,6 +133,7 @@ impl Structure {
         Self {
             classification: None,
             dep_date: None,
+            keywords: vec![],
             id_code: id_code.to_string(),
             title: None,
             methods: vec![],
@@ -432,6 +435,9 @@ impl Structure {
     }
 
     /// Provides a sequence of a given chain.
+    ///
+    /// The sequence contains only in the residues found in atoms of this structure. The original sequence
+    /// of a chain can be obtained from the respective entity object.
     ///
     /// Residues listed after the `TER` record are not included in the sequence returned by this method
     pub fn sequence(&self, chain_id: &str) -> Sequence {

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::str::FromStr;
-use bioshell_cif::{CifData, CifLoop, CifError, CifTable};
-use crate::{PDBError, value_or_missing_key_pdb_error};
+use bioshell_cif::{CifData, CifTable};
+use crate::{PDBError};
 use crate::PDBError::{CantParseEnumVariant, CifParsingError};
-use bioshell_cif::CifError::{ItemParsingError, MissingCifDataKey};
+use bioshell_cif::CifError::{ItemParsingError};
 use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
 
 /// Represents the different types of entities in CIF data.
@@ -163,30 +163,20 @@ impl Entity {
     pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<Entity>, PDBError> {
         let mut entities = Vec::new();
 
-        if let Some(entity_loop) = cif_data.first_loop("_entity.") {
-            let entity_table = CifTable::new(entity_loop, ["id", "pdbx_description", "type", "src_method", "formula_weight",])?;
-
-            for tokens in entity_table.iter() {
-                if let Ok(mass) = tokens[4].parse::<f64>() {
-                    entities.push(Entity::from_strings(tokens[0], tokens[1], tokens[2], tokens[3], mass)?);
-                } else {
-                    return Err(CifParsingError(ItemParsingError{
-                        item: tokens[4].to_string(),
-                        type_name: "f64".to_string(),
-                        details: "_entity.formula_weight can't be parsed".to_string(),
-                    }));
-                }
+        let entity_table = CifTable::new(cif_data, "_entity.",
+            ["id", "pdbx_description", "type", "src_method", "formula_weight",])?;
+        for tokens in entity_table.iter() {
+            if let Ok(mass) = tokens[4].parse::<f64>() {
+                entities.push(Entity::from_strings(tokens[0], tokens[1], tokens[2], tokens[3], mass)?);
+            } else {
+                return Err(CifParsingError(ItemParsingError{
+                    item: tokens[4].to_string(),
+                    type_name: "f64".to_string(),
+                    details: "_entity.formula_weight can't be parsed".to_string(),
+                }));
             }
-            Ok(entities)
-        } else {
-            let id = value_or_missing_key_pdb_error!(cif_data, "_entity.id", String);
-            let desc = value_or_missing_key_pdb_error!(cif_data, "_entity.pdbx_description", String);
-            let entity_type = value_or_missing_key_pdb_error!(cif_data, "_entity.type", String);
-            let src_method = value_or_missing_key_pdb_error!(cif_data, "_entity.src_method", String);
-            let weight = value_or_missing_key_pdb_error!(cif_data, "_entity.formula_weight", f64);
-            entities.push(Entity::from_strings(&id, &desc, &entity_type, &src_method, weight)?);
-            Ok(entities)
         }
+        Ok(entities)
     }
 }
 
@@ -262,32 +252,44 @@ impl PolymerEntity {
         })
     }
 
-    pub fn from_cif_data(cif_data: &CifData) -> Result<Option<Vec<PolymerEntity>>, PDBError> {
+    /// Load a list of polymer entities from a mmCIF file.
+    ///
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_cif::read_cif_buffer;
+    /// use bioshell_pdb::{PolymerEntity,PDBError};
+    /// # fn main() -> Result<(), PDBError> {
+    /// let cif_data = include_str!("../tests/test_files/2gb1.cif");
+    /// let reader = BufReader::new(cif_data.as_bytes());
+    /// let cif_data = read_cif_buffer(reader).unwrap();
+    /// let entities = PolymerEntity::from_cif_data(&cif_data[0])?;
+    /// // --- 2GB1 protein has only one chain of 56 residues
+    /// assert_eq!(entities.len(), 1);
+    /// assert_eq!(entities[0].monomer_sequence().len(), 56);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<PolymerEntity>, PDBError> {
         // ------------- HasMap to store data extracted from cif_data
         let mut entities: HashMap<String, (String, Vec<String>, Vec<String>)> = HashMap::new();
         // ------------- Extract the list of all polymer entities
-        if let Some(poly_entity_loop) = cif_data.first_loop("_entity_poly.") {
-            let entity_table = CifTable::new(poly_entity_loop, ["entity_id", "type", "pdbx_strand_id"])?;
+        if let Ok(entity_table)  = CifTable::new(cif_data, "_entity_poly.", ["entity_id", "type", "pdbx_strand_id"]) {
             for [entity_id, poly_type, chain_ids] in entity_table.iter() {
+                // --- chain IDs are separated by commas like "A,B,C", so we need to split them
                 let chain_ids: Vec<String> = chain_ids.split(',').map(|s| s.to_string()).collect();
                 entities.insert(entity_id.to_string(), (poly_type.to_string(), chain_ids, Vec::new()));
             }
         } else {
-            // --- no polymer entities found!
-            return Ok(None);
+            return Ok(vec![]);        // --- no polymer entities found!
         }
         // ------------- Extract the sequence for each of the polymer entities
-        if let Some(poly_seq_loop) = cif_data.first_loop("_entity_poly_seq.") {
-            let entity_table = CifTable::new(poly_seq_loop, ["entity_id", "mon_id"])?;
-            for [entity_id, mon_id] in entity_table.iter() {
-                let entity_id = entity_id.to_string();
-                let mon_id = mon_id.to_string();
-                if let Some((_, _, seq)) = entities.get_mut(&entity_id) {
-                    seq.push(mon_id);
-                }
+        let entity_table = CifTable::new(cif_data, "_entity_poly_seq.",["entity_id", "mon_id"])?;
+        for [entity_id, mon_id] in entity_table.iter() {
+            let entity_id = entity_id.to_string();
+            let mon_id = mon_id.to_string();
+            if let Some((_, _, seq)) = entities.get_mut(&entity_id) {
+                seq.push(mon_id);
             }
-        } else {
-            return Err(CifParsingError(CifError::MissingCifLoopKey { item_key: "_entity_poly_seq.".to_string() }));
         }
         // ------------- Convert the data into PolymerEntity objects and return them
         let mut poly_entities: Vec<PolymerEntity> = vec![];
@@ -295,7 +297,7 @@ impl PolymerEntity {
             poly_entities.push(PolymerEntity::from_str(&entity_id, &poly_type, chain_ids, monomer_sequence).unwrap());
         }
 
-        Ok(Some(poly_entities))
+        Ok(poly_entities)
     }
 
     pub fn entity_id(&self) -> &str { &self.entity_id }
