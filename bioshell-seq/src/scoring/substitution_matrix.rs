@@ -52,13 +52,13 @@ impl SubstitutionMatrix {
     /// ```
     pub fn load(matrix_name: SubstitutionMatrixList) -> SubstitutionMatrix {
         let data = match matrix_name {
-            SubstitutionMatrixList::BLOSUM45 => { include_str!("../../data/BLOSUM45") }
-            SubstitutionMatrixList::BLOSUM80 => { include_str!("../../data/BLOSUM80") }
-            SubstitutionMatrixList::PAM250 => { include_str!("../../data/PAM250") }
-            SubstitutionMatrixList::PAM70 => { include_str!("../../data/PAM70") }
-            SubstitutionMatrixList::BLOSUM62 => { include_str!("../../data/BLOSUM62") }
-            SubstitutionMatrixList::PAM120 => { include_str!("../../data/PAM120") }
-            SubstitutionMatrixList::PAM30 => { include_str!("../../data/PAM30") }
+            SubstitutionMatrixList::BLOSUM45 => { include_str!("../../data/substitution_matrices/BLOSUM45") }
+            SubstitutionMatrixList::BLOSUM80 => { include_str!("../../data/substitution_matrices/BLOSUM80") }
+            SubstitutionMatrixList::PAM250 => { include_str!("../../data/substitution_matrices/PAM250") }
+            SubstitutionMatrixList::PAM70 => { include_str!("../../data/substitution_matrices/PAM70") }
+            SubstitutionMatrixList::BLOSUM62 => { include_str!("../../data/substitution_matrices/BLOSUM62") }
+            SubstitutionMatrixList::PAM120 => { include_str!("../../data/substitution_matrices/PAM120") }
+            SubstitutionMatrixList::PAM30 => { include_str!("../../data/substitution_matrices/PAM30") }
         };
         return SubstitutionMatrix::ncbi_matrix_from_buffer(BufReader::new(data.as_bytes())).unwrap();
     }
