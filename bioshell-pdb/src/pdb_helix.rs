@@ -124,16 +124,16 @@ impl PdbHelix {
             })
         }
         let mut helices: Vec<PdbHelix> = Vec::new();
-        let helix_table = CifTable::new(cif_data, "_struct_conf.",
+        if let Ok(helix_table) = CifTable::new(cif_data, "_struct_conf.",
 ["id",  "beg_label_comp_id", "beg_label_asym_id", "beg_label_seq_id",
-            "pdbx_beg_PDB_ins_code", "end_label_comp_id", "end_label_asym_id",
-            "end_label_seq_id", "pdbx_end_PDB_ins_code", "pdbx_PDB_helix_length",
-        ])?;
-
-        for row in helix_table.iter() {
-            let helix = new_helix(&row)?;
-            helices.push(helix);
+                        "pdbx_beg_PDB_ins_code", "end_label_comp_id", "end_label_asym_id",
+                        "end_label_seq_id", "pdbx_end_PDB_ins_code", "pdbx_PDB_helix_length", ]) {
+            for row in helix_table.iter() {
+                let helix = new_helix(&row)?;
+                helices.push(helix);
+            }
         }
+
         return Ok(helices);
     }
 }

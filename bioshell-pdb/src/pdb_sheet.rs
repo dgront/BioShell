@@ -118,15 +118,17 @@ impl PdbSheet {
             })
         }
         let mut strands: Vec<PdbSheet> = Vec::new();
-        let strands_table = CifTable::new(cif_data, "_struct_sheet_range",
+
+        if let Ok(strands_table) = CifTable::new(cif_data, "_struct_sheet_range",
             [".sheet_id", ".id", ".beg_label_comp_id",".beg_label_asym_id", ".beg_label_seq_id",
-            ".pdbx_beg_PDB_ins_code", ".end_label_comp_id",".end_label_asym_id",
-            ".end_label_seq_id",".pdbx_end_PDB_ins_code",]
-        )?;
-        for tokens in strands_table.iter() {
-            let strand = new_sheet(&tokens)?;
-            strands.push(strand);
+                            ".pdbx_beg_PDB_ins_code", ".end_label_comp_id",".end_label_asym_id",
+                            ".end_label_seq_id",".pdbx_end_PDB_ins_code",] ) {
+            for tokens in strands_table.iter() {
+                let strand = new_sheet(&tokens)?;
+                strands.push(strand);
+            }
         }
+
         return Ok(strands);
     }
 }
