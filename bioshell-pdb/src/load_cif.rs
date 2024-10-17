@@ -24,7 +24,7 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     let cif_data_block = &cif_data[0];
 
 
-    let atoms_tokens = CifTable::new(cif_data_block, "_atom_site",["id", "label_atom_id",
+    let atoms_tokens = CifTable::new(cif_data_block, "_atom_site.",["id", "label_atom_id",
         "label_alt_id", "label_comp_id", "label_asym_id", "label_seq_id", "pdbx_PDB_ins_code",
         "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol",
         "pdbx_PDB_model_num", "auth_seq_id", "label_entity_id"])?;
