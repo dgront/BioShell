@@ -19,7 +19,7 @@
 //! ```
 //!
 //! This example CIF entry contains a single block, named ``some_name`` (the mandatory ``data_``
-//! prefix is not considered a part of that name). That block, loaded as a [CifData]
+//! prefix is not considered a part of that name). That block, loaded as a [`CifData`]
 //! struct, holds two key-value entries:
 //! ``_name_1:value_1`` and ``_name_2:value_2``,  followed by a loop block.
 //! Data items stored by a loop block are loaded into a [CifLoop] struct.
@@ -27,6 +27,53 @@
 //! The official specification of the CIF format can be found on
 //! [this page](https://www.iucr.org/resources/cif/spec/version1.1/cifsyntax)
 //!
+//! # Reading CIF files
+//! A CIF file can be read using the [`read_cif_file`] function, which returns a vector of [`CifData`] structs:
+//! ```
+//! use bioshell_cif::{CifError, read_cif_file};
+//! # fn main() -> Result<(), CifError > {
+//! use bioshell_cif::CifTable;
+//! let data_blocks = read_cif_file("./tests/test_data/ALA.cif")?;
+//! assert_eq!(data_blocks.len(), 1);
+//! // --- each dat block has a unique name:
+//! assert_eq!(data_blocks[0].name(), "ALA");
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! Each data block contains data items as key-value pairs and may be accessed by their name.
+//! You don't have to specify the full name of a data item, just make sure the provided substring is unique.
+//! ```
+//! # use bioshell_cif::{CifError, read_cif_file};
+//! # fn main() -> Result<(), CifError > {
+//! # let data_blocks = read_cif_file("./tests/test_data/ALA.cif")?;
+//! let ala_block = &data_blocks[0];
+//! // --- data items can be accessed by their names:
+//! let id: Option<String> = ala_block.get_item("_chem_comp.id");
+//! assert_eq!(id, Some("ALA".to_string()));
+//! let molar_mass: Option<f64> = ala_block.get_item("_chem_comp.formula_weight");
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! Each loop blocks is represented as  [`CifLoop`] struct. The most convenient way however to process data stored
+//! in a loop block is to use a [`CifTable`] struct.
+//! ```
+//! # use bioshell_cif::{CifError, read_cif_file};
+//! # fn main() -> Result<(), CifError > {
+//! use bioshell_cif::CifTable;
+//! # let data_blocks = read_cif_file("./tests/test_data/ALA.cif")?;
+//! # let ala_block = &data_blocks[0];
+//! let atom_table = CifTable::new(ala_block, "_chem_comp_atom", ["atom_id","type_symbol"])?;
+//! for [atom_id, atom_type] in atom_table.iter() {
+//!     println!("Atom {} is {}", atom_id, atom_type);
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//! The example above prints out the following two columns: ``atom_id.atom_id`` and ``atom_id.type_symbol``.
+//!
+
 mod column_mapping;
 mod cif_errors;
 mod cif_line_iterator;
@@ -762,3 +809,32 @@ fn read_string<R>(prefix: &str, line_iter: &mut Lines<R>) -> String where R: Buf
 
     panic!("End of CIF file reached while searching for the ';' closing a multi-line string");
 }
+
+/// Parses a string into a boolean value.
+///
+/// This function handles the special CIF values ``Y`` and ``N`` as well as the standard ``true`` and ``false``.
+///
+/// # Examples
+/// ```
+/// use bioshell_cif::parse_bool;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// assert_eq!(parse_bool("Y")?, true);
+/// assert_eq!(parse_bool("N")?, false);
+/// assert_eq!(parse_bool("true")?, true);
+/// assert_eq!(parse_bool("false")?, false);
+/// assert!(parse_bool("invalid").is_err());
+/// # Ok(())
+/// # }
+/// ```
+pub fn parse_bool(input: &str) -> Result<bool, CifError> {
+    match input {
+        "Y" | "y" => Ok(true),
+        "N" | "n" => Ok(false),
+        _ => input.parse::<bool>().map_err(|e| CifError::ItemParsingError {
+            item: input.to_string(),
+            type_name: "bool".to_string(),
+            details: e.to_string(),
+        }),
+    }
+}
+
