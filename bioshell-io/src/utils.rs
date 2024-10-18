@@ -1,13 +1,14 @@
+use std::env;
 use std::ffi::OsStr;
 use std::io::{BufRead, BufReader, Error, stdout, stderr, ErrorKind, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs::{File};
 use csv;
 use csv::StringRecord;
 use flate2::read;
 use std::str::FromStr;
 use std::time::Instant;
-use log::debug;
+use log::{debug, info};
 
 /// Creates a `Writer` object.
 ///
@@ -306,4 +307,49 @@ pub fn count_rows(file_path: &str) -> Result<usize, Error> {
     let row_count = reader.lines().count();
 
     Ok(row_count)
+}
+
+/// Try to find the main BioShell v.4 folder.
+///
+/// This function first checks if the environment variable `BIOSHELL4_PATH` is set and points to a valid folder.
+/// If not, it checks a few most obvious locations (e.g. the current folder).
+///
+/// The BioShell v.4 path is necessary to find folders with data used internally by BioShell crates,
+/// e.g. the `bioshell-seq` crate uses substitution matrices to score a sequence alignment
+/// or `.cif` files with monomer definitions
+///
+/// ```
+/// let bioshell_main_dir = bioshell_io::find_bioshell_path();
+/// assert!(bioshell_main_dir.is_some());
+/// let bioshell_main_dir = bioshell_main_dir.unwrap();
+/// ```
+pub fn find_bioshell_path() -> Option<PathBuf> {
+    // Check if the environment variable is set and points to a valid folder.
+    if let Ok(env_path) = env::var("BIOSHELL4_PATH") {
+        let env_path = PathBuf::from(env_path);
+        if env_path.exists() && env_path.is_dir() {
+            info!("Main BioShell v.4 path located as {}", env_path.to_str().unwrap());
+            return Some(env_path);
+        }
+    }
+
+    // Check if the current path is the main bioshell folder
+    if let Ok(current_dir) = env::current_dir() {
+        let data_path = current_dir.join("README.md");
+        if data_path.exists() {
+            info!("Main BioShell v.4 path located as {}", current_dir.to_str().unwrap());
+            return Some(current_dir);
+        }
+
+        // Check one folder up
+        if let Some(up_dir) = current_dir.parent() {
+            let data_path = up_dir.join("README.md");
+            if data_path.exists() {
+                info!("Main BioShell v.4 path located as {}", up_dir.to_str().unwrap());
+                return Some(up_dir.to_path_buf());
+            }
+        }
+    }
+
+    None
 }
