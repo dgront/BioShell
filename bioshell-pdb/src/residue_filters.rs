@@ -59,6 +59,11 @@ impl ResidueFilter for HasAllAtoms {
 }
 
 /// Returns `true` if the residue has all its heavy atoms, i.e. hydrogens are not counted.
+///
+/// Returns `false` when :
+///     - the residue referred by the given ``ResidueId`` doesn't exist in a structure
+///     - the residue type is not registered in the monomer manager
+///     - the residue has too few atoms
 pub struct HasAllHeavyAtoms;
 impl ResidueFilter for HasAllHeavyAtoms {
 
