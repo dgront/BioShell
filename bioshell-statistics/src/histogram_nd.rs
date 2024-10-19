@@ -153,7 +153,7 @@ impl fmt::Display for HistogramND<2> {
                 // Calculate the min values for the x and y dimensions
                 let x_min = self.bin_min(bin, 0);
                 let y_min = self.bin_min(bin, 1);
-                writeln!(f, "{:.4}\t{:.4}\t{:.4}", x_min, y_min, count)?;
+                writeln!(f, "{:.4}\t{:.4}\t{:.6}", x_min, y_min, count)?;
             }
         }
         Ok(())
