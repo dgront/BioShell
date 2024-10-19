@@ -161,15 +161,15 @@ impl ResidueType {
 /// // --- This should pass, as all standard residue types (including alanine) are preloaded by a constructor
 /// let ala = mgr.by_code3(&String::from("ALA"));
 /// assert!(ala.is_some());
-/// // --- There are 29 standard residue types
-/// assert_eq!(mgr.count(), 29);
+/// // --- There are 33 standard residue types
+/// assert_eq!(mgr.count(), 33);
 /// // --- ALN hasn't been inserted yet
 /// assert!(mgr.by_code3(&String::from("ALN")).is_none());
 /// let aln = ResidueType::from_attrs("ALN", StandardResidueType::ALA, MonomerType::PeptideLinking);
 /// mgr.register_residue_type(aln);
 /// assert!(mgr.by_code3(&String::from("ALN")).is_some());
-/// // --- ALN residue type has been registered at index the 29
-/// assert_eq!(mgr.index(&String::from("ALN")).unwrap(), 29);
+/// // --- ALN residue type has been registered at index the 33
+/// assert_eq!(mgr.index(&String::from("ALN")).unwrap(), 33);
 /// ```
 pub struct ResidueTypeManager {
     registered_types: Vec<ResidueType>,

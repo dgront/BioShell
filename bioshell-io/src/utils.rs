@@ -315,7 +315,7 @@ pub fn count_rows(file_path: &str) -> Result<usize, Error> {
 /// If not, it checks a few most obvious locations (e.g. the current folder).
 ///
 /// The BioShell v.4 path is necessary to find folders with data used internally by BioShell crates,
-/// e.g. the `bioshell-seq` crate uses substitution matrices to score a sequence alignment
+/// e.g. the `bioshell-pdb` crate uses substitution matrices to score a sequence alignment
 /// or `.cif` files with monomer definitions
 ///
 /// ```

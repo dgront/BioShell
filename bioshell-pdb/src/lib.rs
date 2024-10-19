@@ -27,6 +27,8 @@ mod pdb_helix;
 mod pdb_sheet;
 mod pdb_atom;
 mod assertions;
+
+pub mod monomers;
 pub mod pdb_atom_filters;
 pub mod residue_filters;
 pub mod calc;

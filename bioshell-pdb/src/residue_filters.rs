@@ -1,6 +1,5 @@
-use crate::{ResidueId, Structure};
-
-
+use crate::{PdbAtom, ResidueId, Structure};
+use crate::monomers::MonomerManager;
 
 /// A handy filter to process residues of a [`Structure`](crate::Structure) with iterators.
 ///
@@ -12,6 +11,8 @@ pub trait ResidueFilter {
 }
 
 const BB_ATOMS: [&str; 4] = [" N  ", " CA ", " C  ", " O  "];
+
+/// Returns `true` if the residue has all backbone atoms
 pub struct HasCompleteBackbone;
 
 impl ResidueFilter for HasCompleteBackbone {
@@ -35,5 +36,58 @@ impl ResidueFilter for HasCompleteBackbone {
             if strctr.atom(ri, atom_name).is_err() { return false}
         }
         return true;
+    }
+}
+
+/// Returns `true` if the residue has all its atoms, **including hydrogens**.
+///
+/// Leaving atoms (those removed when a polymer link was formed) are also not counted.
+pub struct HasAllAtoms;
+impl ResidueFilter for HasAllAtoms {
+
+    fn check(&self, strctr: &Structure, ri: &ResidueId) -> bool {
+        let mgr = MonomerManager::get();
+        let atoms = strctr.atoms_in_residue(ri).unwrap();
+        return if let Some(first_atom) = atoms.peekable().peek() {
+            let residue_def = mgr.by_code3(&first_atom.res_name);
+            if residue_def.is_none() { return false; }
+            let residue_def = residue_def.unwrap();
+            let atoms_found = strctr.atoms_in_residue(ri).iter().count();
+            atoms_found >= residue_def.count_residue_atoms()
+        } else { false }
+    }
+}
+
+/// Returns `true` if the residue has all its heavy atoms, i.e. hydrogens are not counted.
+pub struct HasAllHeavyAtoms;
+impl ResidueFilter for HasAllHeavyAtoms {
+
+    fn check(&self, strctr: &Structure, ri: &ResidueId) -> bool {
+
+        // --- check if we have the residue and its type
+        let res_type = strctr.residue_type(ri);
+        if res_type.is_err() { return false; }
+        let res_type = res_type.unwrap();
+
+        // --- check if we have structure definition for that residue type
+        let mgr = MonomerManager::get();
+
+        let res_def = mgr.by_code3(&res_type.code3);
+        if res_def.is_none() { return false; }
+        let res_def = res_def.unwrap();
+
+        // --- list atoms of the tested residue
+        let atoms = strctr.atoms_in_residue(ri);
+        if atoms.is_err() { return false; }
+        let atoms = atoms.unwrap();
+
+        let mut atom_cnt = 0;
+        let h: Option<String> = Some("H".to_string());
+        for atom in atoms {
+            if atom.element.is_none() { continue }
+            if atom.element != h { atom_cnt += 1; }
+        }
+
+        return atom_cnt >= res_def.count_residue_heavy();
     }
 }
