@@ -23,9 +23,11 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     }
     let cif_data_block = &cif_data[0];
 
+    // ---------- load the residue types before atoms and entities
+    load_residue_types(cif_data_block)?;
 
     let atoms_tokens = CifTable::new(cif_data_block, "_atom_site.",["id", "label_atom_id",
-        "label_alt_id", "label_comp_id", "label_asym_id", "label_seq_id", "pdbx_PDB_ins_code",
+        "label_alt_id", "label_comp_id", "auth_asym_id", "label_seq_id", "pdbx_PDB_ins_code",
         "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol",
         "pdbx_PDB_model_num", "auth_seq_id", "label_entity_id"])?;
 
@@ -79,8 +81,8 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     }
 
     // --- entity stuff
-    for entity in Entity::from_cif_data(cif_data_block).unwrap() {
-        pdb_structure.entities.insert(entity.id().to_string(), entity);
+    for (entity_id, entity) in Entity::from_cif_data(cif_data_block).unwrap() {
+        pdb_structure.entities.insert(entity_id, entity);
     }
 
     // todo: fix the helix type! Now it's only an alpha helix
@@ -219,6 +221,7 @@ fn create_pdb_atom(tokens: &[&str; 16], pos: Vec3) -> Result<PdbAtom, CifError> 
     return Ok(a);
 }
 
+/// Loads residue types from a CIF file directly into the [`ResidueTypeManager`]
 fn load_residue_types(cif_data_block: &CifData) -> Result<(), PDBError>{
     let monomers = CifTable::new(cif_data_block, "_chem_comp.",["id", "type",])?;
     let mut rts = ResidueTypeManager::get();

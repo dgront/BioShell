@@ -28,18 +28,22 @@ mod tests {
         let reader = BufReader::new(cif_5edw.as_bytes());
         let cif_data = read_cif_buffer(reader).unwrap();
         let entities = Entity::from_cif_data(&cif_data[0]).unwrap();
+
+        let mut keys: Vec<&str> = entities.keys().map(|k| k.as_str()).collect();
+        keys.sort();
         let expected_keys = vec!["1", "2", "3", "4", "5", "6"];
-        for (i, entity) in entities.iter().enumerate() {
-            assert_eq!(entity.id(), expected_keys[i]);
-        }
+        assert_eq!(keys, expected_keys);
+
         let mut counts: HashMap<EntityType, usize> = [
-            (EntityType::Polymer, 0),
+            (EntityType::Polymer(PolypeptideL), 0),
+            (EntityType::Polymer(DNA), 0),
             (EntityType::NonPolymer, 0),
             (EntityType::Water, 0)].iter().cloned().collect();
-        for entity in entities.iter() {
+        for (_,entity) in entities.iter() {
             counts.entry(entity.entity_type()).and_modify(|e| *e += 1);
         }
-        assert_eq!(counts[&EntityType::Polymer], 3);
+        assert_eq!(counts[&EntityType::Polymer(PolypeptideL)], 1);
+        assert_eq!(counts[&EntityType::Polymer(DNA)], 2);
         assert_eq!(counts[&EntityType::NonPolymer], 2);
         assert_eq!(counts[&EntityType::Water], 1);
     }
@@ -64,11 +68,45 @@ mod tests {
         let cif_data = include_str!("../tests/test_files/5edw.cif");
         let strctr = load_cif_reader(cif_data.as_bytes())?;
 
-        let mut polymer_entities = 0;
+        assert_eq!(strctr.entities().count(), 6);
+
+        let mut protein_entities = 0;
+        let mut dna_entities = 0;
         for (id, entity) in strctr.entities() {
-            if entity.entity_type() == EntityType::Polymer { polymer_entities += 1; }
+            if entity.entity_type() == EntityType::Polymer(PolypeptideL) {
+                protein_entities += 1;
+                assert_eq!(entity.chain_ids(), &["A"]);
+                assert_eq!(entity.monomer_sequence().len(), 341);
+            }
+            if entity.entity_type() == EntityType::Polymer(DNA) { dna_entities += 1; }
         }
-        assert_eq!(polymer_entities, 3);
+        assert_eq!(protein_entities, 1);
+        assert_eq!(dna_entities, 2);
+        Ok(())
+    }
+
+    #[test]
+    fn entities_2fdo_structure() -> Result<(), PDBError> {
+        let cif_data = include_str!("../tests/test_files/2fdo.cif");
+        let strctr = load_cif_reader(cif_data.as_bytes())?;
+
+        assert_eq!(strctr.entities().count(), 2);
+        let entity = strctr.entity("1");
+        assert_eq!(entity.entity_type(), EntityType::Polymer(PolypeptideL));
+
+        // --- full chains, including water molecules
+        assert_eq!(strctr.chain_residue_ids("B").len(), 108);
+        assert_eq!(strctr.chain_residue_ids("A").len(), 102);
+
+        // --- amino acids only
+        let n_aa = strctr.chain_residue_ids("B").iter()
+            .filter(|ri| strctr.residue_type(ri).unwrap().chem_compound_type.is_peptide_linking())
+            .count();
+        assert_eq!(n_aa, 94);
+        let n_aa = strctr.chain_residue_ids("A").iter()
+            .filter(|ri| strctr.residue_type(ri).unwrap().chem_compound_type.is_peptide_linking())
+            .count();
+        assert_eq!(n_aa, 93);
         Ok(())
     }
 }

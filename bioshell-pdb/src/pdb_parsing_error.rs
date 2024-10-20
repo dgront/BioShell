@@ -68,4 +68,8 @@ pub enum PDBError {
     #[error("The following string {data_value} can't be parsed into an enum {enum_name} variant")]
     /// A given string can't be parsed into an enum variant
     CantParseEnumVariant {data_value: String, enum_name: String},
+
+    #[error("The following entity {entity_id} is inconsistent with other data entries: {details}")]
+    /// A given entity is inconsistent with other data entries
+    InconsistentEntity {entity_id: String, details: String},
 }
