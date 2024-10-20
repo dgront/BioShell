@@ -124,7 +124,7 @@ pub struct Structure {
     /// range of atoms that belong to i-th residue; order is the same as in `residue_ids`
     pub(crate) atoms_for_residue_id: Vec<Range<usize>>,
     pub(crate) entity_sequences: HashMap<String, Sequence>,
-    entities: HashMap<String, Entity>,
+    pub(crate) entities: HashMap<String, Entity>,
 }
 
 impl Structure {
@@ -282,12 +282,26 @@ impl Structure {
     /// Provides immutable access to atoms of this [`Structure`](Structure)
     pub fn atoms(&self) -> &Vec<PdbAtom> { &self.atoms }
 
-    /// Provides mutable access to atoms of this  [`Structure`](Structure)
-    // pub fn atoms_mut(&mut self) -> &mut Vec<PdbAtom> { &mut self.atoms }
-
-    /// Provides an iterator over references to the keys of the `entities` map.
+    /// Provides an iterator over the `entities` map.
     ///
-    pub fn entity_ids(&self) -> impl Iterator<Item = &String> { self.entities.keys() }
+    /// # Example
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_pdb::{EntityType, PDBError, load_cif_reader};
+    /// # fn main() -> Result<(), PDBError> {
+    /// let cif_data = include_str!("../tests/test_files/5edw.cif");
+    /// let strctr = load_cif_reader(cif_data.as_bytes())?;
+    /// // --- 5EDW protein has five entities, including three polymer entities
+    /// let mut polymer_entities = 0;
+    /// for (id, entity) in strctr.entities() {
+    ///     if entity.entity_type() == EntityType::Polymer { polymer_entities += 1; }
+    /// }
+    /// # assert_eq!(polymer_entities, 3);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    pub fn entities(&self) -> impl Iterator<Item = (&String, &Entity)> { self.entities.iter() }
 
     /// Provides information about a given entity
     pub fn entity(&self, entity_id: &str) -> &Entity { &self.entities[entity_id] }

@@ -3,7 +3,7 @@ mod tests {
     use std::collections::HashMap;
     use std::io::BufReader;
     use bioshell_cif::read_cif_buffer;
-    use bioshell_pdb::{Entity, EntityType, PDBError, PolymerEntity, PolymerEntityType};
+    use bioshell_pdb::{Entity, EntityType, load_cif_reader, PDBError, PolymerEntity, PolymerEntityType};
     use bioshell_pdb::PolymerEntityType::{PolypeptideL, DNA};
 
     #[allow(non_upper_case_globals)]
@@ -56,6 +56,19 @@ mod tests {
             assert_eq!(result[id-1].0, entity.monomer_sequence().len());
             assert_eq!(&result[id-1].1, entity.entity_type());
         }
+        Ok(())
+    }
+
+    #[test]
+    fn entities_5edw_structure() -> Result<(), PDBError> {
+        let cif_data = include_str!("../tests/test_files/5edw.cif");
+        let strctr = load_cif_reader(cif_data.as_bytes())?;
+
+        let mut polymer_entities = 0;
+        for (id, entity) in strctr.entities() {
+            if entity.entity_type() == EntityType::Polymer { polymer_entities += 1; }
+        }
+        assert_eq!(polymer_entities, 3);
         Ok(())
     }
 }

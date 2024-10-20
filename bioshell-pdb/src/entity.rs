@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::str::FromStr;
 use bioshell_cif::{CifData, CifTable};
 use crate::{PDBError};
@@ -17,7 +18,7 @@ use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
 /// assert_eq!(enity_type, EntityType::NonPolymer);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-    pub enum EntityType {
+pub enum EntityType {
     /// The entity is a polymer.
     Polymer,
     /// The entity is a non-polymer (e.g., a small molecule or ligand).
@@ -26,6 +27,18 @@ use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
     Water,
 }
 
+impl fmt::Display for EntityType {
+
+    /// Returns a string representation of the [`EntityType`].
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let description = match self {
+            EntityType::Polymer => "Polymer",
+            EntityType::NonPolymer => "Non-polymer",
+            EntityType::Water => "Water",
+        };
+        write!(f, "{}", description)
+    }
+}
 
 impl FromStr for EntityType {
     type Err = PDBError;
@@ -225,6 +238,23 @@ impl FromStr for PolymerEntityType {
             "other" => Ok(PolymerEntityType::Other),
             _ => Err(CantParseEnumVariant{ data_value: s.to_string(), enum_name: "EntityPolyType".to_string() }),
         }
+    }
+}
+
+/// Returns a string representation of the [`PolymerEntityType`].
+impl fmt::Display for PolymerEntityType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let description = match self {
+            PolymerEntityType::PolypeptideL => "L polypeptide",
+            PolymerEntityType::PolypeptideD => "D polypeptide",
+            PolymerEntityType::DNA => "DNA polymer",
+            PolymerEntityType::RNA => "RNA polymer",
+            PolymerEntityType::PolysaccharideL => "L polysaccharide polymer",
+            PolymerEntityType::PolysaccharideD => "D polysaccharide polymer",
+            PolymerEntityType::PeptideNucleicAcid => "Peptide nucleic acid",
+            PolymerEntityType::Other => "Other hybrid polymer type",
+        };
+        write!(f, "{}", description)
     }
 }
 

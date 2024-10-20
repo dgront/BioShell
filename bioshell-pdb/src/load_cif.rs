@@ -4,7 +4,7 @@ use std::io::{BufRead};
 use std::time::Instant;
 use log::{debug, info, warn};
 use bioshell_cif::{read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value, CifData, CifTable};
-use crate::{ExperimentalMethod, PdbAtom, PDBError, PdbHelix, PdbSheet, SecondaryStructureTypes, Structure, UnitCell, value_or_missing_key_pdb_error};
+use crate::{Entity, ExperimentalMethod, PdbAtom, PDBError, PdbHelix, PdbSheet, SecondaryStructureTypes, Structure, UnitCell, value_or_missing_key_pdb_error};
 use crate::calc::Vec3;
 use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError, MissingCifDataKey};
 use bioshell_io::open_file;
@@ -76,6 +76,11 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     pdb_structure.r_free = cif_data_block.get_item("_refine.ls_R_factor_R_free");
     if let Some(keywds) = cif_data_block.get_item::<String>("_struct_keywords.text") {
         pdb_structure.keywords = keywds.split(",").map(|s| s.to_string()).collect();
+    }
+
+    // --- entity stuff
+    for entity in Entity::from_cif_data(cif_data_block).unwrap() {
+        pdb_structure.entities.insert(entity.id().to_string(), entity);
     }
 
     // todo: fix the helix type! Now it's only an alpha helix
