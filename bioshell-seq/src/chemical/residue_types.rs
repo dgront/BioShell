@@ -51,14 +51,51 @@ pub enum MonomerType {
     Other,
 }
 
+impl MonomerType {
+    /// Returns `true` if the monomer can form a peptide bond
+    ///
+    /// # Examples
+    /// ``` rust
+    /// use bioshell_seq::chemical::MonomerType::{DSaccharide, LPeptideLinking, PeptideLinking};
+    /// assert!(PeptideLinking.is_peptide_linking());
+    /// assert!(LPeptideLinking.is_peptide_linking());
+    /// assert!(! DSaccharide.is_peptide_linking());
+    /// ```
+    pub fn is_peptide_linking(&self) -> bool {
+        matches!(self, MonomerType::PeptideLinking | MonomerType::LPeptideLinking | MonomerType::LPeptideCOOH | MonomerType::LPeptideNH3 | MonomerType::DPeptideCOOH | MonomerType::DPeptideNH3 | MonomerType::DPeptideLinking | MonomerType::PeptideLike)
+    }
+    /// Returns `true` if the monomer can form a nucleic acid
+    ///
+    /// # Examples
+    /// ``` rust
+    /// use bioshell_seq::chemical::MonomerType::{LRNALinking, RNALinking, DNALinking, DSaccharide};
+    /// assert!(LRNALinking.is_peptide_linking());
+    /// assert!(RNALinking.is_peptide_linking());
+    /// assert!(DNALinking.is_peptide_linking());
+    /// assert!(! DSaccharide.is_peptide_linking());
+    /// ```
+    pub fn is_nucleic_linking(&self) -> bool {
+        matches!(self, MonomerType::RNALinking | MonomerType::LRNALinking | MonomerType::RNALinking | MonomerType::DNALinking | MonomerType::LDNALinking | MonomerType::RNALinking | MonomerType::DNAOH3PrimeTerminus | MonomerType::DNAOH5PrimeTerminus | MonomerType::RNAOH3PrimeTerminus | MonomerType::RNAOH5PrimeTerminus)
+    }
+}
 
 impl TryFrom<&str> for MonomerType {
     type Error = String;
 
+    /// Returns a [`MonomerType`](MonomerType) enum for a given string
+    ///
+    /// The input string is trimmed, whitespace and dashes are removed, and the string is converted to uppercase
+    /// to prevent errors.
+    /// # Examples
+    /// ``` rust
+    /// use bioshell_seq::chemical::MonomerType;
+    /// assert!(MonomerType::try_from("L-peptide linking").is_ok());
+    /// assert!(MonomerType::try_from("'L-peptide linking'").is_ok());
+    /// ```
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         // Remove whitespace and capitalize the input string
         let cleaned_value: String = value.trim().to_ascii_uppercase().chars()
-            .filter(|c| !c.is_whitespace() && *c != '-').collect();
+            .filter(|c| !c.is_whitespace() && *c != '-' && *c != '\'').collect();
 
         // Match the cleaned string to the enum variants
         match cleaned_value.as_str() {
