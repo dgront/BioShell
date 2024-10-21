@@ -23,6 +23,7 @@ rand = { version = "0.8.5", features = [ "small_rng" ] }
 rand_distr="0.4.3"
 log = "0.4.17"
 env_logger = "0.9.3"# for logging
+once_cell = "1.13"  # for once_cell::sync::Lazy
 
 [build-dependencies]
 # ---------- for git md5sum and compilation time

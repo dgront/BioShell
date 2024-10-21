@@ -91,47 +91,24 @@ impl TryFrom<&str> for MonomerType {
     /// use bioshell_seq::chemical::MonomerType;
     /// assert!(MonomerType::try_from("L-peptide linking").is_ok());
     /// assert!(MonomerType::try_from("'L-peptide linking'").is_ok());
+    /// assert!(MonomerType::try_from("'L-saccharide, alpha linking'").is_ok());
     /// ```
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         // Remove whitespace and capitalize the input string
         let cleaned_value: String = value.trim().to_ascii_uppercase().chars()
-            .filter(|c| !c.is_whitespace() && *c != '-' && *c != '\'').collect();
+            .filter(|c| !c.is_whitespace() && *c != ',' && *c != '-' && *c != '\'').collect();
 
         // Match the cleaned string to the enum variants
-        match cleaned_value.as_str() {
-            "DBETAPEPTIDE" => Ok(MonomerType::DBetaPeptide),
-            "CGAMMALINKING" => Ok(MonomerType::CGammaLinking),
-            "DGAMMAPEPTIDE" => Ok(MonomerType::DGammaPeptide),
-            "CDELTALINKING" => Ok(MonomerType::CDeltaLinking),
-            "DPEPTIDECOOH" => Ok(MonomerType::DPeptideCOOH),
-            "DPEPTIDENH3" => Ok(MonomerType::DPeptideNH3),
-            "DPEPTIDELINKING" => Ok(MonomerType::DPeptideLinking),
-            "DSACCHARIDE" => Ok(MonomerType::DSaccharide),
-            "DSACCHARIDEALPHALINKING" => Ok(MonomerType::DSaccharideAlphaLinking),
-            "DSACCHARIDEBETALINKING" => Ok(MonomerType::DSaccharideBetaLinking),
-            "DNAOH3PRIMETERMINUS" => Ok(MonomerType::DNAOH3PrimeTerminus),
-            "DNAOH5PRIMETERMINUS" => Ok(MonomerType::DNAOH5PrimeTerminus),
-            "DNALINKING" => Ok(MonomerType::DNALinking),
-            "LDNALINKING" => Ok(MonomerType::LDNALinking),
-            "LRNALINKING" => Ok(MonomerType::LRNALinking),
-            "LBETAPEPTIDECGAMMALINKING" => Ok(MonomerType::LBetaPeptideCGammaLinking),
-            "LGAMMAPEPTIDECDELTALINKING" => Ok(MonomerType::LGammaPeptideCDeltaLinking),
-            "LPEPTIDECOOH" => Ok(MonomerType::LPeptideCOOH),
-            "LPEPTIDENH3" => Ok(MonomerType::LPeptideNH3),
-            "LPEPTIDELINKING" => Ok(MonomerType::LPeptideLinking),
-            "LSACCHARIDE" => Ok(MonomerType::LSaccharide),
-            "LSACCHARIDEALPHALINKING" => Ok(MonomerType::LSaccharideAlphaLinking),
-            "LSACCHARIDEBETALINKING" => Ok(MonomerType::LSaccharideBetaLinking),
-            "RNAOH3PRIMETERMINUS" => Ok(MonomerType::RNAOH3PrimeTerminus),
-            "RNAOH5PRIMETERMINUS" => Ok(MonomerType::RNAOH5PrimeTerminus),
-            "RNALINKING" => Ok(MonomerType::RNALinking),
-            "NONPOLYMER" => Ok(MonomerType::NonPolymer),
-            "OTHER" => Ok(MonomerType::Other),
-            "PEPTIDELINKING" => Ok(MonomerType::PeptideLinking),
-            "PEPTIDELIKE" => Ok(MonomerType::PeptideLike),
-            "SACCHARIDE" => Ok(MonomerType::Saccharide),
-            _ => Err(format!("Unknown chemical: {}", value)),
+        if let Some(monomer) = MONOMER_MAP.get(cleaned_value.as_str()) {
+            return Ok(monomer.clone())
+        } else {
+            for (name, monomer) in MONOMER_MAP.iter() {
+                if cleaned_value.contains(name) {
+                    return Ok(monomer.clone())
+                }
+            }
         }
+        Err(format!("Unknown chemical: {}", value))
     }
 }
 
@@ -431,3 +408,41 @@ define_res_types! {
     GPE 31 '_' "GPE" Other,
     UNL 32 'Z' "UNL" Other
 }
+
+
+// ----------- the following map is used by TryFrom<&str> for MonomerType
+static MONOMER_MAP: Lazy<HashMap<&'static str, MonomerType>> = Lazy::new(|| {
+    let mut map = HashMap::new();
+    map.insert("DBETAPEPTIDE", MonomerType::DBetaPeptide);
+    map.insert("CGAMMALINKING", MonomerType::CGammaLinking);
+    map.insert("DGAMMAPEPTIDE", MonomerType::DGammaPeptide);
+    map.insert("CDELTALINKING", MonomerType::CDeltaLinking);
+    map.insert("DPEPTIDECOOH", MonomerType::DPeptideCOOH);
+    map.insert("DPEPTIDENH3", MonomerType::DPeptideNH3);
+    map.insert("DPEPTIDELINKING", MonomerType::DPeptideLinking);
+    map.insert("DSACCHARIDE", MonomerType::DSaccharide);
+    map.insert("DSACCHARIDEALPHALINKING", MonomerType::DSaccharideAlphaLinking);
+    map.insert("DSACCHARIDEBETALINKING", MonomerType::DSaccharideBetaLinking);
+    map.insert("DNAOH3PRIMETERMINUS", MonomerType::DNAOH3PrimeTerminus);
+    map.insert("DNAOH5PRIMETERMINUS", MonomerType::DNAOH5PrimeTerminus);
+    map.insert("DNALINKING", MonomerType::DNALinking);
+    map.insert("LDNALINKING", MonomerType::LDNALinking);
+    map.insert("LRNALINKING", MonomerType::LRNALinking);
+    map.insert("LBETAPEPTIDECGAMMALINKING", MonomerType::LBetaPeptideCGammaLinking);
+    map.insert("LGAMMAPEPTIDECDELTALINKING", MonomerType::LGammaPeptideCDeltaLinking);
+    map.insert("LPEPTIDECOOH", MonomerType::LPeptideCOOH);
+    map.insert("LPEPTIDENH3", MonomerType::LPeptideNH3);
+    map.insert("LPEPTIDELINKING", MonomerType::LPeptideLinking);
+    map.insert("LSACCHARIDE", MonomerType::LSaccharide);
+    map.insert("LSACCHARIDEALPHALINKING", MonomerType::LSaccharideAlphaLinking);
+    map.insert("LSACCHARIDEBETALINKING", MonomerType::LSaccharideBetaLinking);
+    map.insert("RNAOH3PRIMETERMINUS", MonomerType::RNAOH3PrimeTerminus);
+    map.insert("RNAOH5PRIMETERMINUS", MonomerType::RNAOH5PrimeTerminus);
+    map.insert("RNALINKING", MonomerType::RNALinking);
+    map.insert("NONPOLYMER", MonomerType::NonPolymer);
+    map.insert("OTHER", MonomerType::Other);
+    map.insert("PEPTIDELINKING", MonomerType::PeptideLinking);
+    map.insert("PEPTIDELIKE", MonomerType::PeptideLike);
+    map.insert("SACCHARIDE", MonomerType::Saccharide);
+    map
+});
