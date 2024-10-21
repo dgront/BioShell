@@ -6,14 +6,32 @@ mod tests {
 
     #[allow(non_upper_case_globals)]
     const cif_2gb1:  &str = include_str!("./test_files/2gb1.cif");
+
+    #[allow(non_upper_case_globals)]
+    const cif_2fdo:  &str = include_str!("./test_files/2fdo.cif");
+
     #[test]
     fn load_2gb1_from_cif() {
         let reader = BufReader::new(cif_2gb1.as_bytes());
         let strctr = load_cif_reader(reader).unwrap();
         assert_eq!(strctr.count_atoms(), 855);
-        assert_eq!(strctr.count_residues(), 56);
         assert_eq!(strctr.count_chains(), 1);
         assert_eq!(strctr.count_models(), 1);
+        assert_eq!(strctr.count_residues(), 56);
+    }
+
+    #[test]
+    fn load_2fdo_from_cif() {
+        let reader = BufReader::new(cif_2fdo.as_bytes());
+        let strctr = load_cif_reader(reader).unwrap();
+        assert_eq!(strctr.count_atoms(), 1456);
+        assert_eq!(strctr.count_chains(), 2);
+        assert_eq!(strctr.count_models(), 1);
+        assert_eq!(strctr.count_residues(), 210);
+        assert!(strctr.methods.len() > 0);
+        assert!(strctr.resolution.is_some());
+        assert!(strctr.r_factor.is_some());
+        assert!(strctr.r_free.is_some());
     }
 
     #[test]

@@ -244,30 +244,31 @@ impl Entity {
             }
         }
 
-        // ---------- Now extract nonpolymer entities
-        let nonpoly_table = CifTable::new(cif_data, "_pdbx_nonpoly_scheme.",
-                ["entity_id", "auth_mon_id", "pdb_strand_id",])?;
-        // ---------- to find the residue type, we need the residue type manager
-        let mgr = ResidueTypeManager::get();
-        for [entity_id, monomer_id, chain_id] in nonpoly_table.iter() {
-            let chain_id_str = chain_id.to_string();
-            if let Some(entity) = entity_map.get_mut(entity_id) {
-                // --- add a chain for this entity
-                if !entity.chain_ids.contains(&chain_id_str) {
-                    entity.chain_ids.push(chain_id_str);
+        // ---------- Now extract nonpolymer entities, which are not mandatory
+        if let Ok(nonpoly_table) = CifTable::new(cif_data, "_pdbx_nonpoly_scheme.",
+                ["entity_id", "auth_mon_id", "pdb_strand_id",]) {
+            // ---------- to find the residue type, we need the residue type manager
+            let mgr = ResidueTypeManager::get();
+            for [entity_id, monomer_id, chain_id] in nonpoly_table.iter() {
+                let chain_id_str = chain_id.to_string();
+                if let Some(entity) = entity_map.get_mut(entity_id) {
+                    // --- add a chain for this entity
+                    if !entity.chain_ids.contains(&chain_id_str) {
+                        entity.chain_ids.push(chain_id_str);
+                    }
+                    // --- residue type for that non-polymer molecule
+                    let m = mgr.by_code3(monomer_id).ok_or(PDBError::UnknownResidueType{res_type: monomer_id.to_string()})?;
+                    entity.monomer_sequence.push(m.clone());
+                    // --- if it's water, set the non-polymer type accordingly
+                    if entity.entity_type == EntityType::NonPolymer || monomer_id == "HOH" {
+                        entity.entity_type = EntityType::Water;
+                    }
+                } else {
+                    return Err(InconsistentEntity {
+                        entity_id: entity_id.to_string(),
+                        details: "NonPolymerEntity found, but Entity missing".to_string(),
+                    });
                 }
-                // --- residue type for that non-polymer molecule
-                let m = mgr.by_code3(monomer_id).ok_or(PDBError::UnknownResidueType{res_type: monomer_id.to_string()})?;
-                entity.monomer_sequence.push(m.clone());
-                // --- if it's water, set the non-polymer type accordingly
-                if entity.entity_type == EntityType::NonPolymer || monomer_id == "HOH" {
-                    entity.entity_type = EntityType::Water;
-                }
-            } else {
-                return Err(InconsistentEntity {
-                    entity_id: entity_id.to_string(),
-                    details: "NonPolymerEntity found, but Entity missing".to_string(),
-                });
             }
         }
 
