@@ -1,13 +1,40 @@
-use crate::{PdbAtom, ResidueId, Structure};
+use crate::{ResidueId, Structure};
 use crate::monomers::MonomerManager;
+use bioshell_seq::chemical::StandardResidueType::{TYR, PHE, TRP, HIS};
 
 /// A handy filter to process residues of a [`Structure`](crate::Structure) with iterators.
 ///
 /// Structs implementing [`ResidueFilter`](crate::residue_filters::ResidueFilter) trait can be used as predicates
-/// while filtering Rust iterators. Example below shows how to iterate over aromatic residues
+/// while filtering Rust iterators. Example below shows how to iterate over aromatic amino acid residues
+/// of a protein chain:
+/// ```
+/// # use bioshell_pdb::{PDBError, load_cif_reader};
+/// # fn main() -> Result<(), PDBError> {
+/// # use bioshell_pdb::residue_filters::{IsAromaticAA, ResidueFilter};
+/// # let cif_data = include_str!("../tests/test_files/2fdo.cif");
+/// # let strctr = load_cif_reader(cif_data.as_bytes())?;
+/// let n_aro = strctr.residue_ids().iter().filter(|ri| IsAromaticAA.check(&strctr, &ri)).count();
+/// assert_eq!(n_aro, 28);
+/// # Ok(())
+/// # }
+
+/// ```
+///
 pub trait ResidueFilter {
     /// Returns `true` if this predicate is satisfied
-    fn check(&self, a: &Structure, ri: &ResidueId) -> bool;
+    fn check(&self, strctr: &Structure, ri: &ResidueId) -> bool;
+}
+
+/// Returns `true` if the residue has all backbone atoms.
+pub struct IsAromaticAA;
+
+impl ResidueFilter for IsAromaticAA {
+    fn check(&self, strctr: &Structure, ri: &ResidueId) -> bool {
+        if let Ok(monomer) = &strctr.residue_type(ri) {
+            return matches!(monomer.parent_type, TYR | TRP | PHE | HIS);
+        }
+        return false
+    }
 }
 
 const BB_ATOMS: [&str; 4] = [" N  ", " CA ", " C  ", " O  "];
