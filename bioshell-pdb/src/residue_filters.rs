@@ -17,9 +17,7 @@ use bioshell_seq::chemical::StandardResidueType::{TYR, PHE, TRP, HIS};
 /// assert_eq!(n_aro, 28);
 /// # Ok(())
 /// # }
-
 /// ```
-///
 pub trait ResidueFilter {
     /// Returns `true` if this predicate is satisfied
     fn check(&self, strctr: &Structure, ri: &ResidueId) -> bool;
@@ -121,5 +119,28 @@ impl ResidueFilter for HasAllHeavyAtoms {
         }
 
         return atom_cnt >= res_def.count_residue_heavy();
+    }
+}
+
+/// Tests a condition that relates two residues of a [`Structure`](crate::Structure)
+///
+pub trait ResidueFilter2 {
+    /// Returns `true` if this predicate is satisfied
+    fn check(&self, strctr: &Structure, ri: &ResidueId, rj: &ResidueId) -> bool;
+}
+
+/// Returns `true` if the two residues are connected by a peptide bond.
+///
+/// The peptide bond if detected when the ``first`` residue has the carbonyl ``C``,
+/// the ``second`` residue has its amide ``N`` atom, and the distance between them is less than 1.4 Å.
+pub struct ArePeptideBonded;
+
+impl ResidueFilter2 for ArePeptideBonded {
+    fn check(&self, strctr: &Structure, first: &ResidueId, second: &ResidueId) -> bool {
+        if let Ok(c)  = strctr.atom(first, " C  ") {
+            if let Ok(n)  = strctr.atom(second, " N  ") {
+                if c.pos.distance_to(&n.pos) < 1.4 { return true; }
+            }
+        }  return false;
     }
 }
