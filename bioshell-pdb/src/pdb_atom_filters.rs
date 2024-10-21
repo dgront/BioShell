@@ -124,6 +124,11 @@ impl MatchAll {
     pub fn add_predicate(&mut self, test: Box<dyn PdbAtomPredicate>) {
         self.predicates.push(test);
     }
+
+    /// Returns the number of predicates included in this filter
+    pub fn count_filters(&self) -> usize {
+        return self.predicates.len();
+    }
 }
 
 impl PdbAtomPredicate for MatchAll {

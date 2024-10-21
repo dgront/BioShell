@@ -53,7 +53,6 @@ fn filter<F: PdbAtomPredicate>(strctr: &Structure, filter: &F) -> Structure {
     return Structure::from_iterator(&strctr.id_code, atoms_iter);
 }
 
-
 fn print_info(strctr: &Structure) {
     println!("id_code: {:?}",strctr.id_code);
     println!("methods: {:?}",strctr.methods);
@@ -131,7 +130,9 @@ fn main() {
         info!("Selecting only alpha-carbon atoms");
         multi_filter.add_predicate(Box::new(IsCA));
     }
-    strctr = filter(&strctr, &multi_filter);
+    if multi_filter.count_filters() > 0 {
+        strctr = filter(&strctr, &multi_filter);
+    }
 
     // ---------- OUTPUT section
     if args.out_fasta {
