@@ -25,6 +25,8 @@ pub enum EntityType {
     NonPolymer,
     /// The entity is water.
     Water,
+    /// The entity is branched, typically a polysaccharide.
+    Branched,
 }
 
 impl fmt::Display for EntityType {
@@ -35,6 +37,7 @@ impl fmt::Display for EntityType {
             EntityType::Polymer(_) => "Polymer",
             EntityType::NonPolymer => "Non-polymer",
             EntityType::Water => "Water",
+            EntityType::Branched => "Branched",
         };
         write!(f, "{}", description)
     }
@@ -48,6 +51,7 @@ impl FromStr for EntityType {
             "polymer" => Ok(EntityType::Polymer(PolymerEntityType::Other)),
             "non-polymer" => Ok(EntityType::NonPolymer),
             "water" => Ok(EntityType::Water),
+            "branched" => Ok(EntityType::Branched),
             _ => Err(CantParseEnumVariant{ data_value: s.to_string(), enum_name: "EntityType".to_string() }),
         }
     }
@@ -159,8 +163,6 @@ impl Entity {
     /// let entity = strctr.entity("1");
     /// assert_eq!(entity.chain_ids(), &vec!["B", "A"]);
     /// assert_eq!(entity.monomer_sequence().len(), 94);
-    /// assert_eq!(strctr.chain_residue_ids("B").iter().filter(|r| r.), 94);
-    /// assert_eq!(strctr.chain_residue_ids("A").len(), 93);
     /// # Ok(())
     /// # }
     /// ```
@@ -245,8 +247,8 @@ impl Entity {
         }
 
         // ---------- Now extract nonpolymer entities, which are not mandatory
-        if let Ok(nonpoly_table) = CifTable::new(cif_data, "_pdbx_nonpoly_scheme.",
-                ["entity_id", "auth_mon_id", "pdb_strand_id",]) {
+        if let Ok(nonpoly_table) = CifTable::new(cif_data, "_pdbx_nonpoly_scheme",
+                [".entity_id", ".mon_id", ".pdb_strand_id",]) {
             // ---------- to find the residue type, we need the residue type manager
             let mgr = ResidueTypeManager::get();
             for [entity_id, monomer_id, chain_id] in nonpoly_table.iter() {
