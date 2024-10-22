@@ -75,7 +75,10 @@ impl MonomerType {
     /// assert!(! DSaccharide.is_peptide_linking());
     /// ```
     pub fn is_nucleic_linking(&self) -> bool {
-        matches!(self, MonomerType::RNALinking | MonomerType::LRNALinking | MonomerType::RNALinking | MonomerType::DNALinking | MonomerType::LDNALinking | MonomerType::RNALinking | MonomerType::DNAOH3PrimeTerminus | MonomerType::DNAOH5PrimeTerminus | MonomerType::RNAOH3PrimeTerminus | MonomerType::RNAOH5PrimeTerminus)
+        matches!(self, MonomerType::RNALinking | MonomerType::LRNALinking
+            | MonomerType::DNALinking | MonomerType::LDNALinking
+            | MonomerType::DNAOH3PrimeTerminus | MonomerType::DNAOH5PrimeTerminus
+            | MonomerType::RNAOH3PrimeTerminus | MonomerType::RNAOH5PrimeTerminus)
     }
 }
 
@@ -161,6 +164,12 @@ impl ResidueType {
     }
 }
 
+impl ResidueTypeProperties for ResidueType {
+    fn code1(&self) -> char { self.parent_type.code1() }
+    fn id(&self) -> u16 { self.parent_type.id() }
+    fn code3(&self) -> String { self.code3.clone() }
+    fn chem_compound_type(&self) -> MonomerType { self.chem_compound_type.clone() }
+}
 
 /// Provides unique integer ID for each registered ResidueType
 ///
@@ -371,6 +380,22 @@ macro_rules! define_res_types {
             ];
         }
     };
+}
+
+impl StandardResidueType {
+    /// Iterates over the 20 standard amino acid types.
+    ///
+    /// The iteration does not include the `UNK` residue type.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// use bioshell_seq::chemical::StandardResidueType;
+    /// assert_eq!(StandardResidueType::amino_acids().count(), 20);
+    /// ```
+    pub fn amino_acids() -> impl Iterator<Item = &'static StandardResidueType> {
+        StandardResidueType::TYPES.iter()
+            .filter(|srt| srt.chem_compound_type() == MonomerType::PeptideLinking && srt.code1() != 'X')
+    }
 }
 
 define_res_types! {
