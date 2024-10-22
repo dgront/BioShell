@@ -26,10 +26,11 @@ pub fn load_cif_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
     // ---------- load the residue types before atoms and entities
     load_residue_types(cif_data_block)?;
 
-    let atoms_tokens = CifTable::new(cif_data_block, "_atom_site.",["id", "label_atom_id",
-        "label_alt_id", "label_comp_id", "auth_asym_id", "label_seq_id", "pdbx_PDB_ins_code",
-        "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol",
-        "pdbx_PDB_model_num", "auth_seq_id", "label_entity_id"])?;
+    let atoms_tokens = CifTable::new(cif_data_block, "_atom_site.",
+            ["id", "label_atom_id",
+                "label_alt_id", "label_comp_id", "auth_asym_id", "label_seq_id", "pdbx_PDB_ins_code",
+                "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol",
+                "pdbx_PDB_model_num", "auth_seq_id", "label_entity_id"])?;
 
     let mut model_ids: HashMap<usize, usize> = HashMap::new();       // links model id to model index in the model_coordinates structure
     for tokens in atoms_tokens.iter() {
@@ -199,10 +200,10 @@ fn create_pdb_atom(tokens: &[&str; 16], pos: Vec3) -> Result<PdbAtom, CifError> 
     let res_name = tokens[3].to_string();
     let chain_id = tokens[4].to_string();
     let entity_id = tokens[15].to_string();
-    let res_seq = if entry_has_value(tokens[5]) {
-        parse_item_or_error!(tokens[5], i32)
-    } else {
+    let res_seq = if entry_has_value(tokens[14]) {
         parse_item_or_error!(tokens[14], i32)
+    } else {
+        parse_item_or_error!(tokens[5], i32)
     };
 
     let i_code = value_or_default(tokens[6], ' ');
