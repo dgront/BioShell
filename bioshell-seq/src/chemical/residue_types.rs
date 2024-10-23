@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Mutex, MutexGuard};
 use clap::__macro_refs::once_cell::sync::Lazy;
+use crate::chemical::MonomerType::NonPolymer;
+use crate::chemical::StandardResidueType::UNK;
 
 /// Defines the types of monomers - residue types that are biomolecular building blocks.
 ///
@@ -217,6 +219,10 @@ impl ResidueTypeManager {
             out.by_code_3.insert(srt.code3(), out.registered_types.len());
             out.registered_types.push(rt);
         }
+        // --- register water as well
+        let hoh = ResidueType::from_attrs("HOH", UNK, NonPolymer);
+        out.register_residue_type(hoh);
+
         return out;
     }
 

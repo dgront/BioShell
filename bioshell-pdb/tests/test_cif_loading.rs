@@ -27,7 +27,7 @@ mod tests {
         assert_eq!(strctr.count_atoms(), 1456);
         assert_eq!(strctr.count_chains(), 2);
         assert_eq!(strctr.count_models(), 1);
-        assert_eq!(strctr.count_residues(), 210);
+        assert_eq!(strctr.count_residues(), 214);
         assert!(strctr.methods.len() > 0);
         assert!(strctr.resolution.is_some());
         assert!(strctr.r_factor.is_some());

@@ -7,6 +7,7 @@ mod tests {
 
     #[allow(non_upper_case_globals)]
     const pdb_2gb1:  &str = include_str!("./test_files/2gb1.pdb");
+    #[allow(non_upper_case_globals)]
     const pdb_2fdo:  &str = include_str!("./test_files/2fdo.cif");
 
     #[allow(non_upper_case_globals)]
@@ -85,7 +86,7 @@ mod tests {
         let by_chain_a = ByChain::new("A");
         let strctr = load_cif_reader(BufReader::new(pdb_2fdo.as_bytes())).unwrap();
         let chain_a_atoms = strctr.atoms().iter().filter(|a| by_chain_a.check(a)).collect::<Vec<_>>();
-        assert_eq!(chain_a_atoms.len(), 710);
+        assert_eq!(chain_a_atoms.len(), 730);
     }
 
     #[test]

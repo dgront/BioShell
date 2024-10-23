@@ -21,6 +21,10 @@ pub enum PDBError {
     /// Residue corresponding to a given `res_id` could not be located
     NoSuchResidue {res_id: ResidueId},
 
+    #[error("Chain not found: {chain_id}")]
+    /// Chain corresponding to a given `chain_id` could not be located
+    NoSuchChain {chain_id: String},
+
     #[error("Residue is a terminal one: {res_id}, proceeding or following residue is a terminal can't be located")]
     /// Residue following or proceeding the given `res_id` could not be located
     ResidueAtTerminus {res_id: ResidueId},

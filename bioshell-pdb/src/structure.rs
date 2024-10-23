@@ -289,12 +289,16 @@ impl Structure {
     /// use std::io::BufReader;
     /// use bioshell_pdb::{EntityType, PDBError, load_cif_reader};
     /// # fn main() -> Result<(), PDBError> {
+    /// use bioshell_pdb::EntityType::Polymer;
+    /// use bioshell_pdb::PolymerEntityType::{DNA, PolypeptideL};
     /// let cif_data = include_str!("../tests/test_files/5edw.cif");
     /// let strctr = load_cif_reader(cif_data.as_bytes())?;
-    /// // --- 5EDW protein has five entities, including three polymer entities
+    /// // --- 5EDW protein has five entities, including three polymer entities: two DNA chains and a single protein chain
     /// let mut polymer_entities = 0;
     /// for (id, entity) in strctr.entities() {
-    ///     if entity.entity_type() == EntityType::Polymer { polymer_entities += 1; }
+    ///     if entity.entity_type() == Polymer(DNA) || entity.entity_type() == Polymer(PolypeptideL) {
+    ///         polymer_entities += 1;
+    ///     }
     /// }
     /// # assert_eq!(polymer_entities, 3);
     /// # Ok(())

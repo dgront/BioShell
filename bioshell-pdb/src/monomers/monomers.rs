@@ -64,7 +64,7 @@ impl Monomer {
     /// use bioshell_pdb::monomers::MonomerManager;
     /// let manager = MonomerManager::get();
     /// let ala = manager.by_code3("ALA").unwrap();
-    /// assert_eq!(ala.count_residue_atoms(), 5);
+    /// assert_eq!(ala.count_residue_heavy(), 5);
     /// ```
     pub fn count_residue_heavy(&self) -> usize {
         self.atoms.iter().filter(|a| ! (a.is_leaving ||  &a.atom_type == "H")).count()

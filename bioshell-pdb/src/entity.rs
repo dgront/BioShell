@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
-use bioshell_cif::{CifData, CifTable};
+use once_cell::sync::Lazy;
+use bioshell_cif::{CifData, CifTable, value_or_default};
 use crate::{PDBError};
-use crate::PDBError::{CantParseEnumVariant, CifParsingError, InconsistentEntity};
+use crate::PDBError::{CantParseEnumVariant, CifParsingError, InconsistentEntity, NoSuchChain, UnknownResidueType};
 use bioshell_cif::CifError::{ItemParsingError};
-use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
+use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, StandardResidueType};
 
 /// Represents the different types of entities in CIF data.
 ///
@@ -110,6 +111,8 @@ pub struct Entity {
     chain_ids: Vec<String>,
     /// Monomers (or ligands) comprising this entity.
     monomer_sequence: Vec<ResidueType>,
+    /// Monomers (or ligands) comprising each chain of this entity.
+    chain_sequences: HashMap<String, Vec<ResidueType>>,
 }
 
 
@@ -142,6 +145,7 @@ impl Entity {
             src_method: EntitySource::from_str(src_method)?, formula_weight,
             chain_ids: vec![],
             monomer_sequence: vec![],
+            chain_sequences: Default::default(),
         })
     }
 
@@ -162,7 +166,7 @@ impl Entity {
     /// let strctr = load_cif_reader(cif_data.as_bytes())?;
     /// let entity = strctr.entity("1");
     /// assert_eq!(entity.chain_ids(), &vec!["B", "A"]);
-    /// assert_eq!(entity.monomer_sequence().len(), 94);
+    /// assert_eq!(entity.entity_monomers().len(), 94);
     /// # Ok(())
     /// # }
     /// ```
@@ -172,7 +176,17 @@ impl Entity {
     /// Provides monomers (or ligands) comprising this entity.
     ///
     /// A single entity, such as a protein molecule, can be present in multiple chains.
-    pub fn monomer_sequence(&self) -> &Vec<ResidueType> { &self.monomer_sequence }
+    pub fn entity_monomers(&self) -> &Vec<ResidueType> { &self.monomer_sequence }
+
+    /// Provides monomers (or ligands) comprising this entity.
+    pub fn chain_monomers(&self, chain_id: &str) -> Result<&Vec<ResidueType>, PDBError> {
+
+        if let Some(chain_seq) = self.chain_sequences.get(chain_id) {
+            return Ok(chain_seq);
+        } else {
+            Err(NoSuchChain { chain_id: chain_id.to_string() })
+        }
+    }
 
     /// Returns the description of the entity.
     pub fn description(&self) -> &str { &self.description }
@@ -217,15 +231,8 @@ impl Entity {
         let entity_table = CifTable::new(cif_data, "_entity.",
             ["id", "pdbx_description", "type", "src_method", "formula_weight",])?;
         for tokens in entity_table.iter() {
-            if let Ok(mass) = tokens[4].parse::<f64>() {
-                entity_map.insert(tokens[0].to_string(),Entity::from_strings(tokens[0], tokens[1], tokens[2], tokens[3], mass)?);
-            } else {
-                return Err(CifParsingError(ItemParsingError{
-                    item: tokens[4].to_string(),
-                    type_name: "f64".to_string(),
-                    details: "_entity.formula_weight can't be parsed".to_string(),
-                }));
-            }
+            let mass = tokens[4].parse::<f64>().unwrap_or(0.0);
+            entity_map.insert(tokens[0].to_string(),Entity::from_strings(tokens[0], tokens[1], tokens[2], tokens[3], mass)?);
         }
 
         // ---------- extract also the vector of polymer entities
@@ -246,6 +253,13 @@ impl Entity {
             }
         }
 
+        // --- load sequences for each chain as they are defined in entity definitions, including gaps
+        let chains_in_entities = load_chain_residue_types(cif_data)?;
+        for (entity_id, chains) in chains_in_entities {
+            let mut entity = entity_map.get_mut(&entity_id).unwrap();
+            entity.chain_sequences = chains;
+        }
+
         // ---------- Now extract nonpolymer entities, which are not mandatory
         if let Ok(nonpoly_table) = CifTable::new(cif_data, "_pdbx_nonpoly_scheme",
                 [".entity_id", ".mon_id", ".pdb_strand_id",]) {
@@ -261,10 +275,10 @@ impl Entity {
                     // --- residue type for that non-polymer molecule
                     let m = mgr.by_code3(monomer_id).ok_or(PDBError::UnknownResidueType{res_type: monomer_id.to_string()})?;
                     entity.monomer_sequence.push(m.clone());
-                    // --- if it's water, set the non-polymer type accordingly
-                    if entity.entity_type == EntityType::NonPolymer || monomer_id == "HOH" {
-                        entity.entity_type = EntityType::Water;
-                    }
+                    // // --- if it's water, set the non-polymer type accordingly
+                    // if entity.entity_type == EntityType::NonPolymer || monomer_id == "HOH" {
+                    //     entity.entity_type = EntityType::Water;
+                    // }
                 } else {
                     return Err(InconsistentEntity {
                         entity_id: entity_id.to_string(),
@@ -277,6 +291,32 @@ impl Entity {
         Ok(entity_map)
     }
 }
+
+fn load_chain_residue_types(cif_data: &CifData) -> Result<HashMap<String,HashMap<String, Vec<ResidueType>>>, PDBError> {
+
+    let res_mgr = ResidueTypeManager::get();
+    let gap = res_mgr.by_code3("GAP").unwrap();
+    let mut out = HashMap::default();
+    if let Ok(seq_table) = CifTable::new(cif_data, "_pdbx_poly_seq_scheme",
+                                             [".entity_id", ".pdb_mon_id", ".pdb_strand_id",]) {
+        for [id, monomer, chain] in seq_table.iter() {
+            if !out.contains_key(id) { out.insert(id.to_string(), HashMap::default()); }
+            let mut map = out.get_mut(id).unwrap();
+            if !map.contains_key(chain) { map.insert(chain.to_string(), vec![]); }
+            let mut vec = map.get_mut(chain).unwrap();
+            if monomer == "?" || monomer == "." {
+                vec.push(gap.clone());
+            } else {
+                if let Some(res_type) = res_mgr.by_code3(monomer) { vec.push(res_type.clone()); }
+                else {
+                    return Err(UnknownResidueType { res_type: monomer.to_string() })
+                }
+            }
+        }
+    }
+    return Ok(out);
+}
+
 
 /// Enum representing different types of polymers for _entity_poly.type in an mmCIF file.
 ///
@@ -308,21 +348,22 @@ pub enum PolymerEntityType {
 
 impl FromStr for PolymerEntityType {
     type Err = PDBError;
-    /// Parse a string and return the corresponding `EntityPolyType` enum variant.
+    /// Parse a string and return the corresponding [`PolymerEntityType`] enum variant.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tmp = s.trim_matches('\'').to_lowercase();
-        match tmp.as_str() {
-            "polypeptide(l)" => Ok(PolymerEntityType::PolypeptideL),
-            "polypeptide(d)" => Ok(PolymerEntityType::PolypeptideD),
-            "dna" => Ok(PolymerEntityType::DNA),
-            "rna" => Ok(PolymerEntityType::RNA),
-            "polysaccharide(l)" => Ok(PolymerEntityType::PolysaccharideL),
-            "polysaccharide(d)" => Ok(PolymerEntityType::PolysaccharideD),
-            "polydeoxyribonucleotide" => Ok(PolymerEntityType::DNA),
-            "polyribonucleotide" => Ok(PolymerEntityType::RNA),
-            "other" => Ok(PolymerEntityType::Other),
-            _ => Err(CantParseEnumVariant{ data_value: s.to_string(), enum_name: "EntityPolyType".to_string() }),
+        // --- First try to find an exact match
+        if let Some(&entity_type) = ENTITY_TYPE_MAP.get(tmp.as_str()) {
+            return Ok(entity_type);
         }
+        // --- If no exact match is found, try to find a substring match
+        for (key, &entity_type) in ENTITY_TYPE_MAP.iter() {
+            if s.contains(key) { return Ok(entity_type); }
+        }
+        // --- If neither exact nor substring match is found, return an error
+        Err(CantParseEnumVariant {
+            data_value: s.to_string(),
+            enum_name: "PolymerEntityType".to_string(),
+        })
     }
 }
 
@@ -423,3 +464,19 @@ impl PolymerEntity {
 
     pub fn chain_ids(&self) -> &Vec<String> { &self.chain_ids }
 }
+
+// --- entity type map used to implement FromStr
+static ENTITY_TYPE_MAP: Lazy<HashMap<&'static str, PolymerEntityType>> = Lazy::new(|| {
+    let mut m = HashMap::new();
+    m.insert("polypeptide(l)", PolymerEntityType::PolypeptideL);
+    m.insert("polypeptide(d)", PolymerEntityType::PolypeptideD);
+    m.insert("dna", PolymerEntityType::DNA);
+    m.insert("rna", PolymerEntityType::RNA);
+    m.insert("polysaccharide(l)", PolymerEntityType::PolysaccharideL);
+    m.insert("polysaccharide(d)", PolymerEntityType::PolysaccharideD);
+    m.insert("polydeoxyribonucleotide", PolymerEntityType::DNA);
+    m.insert("polyribonucleotide", PolymerEntityType::RNA);
+    m.insert("peptide nucleic acid", PolymerEntityType::PeptideNucleicAcid);
+    m.insert("other", PolymerEntityType::Other);
+    m
+});
