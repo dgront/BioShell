@@ -15,7 +15,18 @@ use crate::PDBError::{CifParsingError, IncorrectCompoundTypeName};
 
 impl Deposit {
 
-    /// Reads a [`Deposit`](Deposit) from a mmCIF data buffer
+    /// Reads a [`Deposit`](Deposit) from a mmCIF data buffer.
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_pdb::{Deposit, PDBError};
+    /// # fn main() -> Result<(), PDBError> {
+    /// let cif_data = include_str!("../tests/test_files/2gb1.cif");
+    /// let reader = BufReader::new(cif_data.as_bytes());
+    /// let deposit = Deposit::from_cif_reader(reader)?;
+    /// assert_eq!(deposit.count_entities(), 1);
+    /// Ok(())
+    /// # }
+    /// ```
     pub fn from_cif_reader<R: BufRead>(reader: R) -> Result<Deposit, PDBError> {
         let start = Instant::now();
         // --- parse the file content into CIF struct

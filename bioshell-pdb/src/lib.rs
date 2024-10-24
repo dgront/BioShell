@@ -1,13 +1,61 @@
 //! Efficient and clean library for processing biomacromolecular structures.
 //!
-//! # Loading PDB files
-//! Structures can be loaded from a PDB file with [`load_pdb_file()`](crate::from_pdb_file())
-//! or directly from a PDB-formatted buffer with [`load_pdb_reader()`](crate::from_pdb_reader()).
-//! When successful, each of these method returns a [`Structure`](crate::Structure) object that
-//! holds all the atoms parsed from the input.
+//! # Loading CIF and PDB deposits
+//! Biomacromolecular deposits (either in mmCIF or PDB file format) can be directly loaded into a [`Deposit`](Deposit) struct:
+//!
+//!```no_run
+//! use bioshell_pdb::Deposit;
+//! let deposit = Deposit::from_file("2gb1.cif");
+//!```
+//! the file format is determined automatically by its header. A [`Deposit`](Deposit) struct
+//! can be also directly loaded from a data buffer; in such a case user must specify the file format
+//! by calling the appropriate method:
+//!```
+//! # use std::io::BufReader;
+//! # use bioshell_pdb::{Deposit, PDBError};
+//! # fn main() -> Result<(), PDBError> {
+//! # let pdb_data = include_str!("../tests/test_files/2gb1.pdb");
+//! let reader = BufReader::new(pdb_data.as_bytes());
+//! let deposit_2gb1 = Deposit::from_pdb_reader(reader)?;
+//! # let cif_data = include_str!("../tests/test_files/2fdo.cif");
+//! let reader = BufReader::new(cif_data.as_bytes());
+//! let deposit_2fdo = Deposit::from_pdb_reader(reader)?;
+//! # Ok(())
+//! # }
+//! ```
+//! Once successfully loaded, it provides access to the information stored in a file, such as
+//! [`resolution`](Deposit::title), [`UnitCell`](UnitCell) or  [`resolution`](Deposit::resolution).
+//!```
+//! # use std::io::BufReader;
+//! # use bioshell_pdb::{Deposit, PDBError};
+//! # fn main() -> Result<(), PDBError> {
+//! # let cif_data = include_str!("../tests/test_files/2fdo.cif");
+//! # let reader = BufReader::new(cif_data.as_bytes());
+//! let deposit_2fdo = Deposit::from_pdb_reader(reader)?;
+//! println!("Title: {}", deposit_2fdo.title);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//!
+//! # Structures
+//!
+//! A [`Deposit`](Deposit) struct can obviously provide also the atomic coordinates, which are
+//! stored in a [`Structure`](Structure) struct:
+//! ```
+//! # use std::io::BufReader;
+//! # use bioshell_pdb::{Deposit, PDBError};
+//! # fn main() -> Result<(), PDBError> {
+//! # let cif_data = include_str!("../tests/test_files/2gb1.cif");
+//! # let reader = BufReader::new(cif_data.as_bytes());
+//! # let deposit = Deposit::from_cif_reader(reader)?;
+//! let strctr = deposit.structure();
+//! # Ok(())
+//! # }
+//! ```
 //!
 //! # Selecting chains, residues and atoms
-//! The `bioshell-pdb` crate provides access to the vector of atoms for a given [`Structure`](crate::Structure)
+//! The `bioshell-pdb` crate provides access to the vector of atoms for a given [`Structure`](Structure)
 //! which may be processed as any Rust [`Iterator`](std::iter::Iterator) method, e.g. filtered with
 //! [`filter()`](std::iter::Iterator::filter()) or mapped with [`map()`](std::iter::Iterator::map()).
 //! The [`pdb_atom_filters`](crate::pdb_atom_filters) module provides several predicates for such applications.

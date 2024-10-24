@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::ops::Range;
 use crate::{Entity, ExperimentalMethod, is_cif_file, is_pdb_file, PDBError, Structure, UnitCell};
 
+/// Holds all the data describing a macromolecular deposit, parsed from either an mmCIF or PDB file.
 pub struct Deposit {
     /// classifies the molecule(s)
     ///
@@ -36,6 +37,7 @@ pub struct Deposit {
 
 impl Deposit {
 
+    /// Creates a new, empty deposit for a given ``id_code``
     pub fn new(id_code: &str) -> Self {
         Deposit{
             classification: None,
@@ -53,6 +55,9 @@ impl Deposit {
         }
     }
 
+    /// Detects the file format and parses its content into a [`Deposit`](Deposit)  struct.
+    ///
+    /// The method can recognise either mmCIF or PDB file format.
     pub fn from_file(file_name: &str) -> Result<Deposit, PDBError> {
         if is_cif_file(file_name)? { return Deposit::from_cif_file(file_name); }
         if is_pdb_file(file_name)? { return Deposit::from_pdb_file(file_name); }
