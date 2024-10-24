@@ -2,11 +2,10 @@ use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
 use once_cell::sync::Lazy;
-use bioshell_cif::{CifData, CifTable, value_or_default};
+use bioshell_cif::{CifData, CifTable};
 use crate::{PDBError};
-use crate::PDBError::{CantParseEnumVariant, CifParsingError, InconsistentEntity, NoSuchChain, UnknownResidueType};
-use bioshell_cif::CifError::{ItemParsingError};
-use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, StandardResidueType};
+use crate::PDBError::{CantParseEnumVariant, InconsistentEntity, NoSuchChain, UnknownResidueType};
+use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
 
 /// Represents the different types of entities in CIF data.
 ///
@@ -95,6 +94,8 @@ impl FromStr for EntitySource {
 
 
 /// Represents an entity in an mmCIF file.
+///
+/// An entity represents a chemically distinct object. For example, a hemoglobin deposit contains
 #[derive(Debug, Clone)]
 pub struct Entity {
     /// Unique identifier for the entity.
@@ -160,11 +161,12 @@ impl Entity {
     ///
     /// # Example
     /// ```
-    /// use bioshell_pdb::{PDBError, load_cif_reader};
+    /// use bioshell_pdb::{PDBError, Deposit};
     /// # fn main() -> Result<(), PDBError> {
+    /// use bioshell_pdb::Deposit;
     /// let cif_data = include_str!("../tests/test_files/2fdo.cif");
-    /// let strctr = load_cif_reader(cif_data.as_bytes())?;
-    /// let entity = strctr.entity("1");
+    /// let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
+    /// let entity = deposit.entity("1");
     /// assert_eq!(entity.chain_ids(), &vec!["B", "A"]);
     /// assert_eq!(entity.entity_monomers().len(), 94);
     /// # Ok(())
@@ -178,7 +180,10 @@ impl Entity {
     /// A single entity, such as a protein molecule, can be present in multiple chains.
     pub fn entity_monomers(&self) -> &Vec<ResidueType> { &self.monomer_sequence }
 
-    /// Provides monomers (or ligands) comprising this entity.
+    /// Provides monomers (or ligands) comprising this entity as observed in a particular chain.
+    ///
+    /// The returned vector may contain [`GAP`] monomers when a residue present in the respective
+    /// entity can't be observed in a given chain
     pub fn chain_monomers(&self, chain_id: &str) -> Result<&Vec<ResidueType>, PDBError> {
 
         if let Some(chain_seq) = self.chain_sequences.get(chain_id) {
@@ -275,10 +280,6 @@ impl Entity {
                     // --- residue type for that non-polymer molecule
                     let m = mgr.by_code3(monomer_id).ok_or(PDBError::UnknownResidueType{res_type: monomer_id.to_string()})?;
                     entity.monomer_sequence.push(m.clone());
-                    // // --- if it's water, set the non-polymer type accordingly
-                    // if entity.entity_type == EntityType::NonPolymer || monomer_id == "HOH" {
-                    //     entity.entity_type = EntityType::Water;
-                    // }
                 } else {
                     return Err(InconsistentEntity {
                         entity_id: entity_id.to_string(),

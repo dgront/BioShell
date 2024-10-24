@@ -1,5 +1,5 @@
 use std::env;
-use bioshell_pdb::{load_pdb_file, PdbAtom};
+use bioshell_pdb::{Deposit, PdbAtom};
 use bioshell_pdb::calc::distance;
 use bioshell_pdb::pdb_atom_filters::{AlwaysPass, IsBackbone, IsCA, PdbAtomPredicate};
 
@@ -32,7 +32,9 @@ fn main() {
         println!("{:?}", USAGE);
         return;
     }
-    let strctr = load_pdb_file(&fname).unwrap();
+    let deposit = Deposit::from_file(&fname).unwrap();
+    let strctr = deposit.structure();
+
     for ai in strctr.atoms().iter().filter(|&a|selector.check(a)) {
         for aj in strctr.atoms().iter().filter(|&a|selector.check(a)) {
             if ai.res_seq == aj.res_seq && ai.i_code==aj.i_code && ai.chain_id==aj.chain_id { break }

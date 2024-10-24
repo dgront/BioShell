@@ -3,10 +3,10 @@ mod tests {
     use std::collections::HashMap;
     use std::io::BufReader;
     use bioshell_cif::read_cif_buffer;
-    use bioshell_pdb::{Entity, EntityType, load_cif_reader, PDBError, PolymerEntity};
+    use bioshell_pdb::{Deposit, Entity, EntityType, PDBError, PolymerEntity};
     use bioshell_pdb::PolymerEntityType::{PolypeptideL, DNA};
     use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager};
-    use bioshell_seq::chemical::StandardResidueType::UNK;
+    use bioshell_seq::chemical::StandardResidueType::{GAP, UNK};
 
     #[allow(non_upper_case_globals)]
     const cif_2gb1:  &str = include_str!("./test_files/2gb1.cif");
@@ -77,13 +77,13 @@ mod tests {
     #[test]
     fn entities_5edw_structure() -> Result<(), PDBError> {
         let cif_data = include_str!("../tests/test_files/5edw.cif");
-        let strctr = load_cif_reader(cif_data.as_bytes())?;
+        let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
 
-        assert_eq!(strctr.entities().count(), 6);
+        assert_eq!(deposit.entities().count(), 6);
 
         let mut protein_entities = 0;
         let mut dna_entities = 0;
-        for (id, entity) in strctr.entities() {
+        for (id, entity) in deposit.entities() {
             if entity.entity_type() == EntityType::Polymer(PolypeptideL) {
                 protein_entities += 1;
                 assert_eq!(entity.chain_ids(), &["A"]);
@@ -99,43 +99,49 @@ mod tests {
     #[test]
     fn entities_2fdo_structure() -> Result<(), PDBError> {
 
-        let strctr = load_cif_reader(cif_2fdo.as_bytes())?;
+        let deposit = Deposit::from_cif_reader(cif_2fdo.as_bytes())?;
 
-        assert_eq!(strctr.entities().count(), 2);
-        let entity = strctr.entity("1");
+        assert_eq!(deposit.entities().count(), 2);
+        let entity = deposit.entity("1");
         assert_eq!(entity.entity_type(), EntityType::Polymer(PolypeptideL));
+        let strctr = deposit.structure();
 
-        // --- full chains, including water molecules
-        assert_eq!(strctr.chain_residue_ids("B").len(), 110);
-        assert_eq!(strctr.chain_residue_ids("A").len(), 104);
+        // --- amino acids as seen in an entity
+        let n_all_aa_a = entity.chain_monomers("A")?.len();
+        let n_aa_a = entity.chain_monomers("A")?.iter().filter(|&rt|rt.parent_type != GAP).count();
+        assert_eq!(n_all_aa_a, 94);
+        assert_eq!(n_aa_a, 93); // --- one is missing
 
-        // --- amino acids only
-        let n_aa = strctr.chain_residue_ids("B").iter()
+        // --- amino acids as seen in a structure
+        let n_aa_a_strctr = strctr.chain_residue_ids("A").iter()
             .filter(|ri| strctr.residue_type(ri).unwrap().chem_compound_type.is_peptide_linking())
             .count();
-        assert_eq!(n_aa, 94);
-        let n_aa = strctr.chain_residue_ids("A").iter()
-            .filter(|ri| strctr.residue_type(ri).unwrap().chem_compound_type.is_peptide_linking())
-            .count();
-        assert_eq!(n_aa, 93);
+        assert_eq!(n_aa_a_strctr, 93);
+
         Ok(())
     }
 
     #[test]
     fn test_1cn5_chain_sequences() -> Result<(), PDBError> {
 
-        let strctr = load_cif_reader(cif_1c5n.as_bytes())?;
-        assert_eq!(strctr.entities().count(), 7);
-        let atom_seq: Vec<_> = strctr.chain_residue_ids("L").iter()
-            .filter(|ri|strctr.residue_type(ri).unwrap().chem_compound_type.is_peptide_linking())
-            .map(|rt| rt.clone())
-            .collect();
-        let entity_seq = strctr.entity("1").entity_monomers();
-        let entity_chain_seq = strctr.entity("1").chain_monomers("L").unwrap();
+        let deposit = Deposit::from_cif_reader(cif_1c5n.as_bytes())?;
+        let strctr = deposit.structure();
+        assert_eq!(deposit.entities().count(), 7);
+        let first_entity = deposit.entity("1");
+        let n_aa_l = first_entity.chain_monomers("L")?.len();
+        assert_eq!(n_aa_l, 36);
 
-        assert_eq!(entity_chain_seq.len(), entity_chain_seq.len());
-        let entity_aa_seq: Vec<&ResidueType> = entity_chain_seq.iter().filter(|rt| rt.chem_compound_type.is_peptide_linking()).collect();
-        assert_eq!(entity_aa_seq.len(), atom_seq.len());
+        let first_entity = deposit.entity("2");
+        let n_aa_h = first_entity.chain_monomers("H")?.len();
+        assert_eq!(n_aa_h, 259);      // 7 are missing
+        let n_gap_h = first_entity.chain_monomers("H").unwrap().iter()
+            .filter(|rt| rt.parent_type==GAP).count();
+        assert_eq!(n_gap_h, 7);      // 7 are missing
+
+        let n_aa_h = strctr.chain_residue_ids("H").iter()
+            .filter(|ri| strctr.residue_type(ri).unwrap().chem_compound_type.is_peptide_linking()).count();
+        assert_eq!(n_aa_h, 259 - 7);   // n_AA - n_GAP
+
         Ok(())
     }
 }

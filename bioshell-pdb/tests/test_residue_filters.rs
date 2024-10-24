@@ -3,7 +3,7 @@ mod test_residue_filters {
     use std::io::BufReader;
     use bioshell_cif::read_cif_buffer;
     use bioshell_pdb::residue_filters::{HasAllHeavyAtoms, ResidueFilter};
-    use bioshell_pdb::{load_cif_reader, PDBError, ResidueId, Structure};
+    use bioshell_pdb::{Deposit, PDBError, ResidueId, Structure};
 
     #[test]
     fn test_bb_predicate() {
@@ -27,8 +27,8 @@ mod test_residue_filters {
     #[test]
     fn test_heavy_atoms_predicate() -> Result<(), PDBError> {
         let reader = BufReader::new(cif_2gb1.as_bytes());
-        let strctr = load_cif_reader(reader).unwrap();
-
+        let deposit = Deposit::from_cif_reader(reader).unwrap();
+        let strctr = deposit.structure();
         let all_heavy = HasAllHeavyAtoms;
         let outcome = all_heavy.check(&strctr, &ResidueId::new("A", 1, ' '));
         assert!(outcome);

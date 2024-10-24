@@ -3,7 +3,7 @@ use clap::{Parser};
 use log::info;
 use bioshell_cif::is_cif_file;
 use bioshell_io::{open_file, out_writer};
-use bioshell_pdb::{is_pdb_file, load_cif_file, load_pdb_file, Structure};
+use bioshell_pdb::{Deposit, is_pdb_file, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, MatchAll, PdbAtomPredicate};
 
 #[derive(Parser, Debug)]
@@ -53,41 +53,42 @@ fn filter<F: PdbAtomPredicate>(strctr: &Structure, filter: &F) -> Structure {
     return Structure::from_iterator(&strctr.id_code, atoms_iter);
 }
 
-fn print_info(strctr: &Structure) {
-    println!("id_code: {:?}",strctr.id_code);
-    println!("methods: {:?}",strctr.methods);
-    if let Some(class) = &strctr.classification { println!("classification: {}", class); }
-    if let Some(title) = &strctr.title { println!("title: {}", title); }
-    if let Some(res) = strctr.resolution { println!("resolution: {}", res); }
-    if let Some(r_fact) = strctr.r_factor { println!("r_factor: {}", r_fact); }
-    if let Some(r_free) = strctr.r_free { println!("r_free: {}", r_free); }
-    if let Some(unit_cell) = &strctr.unit_cell { println!("space group: {}", unit_cell.space_group); }
-    if strctr.keywords.len() > 0 { println!("keywords: {}", strctr.keywords.join(", ")); }
-    println!("models: {}", strctr.count_models());
+fn print_info(deposit: &Deposit) {
+    println!("id_code: {:?}", deposit.id_code);
+    println!("methods: {:?}", deposit.methods);
+    if let Some(class) = &deposit.classification { println!("classification: {}", class); }
+    if let Some(title) = &deposit.title { println!("title: {}", title); }
+    if let Some(res) = deposit.resolution { println!("resolution: {}", res); }
+    if let Some(r_fact) = deposit.r_factor { println!("r_factor: {}", r_fact); }
+    if let Some(r_free) = deposit.r_free { println!("r_free: {}", r_free); }
+    if let Some(unit_cell) = &deposit.unit_cell { println!("space group: {}", unit_cell.space_group); }
+    if deposit.keywords.len() > 0 { println!("keywords: {}", deposit.keywords.join(", ")); }
+    println!("models: {}", deposit.count_models());
 }
 
-fn print_info_row(strctr: &Structure) {
-    print!("{:?}\t",strctr.id_code);
-    print!("{:?}\t",strctr.methods);
-    if let Some(class) = &strctr.classification { 
+fn print_info_row(deposit: &Deposit) {
+
+    print!("{:?}\t", deposit.id_code);
+    print!("{:?}\t", deposit.methods);
+    if let Some(class) = &deposit.classification {
         print!("{}\t", class); 
     } else { print!("\t"); }
-    if let Some(title) = &strctr.title { 
+    if let Some(title) = &deposit.title {
         print!("{}\t", title.replace("\n", " ")); 
     } else { print!("\t"); }
-    if let Some(res) = strctr.resolution { 
+    if let Some(res) = deposit.resolution {
         print!("{}\t", res); 
     } else { print!("\t"); }
-    if let Some(r_fact) = strctr.r_factor { 
+    if let Some(r_fact) = deposit.r_factor {
         print!("{}\t", r_fact); 
     } else { print!("\t"); }
-    if let Some(r_free) = strctr.r_free { 
+    if let Some(r_free) = deposit.r_free {
         print!("{}\t", r_free); 
     } else { print!("\t"); }
-    if let Some(unit_cell) = &strctr.unit_cell { 
+    if let Some(unit_cell) = &deposit.unit_cell {
         print!("{}\t", unit_cell.space_group); 
     } else { print!("\t"); }
-    print!("{}\n", strctr.count_models());
+    print!("{}\n", deposit.count_models());
 }
 
 fn write_pdb(strctr: &Structure, fname: &str) {
@@ -111,14 +112,8 @@ fn main() {
     info!("Git commit MD5 sum: {}", git_commit_md5);
 
     // ---------- INPUT section
-    let mut strctr: Structure;
-    if is_pdb_file(&args.infile).is_ok_and(|f| f) {
-        strctr = load_pdb_file(&args.infile).unwrap();
-    } else if is_cif_file(&args.infile).is_ok_and(|f| f) {
-        strctr = load_cif_file(&args.infile).unwrap();
-    } else {
-        panic!("Can't recognize the format of the input file: {}", &args.infile);
-    }
+    let deposit = Deposit::from_file(&args.infile).unwrap();
+    let mut strctr= deposit.structure();
 
     // ---------- FILTER section
     let mut multi_filter = MatchAll::new();
@@ -146,8 +141,8 @@ fn main() {
             println!("> {}\n{}", seq.description(), strctr.secondary(chain_id).to_string());
         }
     }
-    if args.info { print_info(&strctr); }
-    if args.info_table { print_info_row(&strctr); }
+    if args.info { print_info(&deposit); }
+    if args.info_table { print_info_row(&deposit); }
 
     if let Some(out_fname) = args.out_pdb {
         write_pdb(&strctr, &out_fname);

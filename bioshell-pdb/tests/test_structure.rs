@@ -1,5 +1,5 @@
 use std::io::BufReader;
-use bioshell_pdb::{load_pdb_reader, PdbAtom, ResidueId, Structure};
+use bioshell_pdb::{Deposit, PdbAtom, ResidueId, Structure};
 
 #[allow(non_upper_case_globals)]
 const lines_ca:  [&str;9] = [
@@ -77,7 +77,8 @@ ATOM     78  CA  LEU B   5      -0.651  -2.752   2.466  1.00  0.11           C";
 
 #[test]
 fn test_loading_from_reader() {
-    let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
+    let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
+    let strctr = deposit.structure();
     let seq = strctr.sequence("A");
     assert_eq!(seq.to_string(80), "MTYKLI");
 
@@ -88,7 +89,8 @@ fn test_loading_from_reader() {
 #[test]
 fn test_atoms_by_range() {
 
-    let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
+    let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
+    let strctr = deposit.structure();
     let first = ResidueId::new("A", 4, ' ');
     let last = ResidueId::new("B", 2, ' ');
     let iterator = strctr.atom_in_range(first, last);

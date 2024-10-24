@@ -9,166 +9,171 @@ use bioshell_seq::sequence::Sequence;
 use crate::pdb_title::PdbTitle;
 use crate::pdb_header::PdbHeader;
 use crate::remarks::PDBRemarks;
-use crate::{ExperimentalMethod, PdbAtom, PdbHelix, PdbSheet, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
+use crate::{Deposit, ExperimentalMethod, PdbAtom, PdbHelix, PdbSheet, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
 use crate::calc::Vec3;
 use crate::crate_utils::find_deposit_file_name;
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::pdb_parsing_error::PDBError;
 
-/// Reads PDB-formatted content from a buffer.
-///
-/// This function allows reading PDB structures from `String`
-/// # Example
-/// ```
-/// use bioshell_pdb::load_pdb_reader;
-/// use std::io::BufReader;
-/// let pdb_txt: &str =
-/// "ATOM      2  CA  MET A   1     -13.296   0.028   3.924  1.00  0.43           C
-/// ATOM     21  CA  THR A   2      -9.669  -0.447   4.998  1.00  0.19           C
-/// ATOM     35  CA  TYR A   3      -7.173  -2.314   2.811  1.00  0.08           C
-/// ATOM     56  CA  LYS A   4      -3.922  -3.881   4.044  1.00  0.10           C
-/// ATOM     78  CA  LEU A   5      -0.651  -2.752   2.466  1.00  0.11           C
-/// ATOM     97  CA  ILE A   6       2.338  -5.105   2.255  1.00  0.13           C";
-///
-/// let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
-/// let seq = strctr.sequence("A");
-/// assert_eq!(seq.to_string(100), "MTYKLI");
-/// ```
-pub fn load_pdb_reader<R: BufRead>(reader: R) -> Result<Structure, PDBError> {
+impl Deposit {
 
-    let start = Instant::now();
-    let mut pdb_structure = Structure::new("");
+    /// Reads PDB-formatted content from a buffer.
+    ///
+    /// This function allows reading PDB structures from `String`
+    /// # Example
+    /// ```
+    /// use bioshell_pdb::{Deposit};
+    /// use std::io::BufReader;
+    /// let pdb_txt: &str =
+    /// "ATOM      2  CA  MET A   1     -13.296   0.028   3.924  1.00  0.43           C
+    /// ATOM     21  CA  THR A   2      -9.669  -0.447   4.998  1.00  0.19           C
+    /// ATOM     35  CA  TYR A   3      -7.173  -2.314   2.811  1.00  0.08           C
+    /// ATOM     56  CA  LYS A   4      -3.922  -3.881   4.044  1.00  0.10           C
+    /// ATOM     78  CA  LEU A   5      -0.651  -2.752   2.466  1.00  0.11           C
+    /// ATOM     97  CA  ILE A   6       2.338  -5.105   2.255  1.00  0.13           C";
+    ///
+    /// let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
+    /// let seq = deposit.structure().sequence("A");
+    /// assert_eq!(seq.to_string(100), "MTYKLI");
+    /// ```
+    pub fn from_pdb_reader<R: BufRead>(reader: R) -> Result<Deposit, PDBError> {
 
-    let mut helices: Vec<PdbHelix> = vec![];
-    let mut strands: Vec<PdbSheet> = vec![];
-    let mut remarks = PDBRemarks::new();
-    let mut seqres: Vec<String> = vec![];
-    let mut model_id = 0;
-    let mut title : Option<PdbTitle> = None;
-    let mut header: Option<PdbHeader> = None;
-    pdb_structure.model_coordinates.push(vec![]);
+        let start = Instant::now();
 
-    for line in reader.lines() {
-        let line = line?;
+        let mut deposit  = Deposit::new("");
 
-        if line.len() < 6 { continue }  // --- remove empty lines or those without a valid record
-        // Check that the line has a valid PDB record type
-        let record = line[0..6].trim();
-        match record {
-            "TER" => {
-                if let Ok(ter_res) = residue_id_from_ter_record(&line) {
-                    let ter_chain = ter_res.chain_id.clone();
-                    pdb_structure.ter_atoms.insert(ter_chain, ter_res);
-                } else {                    // --- assign that TER to the very last atom of the current chain
-                    if let Some(last_atom) = pdb_structure.atoms.last() {
-                        pdb_structure.ter_atoms.insert(last_atom.chain_id.clone(), ResidueId::try_from(last_atom).unwrap());
+        let mut helices: Vec<PdbHelix> = vec![];
+        let mut strands: Vec<PdbSheet> = vec![];
+        let mut remarks = PDBRemarks::new();
+        let mut seqres: Vec<String> = vec![];
+        let mut model_id = 0;
+        let mut title : Option<PdbTitle> = None;
+        let mut header: Option<PdbHeader> = None;
+
+        let mut pdb_structure = Structure::new("");
+        pdb_structure.model_coordinates.push(vec![]);
+
+        for line in reader.lines() {
+            let line = line?;
+
+            if line.len() < 6 { continue }  // --- remove empty lines or those without a valid record
+            // Check that the line has a valid PDB record type
+            let record = line[0..6].trim();
+            match record {
+                "TER" => {
+                    if let Ok(ter_res) = residue_id_from_ter_record(&line) {
+                        let ter_chain = ter_res.chain_id.clone();
+                        pdb_structure.ter_atoms.insert(ter_chain, ter_res);
+                    } else {                    // --- assign that TER to the very last atom of the current chain
+                        if let Some(last_atom) = pdb_structure.atoms.last() {
+                            pdb_structure.ter_atoms.insert(last_atom.chain_id.clone(), ResidueId::try_from(last_atom).unwrap());
+                        }
                     }
                 }
-            }
-            "HEADER" => {
-                header = PdbHeader::new(&line);
-            },
-            "EXPDTA" => {
-                pdb_structure.methods = ExperimentalMethod::from_expdata_line(&line);
-            },
-            "TITLE" => {
-                if title == None {
-                    title = Some(PdbTitle::from_pdb_line(&line));
-                } else {
-                    let title = title.as_mut().unwrap();
-                    title.append_pdb_line(&line);
+                "HEADER" => {
+                    header = PdbHeader::new(&line);
+                },
+                "EXPDTA" => {
+                    deposit.methods = ExperimentalMethod::from_expdata_line(&line);
+                },
+                "TITLE" => {
+                    if title == None {
+                        title = Some(PdbTitle::from_pdb_line(&line));
+                    } else {
+                        let title = title.as_mut().unwrap();
+                        title.append_pdb_line(&line);
+                    }
+                },
+                "HELIX" => {
+                    let helix = PdbHelix::from_helix_line(&line);
+                    helices.push(helix);
                 }
-            },
-            "HELIX" => {
-                let helix = PdbHelix::from_helix_line(&line);
-                helices.push(helix);
-            }
-            "SHEET" => {
-                let strand = PdbSheet::from_sheet_line(&line);
-                strands.push(strand?);
-            }
-            "ATOM" | "HETATM" => {
-                if model_id == 0 {
-                    let a = PdbAtom::from_atom_line(&line);
-                    pdb_structure.model_coordinates[model_id].push(a.pos.clone());
-                    pdb_structure.atoms.push(a);
-                } else {
-                    let v = Vec3::from_pdb_line(&line);
-                    pdb_structure.model_coordinates[model_id].push(v);
+                "SHEET" => {
+                    let strand = PdbSheet::from_sheet_line(&line);
+                    strands.push(strand?);
                 }
-            },
-            "ENDMDL" => {
-                model_id += 1;
-            },
-            "MODEL" => {
-                if pdb_structure.model_coordinates.len() == model_id {
-                    pdb_structure.model_coordinates.push(vec![]);
+                "ATOM" | "HETATM" => {
+                    if model_id == 0 {
+                        let a = PdbAtom::from_atom_line(&line);
+                        pdb_structure.model_coordinates[model_id].push(a.pos.clone());
+                        pdb_structure.atoms.push(a);
+                    } else {
+                        let v = Vec3::from_pdb_line(&line);
+                        pdb_structure.model_coordinates[model_id].push(v);
+                    }
+                },
+                "ENDMDL" => {
+                    model_id += 1;
+                },
+                "MODEL" => {
+                    if pdb_structure.model_coordinates.len() == model_id {
+                        pdb_structure.model_coordinates.push(vec![]);
+                    }
+                },
+                "REMARK" => {
+                    remarks.add_remark(&line);
                 }
-            },
-            "REMARK" => {
-                remarks.add_remark(&line);
+                "SEQRES" => {
+                    seqres.push(line);
+                }
+                "CRYST1" => {
+                    deposit.unit_cell = Some(UnitCell::from_cryst1_line(&line));
+                }
+                _ => {},
+            };
+        }
+        debug!("{:} atoms loaded", pdb_structure.atoms.len());
+
+        // ---------- Annotate secondary structure
+        for i in 0..helices.len() {
+            let from = helices[i].init_res_id();
+            let to = helices[i].end_res_id();
+            let check = ByResidueRange::new(from,to);
+            for a in &mut pdb_structure.atoms {
+                if check.check(a) {
+                    a.secondary_struct_type
+                        = SecondaryStructureTypes::from_pdb_class(helices[i].helix_class as usize)
+                }
             }
-            "SEQRES" => {
-                seqres.push(line);
+        }
+        for i in 0..strands.len() {
+            let from = strands[i].init_res_id();
+            let to = strands[i].end_res_id();
+            let check = ByResidueRange::new(from,to);
+            for a in &mut pdb_structure.atoms {
+                if check.check(a) { a.secondary_struct_type = SecondaryStructureTypes::Strand  }
             }
-            "CRYST1" => {
-                pdb_structure.unit_cell = Some(UnitCell::from_cryst1_line(&line));
-            }
-            _ => {},
+        }
+
+        // ---------- Extract values stored in remarks
+        deposit.resolution = remarks.resolution();
+
+        deposit.title = match title {
+            None => None,
+            Some(title) => {Some(title.to_string())}
         };
-    }
-    debug!("{:} atoms loaded", pdb_structure.atoms.len());
-
-    // ---------- Annotate secondary structure
-    for i in 0..helices.len() {
-        let from = helices[i].init_res_id();
-        let to = helices[i].end_res_id();
-        let check = ByResidueRange::new(from,to);
-        for a in &mut pdb_structure.atoms {
-            if check.check(a) {
-                a.secondary_struct_type
-                    = SecondaryStructureTypes::from_pdb_class(helices[i].helix_class as usize)
-            }
+        if let Some(header) = header {
+            deposit.classification = Some(header.classification);
+            deposit.id_code = header.id_code;
+            deposit.dep_date = Some(header.dep_date);
         }
-    }
-    for i in 0..strands.len() {
-        let from = strands[i].init_res_id();
-        let to = strands[i].end_res_id();
-        let check = ByResidueRange::new(from,to);
-        for a in &mut pdb_structure.atoms {
-            if check.check(a) { a.secondary_struct_type = SecondaryStructureTypes::Strand  }
-        }
-    }
 
-    // ---------- Extract values stored in remarks
-    pdb_structure.resolution = remarks.resolution();
+        pdb_structure.update();
+        deposit.structure = pdb_structure;
 
-    pdb_structure.title = match title {
-        None => None,
-        Some(title) => {Some(title.to_string())}
-    };
-    if let Some(header) = header {
-        pdb_structure.classification = Some(header.classification);
-        pdb_structure.id_code = header.id_code;
-        pdb_structure.dep_date = Some(header.dep_date);
+        debug!("Structure loaded in: {:?}", start.elapsed());
+
+        Ok(deposit)
     }
 
-    pdb_structure.entity_sequences = parse_seqres_records(seqres);
+    /// Reads a [`Structure`](Structure) from a PDB file
+    ///
+    pub fn from_pdb_file(file_name: &str) -> Result<Deposit, PDBError> {
 
-    // pdb_structure.atoms = atoms;
-    pdb_structure.update();
-    debug!("Structure loaded in: {:?}", start.elapsed());
-
-    Ok(pdb_structure)
-}
-
-/// Reads a [`Structure`](Structure) from a PDB file
-///
-pub fn load_pdb_file(file_name: &str) -> Result<Structure, PDBError> {
-
-    info!("Loading a PDB deposit: {}", file_name);
-    let reader = open_file(file_name)?;
-    return load_pdb_reader(reader);
+        info!("Loading a PDB deposit: {}", file_name);
+        let reader = open_file(file_name)?;
+        return Self::from_pdb_reader(reader);
+    }
 }
 
 

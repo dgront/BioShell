@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 /// The `HEADER` record contains the header data for a PDB entry.
 ///
-/// Typically a [`PdbHeader`](PdbHeader) struct is created by the [`load_pdb_file()`](crate::load_pdb_file()) function
+/// Typically a [`PdbHeader`](PdbHeader) struct is created by the [`load_pdb_file()`](crate::from_pdb_file()) function
 /// when it reads and parses a PDB file.
 ///
 /// See  the [official documentation of the `TITLE` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect2.html#HEADER) for details

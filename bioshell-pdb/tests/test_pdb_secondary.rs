@@ -2,7 +2,7 @@
 mod tests {
     use std::io::BufReader;
     use bioshell_cif::read_cif_buffer;
-    use bioshell_pdb::{load_cif_reader, PdbHelix, PdbSheet, SecondaryStructure};
+    use bioshell_pdb::{Deposit, PdbHelix, PdbSheet, SecondaryStructure};
 
     #[test]
     fn helices_from_cif() {
@@ -47,9 +47,9 @@ mod tests {
     fn secondary_from_cif() {
         let cif_data = include_str!("./test_files/2gb1.cif");
         let reader = BufReader::new(cif_data.as_bytes());
-        let strctr = load_cif_reader(reader);
-        assert!(strctr.is_ok());
-        let strctr = strctr.unwrap();
+        let deposit = Deposit::from_cif_reader(reader);
+        assert!(deposit.is_ok());
+        let strctr = deposit.unwrap().structure();
 
         assert_eq!(strctr.secondary("A").to_string(),
                    "CEEEEEECCCCCCEEEEEECCHHHHHHHHHHHHHHHCCCCCEEEEECCCCEEEEEC");

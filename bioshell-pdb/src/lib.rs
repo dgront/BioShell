@@ -1,8 +1,8 @@
 //! Efficient and clean library for processing biomacromolecular structures.
 //!
 //! # Loading PDB files
-//! Structures can be loaded from a PDB file with [`load_pdb_file()`](crate::load_pdb_file())
-//! or directly from a PDB-formatted buffer with [`load_pdb_reader()`](crate::load_pdb_reader()).
+//! Structures can be loaded from a PDB file with [`load_pdb_file()`](crate::from_pdb_file())
+//! or directly from a PDB-formatted buffer with [`load_pdb_reader()`](crate::from_pdb_reader()).
 //! When successful, each of these method returns a [`Structure`](crate::Structure) object that
 //! holds all the atoms parsed from the input.
 //!
@@ -41,10 +41,12 @@ mod unit_cell;
 mod load_cif;
 mod entity;
 pub(crate) mod crate_utils;
+mod deposit;
 
 pub use structure::Structure;
+pub use deposit::*;
 pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
-pub use load_pdb::{load_pdb_file, load_pdb_reader, is_pdb_file, find_pdb_file_name};
+pub use load_pdb::{is_pdb_file, find_pdb_file_name};
 pub use assertions::*;
 pub use pdb_parsing_error::PDBError;
 pub use pdb_atom::{PdbAtom, same_residue_atoms};
@@ -53,7 +55,7 @@ pub use pdb_helix::PdbHelix;
 pub use pdb_sheet::PdbSheet;
 pub use exp_data::{ExperimentalMethod};
 pub use unit_cell::{UnitCell};
-pub use load_cif::{load_cif_file, load_cif_reader, is_cif_file, find_cif_file_name};
+pub use load_cif::{is_cif_file, find_cif_file_name};
 pub use entity::{EntitySource, EntityType, Entity, PolymerEntityType, PolymerEntity};
 
 mod macros {

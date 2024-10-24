@@ -118,6 +118,9 @@ pub struct MatchAll {
 }
 
 impl MatchAll {
+    /// Creates a new, empty filter.
+    ///
+    /// Now one can add predicates (sub-filters) with the [`add_predicate()`](add_predicate()) method
     pub fn new() -> MatchAll { MatchAll{ predicates: vec![] } }
 
     /// Adds a new condition to this composite predicate
@@ -365,7 +368,7 @@ impl PdbAtomPredicate for IsCA {
 ///
 /// # Examples
 /// ```
-/// use bioshell_pdb::{load_pdb_reader, PdbAtom, Structure};
+/// use bioshell_pdb::{Deposit, PdbAtom, Structure};
 /// use std::io::BufReader;
 /// use bioshell_pdb::pdb_atom_filters::{IsHydrogen, PdbAtomPredicate};
 /// let gly_pdb = "ATOM    148  N   GLY A   9       9.692  -3.742   0.370  1.00  0.14           N
@@ -375,7 +378,8 @@ impl PdbAtomPredicate for IsCA {
 /// ATOM    152  H   GLY A   9       9.093  -3.471   1.097  1.00  0.14           H
 /// ATOM    153  HA2 GLY A   9      10.848  -2.565  -0.927  1.00  0.20           H
 /// ATOM    154  HA3 GLY A   9      11.018  -2.149   0.770  1.00  0.21           H";
-/// let mut strctr = load_pdb_reader(BufReader::new(gly_pdb.as_bytes())).unwrap();
+/// let deposit = Deposit::from_pdb_reader(BufReader::new(gly_pdb.as_bytes())).unwrap();
+/// let mut strctr = deposit.structure();
 /// let is_h = IsHydrogen;
 /// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !is_h.check(&a)));
 /// # assert_eq!(new_strctr.count_atoms(), 4);

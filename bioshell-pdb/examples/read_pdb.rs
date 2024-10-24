@@ -1,12 +1,13 @@
 use std::env;
-use bioshell_pdb::{load_pdb_file};
+use bioshell_pdb::{Deposit};
 
 fn main(){
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     env_logger::init();
 
     let args: Vec<String> = env::args().collect();
-    let strctr = load_pdb_file(&args[1]).unwrap();
+    let deposit = Deposit::from_file(&args[1]).unwrap();
+    let strctr = deposit.structure();
     println!("Chains: {:?}",strctr.chain_ids());
 
     for chain_id in strctr.chain_ids() {

@@ -11,7 +11,7 @@ use crate::pdb_atom::{PdbAtom, same_residue_atoms};
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
 use crate::pdb_parsing_error::PDBError;
 use crate::pdb_parsing_error::PDBError::{NoSuchAtom, NoSuchResidue};
-use crate::{Entity, ExperimentalMethod, ResidueId, SecondaryStructureTypes, UnitCell};
+use crate::{ResidueId, SecondaryStructureTypes};
 use crate::calc::Vec3;
 use crate::PDBError::WrongAtomsNumberInModel;
 use crate::secondary_structure::SecondaryStructure;
@@ -25,8 +25,13 @@ use crate::secondary_structure::SecondaryStructure;
 /// # Creating a [`Structure`](Structure)
 /// Typically one gets a [`Structure`](Structure) object by loading it from a file in the PDB format:
 /// ```no_run
-/// use bioshell_pdb::{load_pdb_file, Structure};
-/// let strctr = load_pdb_file("2gb1.pdb").unwrap();
+/// # use bioshell_pdb::PDBError;
+/// # fn main() -> Result<(), PDBError> {
+/// use bioshell_pdb::{Deposit, PDBError, Structure};
+/// let deposit = Deposit::from_file("2gb1.pdb")?;
+/// let strctr = deposit.structure();
+/// # Ok(())
+/// # }
 /// ```
 /// A [`Structure`](Structure) can be also created from an [`Iterator`](Iterator) over [`PdbAtom`](PdbAtom)s:
 /// ```
@@ -88,34 +93,10 @@ use crate::secondary_structure::SecondaryStructure;
 /// # assert_eq!(new_strctr.count_atoms(), 1);
 /// ```
 ///
+#[derive(Clone)]
 pub struct Structure {
-    /// classifies the molecule(s)
-    ///
-    /// This field should contain one of classifications from a curated list available at the [wwPDB website](http://www.wwpdb.org/)
-    pub classification: Option<String>,
-    /// deposition date
-    pub dep_date: Option<String>,
-    /// placeholder for keywords, which may be empty
-    pub keywords: Vec<String>,
     /// Four-character PDB code of this deposit, such as `2GB1` or `4HHB`
     pub id_code: String,
-    /// title for a PDB entry
-    ///
-    /// This value is extracted either from a `TITLE` record of a PDB-formatted file
-    /// or from a "_struct.title" entry of an mmCIF data.
-    ///
-    /// See  the [official documentation of the `TITLE` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect2.html#TITLE) for details
-    pub title: Option<String>,
-    /// describes how this structure was determined experimentally
-    pub methods: Vec<ExperimentalMethod>,
-    /// experimental resolution, when available
-    pub resolution: Option<f64>,
-    /// R-factor value, when available
-    pub r_factor: Option<f64>,
-    /// R-free value, when available
-    pub r_free: Option<f64>,
-    /// unit cell parameters, when available
-    pub unit_cell: Option<UnitCell>,
     pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
     pub(crate) model_coordinates: Vec<Vec<Vec3>>,
@@ -123,31 +104,18 @@ pub struct Structure {
     pub(crate) residue_ids: Vec<ResidueId>,
     /// range of atoms that belong to i-th residue; order is the same as in `residue_ids`
     pub(crate) atoms_for_residue_id: Vec<Range<usize>>,
-    pub(crate) entity_sequences: HashMap<String, Sequence>,
-    pub(crate) entities: HashMap<String, Entity>,
 }
 
 impl Structure {
     /// Create a new empty [`Structure`] that contains no atoms.
     pub fn new(id_code: &str) -> Self {
         Self {
-            classification: None,
-            dep_date: None,
-            keywords: vec![],
             id_code: id_code.to_string(),
-            title: None,
-            methods: vec![],
-            resolution: None,
-            r_factor: None,
-            r_free: None,
-            unit_cell: None,
             ter_atoms: Default::default(),
             atoms: vec![],
             model_coordinates: vec![],
             residue_ids: vec![],
             atoms_for_residue_id: vec![],
-            entity_sequences: Default::default(),
-            entities: Default::default(),
         }
     }
 
@@ -234,9 +202,6 @@ impl Structure {
     /// Counts models i.e. distinct conformations of this [`Structure`](Structure)
     pub fn count_models(&self) -> usize { self.model_coordinates.len() }
 
-    /// Provides the number of entities of this [`Structure`](Structure)
-    pub fn count_entities(&self) -> usize { self.entities.len() }
-
     pub fn set_model(&mut self, i_model: usize) -> Result<(), PDBError> {
         if self.model_coordinates[i_model].len() != self.atoms.len() {
             return Err(WrongAtomsNumberInModel { model_index: i_model });
@@ -281,34 +246,6 @@ impl Structure {
 
     /// Provides immutable access to atoms of this [`Structure`](Structure)
     pub fn atoms(&self) -> &Vec<PdbAtom> { &self.atoms }
-
-    /// Provides an iterator over the `entities` map.
-    ///
-    /// # Example
-    /// ```
-    /// use std::io::BufReader;
-    /// use bioshell_pdb::{EntityType, PDBError, load_cif_reader};
-    /// # fn main() -> Result<(), PDBError> {
-    /// use bioshell_pdb::EntityType::Polymer;
-    /// use bioshell_pdb::PolymerEntityType::{DNA, PolypeptideL};
-    /// let cif_data = include_str!("../tests/test_files/5edw.cif");
-    /// let strctr = load_cif_reader(cif_data.as_bytes())?;
-    /// // --- 5EDW protein has five entities, including three polymer entities: two DNA chains and a single protein chain
-    /// let mut polymer_entities = 0;
-    /// for (id, entity) in strctr.entities() {
-    ///     if entity.entity_type() == Polymer(DNA) || entity.entity_type() == Polymer(PolypeptideL) {
-    ///         polymer_entities += 1;
-    ///     }
-    /// }
-    /// # assert_eq!(polymer_entities, 3);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    pub fn entities(&self) -> impl Iterator<Item = (&String, &Entity)> { self.entities.iter() }
-
-    /// Provides information about a given entity
-    pub fn entity(&self, entity_id: &str) -> &Entity { &self.entities[entity_id] }
 
     /// Creates a vector that holds string identifiers for all chains of this [`Structure`](Structure)
     ///
@@ -368,7 +305,7 @@ impl Structure {
     /// # Example
     /// ```
     /// # use std::io::BufReader;
-    /// use bioshell_pdb::{load_pdb_reader, ResidueId};
+    /// use bioshell_pdb::{Deposit, ResidueId};
     /// # #[allow(non_upper_case_globals)]
     /// const pdb_txt: &str =
     /// "ATOM      2  CA  MET A   1     -13.296   0.028   3.924  1.00  0.43           C
@@ -382,7 +319,8 @@ impl Structure {
     /// ATOM     35  CA  TYR B   3      -7.173  -2.314   2.811  1.00  0.08           C
     /// ATOM     56  CA  LYS B   4      -3.922  -3.881   4.044  1.00  0.10           C
     /// ATOM     78  CA  LEU B   5      -0.651  -2.752   2.466  1.00  0.11           C";
-    /// let strctr = load_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
+    /// let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
+    /// let strctr = deposit.structure();
     /// let first = ResidueId::new("A", 4, ' ');
     /// let last = ResidueId::new("B", 2, ' ');
     /// let mut iterator = strctr.atom_in_range(first, last);
@@ -502,13 +440,14 @@ impl Structure {
     /// Returns atoms of a given residue
     ///
     /// ```
-    /// # use bioshell_pdb::{load_pdb_reader, PdbAtom, ResidueId, Structure};
+    /// # use bioshell_pdb::{Deposit, PdbAtom, ResidueId, Structure};
     /// # use std::io::BufReader;
     /// let pdb_lines = "ATOM   4378  CA  HIS D 146      14.229  -1.501  26.683  1.00 31.89           C
     /// TER    4388      HIS D 146
     /// HETATM 4562 FE   HEM D 148      -1.727   4.699  23.942  1.00 15.46          FE";
     ///
-    /// let mut strctr = load_pdb_reader(BufReader::new(pdb_lines.as_bytes())).unwrap();
+    /// let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_lines.as_bytes())).unwrap();
+    /// let mut strctr = deposit.structure();
     /// strctr.drop_ligands();
     /// assert_eq!(strctr.count_atoms(), 1);
     /// ```

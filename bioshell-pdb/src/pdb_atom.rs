@@ -1,8 +1,12 @@
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::string::String;
+use bioshell_cif::{CifData, CifError, CifTable, entry_has_value, parse_item_or_error, value_or_default};
+use bioshell_cif::CifError::ItemParsingError;
 use crate::calc::Vec3;
-use crate::SecondaryStructureTypes;
+use crate::{PDBError, SecondaryStructureTypes, Structure};
+use crate::PDBError::CifParsingError;
 
 /// Atom record as found in a single line of a PDB file.
 ///
@@ -62,7 +66,7 @@ impl PdbAtom {
         }
     }
 
-    /// Creates a [`PdbAtom`] by parsing an `ATOM` or `HETATM` record.
+    /// Creates a [`PdbAtom`] by parsing an `ATOM` or `HETATM` record of a PBD file.
     ///
     /// The method automatically sets the [`PdbAtom::is_hetero_atom`](PdbAtom::is_hetero_atom) flag
     /// based on the record type.
@@ -121,6 +125,82 @@ impl PdbAtom {
     /// assert_eq!(a.hec_code(), b'C');
     /// ```
     pub fn hec_code(&self) -> u8 { self.secondary_struct_type.hec_code() }
+
+    /// Creates atoms from CIF-formatted data
+    pub(crate) fn from_cif_data(cif_data_block: &CifData, structure: &mut Structure) -> Result<(), PDBError> {
+
+        let atoms_tokens = CifTable::new(cif_data_block, "_atom_site.",
+     ["id", "label_atom_id",
+                     "label_alt_id", "label_comp_id", "auth_asym_id", "label_seq_id", "pdbx_PDB_ins_code",
+                     "Cartn_x", "Cartn_y", "Cartn_z", "occupancy", "B_iso_or_equiv", "type_symbol",
+                     "pdbx_PDB_model_num", "auth_seq_id", "label_entity_id"])?;
+
+        let mut model_ids: HashMap<usize, usize> = HashMap::new();       // links model id to model index in the model_coordinates structure
+        for tokens in atoms_tokens.iter() {
+            let model_id = tokens[13].parse::<usize>().unwrap();  // model_id of the current atom
+            if ! model_ids.contains_key(&model_id) {                    // if we have a new model...
+                model_ids.insert(model_id, model_ids.len());
+                structure.model_coordinates.push(vec![]);
+            }
+            let mdl_idx = model_ids[&model_id];
+            let x = tokens[7].parse::<f64>().unwrap();
+            let y = tokens[8].parse::<f64>().unwrap();
+            let z = tokens[9].parse::<f64>().unwrap();
+            let pos = Vec3::new(x, y, z);
+
+            if model_ids.len() == 1 {
+                structure.model_coordinates[mdl_idx].push(pos.clone());
+                match PdbAtom::create_pdb_atom(&tokens, pos) {
+                    Ok(a) => { structure.atoms.push(a); }
+                    Err(e) => {
+                        let data_line = tokens.join(" ");
+                        return match e {
+                            ItemParsingError { item, type_name, details: _ } => {
+                                Err(CifParsingError(ItemParsingError {
+                                    item, type_name, details: data_line,
+                                }))
+                            }
+                            _ => { Err(CifParsingError(e)) }
+                        }
+                    }
+                }
+            } else {
+                structure.model_coordinates[mdl_idx].push(pos);
+            }
+        }
+        Ok(())
+    }
+
+    /// A helper function to create an atom based on given string tokens
+    fn create_pdb_atom(tokens: &[&str; 16], pos: Vec3) -> Result<PdbAtom, CifError> {
+
+        let serial = parse_item_or_error!(tokens[0], i32);
+        let name = format!("{:^4}", tokens[1]);
+        let alt_loc = value_or_default(tokens[2], ' ');
+        let res_name = tokens[3].to_string();
+        let chain_id = tokens[4].to_string();
+        let entity_id = tokens[15].to_string();
+        let res_seq = if entry_has_value(tokens[14]) {
+            parse_item_or_error!(tokens[14], i32)
+        } else {
+            parse_item_or_error!(tokens[5], i32)
+        };
+
+        let i_code = value_or_default(tokens[6], ' ');
+        let occupancy = parse_item_or_error!(tokens[10], f64);
+        let temp_factor = parse_item_or_error!(tokens[11], f64);
+        let element = Some(tokens[12].to_string());
+        let charge = None;
+        let is_hetero_atom = false;
+        let secondary_struct_type = SecondaryStructureTypes::Coil;
+        let a = PdbAtom {
+            serial, name, alt_loc, res_name,
+            chain_id, entity_id, res_seq, i_code, pos, occupancy, temp_factor,
+            element, charge, is_hetero_atom, secondary_struct_type,
+        };
+
+        return Ok(a);
+    }
 }
 
 impl PartialEq<Self> for PdbAtom {

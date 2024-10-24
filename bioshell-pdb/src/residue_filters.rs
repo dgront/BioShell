@@ -8,11 +8,12 @@ use bioshell_seq::chemical::StandardResidueType::{TYR, PHE, TRP, HIS};
 /// while filtering Rust iterators. Example below shows how to iterate over aromatic amino acid residues
 /// of a protein chain:
 /// ```
-/// # use bioshell_pdb::{PDBError, load_cif_reader};
+/// # use bioshell_pdb::{PDBError, Deposit};
 /// # fn main() -> Result<(), PDBError> {
-/// # use bioshell_pdb::residue_filters::{IsAromaticAA, ResidueFilter};
+/// use bioshell_pdb::residue_filters::{IsAromaticAA, ResidueFilter};
 /// # let cif_data = include_str!("../tests/test_files/2fdo.cif");
-/// # let strctr = load_cif_reader(cif_data.as_bytes())?;
+/// let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
+/// let strctr = deposit.structure();
 /// let n_aro = strctr.residue_ids().iter().filter(|ri| IsAromaticAA.check(&strctr, &ri)).count();
 /// assert_eq!(n_aro, 28);
 /// # Ok(())
