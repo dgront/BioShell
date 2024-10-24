@@ -150,7 +150,7 @@ pub trait ResidueTypeProperties {
 /// assert_eq!(aln.parent_type, StandardResidueType::ALA);
 /// assert_eq!(aln.chem_compound_type, MonomerType::PeptideLinking);
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ResidueType {
     /// three-letter code of this ``ResidueType``, such as ``"ALA"`` for alanine
     pub code3: String,

@@ -111,9 +111,11 @@ mod load_cif;
 mod entity;
 pub(crate) mod crate_utils;
 mod deposit;
+mod ligands;
 
 pub use structure::Structure;
 pub use deposit::*;
+pub use ligands::*;
 pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
 pub use load_pdb::{is_pdb_file, find_pdb_file_name};
 pub use assertions::*;

@@ -1,0 +1,24 @@
+use bioshell_seq::chemical::ResidueType;
+use crate::{Deposit, Entity, EntityType};
+
+const LIGAND_NOT_RELEVANT: [&str; 7] = ["HOH", "GOL", "CA", "NA", "MG", "SO4", "PO4"];
+
+pub fn list_ligands_in_deposit(deposit: &Deposit) -> Vec<ResidueType> {
+    let mut ret: Vec<ResidueType> = vec![];
+
+    fn res_type_OK(rt: &ResidueType) -> bool {
+        for rti in LIGAND_NOT_RELEVANT { if rti == rt.code3 { return false; } }
+        return true;
+    }
+
+    for (id, entity) in deposit.entities() {
+        if entity.entity_type() != EntityType::NonPolymer { continue }
+        for rt in entity.entity_monomers() {
+            if res_type_OK(rt) {
+                if ! ret.contains(rt) { ret.push(rt.clone()) };
+            }
+        }
+    }
+
+    return ret;
+}

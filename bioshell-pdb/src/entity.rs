@@ -182,7 +182,7 @@ impl Entity {
 
     /// Provides monomers (or ligands) comprising this entity as observed in a particular chain.
     ///
-    /// The returned vector may contain [`GAP`] monomers when a residue present in the respective
+    /// The returned vector may contain [`GAP`](GAP) monomers when a residue present in the respective
     /// entity can't be observed in a given chain
     pub fn chain_monomers(&self, chain_id: &str) -> Result<&Vec<ResidueType>, PDBError> {
 

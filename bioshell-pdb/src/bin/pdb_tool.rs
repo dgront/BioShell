@@ -3,7 +3,7 @@ use clap::{Parser};
 use log::info;
 use bioshell_cif::is_cif_file;
 use bioshell_io::{open_file, out_writer};
-use bioshell_pdb::{Deposit, is_pdb_file, Structure};
+use bioshell_pdb::{Deposit, is_pdb_file, list_ligands_in_deposit, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, MatchAll, PdbAtomPredicate};
 
 #[derive(Parser, Debug)]
@@ -46,11 +46,16 @@ struct Args {
     verbose: bool
 }
 
-
 fn filter<F: PdbAtomPredicate>(strctr: &Structure, filter: &F) -> Structure {
 
     let atoms_iter = strctr.atoms().iter().filter(|a| filter.check(a));
     return Structure::from_iterator(&strctr.id_code, atoms_iter);
+}
+
+fn ligands_in_one_line(deposit: &Deposit) -> String {
+    list_ligands_in_deposit(deposit).iter()
+        .map(|l| l.code3.clone())
+        .collect::<Vec<String>>().join(" ")
 }
 
 fn print_info(deposit: &Deposit) {
@@ -64,6 +69,7 @@ fn print_info(deposit: &Deposit) {
     if let Some(unit_cell) = &deposit.unit_cell { println!("space group: {}", unit_cell.space_group); }
     if deposit.keywords.len() > 0 { println!("keywords: {}", deposit.keywords.join(", ")); }
     println!("models: {}", deposit.count_models());
+    println!("ligands: {}", ligands_in_one_line(deposit));
 }
 
 fn print_info_row(deposit: &Deposit) {
@@ -88,7 +94,8 @@ fn print_info_row(deposit: &Deposit) {
     if let Some(unit_cell) = &deposit.unit_cell {
         print!("{}\t", unit_cell.space_group); 
     } else { print!("\t"); }
-    print!("{}\n", deposit.count_models());
+    print!("{}\t", deposit.count_models());
+    print!("{}\n", ligands_in_one_line(deposit));
 }
 
 fn write_pdb(strctr: &Structure, fname: &str) {
