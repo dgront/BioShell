@@ -95,7 +95,80 @@ impl FromStr for EntitySource {
 
 /// Represents an entity in an mmCIF file.
 ///
-/// An entity represents a chemically distinct object. For example, a hemoglobin deposit contains
+/// # What is an entity?
+///
+/// An entity represents a chemically distinct object. For example, a hemoglobin deposit (PDB code: 4esa)
+/// deposit contains six chemical entities:
+/// ```
+/// # use bioshell_pdb::PDBError;
+/// # fn main() -> Result<(), PDBError> {
+/// # use std::io::BufReader;
+/// # use bioshell_pdb::Deposit;
+/// # let pdb_data = include_str!("../tests/test_files/4esa.cif");
+/// let reader = BufReader::new(pdb_data.as_bytes());
+/// let deposit_4esa = Deposit::from_cif_reader(reader)?;
+/// assert_eq!(deposit_4esa.count_entities(), 6);
+/// # Ok(())
+/// # }
+/// ```
+/// Two of them are polymer entities: alpha and beta hemoglobin chains (entities named `"1"` and `"2"`), respectively.
+/// The former one appears in chains `A` and `C` while latter - in chains `B` and `D`.
+/// ```
+/// # use bioshell_pdb::PDBError;
+/// # fn main() -> Result<(), PDBError> {
+/// # use std::io::BufReader;
+/// # use bioshell_pdb::{Deposit, EntityType};
+/// # use bioshell_pdb::PolymerEntityType::PolypeptideL;
+/// # let pdb_data = include_str!("../tests/test_files/4esa.cif");
+/// # let reader = BufReader::new(pdb_data.as_bytes());
+/// # let deposit_4esa = Deposit::from_cif_reader(reader)?;
+/// let entity_1 = deposit_4esa.entity("1");
+/// assert_eq!(entity_1.entity_type(), EntityType::Polymer(PolypeptideL));
+/// assert_eq!(entity_1.chain_ids(), &["A", "C"]);
+///
+/// let entity_2 = deposit_4esa.entity("2");
+/// assert_eq!(entity_2.entity_type(), EntityType::Polymer(PolypeptideL));
+/// assert_eq!(entity_2.chain_ids(), &["B", "D"]);
+/// # Ok(())
+/// # }
+/// ```
+/// There are also four non-polymer entities in the `4esa` deposit,
+/// e.g. entity `"4"` comprises 408 water molecules while entity `"6"` four heme prostetic groups.
+/// Each of these four HEM groups is placed in a different chain.
+///
+/// # Entities, chains and their sequences
+///
+/// The chains `"B"` and `"D"` of the `4esa` deposit contain a protein entity `"2"`. The entity sequence
+/// comprises 144 amino acid residues:
+/// ```txt
+/// VEWTDQERATISSIFGSLDYDDIGPKALSRCLIVYPWTQRHFGSFGNLYNAEAIIGNQKVA
+/// AHGIKVLHGLDRAVKNMDNIKEIYAELSILHSEKLHVDPDNFKLLADCLTIVVAAKMGSGF
+/// NPGTQATFQKFLAVVVSALGKQY
+/// ```
+/// The sequence can be accessed by the [`entity_monomers()`](Entity::entity_monomers()) method
+/// and is provided as a vector of [ResidueType] objects.
+/// The sequence observed for chain `"D"` may be accessed by calling [`chain_monomers()`](Entity::chain_monomers())
+/// and is indeed identical with the respective entity definition. The sequence
+/// of chain `"B"` however is one amino acid residue shorter since the N-terminal tyrosine (`Y`) hasn't been
+/// resolved experimentally. The missing residue is denoted in the chain sequence by the special [`GAP`](GAP)
+/// residue type.
+/// ```
+/// # use bioshell_pdb::PDBError;
+/// # fn main() -> Result<(), PDBError> {
+/// # use std::io::BufReader;
+/// # use bioshell_pdb::{Deposit, EntityType};
+/// # use bioshell_pdb::PolymerEntityType::PolypeptideL;
+/// # use bioshell_seq::chemical::StandardResidueType::GAP;
+/// # let pdb_data = include_str!("../tests/test_files/4esa.cif");
+/// # let reader = BufReader::new(pdb_data.as_bytes());
+/// # let deposit_4esa = Deposit::from_cif_reader(reader)?;
+/// let entity_2 = deposit_4esa.entity("2");
+/// assert_eq!(entity_2.entity_monomers().len(), 146);
+/// assert_eq!(entity_2.chain_monomers("B")?.iter().filter(|m| m.parent_type==GAP).count(), 1);
+/// # Ok(())
+/// # }
+/// ```
+///
 #[derive(Debug, Clone)]
 pub struct Entity {
     /// Unique identifier for the entity.
