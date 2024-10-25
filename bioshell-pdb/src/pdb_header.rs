@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 /// when it reads and parses a PDB file.
 ///
 /// See  the [official documentation of the `TITLE` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect2.html#HEADER) for details
-pub struct PdbHeader {
+pub(crate) struct PdbHeader {
     /// Classifies the molecule(s)
     ///
     /// This field should contain one of classifications from a curated list available at the [wwPDB website](http://www.wwpdb.org/)
