@@ -333,7 +333,7 @@ impl Entity {
         // --- load sequences for each chain as they are defined in entity definitions, including gaps
         let chains_in_entities = load_chain_residue_types(cif_data)?;
         for (entity_id, chains) in chains_in_entities {
-            let mut entity = entity_map.get_mut(&entity_id).unwrap();
+            let entity = entity_map.get_mut(&entity_id).unwrap();
             entity.chain_sequences = chains;
         }
 
@@ -374,9 +374,9 @@ fn load_chain_residue_types(cif_data: &CifData) -> Result<HashMap<String,HashMap
                                              [".entity_id", ".pdb_mon_id", ".pdb_strand_id",]) {
         for [id, monomer, chain] in seq_table.iter() {
             if !out.contains_key(id) { out.insert(id.to_string(), HashMap::default()); }
-            let mut map = out.get_mut(id).unwrap();
+            let map = out.get_mut(id).unwrap();
             if !map.contains_key(chain) { map.insert(chain.to_string(), vec![]); }
-            let mut vec = map.get_mut(chain).unwrap();
+            let vec = map.get_mut(chain).unwrap();
             if monomer == "?" || monomer == "." {
                 vec.push(gap.clone());
             } else {

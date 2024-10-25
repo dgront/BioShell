@@ -2,12 +2,9 @@ use std::cmp::Ordering;
 use std::cmp::Ordering::Equal;
 use std::convert::TryFrom;
 use std::fmt;
-use std::num::ParseIntError;
 
 use crate::pdb_atom::PdbAtom;
 use crate::pdb_atom_filters::{PdbAtomPredicate};
-use crate::PDBError;
-use crate::PDBError::IncorrectlyFormattedTER;
 
 /// Unique identifier for a residue
 ///

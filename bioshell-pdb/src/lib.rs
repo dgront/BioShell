@@ -118,7 +118,6 @@ pub use deposit::*;
 pub use ligands::*;
 pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
 pub use load_pdb::{is_pdb_file, find_pdb_file_name};
-pub use assertions::*;
 pub use pdb_parsing_error::PDBError;
 pub use pdb_atom::{PdbAtom, same_residue_atoms};
 pub use residue_id::{ResidueId};

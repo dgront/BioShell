@@ -1,12 +1,10 @@
-use std::collections::HashMap;
 use std::io;
 use std::io::{BufRead};
 use std::time::Instant;
-use log::{debug, info, warn};
-use bioshell_cif::{read_cif_buffer, CifError, parse_item_or_error, value_or_default, entry_has_value, CifData, CifTable};
-use crate::{Deposit, Entity, ExperimentalMethod, PdbAtom, PDBError, PdbHelix, PdbSheet, SecondaryStructureTypes, Structure, UnitCell, value_or_missing_key_pdb_error};
-use crate::calc::Vec3;
-use bioshell_cif::CifError::{ExtraDataBlock, MissingCifLoopKey, ItemParsingError, MissingCifDataKey};
+use log::{debug, info};
+use bioshell_cif::{read_cif_buffer, CifData, CifTable};
+use crate::{Deposit, Entity, ExperimentalMethod, PdbAtom, PDBError, PdbHelix, PdbSheet, SecondaryStructureTypes, Structure, UnitCell};
+use bioshell_cif::CifError::{ExtraDataBlock};
 use bioshell_io::open_file;
 use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
 use crate::crate_utils::find_deposit_file_name;

@@ -1,9 +1,8 @@
 use std::env;
 use clap::{Parser};
 use log::info;
-use bioshell_cif::is_cif_file;
-use bioshell_io::{open_file, out_writer};
-use bioshell_pdb::{Deposit, is_pdb_file, list_ligands_in_deposit, Structure};
+use bioshell_io::{out_writer};
+use bioshell_pdb::{Deposit, list_ligands_in_deposit, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, MatchAll, PdbAtomPredicate};
 
 #[derive(Parser, Debug)]
@@ -131,6 +130,10 @@ fn main() {
     if args.select_ca {
         info!("Selecting only alpha-carbon atoms");
         multi_filter.add_predicate(Box::new(IsCA));
+    }
+    if let Some(entity_id) = args.select_entity {
+        info!("Selecting entity: {}", entity_id);
+        multi_filter.add_predicate(Box::new(ByEntity::new(&entity_id)));
     }
     if multi_filter.count_filters() > 0 {
         strctr = filter(&strctr, &multi_filter);

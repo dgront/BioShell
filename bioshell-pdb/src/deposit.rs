@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::ops::Range;
 use crate::{Entity, ExperimentalMethod, is_cif_file, is_pdb_file, PDBError, Structure, UnitCell};
 
 /// Holds all the data describing a macromolecular deposit, parsed from either an mmCIF or PDB file.

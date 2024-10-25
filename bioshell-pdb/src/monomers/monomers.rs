@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::env;
 use std::num::ParseIntError;
 use std::sync::{Mutex, MutexGuard};
 use clap::__macro_refs::once_cell::sync::Lazy;

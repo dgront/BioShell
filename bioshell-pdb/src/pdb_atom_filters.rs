@@ -52,7 +52,6 @@
 //! let bb_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|b| bb.check(b)));
 //! ```
 
-use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
 use crate::{PdbAtom, ResidueId};
 
 /// A handy filter to process atoms of a [`Structure`](crate::Structure) with iterators.
