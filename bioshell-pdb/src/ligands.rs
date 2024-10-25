@@ -1,8 +1,11 @@
 use bioshell_seq::chemical::ResidueType;
 use crate::{Deposit, Entity, EntityType};
 
-const LIGAND_NOT_RELEVANT: [&str; 7] = ["HOH", "GOL", "CA", "NA", "MG", "SO4", "PO4"];
+const LIGAND_NOT_RELEVANT: [&str; 11] = ["HOH", "GOL", "CA", "NA", "MG", "SO4", "PO4", "MES", "CL", "K", "ZN"];
 
+/// Lists non-trivial ligands found in a deposit
+///
+/// The function omits trivial molecules such as water, ions, MES and other buffer agents.
 pub fn list_ligands_in_deposit(deposit: &Deposit) -> Vec<ResidueType> {
     let mut ret: Vec<ResidueType> = vec![];
 
