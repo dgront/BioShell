@@ -9,7 +9,7 @@ use bioshell_seq::sequence::Sequence;
 use crate::pdb_title::PdbTitle;
 use crate::pdb_header::PdbHeader;
 use crate::remarks::PDBRemarks;
-use crate::{Deposit, ExperimentalMethod, PdbAtom, PdbHelix, PdbSheet, residue_id_from_ter_record, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
+use crate::{Deposit, ExperimentalMethod, PdbAtom, PdbHelix, PdbSheet, ResidueId, SecondaryStructureTypes, Structure, UnitCell};
 use crate::calc::Vec3;
 use crate::crate_utils::find_deposit_file_name;
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
@@ -52,7 +52,8 @@ impl Deposit {
 
         let mut pdb_structure = Structure::new("");
         pdb_structure.model_coordinates.push(vec![]);
-
+        let mut entity_no = "1";
+        let mut entity_chain = "".to_string();
         for line in reader.lines() {
             let line = line?;
 
@@ -61,14 +62,7 @@ impl Deposit {
             let record = line[0..6].trim();
             match record {
                 "TER" => {
-                    if let Ok(ter_res) = residue_id_from_ter_record(&line) {
-                        let ter_chain = ter_res.chain_id.clone();
-                        pdb_structure.ter_atoms.insert(ter_chain, ter_res);
-                    } else {                    // --- assign that TER to the very last atom of the current chain
-                        if let Some(last_atom) = pdb_structure.atoms.last() {
-                            pdb_structure.ter_atoms.insert(last_atom.chain_id.clone(), ResidueId::try_from(last_atom).unwrap());
-                        }
-                    }
+                    entity_no = "2";
                 }
                 "HEADER" => {
                     header = PdbHeader::new(&line);
@@ -94,7 +88,13 @@ impl Deposit {
                 }
                 "ATOM" | "HETATM" => {
                     if model_id == 0 {
-                        let a = PdbAtom::from_atom_line(&line);
+                        let mut a = PdbAtom::from_atom_line(&line);
+                        // --- if we started a new chain, it hasn't been terminated yet (the TER record is yet to come)
+                        if entity_chain != a.chain_id {
+                            entity_no = "1";
+                            entity_chain = a.chain_id.clone();
+                        }
+                        a.entity_id = format!("{}{}", entity_chain, entity_no);
                         pdb_structure.model_coordinates[model_id].push(a.pos.clone());
                         pdb_structure.atoms.push(a);
                     } else {

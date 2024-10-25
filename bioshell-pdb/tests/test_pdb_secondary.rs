@@ -4,10 +4,16 @@ mod tests {
     use bioshell_cif::read_cif_buffer;
     use bioshell_pdb::{Deposit, PdbHelix, PdbSheet, SecondaryStructure};
 
+    #[allow(non_upper_case_globals)]
+    const cif_2gb1:  &str = include_str!("./test_files/2gb1.cif");
+    #[allow(non_upper_case_globals)]
+    const cif_2fdo: &str = include_str!("./test_files/2fdo.cif");
+    #[allow(non_upper_case_globals)]
+    const cif_4esa: &str = include_str!("./test_files/4esa.cif");
+
     #[test]
     fn helices_from_cif() {
-        let cif_data = include_str!("./test_files/2gb1.cif");
-        let reader = BufReader::new(cif_data.as_bytes());
+        let reader = BufReader::new(cif_2fdo.as_bytes());
         let cif_data = read_cif_buffer(reader).unwrap();
         let helices = PdbHelix::from_cif_data(&cif_data[0]).unwrap();
         assert_eq!(helices.len(), 1);
@@ -36,8 +42,7 @@ mod tests {
         let sheets = PdbSheet::from_cif_data(&cif_data[0]).unwrap();
         assert_eq!(sheets.len(), 4);
 
-        let cif_data = include_str!("./test_files/2fdo.cif");
-        let reader = BufReader::new(cif_data.as_bytes());
+        let reader = BufReader::new(cif_2fdo.as_bytes());
         let cif_data = read_cif_buffer(reader).unwrap();
         let sheets = PdbSheet::from_cif_data(&cif_data[0]).unwrap();
         assert_eq!(sheets.len(), 12);
@@ -45,14 +50,18 @@ mod tests {
 
     #[test]
     fn secondary_from_cif() {
-        let cif_data = include_str!("./test_files/2gb1.cif");
-        let reader = BufReader::new(cif_data.as_bytes());
-        let deposit = Deposit::from_cif_reader(reader);
-        assert!(deposit.is_ok());
-        let strctr = deposit.unwrap().structure();
+        let test_cases = vec![(cif_2gb1, "CEEEEEECCCCCCEEEEEECCHHHHHHHHHHHHHHHCCCCCEEEEECCCCEEEEEC"),
+            (cif_2fdo, "CCCCCCEEEHHHHHHHHHHHHHCCCEEEEEECCEEEEEEEEECCCCCCEEEEEEEEEEECCCCCCHHHHHHHHCEEEEEEEECHHHHHHHHHH"),
+            (cif_4esa, "CCCCHHHHHHHHHHHHHHHHCHHHHHHHHHHHHHHHHHHHHHHHHHCCCCCCCCHHHHHHHHHHHHHHHHHHHHHCCHHHHHHHHHHHHHHHCCCCHHHHHHHHHHHHHHHHHHHHCCCCHHHHHHHHHHHHHHHHHHHHCCC")];
 
-        assert_eq!(strctr.secondary("A").to_string(),
-                   "CEEEEEECCCCCCEEEEEECCHHHHHHHHHHHHHHHCCCCCEEEEECCCCEEEEEC");
+        for (input, expctd) in test_cases {
+            let reader = BufReader::new(input.as_bytes());
+            let deposit = Deposit::from_cif_reader(reader);
+            assert!(deposit.is_ok());
+            let strctr = deposit.unwrap().structure();
+
+            assert_eq!(strctr.secondary("A").to_string(), expctd);
+        }
     }
 
     #[test]

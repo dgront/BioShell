@@ -90,31 +90,3 @@ impl PdbAtomPredicate for ResidueId {
         a.chain_id == self.chain_id && a.res_seq == self.res_seq && a.i_code == self.i_code
     }
 }
-
-/// Extracts [`ResidueId`] object from a `TER` pdb line
-///
-/// # Examples
-/// ```
-/// use bioshell_pdb::residue_id_from_ter_record;
-/// let id1 = residue_id_from_ter_record("TER    1187      LEU B  75 ").unwrap();
-/// assert_eq!(id1.chain_id, "B");
-/// # assert_eq!(id1.i_code, ' ');
-/// let id2 = residue_id_from_ter_record("TER    1187      LEU B  75A").unwrap();
-/// # assert_eq!(id2.i_code, 'A');
-/// let id3 = residue_id_from_ter_record("TER    1187      LEU B  75").unwrap();
-/// assert_eq!(format!("{}", id3),"B:75 ");
-/// ```
-pub fn residue_id_from_ter_record(ter_line: &str) -> Result<ResidueId, PDBError> {
-    if let Ok(res_id) = parse_ter_record(ter_line) {
-        return Ok(res_id);
-    } else {
-        return Err(IncorrectlyFormattedTER { ter_line: ter_line.to_string() });
-    }
-}
-
-fn parse_ter_record(ter_line: &str) -> Result<ResidueId, ParseIntError> {
-    let res_seq: i32 = ter_line[22..26].trim().parse()?;
-    let icode = if ter_line.len() > 26 { ter_line[26..27].chars().next().unwrap() } else {' '};
-    let chain_id: &str = ter_line[21..22].trim();
-    Ok::<ResidueId, ParseIntError>(ResidueId::new(chain_id, res_seq, icode))
-}

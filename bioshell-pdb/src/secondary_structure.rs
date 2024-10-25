@@ -90,8 +90,8 @@ impl SecondaryStructure {
 
     /// Creates a new [`SecondaryStructure`](SecondaryStructure) object from a vector of [`SecondaryStructureTypes`](SecondaryStructureTypes) codes
     ///
-    /// The input vector should comprise byte values corresponding to [`SecondaryStructureTypes`](SecondaryStructureTypes) order numbers
-    /// as they are defined by that enum
+    /// The input vector should contain a respective [`SecondaryStructureTypes`](SecondaryStructureTypes)
+    /// enum variant for each residue in the sequence for which the  [`SecondaryStructure`] struct is created.
     ///
     /// # Example
     /// ```
@@ -99,8 +99,8 @@ impl SecondaryStructure {
     /// use bioshell_pdb::SecondaryStructureTypes::{Coil, RightAlphaHelix};
     /// let codes = vec![Coil, Coil, RightAlphaHelix, RightAlphaHelix, RightAlphaHelix, Coil, Coil];
     /// let sec_str = SecondaryStructure::from_attrs(codes);
-    /// assert_eq!(sec_str.sec_str(0), SecondaryStructureTypes::Coil);
-    /// assert_eq!(sec_str.sec_str(2), SecondaryStructureTypes::RightAlphaHelix);
+    /// assert_eq!(sec_str.sec_str(0), Coil);
+    /// assert_eq!(sec_str.sec_str(2), RightAlphaHelix);
     /// assert_eq!(sec_str.to_string(), String::from("CCHHHCC"));
     /// ```
     pub fn from_attrs(sec_str: Vec<SecondaryStructureTypes>)  -> SecondaryStructure { SecondaryStructure{ sec_str} }

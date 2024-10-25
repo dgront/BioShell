@@ -97,7 +97,6 @@ use crate::secondary_structure::SecondaryStructure;
 pub struct Structure {
     /// Four-character PDB code of this deposit, such as `2GB1` or `4HHB`
     pub id_code: String,
-    pub(crate) ter_atoms: HashMap<String, ResidueId>,
     pub(crate) atoms: Vec<PdbAtom>,
     pub(crate) model_coordinates: Vec<Vec<Vec3>>,
     /// id of each residue, in the order of their appearance in the structure;
@@ -111,7 +110,6 @@ impl Structure {
     pub fn new(id_code: &str) -> Self {
         Self {
             id_code: id_code.to_string(),
-            ter_atoms: Default::default(),
             atoms: vec![],
             model_coordinates: vec![],
             residue_ids: vec![],
@@ -375,39 +373,55 @@ impl Structure {
         }
     }
 
-    /// Provides the [`ResidueId`] of the last residue in a given chain
-    ///
-    /// Any chain may contain residues and atoms that are listed after the `TER` residue; these are
-    /// not covalently connected to their chain and are considered ligands.
-    ///
-    /// If a chain does not provide a `TER` record, ID of its very last residue is returned
-    pub fn ter_residue(&self, chain_id: &str) -> ResidueId {
-        if let Some(res_id) = self.ter_atoms.get(chain_id) {
-            return res_id.clone();
-        } else {
-            let last_at = self.atoms.iter().rfind(|&a| a.chain_id==chain_id).unwrap();
-            return ResidueId::try_from(last_at).unwrap();
-        }
-    }
-
     /// Provides a sequence of a given chain.
     ///
-    /// The sequence contains only in the residues found in atoms of this structure. The original sequence
-    /// of a chain can be obtained from the respective entity object.
+    /// The sequence contains only in the residues found in atoms of this structure; some of its residues
+    ///may be missing. The original sequence of a chain can be obtained from the respective entity object.
     ///
-    /// Residues listed after the `TER` record are not included in the sequence returned by this method
+    /// This method includes only the residues included in a [`Polymer`](Polymer) entity of the requested chain.
+    /// Because such an information is not provided by the PDB file format, in that case the method
+    /// includes residues listed in the requested chain until the `TER` record.
+    /// ```
+    /// # use std::io::BufReader;
+    /// # use bioshell_pdb::Deposit;
+    /// # use bioshell_pdb::PDBError;
+    /// # fn main() -> Result<(), PDBError> {
+    /// let pdb_data = "
+    /// ATOM   4603  CA  GLN H 244      32.033  12.635  17.439  1.00 50.48           C
+    /// ATOM   4620  CA  PHE H 245      30.578  11.461  14.097  1.00 53.40           C
+    /// ATOM   4640  CA  GLY H 246      27.584  13.778  13.222  0.81 63.93           C
+    /// ATOM   4647  CA  GLU H 247      23.988  14.633  14.349  0.41 70.87           C
+    /// TER    4662      GLU H 247
+    /// HETATM 4835 NA    NA H 409       5.622 -14.085  31.049  1.00 32.84          NA
+    /// HETATM 4836 CA    CA H 521      18.674 -16.434  38.353  0.36  7.57          CA
+    /// ";
+    /// let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_data.as_bytes()))?;
+    /// let strctr = deposit.structure();
+    /// let seq = strctr.sequence("H");
+    /// assert_eq!("QFGE", &seq.to_string(10));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn sequence(&self, chain_id: &str) -> Sequence {
-        let ter_resid = self.ter_residue(chain_id);
+
+        fn code1(resname: &str) -> u8 {
+            if let Some(restype) = ResidueTypeManager::get().by_code3(resname) {
+                u8::try_from(restype.parent_type.code1()).unwrap()
+            } else { b'X' }
+        }
+
+        let mut entity_id: Option<String> = None;
         let mut aa: Vec<u8> = vec![];
-        for i_res in 0..self.residue_ids.len() {
-            if self.residue_ids[i_res].chain_id == chain_id {
-                let resname = &self.atoms[self.atoms_for_residue_id[i_res].start].res_name;
-                if let Some(restype) = ResidueTypeManager::get().by_code3(resname) {
-                    aa.push(u8::try_from(restype.parent_type.code1()).unwrap());
-                } else {
-                    aa.push(b'X');
+        for (i_res, res_id) in self.residue_ids.iter().enumerate() {
+            if res_id.chain_id != chain_id { continue }
+            let first_atom: &PdbAtom = &self.atoms[self.atoms_for_residue_id[i_res].start];
+            if let Some(this_entity) = &entity_id {
+                if &first_atom.entity_id == this_entity {
+                    aa.push(code1(&first_atom.res_name));
                 }
-                if self.residue_ids[i_res]==ter_resid { break }
+            } else {
+                aa.push(code1(&first_atom.res_name));
+                entity_id = Some(first_atom.entity_id.clone());
             }
         }
 
@@ -416,15 +430,24 @@ impl Structure {
 
     /// Provides a secondary structure of a given chain.
     ///
-    /// Residues listed after the `TER` record are not included in the sequence returned by this method
+    /// This method includes only the residues included in a [`Polymer`](Polymer) entity of the requested chain.
+    /// Because such an information is not provided by the PDB file format, in that case the method
+    /// includes residues listed in the requested chain until the `TER` record.
     pub fn secondary(&self, chain_id: &str) -> SecondaryStructure {
-        let ter_resid = self.ter_residue(chain_id);
         let mut sec: Vec<SecondaryStructureTypes> = vec![];
-        for i_res in 0..self.residue_ids.len() {
-            if self.residue_ids[i_res].chain_id == chain_id {
-                sec.push(self.atoms[self.atoms_for_residue_id[i_res].start].secondary_struct_type.clone());
+        let mut entity_id: Option<String> = None;
+
+        for (i_res, res_id) in self.residue_ids.iter().enumerate() {
+            if res_id.chain_id != chain_id { continue }
+            let first_atom: &PdbAtom = &self.atoms[self.atoms_for_residue_id[i_res].start];
+            if let Some(this_entity) = &entity_id {
+                if &first_atom.entity_id == this_entity {
+                    sec.push(first_atom.secondary_struct_type.clone());
+                }
+            } else {
+                sec.push(first_atom.secondary_struct_type.clone());
+                entity_id = Some(first_atom.entity_id.clone());
             }
-            if self.residue_ids[i_res]==ter_resid { break }
         }
 
         return SecondaryStructure::from_attrs(sec);
@@ -437,33 +460,39 @@ impl Structure {
         Structure::residue_ids_from_atoms(self.atoms.iter().filter(|&a| a.chain_id==chain_id))
     }
 
-    /// Returns atoms of a given residue
+    /// Removes
     ///
     /// ```
     /// # use bioshell_pdb::{Deposit, PdbAtom, ResidueId, Structure};
     /// # use std::io::BufReader;
-    /// let pdb_lines = "ATOM   4378  CA  HIS D 146      14.229  -1.501  26.683  1.00 31.89           C
+    /// let pdb_lines ="
+    /// ATOM   4378  CA  HIS D 146      14.229  -1.501  26.683  1.00 31.89           C
     /// TER    4388      HIS D 146
-    /// HETATM 4562 FE   HEM D 148      -1.727   4.699  23.942  1.00 15.46          FE";
+    /// HETATM 4562 FE   HEM D 148      -1.727   4.699  23.942  1.00 15.46          FE;
+    /// ATOM   4378  CA  HIS E 146      14.229  -1.501  26.683  1.00 31.89           C
+    /// TER    4388      HIS E 146
+    /// HETATM 4562 FE   HEM E 148      -1.727   4.699  23.942  1.00 15.46          FE";
     ///
     /// let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_lines.as_bytes())).unwrap();
     /// let mut strctr = deposit.structure();
-    /// strctr.drop_ligands();
-    /// assert_eq!(strctr.count_atoms(), 1);
+    /// strctr.remove_ligands();
+    /// assert_eq!(strctr.count_atoms(), 2);
     /// ```
-    pub fn drop_ligands(&mut self) {
-        for chain_id in self.chain_ids() {
-            // --- check if TER is set; otherwise we won't  drop anything
-            if let Some(res_id) = self.ter_atoms.get(&chain_id) {
-                // --- check if TER residue has any atoms; otherwise we won't  drop anything
-                if let Some(last_ter_atom) = self.atoms.iter().rfind(|&a| res_id.check(a)) {
-                    let start_idx = self.atoms.iter().position(|a| a == last_ter_atom).unwrap() + 1;
-                    let last_chain_atom = self.atoms.iter().rfind(|&a| a.chain_id == chain_id).unwrap();
-                    let stop_idx = self.atoms.iter().position(|a| a == last_chain_atom).unwrap() + 1;
-                    self.atoms.drain(start_idx..stop_idx);
+    pub fn remove_ligands(&mut self) {
+        let mut first_id_map: HashMap<String, String> = HashMap::new();
+
+        self.atoms
+            .retain(|atom| {
+                // Check if we've seen this entity before
+                if let Some(first_id) = first_id_map.get(&atom.chain_id) {
+                    // If we have, only keep it if the id matches the first one seen
+                    &atom.entity_id == first_id
+                } else {
+                    // If we haven't seen this entity, store the id and keep the element
+                    first_id_map.insert(atom.chain_id.clone(), atom.entity_id.clone());
+                    true
                 }
-            }
-        }
+            });
     }
 
     /// Sorts all the atoms of this structure.
