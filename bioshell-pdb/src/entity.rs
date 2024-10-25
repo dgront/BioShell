@@ -139,18 +139,17 @@ impl FromStr for EntitySource {
 /// # Entities, chains and their sequences
 ///
 /// The chains `"B"` and `"D"` of the `4esa` deposit contain a protein entity `"2"`. The entity sequence
-/// comprises 144 amino acid residues:
+/// comprises 146 amino acid residues:
 /// ```txt
 /// VEWTDQERATISSIFGSLDYDDIGPKALSRCLIVYPWTQRHFGSFGNLYNAEAIIGNQKVA
 /// AHGIKVLHGLDRAVKNMDNIKEIYAELSILHSEKLHVDPDNFKLLADCLTIVVAAKMGSGF
-/// NPGTQATFQKFLAVVVSALGKQY
+/// NPGTQATFQKFLAVVVSALGKQYH
 /// ```
 /// The sequence can be accessed by the [`entity_monomers()`](Entity::entity_monomers()) method
 /// and is provided as a vector of [ResidueType] objects.
-/// The sequence observed for chain `"D"` may be accessed by calling [`chain_monomers()`](Entity::chain_monomers())
-/// and is indeed identical with the respective entity definition. The sequence
-/// of chain `"B"` however is one amino acid residue shorter since the N-terminal tyrosine (`Y`) hasn't been
-/// resolved experimentally. The missing residue is denoted in the chain sequence by the special [`GAP`](GAP)
+/// The sequence observed for chain `"B"` may be accessed by calling [`chain_monomers()`](Entity::chain_monomers())
+/// The sequence is shorter by two amino acid residues, since the C-terminal tyrosine (`Y`) and histidine (`H`)
+/// hasn't been resolved experimentally. The missing residues are denoted in the chain sequence by the special [`GAP`](GAP)
 /// residue type.
 /// ```
 /// # use bioshell_pdb::PDBError;
@@ -164,7 +163,7 @@ impl FromStr for EntitySource {
 /// # let deposit_4esa = Deposit::from_cif_reader(reader)?;
 /// let entity_2 = deposit_4esa.entity("2");
 /// assert_eq!(entity_2.entity_monomers().len(), 146);
-/// assert_eq!(entity_2.chain_monomers("B")?.iter().filter(|m| m.parent_type==GAP).count(), 1);
+/// assert_eq!(entity_2.chain_monomers("B")?.iter().filter(|m| m.parent_type==GAP).count(), 2);
 /// # Ok(())
 /// # }
 /// ```

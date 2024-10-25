@@ -19,7 +19,7 @@
 //! let deposit_2gb1 = Deposit::from_pdb_reader(reader)?;
 //! # let cif_data = include_str!("../tests/test_files/2fdo.cif");
 //! let reader = BufReader::new(cif_data.as_bytes());
-//! let deposit_2fdo = Deposit::from_pdb_reader(reader)?;
+//! let deposit_2fdo = Deposit::from_cif_reader(reader)?;
 //! # Ok(())
 //! # }
 //! ```
@@ -31,8 +31,8 @@
 //! # fn main() -> Result<(), PDBError> {
 //! # let cif_data = include_str!("../tests/test_files/2fdo.cif");
 //! # let reader = BufReader::new(cif_data.as_bytes());
-//! let deposit_2fdo = Deposit::from_pdb_reader(reader)?;
-//! println!("Title: {}", deposit_2fdo.title);
+//! let deposit_2fdo = Deposit::from_cif_reader(reader)?;
+//! println!("Title: {}", deposit_2fdo.title.unwrap());
 //! # Ok(())
 //! # }
 //! ```
@@ -121,7 +121,7 @@ pub use load_pdb::{is_pdb_file, find_pdb_file_name};
 pub use assertions::*;
 pub use pdb_parsing_error::PDBError;
 pub use pdb_atom::{PdbAtom, same_residue_atoms};
-pub use residue_id::{ResidueId, residue_id_from_ter_record};
+pub use residue_id::{ResidueId};
 pub use pdb_helix::PdbHelix;
 pub use pdb_sheet::PdbSheet;
 pub use exp_data::{ExperimentalMethod};
