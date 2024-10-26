@@ -121,8 +121,6 @@ pub use load_pdb::{is_pdb_file, find_pdb_file_name};
 pub use pdb_parsing_error::PDBError;
 pub use pdb_atom::{PdbAtom, same_residue_atoms};
 pub use residue_id::{ResidueId};
-pub use pdb_helix::PdbHelix;
-pub use pdb_sheet::PdbSheet;
 pub use exp_data::{ExperimentalMethod};
 pub use unit_cell::{UnitCell};
 pub use load_cif::{is_cif_file, find_cif_file_name};

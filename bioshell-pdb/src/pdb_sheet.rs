@@ -8,7 +8,7 @@ use crate::{PDBError, ResidueId};
 /// provides also a [`ResidueId`](ResidueId) for the initial and the terminal residue of this strand.
 ///
 /// Refer to the [official documentation of the `SHEET` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect5.html#SHEET)
-pub struct PdbSheet {
+pub(crate) struct PdbSheet {
     /// strand  number
     ///
     /// starts at 1 for each strand within a sheet
@@ -58,49 +58,12 @@ impl PdbSheet {
     }
 
     /// Creates [`ResidueId`](ResidueId) struct that identifies the first residue of this helix
-    ///
-    /// # Example
-    /// ```
-    /// use bioshell_pdb::{PdbSheet, ResidueId, PDBError};
-    /// # fn main() -> Result<(), PDBError> {
-    /// let sheet_line = "SHEET    1   A 5 THR A 107  ARG A 110  0";
-    /// let pdb_strand = PdbSheet::from_sheet_line(sheet_line)?;
-    /// assert_eq!(pdb_strand.init_res_id(), ResidueId::new("A", 107, ' '));
-    /// # Ok(())
-    /// # }
-    /// ```
     pub fn init_res_id(&self) -> ResidueId { ResidueId::new(&self.init_chain_id, self.init_seq_num, self.init_i_code)}
 
     /// Creates [`ResidueId`](ResidueId) struct that identifies the last residue of this helix (inclusive!)
-    ///
-    /// # Example
-    /// ```
-    /// use bioshell_pdb::{PdbSheet, ResidueId, PDBError};
-    /// # fn main() -> Result<(), PDBError> {
-    /// let strand_line = "SHEET    1   A 5 THR A 107  ARG A 110  0";
-    /// let pdb_strand = PdbSheet::from_sheet_line(strand_line)?;
-    /// assert_eq!(pdb_strand.end_res_id(), ResidueId::new("A", 110, ' '));
-    /// # Ok(())
-    /// # }
-    /// ```
     pub fn end_res_id(&self) -> ResidueId { ResidueId::new(&self.end_chain_id, self.end_seq_num, self.end_i_code)}
 
     /// Lists all beta-sheets found in a given structure
-    ///
-    /// # Example
-    /// ```
-    /// use std::io::BufReader;
-    /// use bioshell_cif::read_cif_buffer;
-    /// use bioshell_pdb::{PdbSheet,PDBError};
-    /// # fn main() -> Result<(), PDBError> {
-    /// let cif_data = include_str!("../tests/test_files/2gb1.cif");
-    /// let reader = BufReader::new(cif_data.as_bytes());
-    /// let cif_data = read_cif_buffer(reader).unwrap();
-    /// let sheets = PdbSheet::from_cif_data(&cif_data[0])?;
-    /// assert_eq!(sheets.len(), 4);
-    /// # Ok(())
-    /// # }
-    /// ```
     pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<PdbSheet>, PDBError> {
         fn new_sheet(tokens: &[&str]) -> Result<PdbSheet, CifError> {
             Ok(PdbSheet {
@@ -130,5 +93,33 @@ impl PdbSheet {
         }
 
         return Ok(strands);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::BufReader;
+    use bioshell_cif::read_cif_buffer;
+    use crate::{PDBError, ResidueId};
+    use crate::pdb_sheet::PdbSheet;
+
+
+    #[test]
+    fn sheets_2gb1() -> Result<(), PDBError> {
+        let cif_data = include_str!("../tests/test_files/2gb1.cif");
+        let reader = BufReader::new(cif_data.as_bytes());
+        let cif_data = read_cif_buffer(reader).unwrap();
+        let sheets = PdbSheet::from_cif_data(&cif_data[0])?;
+        assert_eq!(sheets.len(), 4);
+        Ok(())
+    }
+
+    #[test]
+    fn sheet_from_pdb_line() -> Result<(), PDBError> {
+        let sheet_line = "SHEET    1   A 5 THR A 107  ARG A 110  0";
+        let pdb_strand = PdbSheet::from_sheet_line(sheet_line)?;
+        assert_eq!(pdb_strand.init_res_id(), ResidueId::new("A", 107, ' '));
+        assert_eq!(pdb_strand.end_res_id(), ResidueId::new("A", 110, ' '));
+        Ok(())
     }
 }

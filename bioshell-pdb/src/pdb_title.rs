@@ -5,14 +5,14 @@
 ///
 /// See  the [official documentation of the `TITLE` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect2.html#TITLE) for details
 #[derive(PartialEq)]
-pub struct PdbTitle { pub text: String, }
+pub(crate) struct PdbTitle { pub text: String, }
 
 impl PdbTitle {
 
     /// Create a new record from a given PDB-formatted line.
     ///
     /// The `new()` method accepts only the very first line of the `TITLE` record. Continuation lines
-    /// must me appended using the [`append_pdb_line()`](PdbTitle::append_pdb_line()) method.
+    /// must be appended using the [`append_pdb_line()`](PdbTitle::append_pdb_line()) method.
     pub fn from_pdb_line(line: &str) -> Self {
         Self { text: line[10..].trim().to_string(), }
     }

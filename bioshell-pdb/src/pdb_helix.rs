@@ -8,7 +8,7 @@ use bioshell_cif::CifError::{ItemParsingError};
 /// provides also a [`ResidueId`](ResidueId) for the initial and the terminal residue of this helix.
 ///
 /// Refer to the [official documentation of the `HELIX` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect5.html#HELIX)
-pub struct PdbHelix {
+pub(crate) struct PdbHelix {
 
     /// Unique identifier for the helix.
     ///
@@ -67,44 +67,14 @@ impl PdbHelix {
     }
 
     /// Creates [`ResidueId`](ResidueId) struct that identifies the first residue of this helix
-    ///
-    /// # Example
-    /// ```
-    /// use bioshell_pdb::{PdbHelix, ResidueId};
-    /// let helix_line = "HELIX    1   A SER A    5  GLN A   11  1                                   7";
-    /// let pdb_helix = PdbHelix::from_helix_line(helix_line);
-    /// assert_eq!(pdb_helix.init_res_id(), ResidueId::new("A", 5, ' '));
-    /// ```
     pub fn init_res_id(&self) -> ResidueId { ResidueId::new(&self.init_chain_id, self.init_seq_num, self.init_i_code)}
 
     /// Creates [`ResidueId`](ResidueId) struct that identifies the last residue of this helix (inclusive!)
-    ///
-    /// # Example
-    /// ```
-    /// use bioshell_pdb::{PdbHelix, ResidueId};
-    /// let helix_line = "HELIX    1   A SER A    5  GLN A   11  1                                   7";
-    /// let pdb_helix = PdbHelix::from_helix_line(helix_line);
-    /// assert_eq!(pdb_helix.end_res_id(), ResidueId::new("A", 11, ' '));
-    /// ```
     pub fn end_res_id(&self) -> ResidueId { ResidueId::new(&self.end_chain_id, self.end_seq_num, self.end_i_code)}
 
     /// Lists all helices from a given structure.
     ///
     /// Note, that the returned vector may be empty if the structure does not contain any helix.
-    ///
-    /// # Example
-    /// ```
-    /// use std::io::BufReader;
-    /// use bioshell_cif::read_cif_buffer;
-    /// use bioshell_pdb::PdbHelix;
-    /// let cif_data = include_str!("../tests/test_files/2gb1.cif");
-    /// let reader = BufReader::new(cif_data.as_bytes());
-    /// let cif_data = read_cif_buffer(reader).unwrap();
-    /// let helices = PdbHelix::from_cif_data(&cif_data[0]).unwrap();
-    /// assert_eq!(helices.len(), 1);
-    /// let helix = &helices[0];
-    /// assert_eq!(helix.length, 15);
-    /// ```
     pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<PdbHelix>, PDBError> {
         fn new_helix(tokens: &[&str]) -> Result<PdbHelix, CifError> {
             Ok(PdbHelix {
@@ -136,4 +106,34 @@ impl PdbHelix {
 
         return Ok(helices);
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::BufReader;
+    use bioshell_cif::read_cif_buffer;
+    use crate::pdb_helix::PdbHelix;
+    use crate::{PDBError, ResidueId};
+
+    #[test]
+    fn test_helix_from_line() {
+        let helix_line = "HELIX    1   A SER A    5  GLN A   11  1                                   7";
+        let pdb_helix = PdbHelix::from_helix_line(helix_line);
+        assert_eq!(pdb_helix.init_res_id(), ResidueId::new("A", 5, ' '));
+        assert_eq!(pdb_helix.end_res_id(), ResidueId::new("A", 11, ' '));
+    }
+
+
+    #[test]
+    fn helix_from_2gb1() -> Result<(), PDBError> {
+        let cif_data = include_str!("../tests/test_files/2gb1.cif");
+        let reader = BufReader::new(cif_data.as_bytes());
+        let cif_data = read_cif_buffer(reader).unwrap();
+        let helices = PdbHelix::from_cif_data(&cif_data[0]).unwrap();
+        assert_eq!(helices.len(), 1);
+        let helix = &helices[0];
+        assert_eq!(helix.length, 15);
+
+        Ok(())
+   }
 }
