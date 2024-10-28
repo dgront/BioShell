@@ -8,6 +8,7 @@ use crate::{PDBError, ResidueId};
 /// provides also a [`ResidueId`](ResidueId) for the initial and the terminal residue of this strand.
 ///
 /// Refer to the [official documentation of the `SHEET` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect5.html#SHEET)
+#[allow(dead_code)]
 pub(crate) struct PdbSheet {
     /// strand  number
     ///

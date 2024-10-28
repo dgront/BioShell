@@ -63,6 +63,7 @@ pub(crate) fn find_deposit_file_name(pdb_code: &str,
 }
 
 mod tests_utilities {
+    #[allow(unused_imports)]
     use super::*;
     #[test]
     fn test_find_file_name() {

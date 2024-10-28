@@ -8,6 +8,7 @@ use bioshell_cif::CifError::{ItemParsingError};
 /// provides also a [`ResidueId`](ResidueId) for the initial and the terminal residue of this helix.
 ///
 /// Refer to the [official documentation of the `HELIX` entry](https://www.wwpdb.org/documentation/file-format-content/format33/sect5.html#HELIX)
+#[allow(dead_code)]
 pub(crate) struct PdbHelix {
 
     /// Unique identifier for the helix.
