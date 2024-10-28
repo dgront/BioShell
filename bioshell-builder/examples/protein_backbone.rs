@@ -1,5 +1,6 @@
 use std::env;
 use std::path::{Path};
+use std::str::FromStr;
 use std::time::Instant;
 use log::info;
 use rand::Rng;
@@ -7,6 +8,25 @@ use bioshell_builder::{BuilderError, InternalCoordinatesDatabase, KinematicAtomT
 
 const N_RESIDUES: usize = 100;
 const N_MODELS: usize = 1000;
+const CONFORMATION: Conformation = Conformation::Helical(helical_phi_psi);
+enum Conformation {
+    Random(fn() -> (f64, f64)),
+    Helical(fn() -> (f64, f64)),
+}
+
+// Implementing FromStr for Conformation
+impl FromStr for Conformation {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "random" => Ok(Conformation::Random(random_phi_psi)),
+            "helical" => Ok(Conformation::Helical(helical_phi_psi)),
+            _ => Err(format!("Invalid conformation type: '{}'", s)),
+        }
+    }
+}
+
 fn random_phi_psi() -> (f64, f64) {
     let mut rng = rand::thread_rng();
     (rng.gen_range(-std::f64::consts::PI..std::f64::consts::PI), rng.gen_range(-std::f64::consts::PI..std::f64::consts::PI))
@@ -42,8 +62,12 @@ fn main() -> Result<(), BuilderError>{
         bb_builder.add_residue(&bb_def);
     }
     bb_builder.patch_residue(N_RESIDUES-1, &cterm_def)?;
+
     // --- modify Phi, Psi angles
-    let phi_psi_gen = helical_phi_psi;
+    let phi_psi_gen = match CONFORMATION {
+        Conformation::Random(f) => {f}
+        Conformation::Helical(f) => {f}
+    };
 
     let start = Instant::now();
     for i_model in 0..N_MODELS {

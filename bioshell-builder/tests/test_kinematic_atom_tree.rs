@@ -1,17 +1,16 @@
 #[cfg(test)]
 mod kinematic_tree_tests {
     use std::io::BufReader;
-    use bioshell_builder::{InternalCoordinatesDatabase, KinematicAtomTree};
+    use bioshell_builder::{BuilderError, InternalCoordinatesDatabase, KinematicAtomTree};
     use bioshell_cif::read_cif_buffer;
-    use bioshell_pdb::{assert_delta};
     #[test]
-    fn build_backbone() {
+    fn build_backbone() -> Result<(), BuilderError> {
         // --- build the database of internal monomers' definitions
         let mut db = InternalCoordinatesDatabase::new();
-        let cif_data = read_cif_buffer(BufReader::new(BB_.as_bytes()));
-        db.load_from_cif_data(cif_data);
-        let cif_data = read_cif_buffer(BufReader::new(CTerm.as_bytes()));
-        db.load_from_cif_data(cif_data);
+        let cif_data = read_cif_buffer(BufReader::new(BB_.as_bytes()))?;
+        db.load_from_cif_data(cif_data)?;
+        let cif_data = read_cif_buffer(BufReader::new(CTerm.as_bytes()))?;
+        db.load_from_cif_data(cif_data)?;
 
         // --- create a chain builder
         let mut bb_builder = KinematicAtomTree::new();
@@ -19,7 +18,7 @@ mod kinematic_tree_tests {
         bb_builder.add_residue(&bb_def);
         bb_builder.add_residue(&bb_def);
         let cterm_def = db.get_definition("patch_CTerm").unwrap();
-        bb_builder.patch_residue(1, &cterm_def);
+        bb_builder.patch_residue(1, &cterm_def)?;
         let atoms = bb_builder.build_coordinates();
         assert!(atoms.is_ok());
         let atoms = atoms.ok().unwrap();
@@ -33,6 +32,8 @@ mod kinematic_tree_tests {
         //              iatom + 1, &bb_builder.atom_name(iatom),
         //              "A", 1, &atoms[iatom].x, &atoms[iatom].y, &atoms[iatom].z);
         // }
+
+        Ok(())
     }
     const BB_: &str = "data_bb_
 loop_
@@ -57,6 +58,7 @@ _dihedral_angle_name
 #
 ";
 
+    #[allow(non_upper_case_globals)]
     const CTerm: &str = "data_patch_CTerm
 loop_
 _res_name

@@ -2,7 +2,7 @@ use std::io;
 use std::fs::{self};
 use std::collections::HashMap;
 use log::{info, error};
-use bioshell_cif::{CifData, read_cif_buffer};
+use bioshell_cif::{CifData, CifError, CifTable, read_cif_buffer};
 use bioshell_io::{open_file, split_into_strings};
 use crate::BuilderError;
 use crate::BuilderError::InternalAtomDefinitionError;
@@ -17,7 +17,7 @@ use crate::BuilderError::InternalAtomDefinitionError;
 /// "ALA prev ' N  ' prev ' CA ' prev ' C  ' this ' N  ' N  1.328685 114.0  180.0 Psi"
 /// ```
 /// is based on the `N` atom of the ``previous`` residue as well as on the `CA` and `C` atoms of this residue.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum RelaviveResidueLocator {
     /// the atom is located in the residue preceding the reconstructed one
     Previous,
@@ -72,7 +72,7 @@ impl TryFrom<&RelaviveResidueLocator> for i8 {
     }
 }
 
-/// Defines an atom by providing it's internal coordinates and the reference frame.
+/// Defines an atom by providing its internal coordinates and the reference frame.
 ///
 /// The three atoms: `a`, `b` and `c` are used to construct a reference frame for an atom `d`.
 /// The position of the `d` atom is defined by three internal coordinates:
@@ -150,22 +150,6 @@ impl InternalAtomDefinition {
         };
     }
 
-    /// Creates an [`InternalAtomDefinition`](InternalAtomDefinition) struct from a single line in the CIF format.
-    ///
-    /// Note: data entries must be provided in the proper order!
-    /// # Examples
-    ///
-    /// ```rust
-    /// use bioshell_builder::InternalAtomDefinition;
-    /// let def = InternalAtomDefinition::from_cif_line("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  '  N  1.328685 114.0  180.0 psi");
-    /// let def_ok = def.ok().unwrap();
-    /// assert_eq!(def_ok.a_name, " N  ".to_string());
-    /// assert_eq!(def_ok.name, " N  ".to_string());
-    /// ```
-    pub fn from_cif_line(line: &str) -> Result<InternalAtomDefinition, BuilderError> {
-        let tokens: Vec<String> = split_into_strings(line, true);
-        return InternalAtomDefinition::from_strings(&tokens);
-    }
 
     /// Creates an [`InternalAtomDefinition`](InternalAtomDefinition) struct from its properties.
     ///
@@ -177,33 +161,34 @@ impl InternalAtomDefinition {
     /// use bioshell_builder::InternalAtomDefinition;
     /// use bioshell_io::split_into_strings;
     /// let tokens = split_into_strings("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  ' N  1.328685 114.0  180.0 psi", false);
-    /// let def = InternalAtomDefinition::from_strings(&tokens);
+    /// let tokens_str: Vec<&str> = tokens.iter().map(AsRef::as_ref).collect();
+    /// let def = InternalAtomDefinition::from_strings(&tokens_str);
     /// let def_ok = def.ok().unwrap();
     /// assert_eq!(def_ok.a_name, " N  ".to_string());
     /// assert_eq!(def_ok.name, " N  ".to_string());
     /// ```
-    pub fn from_strings(tokens: &Vec<String>) -> Result<InternalAtomDefinition, BuilderError> {
-        let res_name = &tokens[0];
-        let a_residue = RelaviveResidueLocator::try_from(tokens[1].as_str());
-        let a_name = &tokens[2];
-        let b_residue = RelaviveResidueLocator::try_from(tokens[3].as_str());
-        let b_name = &tokens[4];
-        let c_residue = RelaviveResidueLocator::try_from(tokens[5].as_str());
-        let c_name = &tokens[6];
-        let d_residue = RelaviveResidueLocator::try_from(tokens[7].as_str());
-        let d_name = &tokens[8];
-        let d_element = &tokens[9];
+    pub fn from_strings(tokens: &[&str]) -> Result<InternalAtomDefinition, BuilderError> {
+        let res_name = tokens[0];
+        let a_residue = RelaviveResidueLocator::try_from(tokens[1]);
+        let a_name = tokens[2];
+        let b_residue = RelaviveResidueLocator::try_from(tokens[3]);
+        let b_name = tokens[4];
+        let c_residue = RelaviveResidueLocator::try_from(tokens[5]);
+        let c_name = tokens[6];
+        let d_residue = RelaviveResidueLocator::try_from(tokens[7]);
+        let d_name = tokens[8];
+        let d_element = tokens[9];
         let r = match tokens[10].parse::<f64>() {
             Ok(r) => r,
-            Err(_) => return Err(InternalAtomDefinitionError { error: "Can't parse bond length".to_string() })
+            Err(_) => return Err(InternalAtomDefinitionError { error: format!("Can't parse distance {}", tokens[10]) })
         };
         let planar = match tokens[11].parse::<f64>() {
             Ok(p) => p.to_radians(),
-            Err(_) => return Err(InternalAtomDefinitionError { error: "Can't parse planar angle".to_string() })
+            Err(_) => return Err(InternalAtomDefinitionError { error: format!("Can't parse planar angle {}", tokens[11]) })
         };
         let dihedral = match tokens[12].parse::<f64>() {
             Ok(d) => d.to_radians(),
-            Err(_) => return Err(InternalAtomDefinitionError { error: "Can't parse dihedral angle".to_string() })
+            Err(_) => return Err(InternalAtomDefinitionError { error: format!("Can't parse dihedral angle {}", tokens[12]) })
         };
         let dihedral_name = &tokens[13];
         return Ok(InternalAtomDefinition{
@@ -218,7 +203,7 @@ impl InternalAtomDefinition {
             c_residue: c_residue?,
             d_residue: d_residue?,
             r, planar, dihedral,
-            dihedral_name: dihedral_name.clone()
+            dihedral_name: dihedral_name.to_string()
         });
     }
 }
@@ -233,7 +218,24 @@ fn unquoted_substr(s:&str) -> &str {
     return &s[from..to];
 }
 
-/// Knows how to build a residue or a molecule from it's internal definition.
+const INTERNAL_RESIDUE_DEFINITION: [&str; 14] = [
+    "_res_name",
+    "_atom_a_residue_locator",
+    "_atom_a_name",
+    "_atom_b_residue_locator",
+    "_atom_b_name",
+    "_atom_c_residue_locator",
+    "_atom_c_name",
+    "_atom_d_residue_locator",
+    "_atom_d_name",
+    "_atom_d_element",
+    "_c_d_bond_length",
+    "_b_c_d_planar_angle",
+    "_a_b_c_d_dihedral_angle",
+    "_dihedral_angle_name",
+];
+
+/// Knows how to build a residue or a molecule from its internal definition.
 ///
 /// # Example
 /// ```rust
@@ -263,8 +265,10 @@ fn unquoted_substr(s:&str) -> &str {
 /// 'GLY' next ' N  ' this ' CA ' this ' C  ' this ' O  ' O  1.231015 121.0  180.0 -
 /// #";
 /// // --- Read a CIF block and parse it
+/// # use bioshell_cif::CifError;
+/// # fn main() -> Result<(), CifError> {
 /// let mut cif_reader = BufReader::new(GLY_HEAVY_CIF.as_bytes());
-/// let data_blocks = read_cif_buffer(&mut cif_reader);
+/// let data_blocks = read_cif_buffer(&mut cif_reader)?;
 /// // --- Initialize empty database and upload the GLY monomer definition from a CIF block
 /// let mut idb = InternalCoordinatesDatabase::new();
 /// idb.load_from_cif_data(data_blocks);
@@ -273,6 +277,8 @@ fn unquoted_substr(s:&str) -> &str {
 /// assert!(gly_def.is_some());
 /// let gly_def = gly_def.unwrap();
 /// assert_eq!(gly_def.len(), 4);
+/// # Ok(())
+/// # }
 /// ```
 pub struct InternalCoordinatesDatabase {
     map: HashMap<String, Vec<InternalAtomDefinition>>
@@ -284,7 +290,7 @@ impl InternalCoordinatesDatabase {
     pub fn new() -> InternalCoordinatesDatabase { InternalCoordinatesDatabase{ map: Default::default() } }
 
     /// Creates a database and loads all entries defined by CIF files found in a given folder
-    pub fn from_cif_directory(folder: &str) -> Result<InternalCoordinatesDatabase, io::Error> {
+    pub fn from_cif_directory(folder: &str) -> Result<InternalCoordinatesDatabase, CifError> {
 
         let mut out = InternalCoordinatesDatabase::new();
         info!("Looking for CIF monomer files in: {:?}", &folder);
@@ -297,7 +303,7 @@ impl InternalCoordinatesDatabase {
                         let fname = path.to_str().unwrap();
                         info!("Reading a file in CIF format: {}", &fname);
                         let mut cif_reader = open_file(fname)?;
-                        let data_blocks = read_cif_buffer(&mut cif_reader);
+                        let data_blocks = read_cif_buffer(&mut cif_reader)?;
                         out.load_from_cif_data(data_blocks);
                     }
                 }
@@ -308,20 +314,24 @@ impl InternalCoordinatesDatabase {
     }
 
     /// Loads all residue definitions from a buffer providing CIF-formatted data
-    pub fn load_from_cif_data(&mut self, data: Vec<CifData>) {
+    pub fn load_from_cif_data(&mut self, data: Vec<CifData>) -> Result<(), BuilderError> {
         for block in data {
-            if let Some(loop_block) = block.loop_blocks().next() {
-                let name = block.name();
-                let vec = self.map.entry(name.to_string()).or_insert(vec![]);
-                for row in loop_block.rows() {
-                    let def = InternalAtomDefinition::from_strings(row);
-                    match def {
-                        Ok(block) => { vec.push(block) }
-                        Err(err) => { error!("{}",err.to_string()) }
-                    };
-                }
+            let residue_table = CifTable::new(&block, "_res_name", INTERNAL_RESIDUE_DEFINITION)?;
+            let name = block.name();
+            for atom_row in residue_table.iter() {
+                let def = InternalAtomDefinition::from_strings(&atom_row);
+                match def {
+                    Ok(block) => {
+                        let vec = self.map.entry(name.to_string()).or_insert(vec![]);
+                        vec.push(block);
+                    }
+                    Err(err) => {
+                        return Err(InternalAtomDefinitionError { error: format!("{}","data") })
+                    }
+                };
             }
         }
+        return Ok(());
     }
 
     /// Provides a definition for all atoms of a requested monomer

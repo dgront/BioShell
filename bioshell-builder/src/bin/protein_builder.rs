@@ -4,7 +4,7 @@ use bioshell_builder::{BuilderError, InternalCoordinatesDatabase, KinematicAtomT
 use bioshell_cif::read_cif_buffer;
 use bioshell_io::open_file;
 use bioshell_pdb::{PdbAtom};
-use bioshell_seq::sequence::{FastaIterator, load_sequences};
+use bioshell_seq::sequence::{load_sequences};
 use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
@@ -21,12 +21,11 @@ struct Args {
 }
 
 fn build(aa_codes: Vec<String>, chain_id: &str) -> Result<Vec<PdbAtom>, BuilderError> {
-    let mut output: Vec<PdbAtom> = vec![];
 
     let mut residue_manager = InternalCoordinatesDatabase::new();
     let mut cif_reader = open_file("./data/bb_topo.cif")?;
-    let data_blocks = read_cif_buffer(&mut cif_reader);
-    residue_manager.load_from_cif_data(data_blocks);
+    let data_blocks = read_cif_buffer(&mut cif_reader)?;
+    residue_manager.load_from_cif_data(data_blocks)?;
 
     // --- create a chain builder
     let mut bb_builder = KinematicAtomTree::new();
@@ -51,7 +50,7 @@ fn main() -> Result<(), SequenceError> {
     let mut sequences: Vec<(String, String)> = vec![];
     for sequence in &seq {
         let id = String::from(sequence.id());
-        sequences.push((sequence.to_string(), id));
+        sequences.push((sequence.to_string(1000), id));
     }
 
     Ok(())
