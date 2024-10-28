@@ -69,4 +69,16 @@ mod tests_io {
         }
     }
 
+    #[test]
+    fn test_splitted_spaces() {
+        let cases = [
+            "'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  ' N 1.328685 114.0 180.0 psi",
+            "quick 'brown  fox'"
+        ];
+        for case in cases {
+            let splitted: Vec<String> = split_into_strings(&case, false);
+            let output = splitted.join(" ");
+            assert_eq!(case, output);
+        }
+    }
 }

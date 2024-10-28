@@ -1,3 +1,39 @@
+/// Splits a string into tokens by whitespace, preserving contiguous whitespace as separate tokens.
+///
+/// This function treats each contiguous sequence of whitespace characters as a separate token,
+/// so that whitespace chunks are not discarded. For instance, splitting `"A B  C\tD"` will
+/// return `["A", " ", "B", "  ", "C", "\t", "D"]`.
+///
+/// # Examples
+///
+/// ```
+/// use bioshell_io::split_preserving_whitespace;
+/// let input = "A B  C\tD";
+/// let tokens = split_preserving_whitespace(input);
+/// assert_eq!(tokens, vec!["A", " ", "B", "  ", "C", "\t", "D"]);
+/// ```
+pub fn split_preserving_whitespace(input: &str) -> Vec<&str> {
+    let mut tokens = Vec::new();
+    let mut start = 0;
+    let mut in_whitespace = input.chars().next().map(|c| c.is_whitespace()).unwrap_or(false);
+
+    for (i, c) in input.char_indices() {
+        if c.is_whitespace() != in_whitespace {
+            // Push the current token to the result
+            tokens.push(&input[start..i]);
+            // Update start to the current index
+            start = i;
+            // Toggle the whitespace mode
+            in_whitespace = !in_whitespace;
+        }
+    }
+
+    // Push the last remaining token
+    tokens.push(&input[start..]);
+
+    tokens
+}
+
 
 /// Splits a string by a whitespace into strings that can contain a whitespace within
 ///
@@ -13,15 +49,20 @@
 /// use bioshell_io::split_into_strings;
 /// let tokens_easy = split_into_strings("The quick brown fox jumps over the lazy dog", false);
 /// assert_eq!(tokens_easy.len(), 9);
+///
 /// let tokens_quoted = split_into_strings("The 'quick brown fox' jumps over the 'lazy dog'", false);
 /// assert_eq!(tokens_quoted.len(), 6);
 /// assert_eq!(tokens_quoted[1], "'quick brown fox'");
-/// let tokens_quoted = split_into_strings("The 'quick brown fox' jumps over the 'lazy dog'", true);
-/// assert_eq!(tokens_quoted[1], "quick brown fox");
+///
+/// let tokens_quoted = split_into_strings("The 'quick  brown fox' jumps over the 'lazy dog'", true);
+/// assert_eq!(tokens_quoted[1], "quick  brown fox");
+///
 /// let tokens_tricky = split_into_strings("O \"O5'\" \"O5'\"", false);
 /// assert_eq!(tokens_tricky.len(), 3);
+///
 /// let tokens_tricky = split_into_strings("O \"O5'\" \"O1\"", false);
 /// assert_eq!(tokens_tricky.len(), 3);
+///
 /// let cif_tokens = split_into_strings("A   'RNA linking'       y \"ADENOSINE-5'-MONOPHOSPHATE\" ? 'C10 H14 N5 O7 P' 347.221", false);
 /// assert_eq!(cif_tokens.len(), 7);
 /// assert_eq!(cif_tokens[3], "\"ADENOSINE-5'-MONOPHOSPHATE\"".to_string());
@@ -29,16 +70,22 @@
 pub fn split_into_strings(s: &str, if_remove_quotes: bool) -> Vec<String> {
 
     let mut tokens: Vec<String> = Vec::new();
-    let mut iter = s.split_whitespace();
+    let mut iter = split_preserving_whitespace(s).into_iter();
     tokens.push(iter.next().unwrap().to_string());
+    let mut last_space = "".to_string();
     for word in iter {
         let token = tokens.last_mut().unwrap();
         match quote_style(token) {
-            QuoteStyle::None | QuoteStyle::End(_) | QuoteStyle::Both(_) => { tokens.push(word.to_string()); }
+            QuoteStyle::None | QuoteStyle::End(_) | QuoteStyle::Both(_) => {
+                if !word.chars().all(char::is_whitespace) {
+                    tokens.push(word.to_string());
+                }
+            }
             QuoteStyle::Begin(_) => {
-                token.push_str(" ");
+                token.push_str(&last_space);
                 token.push_str(word);
             }
+            QuoteStyle::WhiteSpace => { last_space = token.clone(); }
         }
     }
 
@@ -51,11 +98,15 @@ pub fn split_into_strings(s: &str, if_remove_quotes: bool) -> Vec<String> {
 #[derive(PartialEq, Debug)]
 enum QuoteStyle {
     None,
+    WhiteSpace,
     Begin(char),
     End(char),
     Both(char),
 }
 fn quote_style(token: &str) -> QuoteStyle {
+    // --- all characters are whitespace
+    if token.chars().all(char::is_whitespace) { return QuoteStyle::WhiteSpace; }
+
     // --- a special case when a token is a quote character itself
     if token.len() == 1 && is_quote_char(token.chars().next().unwrap()) {
         return QuoteStyle::Begin(token.chars().next().unwrap());
