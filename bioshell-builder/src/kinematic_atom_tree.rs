@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::ops::Range;
 use bioshell_pdb::calc::Vec3;
 use bioshell_pdb::PdbAtom;
-use crate::{BuilderError, InternalAtomDefinition, RelaviveResidueLocator};
+use crate::{BuilderError, InternalAtomDefinition, RelativeResidueLocator};
 use crate::nerf::{restore_branched_chain_in_order};
 use crate::BuilderError::{DefinedAtomNotFound, DihedralAngleNotFound, ResidueNotDefined};
 
@@ -122,7 +122,7 @@ impl KinematicAtomTree {
     /// Provides a dihedral angle value given the name of that angle.
     ///
     /// The dihedral angle name must match the name used by [`InternalAtomDefinition`](InternalAtomDefinition) of the respective atom.
-    /// Returns None when the requested dihedral angle hasn't been defined for  given re
+    /// Returns None when the requested dihedral angle hasn't been defined for a given residue
     pub fn named_dihedral(&mut self, residue_index: usize, dihedral_name: &str) -> Option<f64> {
         if !self.is_compiled { self.build_internal_data(); }
         for i_atom in self.residue_atoms[residue_index].start..self.residue_atoms[residue_index].end {
@@ -179,12 +179,12 @@ impl KinematicAtomTree {
         return Ok(());
     }
 
-    fn atom_index(&self, current_residue_index: usize, relative_residue_location: &RelaviveResidueLocator,
+    fn atom_index(&self, current_residue_index: usize, relative_residue_location: &RelativeResidueLocator,
                   atom_name: &str) -> Result<usize, BuilderError> {
         let the_residue = match relative_residue_location {
-            RelaviveResidueLocator::Previous => { current_residue_index - 1 }
-            RelaviveResidueLocator::This => { current_residue_index }
-            RelaviveResidueLocator::Next => { current_residue_index + 1 }
+            RelativeResidueLocator::Previous => { current_residue_index - 1 }
+            RelativeResidueLocator::This => { current_residue_index }
+            RelativeResidueLocator::Next => { current_residue_index + 1 }
         };
         if the_residue >= self.defined_residues.len() {
             return Err(ResidueNotDefined { residue_index: the_residue })

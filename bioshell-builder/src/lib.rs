@@ -19,6 +19,6 @@ mod internal_coordinates_definitions;
 mod kinematic_atom_tree;
 mod builder_errors;
 
-pub use internal_coordinates_definitions::{RelaviveResidueLocator, InternalAtomDefinition, InternalCoordinatesDatabase};
+pub use internal_coordinates_definitions::{RelativeResidueLocator, InternalAtomDefinition, InternalCoordinatesDatabase};
 pub use kinematic_atom_tree::{KinematicAtomTree};
 pub use builder_errors::*;

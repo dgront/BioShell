@@ -18,7 +18,7 @@ use crate::BuilderError::InternalAtomDefinitionError;
 /// ```
 /// is based on the `N` atom of the ``previous`` residue as well as on the `CA` and `C` atoms of this residue.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub enum RelaviveResidueLocator {
+pub enum RelativeResidueLocator {
     /// the atom is located in the residue preceding the reconstructed one
     Previous,
     /// the atom is located in the residue being reconstructed
@@ -27,47 +27,47 @@ pub enum RelaviveResidueLocator {
     Next
 }
 
-impl TryFrom<&str> for RelaviveResidueLocator {
+impl TryFrom<&str> for RelativeResidueLocator {
     type Error = BuilderError;
 
-    /// Returns a ``RelaviveResidueLocator`` for its string name.
+    /// Returns a ``RelativeResidueLocator`` for its string name.
     ///
     /// Three spelling variants are allowed, as shown in the example below
     /// # Example
     /// ```rust
-    /// use bioshell_builder::RelaviveResidueLocator;
-    /// assert_eq!(RelaviveResidueLocator::try_from("Next").unwrap(), RelaviveResidueLocator::Next);
-    /// assert_eq!(RelaviveResidueLocator::try_from("next").unwrap(), RelaviveResidueLocator::Next);
-    /// assert_eq!(RelaviveResidueLocator::try_from("NEXT").unwrap(), RelaviveResidueLocator::Next);
+    /// use bioshell_builder::RelativeResidueLocator;
+    /// assert_eq!(RelativeResidueLocator::try_from("Next").unwrap(), RelativeResidueLocator::Next);
+    /// assert_eq!(RelativeResidueLocator::try_from("next").unwrap(), RelativeResidueLocator::Next);
+    /// assert_eq!(RelativeResidueLocator::try_from("NEXT").unwrap(), RelativeResidueLocator::Next);
     /// ```
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
-            "This" => Ok(RelaviveResidueLocator::This),
-            "Next" => Ok(RelaviveResidueLocator::Next),
-            "Prev" => Ok(RelaviveResidueLocator::Previous),
-            "this" => Ok(RelaviveResidueLocator::This),
-            "next" => Ok(RelaviveResidueLocator::Next),
-            "prev" => Ok(RelaviveResidueLocator::Previous),
-            "THIS" => Ok(RelaviveResidueLocator::This),
-            "NEXT" => Ok(RelaviveResidueLocator::Next),
-            "PREV" => Ok(RelaviveResidueLocator::Previous),
+            "This" => Ok(RelativeResidueLocator::This),
+            "Next" => Ok(RelativeResidueLocator::Next),
+            "Prev" => Ok(RelativeResidueLocator::Previous),
+            "this" => Ok(RelativeResidueLocator::This),
+            "next" => Ok(RelativeResidueLocator::Next),
+            "prev" => Ok(RelativeResidueLocator::Previous),
+            "THIS" => Ok(RelativeResidueLocator::This),
+            "NEXT" => Ok(RelativeResidueLocator::Next),
+            "PREV" => Ok(RelativeResidueLocator::Previous),
             _ => {Err(InternalAtomDefinitionError{ error: "Can't find a RelativeResidueLocator for the string".to_string() })
             }
         }
     }
 }
 
-impl TryFrom<&RelaviveResidueLocator> for i8 {
+impl TryFrom<&RelativeResidueLocator> for i8 {
     type Error = BuilderError;
 
     /// Provides integer offset for an enum value.
     ///
     /// This method returns `-1`, `0` or `1` for the `Previous`, `This` and `Next` residue, respectively
-    fn try_from(value: &RelaviveResidueLocator) -> Result<Self, Self::Error> {
+    fn try_from(value: &RelativeResidueLocator) -> Result<Self, Self::Error> {
         match value {
-            RelaviveResidueLocator::This => Ok(0),
-            RelaviveResidueLocator::Next => Ok(1),
-            RelaviveResidueLocator::Previous => Ok(-1),
+            RelativeResidueLocator::This => Ok(0),
+            RelativeResidueLocator::Next => Ok(1),
+            RelativeResidueLocator::Previous => Ok(-1),
         }
     }
 }
@@ -93,8 +93,8 @@ impl TryFrom<&RelaviveResidueLocator> for i8 {
 /// > to be positive if the bond A-B is rotated in a clockwise direction through less than 180° in order that
 /// > it may eclipse the bond C-D: a negative torsion angle requires rotation in the opposite sense.*
 ///
-/// Each of the four [`RelaviveResidueLocator`](RelaviveResidueLocator) parameters can take values
-/// [`This`](RelaviveResidueLocator::This), [`Previous`](RelaviveResidueLocator::Previous) or [`Next`](RelaviveResidueLocator::Next),
+/// Each of the four [`RelativeResidueLocator`](RelativeResidueLocator) parameters can take values
+/// [`This`](RelativeResidueLocator::This), [`Previous`](RelativeResidueLocator::Previous) or [`Next`](RelativeResidueLocator::Next),
 /// when an atom belongs to the residue being reconstructed, the preceding or the following one, respectively.
 ///
 #[derive(Clone)]
@@ -112,13 +112,13 @@ pub struct InternalAtomDefinition {
     /// Name of the atom at `c` position
     pub c_name: String,
     /// relative index defining the residue the `a` atom belongs to
-    pub a_residue: RelaviveResidueLocator,
+    pub a_residue: RelativeResidueLocator,
     /// relative index defining the residue the `b` atom belongs to
-    pub b_residue: RelaviveResidueLocator,
+    pub b_residue: RelativeResidueLocator,
     /// relative index defining the residue the `c` atom belongs to
-    pub c_residue: RelaviveResidueLocator,
+    pub c_residue: RelativeResidueLocator,
     /// relative index defining the residue the `d` atom belongs to
-    pub d_residue: RelaviveResidueLocator,
+    pub d_residue: RelativeResidueLocator,
     /// the distance between `c` and `d` atoms
     pub r: f64,
     /// the planar angle between `b`, `c` and `d` atoms
@@ -131,10 +131,10 @@ pub struct InternalAtomDefinition {
 
 impl InternalAtomDefinition {
     /// Creates a new  [`InternalAtomDefinition`](InternalAtomDefinition) struct by filling all its fields
-    pub fn from_properties(res_name: &str, name: &str, element: &str, a_locator: RelaviveResidueLocator, a_name: &str,
-            b_locator: RelaviveResidueLocator, b_name: &str,
-            c_locator: RelaviveResidueLocator, c_name: &str, d_locator: RelaviveResidueLocator,
-            r: f64, planar_radians: f64, dihedral_radians: f64, dihedral_name: &str) -> InternalAtomDefinition {
+    pub fn from_properties(res_name: &str, name: &str, element: &str, a_locator: RelativeResidueLocator, a_name: &str,
+                           b_locator: RelativeResidueLocator, b_name: &str,
+                           c_locator: RelativeResidueLocator, c_name: &str, d_locator: RelativeResidueLocator,
+                           r: f64, planar_radians: f64, dihedral_radians: f64, dihedral_name: &str) -> InternalAtomDefinition {
 
         return InternalAtomDefinition{
             res_name: res_name.to_string(),
@@ -169,13 +169,13 @@ impl InternalAtomDefinition {
     /// ```
     pub fn from_strings(tokens: &[&str]) -> Result<InternalAtomDefinition, BuilderError> {
         let res_name = tokens[0];
-        let a_residue = RelaviveResidueLocator::try_from(tokens[1]);
+        let a_residue = RelativeResidueLocator::try_from(tokens[1]);
         let a_name = tokens[2];
-        let b_residue = RelaviveResidueLocator::try_from(tokens[3]);
+        let b_residue = RelativeResidueLocator::try_from(tokens[3]);
         let b_name = tokens[4];
-        let c_residue = RelaviveResidueLocator::try_from(tokens[5]);
+        let c_residue = RelativeResidueLocator::try_from(tokens[5]);
         let c_name = tokens[6];
-        let d_residue = RelaviveResidueLocator::try_from(tokens[7]);
+        let d_residue = RelativeResidueLocator::try_from(tokens[7]);
         let d_name = tokens[8];
         let d_element = tokens[9];
         let r = match tokens[10].parse::<f64>() {

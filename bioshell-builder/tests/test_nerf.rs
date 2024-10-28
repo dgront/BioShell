@@ -115,8 +115,8 @@ mod nerf_test {
 
         restore_branched_chain(&r, &a, &t, &bb_topo, &mut chain);
 
-        let _atom_names = [" N  ", " CA ", " C  ", " O  ", " N  ", " CA ", " C  ", " O  ", " N  ", " CA ", " C  ", " O  ", " OXT"];
-        let _elements = ["N ", "C ", "C ", "O ", "N ", "C ", "C ", "O ", "N ", "C ", "C ", "O ", "O "];
+        // let _atom_names = [" N  ", " CA ", " C  ", " O  ", " N  ", " CA ", " C  ", " O  ", " N  ", " CA ", " C  ", " O  ", " OXT"];
+        // let _elements = ["N ", "C ", "C ", "O ", "N ", "C ", "C ", "O ", "N ", "C ", "C ", "O ", "O "];
         // for iatom in 0..r.len() {
         //     println!("ATOM   {:4} {} GLY {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           {:}",
         //             iatom, &_atom_names[iatom], "A", 1, &chain[iatom].x, &chain[iatom].y, &chain[iatom].z, &_elements[iatom]);
@@ -135,8 +135,34 @@ mod nerf_test {
         let topo = vec![[0, 0, 0, 0], [0, 0, 0, 1], [0, 1, 0, 2], [1, 2, 0, 3], [1, 2, 0, 4]];
         let mut methane = vec![Vec3::default(); 5];
         restore_branched_chain(&r, &a, &t, &topo, &mut methane);
-        assert_delta!(methane[4].x, 1.400, 0.001);
-        assert_delta!(methane[4].y, -0.495, 0.001);
-        assert_delta!(methane[4].z, 0.857, 0.001);
+
+        // let _atom_names = [" C  ", " H1 ", " H2 ", " H3 ", " H4 "];
+        // let _elements = ["C ", "H ", "H ", "H ", "H "];
+        // for iatom in 0..5 {
+            // println!("{:8.3} {:8.3} {:8.3}", &methane[iatom].x, &methane[iatom].y, &methane[iatom].z);
+            //     println!("ATOM   {:4} {} GLY {}{:4}    {:8.3}{:8.3}{:8.3}  1.00 99.88           {:}",
+            //             iatom, &_atom_names[iatom], "A", 1, &methane[iatom].x, &methane[iatom].y, &methane[iatom].z, &_elements[iatom]);
+        // }
+        let tolerance = 0.01;
+        assert_delta!(methane[4].x, 1.400, tolerance);
+        assert_delta!(methane[4].y, -0.495, tolerance);
+        assert_delta!(methane[4].z, 0.857, tolerance);
+    }
+
+    #[test]
+    fn test_atom_restoration() {
+        let tolerance = 0.01;
+        let a: Vec3 = Vec3::new(1.050,   0.000,   0.000);
+        let b: Vec3 = Vec3::new(0.000,   0.000,   0.000);
+        let c: Vec3 = Vec3::new(1.400,   0.990,   0.000);
+        let mut d: Vec3 = Vec3::new(0.000,   0.000,   0.000);
+        let d_expected: Vec3 = Vec3::new(1.400,  -0.495,  -0.857);
+        restore_atom(&b, &c, &a, 1.05, 109.471_f64.to_radians(), 120.0_f64.to_radians(), &mut d);
+        for i in 0..3 { assert_delta!(d[i], d_expected[i], tolerance); }
+
+        let mut e: Vec3 = Vec3::new(0.000,   0.000,   0.000);
+        let e_expected: Vec3 = Vec3::new(1.400,  -0.495,  0.857);
+        restore_atom(&b, &c, &a, 1.05, 109.471_f64.to_radians(), 240.0_f64.to_radians(), &mut e);
+        for i in 0..3 { assert_delta!(e[i], e_expected[i], tolerance); }
     }
 }
