@@ -2,8 +2,11 @@ use std::env;
 use clap::{Parser};
 use log::info;
 use bioshell_io::{out_writer};
-use bioshell_pdb::{Deposit, list_ligands_in_deposit, Structure};
+use bioshell_pdb::{Deposit, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, MatchAll, PdbAtomPredicate};
+
+mod deposit_info;
+
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None, arg_required_else_help = true)]
@@ -23,11 +26,25 @@ struct Args {
     #[clap(long)]
     out_secondary: bool,
     /// print basic information about a given structure
-    #[clap(long)]
-    info: bool,
-    /// print basic information about a given structure in the tsv format
-    #[clap(long)]
-    info_table: bool,
+    ///
+    /// the following parameters can be used to select which information to print:
+    /// - 'id' - deposit ID code
+    /// - 'keywords' - list of keywords
+    /// - 'title' - deposit title
+    /// - 'resolution' - resolution
+    /// - 'methods' - list of methods
+    /// - 'ligands' - list of ligands
+    /// - 'rfactor' - deposit keywords
+    /// - 'spacegroup' - resolution
+    /// - 'unitcell' - list of methods
+    /// - 'classification' - list of ligands
+    #[clap(long, value_parser, value_delimiter = ' ', num_args = 0..)]
+    info: Option<Vec<String>>,
+    /// print basic information about a given structure in the tsv format.
+    ///
+    /// The option accepts the same keys as the 'info' option
+    #[clap(long, value_parser, value_delimiter = ' ', num_args = 0..)]
+    info_table: Option<Vec<String>>,
     /// break FASTA lines when longer that given cutoff
     #[clap(long, default_value="80")]
     out_fasta_width: usize,
@@ -51,50 +68,21 @@ fn filter<F: PdbAtomPredicate>(strctr: &Structure, filter: &F) -> Structure {
     return Structure::from_iterator(&strctr.id_code, atoms_iter);
 }
 
-fn ligands_in_one_line(deposit: &Deposit) -> String {
-    list_ligands_in_deposit(deposit).iter()
-        .map(|l| l.code3.clone())
-        .collect::<Vec<String>>().join(" ")
+fn print_info(deposit: &Deposit, tokens: &Vec<String>) {
+
+    let tokens = deposit_info::get_deposit_info(deposit, tokens);
+    for token in tokens {
+        println!("{}: {}", token.0, token.1);
+    }
 }
 
-fn print_info(deposit: &Deposit) {
-    println!("id_code: {:?}", deposit.id_code);
-    println!("methods: {:?}", deposit.methods);
-    if let Some(class) = &deposit.classification { println!("classification: {}", class); }
-    if let Some(title) = &deposit.title { println!("title: {}", title); }
-    if let Some(res) = deposit.resolution { println!("resolution: {}", res); }
-    if let Some(r_fact) = deposit.r_factor { println!("r_factor: {}", r_fact); }
-    if let Some(r_free) = deposit.r_free { println!("r_free: {}", r_free); }
-    if let Some(unit_cell) = &deposit.unit_cell { println!("space group: {}", unit_cell.space_group); }
-    if deposit.keywords.len() > 0 { println!("keywords: {}", deposit.keywords.join(", ")); }
-    println!("models: {}", deposit.count_models());
-    println!("ligands: {}", ligands_in_one_line(deposit));
-}
+fn print_info_row(deposit: &Deposit, tokens: &Vec<String>) {
 
-fn print_info_row(deposit: &Deposit) {
-
-    print!("{:?}\t", deposit.id_code);
-    print!("{:?}\t", deposit.methods);
-    if let Some(class) = &deposit.classification {
-        print!("{}\t", class); 
-    } else { print!("\t"); }
-    if let Some(title) = &deposit.title {
-        print!("{}\t", title.replace("\n", " ")); 
-    } else { print!("\t"); }
-    if let Some(res) = deposit.resolution {
-        print!("{}\t", res); 
-    } else { print!("\t"); }
-    if let Some(r_fact) = deposit.r_factor {
-        print!("{}\t", r_fact); 
-    } else { print!("\t"); }
-    if let Some(r_free) = deposit.r_free {
-        print!("{}\t", r_free); 
-    } else { print!("\t"); }
-    if let Some(unit_cell) = &deposit.unit_cell {
-        print!("{}\t", unit_cell.space_group); 
-    } else { print!("\t"); }
-    print!("{}\t", deposit.count_models());
-    print!("{}\n", ligands_in_one_line(deposit));
+    let tokens = deposit_info::get_deposit_info(deposit, tokens);
+    for token in tokens {
+        print!("{}\t", token.1);
+    }
+    println!();
 }
 
 fn write_pdb(strctr: &Structure, fname: &str) {
@@ -151,8 +139,12 @@ fn main() {
             println!("> {}\n{}", seq.description(), strctr.secondary(chain_id).to_string());
         }
     }
-    if args.info { print_info(&deposit); }
-    if args.info_table { print_info_row(&deposit); }
+    if let Some(tokens) = args.info {
+        print_info(&deposit, &tokens);
+    }
+    if let Some(tokens) = args.info_table {
+        print_info_row(&deposit, &tokens);
+    }
 
     if let Some(out_fname) = args.out_pdb {
         write_pdb(&strctr, &out_fname);
