@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::num::ParseIntError;
 use std::sync::{Mutex, MutexGuard};
-use clap::__macro_refs::once_cell::sync::Lazy;
+use once_cell::sync::Lazy;
 use log::{debug, info};
 use bioshell_cif::{CifError, CifTable, parse_bool, read_cif_file};
 use bioshell_io::find_bioshell_path;

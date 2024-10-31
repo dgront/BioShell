@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::sync::{Mutex, MutexGuard};
-use clap::__macro_refs::once_cell::sync::Lazy;
+use once_cell::sync::Lazy;
 use crate::chemical::MonomerType::NonPolymer;
 use crate::chemical::StandardResidueType::UNK;
 
 /// Defines the types of monomers - residue types that are biomolecular building blocks.
 ///
 /// The set of possible types has been taken from [*this list*](https://mmcif.wwpdb.org/dictionaries/mmcif_pdbx_v50.dic/Items/_chem_comp.type.html):
-/// This list will most likely grow over time and it is not recommended to exhaustively match against it.
+/// This list will most likely grow over time, and it is not recommended to exhaustively match against it.
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
 #[repr(i8)]
 pub enum MonomerType {

@@ -16,13 +16,13 @@ bioshell-seq = { path = "../bioshell-seq" }
 bioshell-cif = { path = "../bioshell-cif" }
 bioshell-io  = { path = "../bioshell-io" } 	# for split_into_strings() and I/O functions
 
-clap = { version = "3.1.18", features = ["derive"] }
+clap = { version = "4.5.20", features = ["derive"] }
 thiserror = "1.0.26"
 itertools = "0.11.0"
 rand = { version = "0.8.5", features = [ "small_rng" ] }
 rand_distr="0.4.3"
 log = "0.4.17"
-env_logger = "0.9.3"# for logging
+env_logger = "0.11.5"# for logging
 once_cell = "1.13"  # for once_cell::sync::Lazy
 
 [build-dependencies]

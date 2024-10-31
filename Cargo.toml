@@ -29,11 +29,11 @@ bioshell-clustering = { path = "./bioshell-clustering" }
 bioshell-statistics = { path = "./bioshell-statistics" }
 bioshell-datastructures = { path = "./bioshell-datastructures"}
 bioshell-cif = { path = "./bioshell-cif" }
-clap = { version = "3.1.18", features = ["derive"] }
+clap = { version = "4.5.20", features = ["derive"] }
 rand = { version = "0.8.5", features = [ "small_rng" ] }
 rand_distr="0.4.3"
 nalgebra = "0.31.1"
-env_logger = "0.9.3"
+env_logger = "0.11.5"
 
 [build-dependencies]
 # ---------- for git md5sum and compilation time

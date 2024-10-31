@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use clap::Result;
 use std::convert::TryFrom;
 use std::ops::Range;
 
