@@ -449,6 +449,7 @@ impl Structure {
         for (i_res, res_id) in self.residue_ids.iter().enumerate() {
             if res_id.chain_id != chain_id { continue }
             let first_atom: &PdbAtom = &self.atoms[self.atoms_for_residue_id[i_res].start];
+            if first_atom.res_name == "HOH" { continue }
             counts.entry(first_atom.entity_id.clone()).or_insert(vec![]).push(i_res);
         }
         let mut max_len = 0;
