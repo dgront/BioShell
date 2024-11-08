@@ -3,7 +3,7 @@ mod tests {
     use std::collections::HashMap;
     use std::io::BufReader;
     use bioshell_cif::read_cif_buffer;
-    use bioshell_pdb::{Deposit, Entity, EntityType, PDBError, PolymerEntity};
+    use bioshell_pdb::{Deposit, Entity, EntityType, PDBError};
     use bioshell_pdb::PolymerEntityType::{PolypeptideL, DNA};
     use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager};
     use bioshell_seq::chemical::StandardResidueType::{GAP, UNK};
@@ -57,21 +57,6 @@ mod tests {
         assert_eq!(counts[&EntityType::Polymer(DNA)], 2);
         assert_eq!(counts[&EntityType::NonPolymer], 2);
         assert_eq!(counts[&EntityType::Water], 1);
-    }
-
-    #[test]
-    fn load_polymer_entities() -> Result<(), PDBError> {
-        let reader = BufReader::new(cif_5edw.as_bytes());
-        let cif_data = read_cif_buffer(reader).unwrap();
-        let entities = PolymerEntity::from_cif_data(&cif_data[0])?;
-        assert_eq!(entities.len(), 3);
-        let result = vec![(341, PolypeptideL), (19, DNA), (13, DNA)];
-        for entity in entities {
-            let id = entity.entity_id().parse::<usize>().unwrap();
-            assert_eq!(result[id-1].0, entity.monomer_sequence().len());
-            assert_eq!(&result[id-1].1, entity.entity_type());
-        }
-        Ok(())
     }
 
     #[test]

@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use std::ops::Range;
 
 use itertools::{Itertools};
-use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties, KNOWN_RESIDUE_TYPES};
+use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties, KNOWN_RESIDUE_TYPES, MonomerType};
 use bioshell_seq::sequence::Sequence;
 
 use crate::pdb_atom::{PdbAtom, same_residue_atoms};
@@ -375,7 +375,7 @@ impl Structure {
     /// Provides a sequence of a given chain.
     ///
     /// The sequence contains only in the residues found in atoms of this structure; some of its residues
-    ///may be missing. The original sequence of a chain can be obtained from the respective entity object.
+    /// may be missing. The original sequence of a chain can be obtained from the respective entity object.
     ///
     /// This method includes only the residues included in a [`Polymer`](Polymer) entity of the requested chain.
     /// Because such an information is not provided by the PDB file format, in that case the method
@@ -403,28 +403,21 @@ impl Structure {
     /// ```
     pub fn sequence(&self, chain_id: &str) -> Sequence {
 
-        fn code1(resname: &str) -> u8 {
-            if let Some(restype) = ResidueTypeManager::get().by_code3(resname) {
-                u8::try_from(restype.parent_type.code1()).unwrap()
-            } else { b'X' }
-        }
-
-        let mut entity_id: Option<String> = None;
-        let mut aa: Vec<u8> = vec![];
-        for (i_res, res_id) in self.residue_ids.iter().enumerate() {
-            if res_id.chain_id != chain_id { continue }
+        let res_ids = self.polymer_residues(chain_id);
+        let rtm = ResidueTypeManager::get();
+        let mut residue_sequence: Vec<u8> = vec![];
+        for i_res in res_ids {
             let first_atom: &PdbAtom = &self.atoms[self.atoms_for_residue_id[i_res].start];
-            if let Some(this_entity) = &entity_id {
-                if &first_atom.entity_id == this_entity {
-                    aa.push(code1(&first_atom.res_name));
-                }
-            } else {
-                aa.push(code1(&first_atom.res_name));
-                entity_id = Some(first_atom.entity_id.clone());
+            // --- if the monomer type of this residue has been already registered,
+            // --- use its code1, otherwise use 'X'.
+            let mut code_1 = b'X';
+            if let Some(res_type) = rtm.by_code3(&first_atom.res_name) {
+                code_1 = res_type.parent_type.code1() as u8;
             }
+            residue_sequence.push(code_1);
         }
 
-        return Sequence::from_attrs(format!("{}:{}", &self.id_code, chain_id), aa);
+        return Sequence::from_attrs(format!("{}:{}", &self.id_code, chain_id), residue_sequence);
     }
 
     /// Provides a secondary structure of a given chain.
@@ -434,23 +427,41 @@ impl Structure {
     /// includes residues listed in the requested chain until the `TER` record.
     pub fn secondary(&self, chain_id: &str) -> SecondaryStructure {
         let mut sec: Vec<SecondaryStructureTypes> = vec![];
-        let mut entity_id: Option<String> = None;
+        let res_ids = self.polymer_residues(chain_id);
 
-        for (i_res, res_id) in self.residue_ids.iter().enumerate() {
-            if res_id.chain_id != chain_id { continue }
+        for i_res in res_ids {
             let first_atom: &PdbAtom = &self.atoms[self.atoms_for_residue_id[i_res].start];
-            if let Some(this_entity) = &entity_id {
-                if &first_atom.entity_id == this_entity {
-                    sec.push(first_atom.secondary_struct_type.clone());
-                }
-            } else {
-                sec.push(first_atom.secondary_struct_type.clone());
-                entity_id = Some(first_atom.entity_id.clone());
-            }
+            sec.push(first_atom.secondary_struct_type.clone());
         }
 
         return SecondaryStructure::from_attrs(sec);
     }
+
+    /// Returns a vector of indexes pointing to [`ResidueId`](ResidueId)s  of a given chain.
+    ///
+    /// Returned indexes simply comprise the longest entity of that chain; it's
+    /// assumed that is the polymer chain. In CIF files water molecules and ligands
+    /// are placed into separate entities. In the PDB format they areseparated from the polymer entity
+    /// by a `TER` record and are marked apropriately by bioshell while loading.
+    fn polymer_residues(&self, chain_id: &str) -> Vec<usize> {
+
+        let mut counts: HashMap<String, Vec<usize>> = HashMap::new();
+        for (i_res, res_id) in self.residue_ids.iter().enumerate() {
+            if res_id.chain_id != chain_id { continue }
+            let first_atom: &PdbAtom = &self.atoms[self.atoms_for_residue_id[i_res].start];
+            counts.entry(first_atom.entity_id.clone()).or_insert(vec![]).push(i_res);
+        }
+        let mut max_len = 0;
+        let mut max_id: Option<String> = None;
+        for (id, v) in counts.iter() {
+            if v.len() > max_len {
+                max_len = v.len();
+                max_id = Some(id.clone());
+            }
+        }
+        return counts.remove(max_id.as_ref().unwrap()).unwrap();
+    }
+
 
     /// Creates a vector of [`ResidueId`](ResidueId) object for each residue of a given chain
     ///

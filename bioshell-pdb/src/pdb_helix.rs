@@ -137,4 +137,31 @@ mod tests {
 
         Ok(())
    }
+    #[test]
+    fn helices_from_cif() {
+        #[allow(non_upper_case_globals)]
+        const cif_2gb1: &str = include_str!("../tests/test_files/2gb1.cif");
+
+        let reader = BufReader::new(cif_2gb1.as_bytes());
+        let cif_data = read_cif_buffer(reader).unwrap();
+        let helices = PdbHelix::from_cif_data(&cif_data[0]).unwrap();
+        assert_eq!(helices.len(), 1);
+        let helix = &helices[0];
+        assert_eq!(helix.length, 15);
+        assert_eq!(helix.ser_num, "1");
+        assert_eq!(helix.init_chain_id, "A");
+        assert_eq!(helix.end_chain_id, "A");
+        assert_eq!(helix.init_seq_num, 22);
+        assert_eq!(helix.end_seq_num, 36);
+        assert_eq!(helix.init_i_code, ' ');
+        assert_eq!(helix.end_i_code, ' ');
+
+        #[allow(non_upper_case_globals)]
+        const cif_2fdo: &str = include_str!("../tests/test_files/2fdo.cif");
+
+        let reader = BufReader::new(cif_2fdo.as_bytes());
+        let cif_data = read_cif_buffer(reader).unwrap();
+        let helices = PdbHelix::from_cif_data(&cif_data[0]).unwrap();
+        assert_eq!(helices.len(), 8);
+    }
 }

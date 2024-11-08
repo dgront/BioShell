@@ -123,4 +123,16 @@ mod tests {
         assert_eq!(pdb_strand.end_res_id(), ResidueId::new("A", 110, ' '));
         Ok(())
     }
+
+    #[test]
+    fn sheets_from_cif() {
+
+        #[allow(non_upper_case_globals)]
+        const cif_2fdo: &str = include_str!("../tests/test_files/2fdo.cif");
+
+        let reader = BufReader::new(cif_2fdo.as_bytes());
+        let cif_data = read_cif_buffer(reader).unwrap();
+        let sheets = PdbSheet::from_cif_data(&cif_data[0]).unwrap();
+        assert_eq!(sheets.len(), 12);
+    }
 }

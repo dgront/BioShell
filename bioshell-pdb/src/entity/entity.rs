@@ -6,8 +6,6 @@ use crate::PDBError::{CantParseEnumVariant, InconsistentEntity, NoSuchChain, Unk
 use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
 
 
-
-
 /// Represents the different sources an entity in CIF data may be obtained from.
 ///
 /// For more information, see the [definition of `_entity.src_method`](https://mmcif.wwpdb.org/dictionaries/mmcif_std.dic/Items/_entity.src_method.html).
@@ -54,7 +52,7 @@ impl FromStr for EntitySource {
 /// # fn main() -> Result<(), PDBError> {
 /// # use std::io::BufReader;
 /// # use bioshell_pdb::Deposit;
-/// # let pdb_data = include_str!("../tests/test_files/4esa.cif");
+/// # let pdb_data = include_str!("../../tests/test_files/4esa.cif");
 /// let reader = BufReader::new(pdb_data.as_bytes());
 /// let deposit_4esa = Deposit::from_cif_reader(reader)?;
 /// assert_eq!(deposit_4esa.count_entities(), 6);
@@ -69,7 +67,7 @@ impl FromStr for EntitySource {
 /// # use std::io::BufReader;
 /// # use bioshell_pdb::{Deposit, EntityType};
 /// # use bioshell_pdb::PolymerEntityType::PolypeptideL;
-/// # let pdb_data = include_str!("../tests/test_files/4esa.cif");
+/// # let pdb_data = include_str!("../../tests/test_files/4esa.cif");
 /// # let reader = BufReader::new(pdb_data.as_bytes());
 /// # let deposit_4esa = Deposit::from_cif_reader(reader)?;
 /// let entity_1 = deposit_4esa.entity("1");
@@ -108,7 +106,7 @@ impl FromStr for EntitySource {
 /// # use bioshell_pdb::{Deposit, EntityType};
 /// # use bioshell_pdb::PolymerEntityType::PolypeptideL;
 /// # use bioshell_seq::chemical::StandardResidueType::GAP;
-/// # let pdb_data = include_str!("../tests/test_files/4esa.cif");
+/// # let pdb_data = include_str!("../../tests/test_files/4esa.cif");
 /// # let reader = BufReader::new(pdb_data.as_bytes());
 /// # let deposit_4esa = Deposit::from_cif_reader(reader)?;
 /// let entity_2 = deposit_4esa.entity("2");
@@ -186,7 +184,7 @@ impl Entity {
     /// use bioshell_pdb::{PDBError, Deposit};
     /// # fn main() -> Result<(), PDBError> {
     /// use bioshell_pdb::Deposit;
-    /// let cif_data = include_str!("../tests/test_files/2fdo.cif");
+    /// let cif_data = include_str!("../../tests/test_files/2fdo.cif");
     /// let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
     /// let entity = deposit.entity("1");
     /// assert_eq!(entity.chain_ids(), &vec!["B", "A"]);
