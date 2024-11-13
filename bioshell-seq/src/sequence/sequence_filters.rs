@@ -17,11 +17,26 @@ impl SequenceFilter for DescriptionContains {
     }
 }
 
-/// Always returns `true`; serves a the defafult filter that pass every sequence
+/// Always returns `true`; serves as the defafult filter that pass every sequence
 pub struct AlwaysTrue;
 
 impl SequenceFilter for AlwaysTrue {
     fn filter(&self, _: &Sequence) -> bool { true }
+}
+
+
+/// Reverse the result of a given [`SequenceFilter`](SequenceFilter)
+///
+/// ```
+/// use bioshell_seq::sequence::{AlwaysTrue, LogicalNot, Sequence, SequenceFilter};
+/// let f = LogicalNot::new(AlwaysTrue);
+/// let sequence = Sequence::from_str("test_seq", "MRAA");
+/// assert!(!f.filter(&sequence));
+/// ```
+pub struct LogicalNot<F> { pub f: F}
+
+impl<F: SequenceFilter> SequenceFilter for LogicalNot<F> {
+    fn filter(&self, sequence: &Sequence) -> bool { !self.f.filter(sequence) }
 }
 
 /// Returns `true` if the length of a given [`Sequence`](Sequence) is within a certain range
@@ -145,4 +160,38 @@ impl SequenceFilter for IsProtein {
     fn filter(&self, sequence: &Sequence) -> bool {
         sequence.as_u8().iter().all(|l| is_amino_acid!(l))
     }
+}
+
+/// Returns `true` if a given [`Sequence`](Sequence) contains no more than ``max_length`` residues
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, ShorterThan, SequenceFilter};
+/// let sequence1 = Sequence::from_str("test_seq", "MRAGSXA");
+/// let sequence2 = Sequence::from_str("test_seq", "MRAGS");
+/// let filter = ShorterThan::new(6);
+/// assert!(!filter.filter(&sequence1));
+/// assert!(filter.filter(&sequence2));
+/// ```
+pub struct ShorterThan { pub max_length : usize }
+
+impl SequenceFilter for ShorterThan {
+    fn filter(&self, sequence: &Sequence) -> bool { sequence.len() <= self.max_length }
+}
+
+/// Returns `true` if a given [`Sequence`](Sequence) contains at least ``max_length`` residues
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, LongerThan, SequenceFilter};
+/// let sequence1 = Sequence::from_str("test_seq", "MRAGSXA");
+/// let sequence2 = Sequence::from_str("test_seq", "MRAGS");
+/// let filter = LongerThan::new(6);
+/// assert!(filter.filter(&sequence1));
+/// assert!(!filter.filter(&sequence2));
+/// ```
+pub struct LongerThan { pub min_length : usize }
+
+impl SequenceFilter for LongerThan {
+    fn filter(&self, sequence: &Sequence) -> bool { sequence.len() >= self.min_length }
 }

@@ -9,7 +9,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
 // use regex::Regex;
 
-use bioshell_seq::sequence::{FastaIterator, count_residue_type, Sequence, IsProtein, IsNucleic, SequenceFilter};
+use bioshell_seq::sequence::{FastaIterator, count_residue_type, Sequence, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan, ContainsX, LogicalNot, DescriptionContains};
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::SequenceError;
 
@@ -73,6 +73,8 @@ pub fn main() -> Result<(), SequenceError> {
     let fname= args.infile;
     let out_width = args.out_width;
 
+    let mut basic_filters: Vec<Box<dyn SequenceFilter>> = vec![];
+
     // ---------- Check is user wants to retrieve sequences by IDs
     let mut if_retrieve = false;
     let mut requested_ids: HashSet<String> = HashSet::new();
@@ -97,56 +99,52 @@ pub fn main() -> Result<(), SequenceError> {
         }
     }
 
-    // ---------- Check is user wants to filter sequences by a description substring
-    let if_substring: bool;
-    let substring: String;
-    match args.description_contains {
-        None => {
-            substring = "".to_string();
-            if_substring = false;
-        }
-        Some(s) => {
-            substring = s;
-            if_substring = true;
-        }
-    }
 
     let reader = open_file(&fname)?;
     let seq_iter = FastaIterator::new(reader);
     let mut cnt_all: usize = 0;
     let mut cnt_ok: usize = 0;
-    let min_len = match args.longer_than { None => 0, Some(l) => l };
-    let max_len = match args.shorter_than { None => 1000000, Some(l) => l };
-    let max_x = match args.max_x { None => 0, Some(l) => l };
+    // ---------- filter by length
+    if let Some(min_length) = args.longer_than {
+        basic_filters.push(Box::new(LongerThan { min_length }));
+    }
+    if let Some(max_length) = args.shorter_than {
+        basic_filters.push(Box::new(ShorterThan { max_length }));
+    }
+    // ---------- filter by X
+    if let Some(max_x) = args.max_x {
+        basic_filters.push(Box::new(LogicalNot{ f: ContainsX{ min_x: max_x}}));
+    }
+    // ---------- filter by type: protein or nucleic acid
+    if args.protein_only { basic_filters.push(Box::new(IsProtein)); }
+    if args.nucleotide_only { basic_filters.push(Box::new(IsNucleic)); }
+    // ---------- Check is user wants to filter sequences by a description substring
+    if let Some(s) = args.description_contains {
+        basic_filters.push(Box::new(DescriptionContains{ substring: s }))
+    }
 
-    let protein_filter = IsProtein;
-    let nucleic_filter = IsNucleic;
     let mut represented_sequences: HashMap<u64, Vec<String>> = HashMap::new();
 
     let mut output_seq: Option<Vec<Sequence>> = if args.sort { Some(vec![]) } else { None };
-    
 
     let start = Instant::now();
+
     for sequence in seq_iter {
         cnt_all += 1;
-        // ---------- filter by length
-        if sequence.len() < min_len || sequence.len() > max_len { continue }
-        // ---------- keep only proteins
-        if args.protein_only {
-           if nucleic_filter.filter(&sequence) || ! protein_filter.filter(&sequence) { continue }
+        // ---------- check basic filters first
+        let mut filters_ok = true;
+        for filter in &basic_filters {
+            if !filter.filter(&sequence) {
+                filters_ok = false;
+                break;
+            }
         }
-        // ---------- keep only nucleic acids
-        if args.nucleotide_only && ! nucleic_filter.filter(&sequence) { continue }
-        // ---------- remove too many X's
-        if max_x > 0 && count_residue_type(&sequence, 'X') > max_x { continue }
+        if !filters_ok { continue }
+
         // ---------- keep only requested sequences
         if if_retrieve {
             let id = sequence.id();
             if !requested_ids.contains(id) { continue }
-        }
-        // ---------- keep sequences selected by description substring
-        if if_substring {
-            if !sequence.description().contains(&substring) {continue}
         }
         // ---------- keep only sequences found in the input query fasta
         if if_fasta_retrieve {
