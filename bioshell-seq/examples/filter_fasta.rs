@@ -22,9 +22,6 @@ struct Args {
     /// remove sequences that are too short
     #[clap(short='l', long)]
     longer_than: Option<usize>,
-    /// length of each line of the output sequence; use 0 to print the whole sequence on a single line
-    #[clap(short='w', long, default_value_t = 80)]
-    out_width: usize,
     /// remove sequences that are too long
     #[clap(short='s', long)]
     shorter_than: Option<usize>,
@@ -55,7 +52,9 @@ struct Args {
     /// sort sequences by length
     #[clap(long, action)]
     sort: bool,
-
+    /// length of each line of the output sequence; use 0 to print the whole sequence on a single line
+    #[clap(short='w', long, default_value_t = 80)]
+    out_width: usize,
 }
 
 fn first_word_of_description(description: &str) -> String {
