@@ -30,6 +30,10 @@ pub enum SequenceError {
     #[error("General I/O error occurred while reading a sequence file")]
     /// I/O error occurred while reading a sequence file
     Io(#[from] std::io::Error),
+
+    #[error("The provided string is not a valid sequence pattern: {pattern}")]
+    /// The provided string is not a valid sequence pattern
+    IncorrectSequencePattern{ pattern: String },
 }
 
 #[derive(Debug, Error, Display, PartialEq)]

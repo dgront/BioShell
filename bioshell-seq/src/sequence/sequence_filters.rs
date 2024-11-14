@@ -1,4 +1,7 @@
+use regex::{Error, Regex};
+
 use crate::sequence::{count_residue_type, Sequence};
+use crate::SequenceError;
 
 /// Says `true` or `false` for a [`Sequence`](Sequence) object
 ///
@@ -169,7 +172,7 @@ impl SequenceFilter for IsProtein {
 /// use bioshell_seq::sequence::{Sequence, ShorterThan, SequenceFilter};
 /// let sequence1 = Sequence::from_str("test_seq", "MRAGSXA");
 /// let sequence2 = Sequence::from_str("test_seq", "MRAGS");
-/// let filter = ShorterThan::new(6);
+/// let filter = ShorterThan{max_length: 6};
 /// assert!(!filter.filter(&sequence1));
 /// assert!(filter.filter(&sequence2));
 /// ```
@@ -186,7 +189,7 @@ impl SequenceFilter for ShorterThan {
 /// use bioshell_seq::sequence::{Sequence, LongerThan, SequenceFilter};
 /// let sequence1 = Sequence::from_str("test_seq", "MRAGSXA");
 /// let sequence2 = Sequence::from_str("test_seq", "MRAGS");
-/// let filter = LongerThan::new(6);
+/// let filter = LongerThan{min_length: 0};
 /// assert!(filter.filter(&sequence1));
 /// assert!(!filter.filter(&sequence2));
 /// ```
@@ -194,4 +197,61 @@ pub struct LongerThan { pub min_length : usize }
 
 impl SequenceFilter for LongerThan {
     fn filter(&self, sequence: &Sequence) -> bool { sequence.len() >= self.min_length }
+}
+
+/// Returns `true` if a given [`Sequence`](Sequence) contains a given sequence motif
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, HasSequenceMotif, SequenceFilter};
+/// use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
+/// let sequence1 = Sequence::from_str("no_motifs", "MRAGS");
+/// let sequence2 = Sequence::from_str("p450_motifs", "PERFAGEILR");
+/// let exxr_motif = HasSequenceMotif::new("ExxR")?;
+/// assert!(!exxr_motif.filter(&sequence1));
+/// assert!(exxr_motif.filter(&sequence2));
+/// let perf_motif = HasSequenceMotif::new("PxR[FD]")?;
+/// assert!(perf_motif.filter(&sequence2));
+/// let perf_or_exxr = HasSequenceMotif::new("(ExxR|PxR[FD])")?;
+/// assert!(perf_or_exxr.filter(&sequence2));
+/// # Ok(())
+/// # }
+/// ```
+pub struct HasSequenceMotif {  motif_regex : Regex }
+
+impl HasSequenceMotif {
+    pub fn new(pattern_str: &str) -> Result<HasSequenceMotif, SequenceError> {
+        let regex_str = HasSequenceMotif::motif_to_regex(pattern_str);
+        match Regex::new(&regex_str) {
+            Ok(re_struct) => { Ok(HasSequenceMotif { motif_regex: re_struct }) }
+            Err(_) => { Err(SequenceError::IncorrectSequencePattern { pattern: pattern_str.to_string() }) }
+        }
+    }
+
+    /// Transforms a sequence motif pattern into a regex string.
+    /// For example: "C-x(2,4)-C-[IL]-x(3)|(ExxR|PxR)" becomes "C.{2,4}C[IL].{3}|(E..R|P.R)".
+    fn motif_to_regex(pattern: &str) -> String {
+        // Regex pattern to find occurrences of x(n,m) or x(n)
+        let re_repeats = Regex::new(r"x\((\d+),?(\d*)\)").unwrap();
+
+        // Step 1: Replace all occurrences of x(n,m) with .{n,m}
+        let mut regex_pattern = re_repeats.replace_all(pattern, |caps: &regex::Captures| {
+            let n = &caps[1];
+            let m = if &caps[2] != "" { &caps[2] } else { n }; // Handle single number case
+            format!(".{{{},{}}}", n, m)
+        }).to_string();
+
+        // Step 2: Replace remaining 'x' with '.'
+        regex_pattern = regex_pattern.replace("x", ".");
+
+        // Step 3: Remove dashes ('-') as they are not necessary in regex
+        regex_pattern = regex_pattern.replace("-", "");
+
+        // Step 4: Ensure character sets like [IL] are preserved as-is
+        regex_pattern
+    }
+}
+impl SequenceFilter for HasSequenceMotif {
+    fn filter(&self, sequence: &Sequence) -> bool { self.motif_regex.is_match(&sequence.to_string(0)) }
 }

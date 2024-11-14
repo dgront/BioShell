@@ -9,7 +9,8 @@ use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
 // use regex::Regex;
 
-use bioshell_seq::sequence::{FastaIterator, count_residue_type, Sequence, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan, ContainsX, LogicalNot, DescriptionContains};
+use bioshell_seq::sequence::{FastaIterator, Sequence};
+use bioshell_seq::sequence::{HasSequenceMotif, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan, ContainsX, LogicalNot, DescriptionContains};
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::SequenceError;
 
@@ -49,6 +50,9 @@ struct Args {
     /// print sequences whose description contains a certain substring, e.g. CYP1A or "DNA BINDING"
     #[clap(long)]
     description_contains: Option<String>,
+    /// print sequences that contain a given sequence motif, e.g. "G[ST]N[ST]K" or "(ExxR|(PxR[FD])"
+    #[clap(long)]
+    has_motif: Option<String>,
     /// sort sequences by length
     #[clap(long, action)]
     sort: bool,
@@ -103,6 +107,7 @@ pub fn main() -> Result<(), SequenceError> {
     let seq_iter = FastaIterator::new(reader);
     let mut cnt_all: usize = 0;
     let mut cnt_ok: usize = 0;
+
     // ---------- filter by length
     if let Some(min_length) = args.longer_than {
         basic_filters.push(Box::new(LongerThan { min_length }));
@@ -110,13 +115,21 @@ pub fn main() -> Result<(), SequenceError> {
     if let Some(max_length) = args.shorter_than {
         basic_filters.push(Box::new(ShorterThan { max_length }));
     }
+
     // ---------- filter by X
     if let Some(max_x) = args.max_x {
         basic_filters.push(Box::new(LogicalNot{ f: ContainsX{ min_x: max_x}}));
     }
+
     // ---------- filter by type: protein or nucleic acid
     if args.protein_only { basic_filters.push(Box::new(IsProtein)); }
     if args.nucleotide_only { basic_filters.push(Box::new(IsNucleic)); }
+
+    // ---------- filter by sequence motif
+    if let Some(motif) = args.has_motif {
+        basic_filters.push(Box::new(HasSequenceMotif::new(&motif)?));
+    }
+
     // ---------- Check is user wants to filter sequences by a description substring
     if let Some(s) = args.description_contains {
         basic_filters.push(Box::new(DescriptionContains{ substring: s }))
