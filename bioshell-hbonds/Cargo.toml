@@ -1,0 +1,25 @@
+[package]
+name = "bioshell-hbonds"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Describes hydrogen bonds in a protein structure; also provides the DSSP algorithm"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell", "DSSP", "hydrogen-bond]
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+bioshell-pdb = { path = "../bioshell-pdb" }
+
+clap = { version = "3.1.18", features = ["derive"] }
+thiserror = "1.0.26"
+itertools = "0.11.0"
+log = "0.4.17"
+env_logger = "0.9.3"   # for logging
+
+[[bin]]
+name = "dssp"
+path = "src/bin/dssp.rs"
