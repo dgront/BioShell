@@ -122,26 +122,125 @@ impl HierarchicalClustering  {
             }
         };
 
-        depth_first_inorder(cluster, &mut collector);
-
+        depth_first_preorder(cluster, &mut collector);
         let ret: Vec<T> = indexes.iter().map(|i| all_data[*i]).collect();
 
         return ret;
     }
+
+    /// Balances the clustering tree to group most similar data items together.
+    ///
+    /// The method works by rotating recursively each subtree of the clustering tree starting from the bottom,
+    /// trying to minimize the distance between the neighboring leaves.
+    pub fn balance_clustering_tree<F: Fn(usize, usize) -> f32>(&mut self, distance: &F) {
+
+        fn rotate_rec<F: Fn(usize, usize) -> f32>(tree_node: &mut HierarchicalCluster, distance: &F) {
+
+            if let Some(left) = tree_node.left_mut() { rotate_rec(left, distance);}
+            if let Some(right) = tree_node.right_mut() { rotate_rec(right, distance);}
+
+            let rotate_what = HierarchicalClustering::if_rotate(tree_node, distance);
+            if rotate_what.0 { tree_node.left_mut().unwrap().rotate(); }
+            if rotate_what.1 { tree_node.right_mut().unwrap().rotate(); }
+        }
+
+        rotate_rec(self.root.as_mut().unwrap(), distance);
+    }
+
+    /// Finds the ID of the left-most leaf node.
+    ///
+    /// This method is used to balance the clustering tree
+    fn get_leftmost_id(c: &HierarchicalCluster) -> usize {
+
+        if c.has_left() {
+            HierarchicalClustering::get_leftmost_id(c.left().unwrap())
+        } else {
+            c.id as usize
+        }
+    }
+
+    /// Finds the ID of the right-most leaf node.
+    ///
+    /// This method is used to balance the clustering tree
+    fn get_rightmost_id(c: &HierarchicalCluster) -> usize {
+
+        if c.has_right() {
+            HierarchicalClustering::get_rightmost_id(c.right().unwrap())
+        } else {
+            c.id as usize
+        }
+    }
+    fn if_rotate<F: Fn(usize, usize) -> f32>(c: &mut HierarchicalCluster, distance: F)  -> (bool, bool) {
+
+        if c.is_leaf() { return (false, false); }
+
+        let left = c.left().unwrap();
+        let right = c.right().unwrap();
+        if right.is_leaf() && left.is_leaf() { return (false, false); }
+
+        if right.is_leaf() {
+            let left_right_idx = HierarchicalClustering::get_rightmost_id(left);
+            let left_left_idx = HierarchicalClustering::get_leftmost_id(left);
+            let right_idx = right.id as usize;
+            if distance(right_idx, left_left_idx) < distance(right_idx, left_right_idx) {
+                return (true, false);
+            }
+            return (false, false);
+        }
+        if left.is_leaf() {
+            let right_right_idx = HierarchicalClustering::get_rightmost_id(right);
+            let right_left_idx = HierarchicalClustering::get_leftmost_id(right);
+            let left_idx = left.id as usize;
+            if distance(left_idx, right_left_idx) > distance(left_idx, right_right_idx) {
+                return (false, true);
+            }
+            return (false, false);
+        }
+        let right_right_idx = HierarchicalClustering::get_rightmost_id(right);
+        let right_left_idx = HierarchicalClustering::get_leftmost_id(right);
+        let left_right_idx = HierarchicalClustering::get_rightmost_id(left);
+        let left_left_idx = HierarchicalClustering::get_leftmost_id(left);
+        let distances = [
+            distance(left_right_idx, right_left_idx),   // nothing to rotate
+            distance(left_left_idx, right_left_idx),    // rotate left
+            distance(left_right_idx, right_right_idx),  // rotate right
+            distance(left_left_idx, right_right_idx),]; // rotate both
+        let index_of_min: usize = distances
+            .iter()
+            .enumerate()
+            .min_by(|(_, a), (_, b)| a.total_cmp(b))
+            .map(|(index, _)| index).unwrap();
+        match index_of_min {
+            1 => return (true, false),
+            2 => return (false, true),
+            3 => return (true, true),
+            _ => return (false, false)
+        }
+    }
 }
+
+
 
 impl Display for HierarchicalClustering {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 
+        fn print_node_rec(n: &HierarchicalCluster, output_string: &mut String, indent: usize) {
+            output_string.push_str(&"  ".repeat(indent));
+            output_string.push_str(&n.to_string());
+            output_string.push_str("\n");
+            if n.has_left() {
+                print_node_rec(n.left().unwrap(), output_string, indent + 1);
+            }
+            if n.has_right() {
+                print_node_rec(n.right().unwrap(), output_string, indent + 1);
+            }
+        }
         let mut output_string: String = String::new();
 
-        let mut print_node = |n: &HierarchicalCluster| {
-                output_string.push_str(&n.to_string());
-                output_string.push_str("\n");
-        };
+
         if let Some(root) = self.root() {
-            depth_first_preorder(root, &mut print_node);
+            print_node_rec(self.root().unwrap(), &mut output_string, 0);
         } else {
             output_string = "no clustering calculated yet".to_string();
         }
