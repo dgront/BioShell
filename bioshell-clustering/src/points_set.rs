@@ -112,7 +112,8 @@ impl <T, D>  CartesianPoints<T, D> where T: Index<usize, Output = f64> {
     ///
     /// # Examples
     /// ```rust
-    /// use bioshell_clustering::{CartesianPoints, DistanceByIndex, euclidean_distance_squared};
+    /// use bioshell_clustering::{CartesianPoints, DistanceByIndex};
+    /// use bioshell_datastructures::euclidean_distance_squared;
     /// let vecs: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![0.5, 1.0], vec![1.5, 0.8]];
     /// let pts = CartesianPoints::new(euclidean_distance_squared, vecs, 2);
     /// assert!((1.25-pts.distance(0, 1)).abs() < 0.001);
