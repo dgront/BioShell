@@ -32,6 +32,8 @@
 //! assert_eq!(node_cnt, 5);
 //! ```
 
+use std::mem::swap;
+
 /// Represents a node of a binary tree.
 #[derive(Clone)]
 pub struct BinaryTreeNode<T> {
@@ -86,6 +88,31 @@ impl<T> BinaryTreeNode<T> {
     /// Borrows the right child of this node
     pub fn right(&self) -> Option<&BinaryTreeNode<T>> {
         self.right.as_ref().map(|n| n.as_ref())
+    }
+
+    /// Borrows mutably the right child of this node
+    pub fn right_mut(&mut self) -> Option<&mut BinaryTreeNode<T>> {
+        self.right.as_mut().map(|n| n.as_mut())
+    }
+
+    /// Borrows mutably the left child of this node
+    pub fn left_mut(&mut self) -> Option<&mut BinaryTreeNode<T>> {
+        self.left.as_mut().map(|n| n.as_mut())
+    }
+
+    /// Swaps the left and right child of this node
+    pub fn rotate(&mut self) {
+        fn rotate_rec<T>(node: &mut BinaryTreeNode<T>) {
+            if let Some(left) = node.left_mut() {
+                rotate_rec(left);
+            }
+            if let Some(right) = node.right_mut() {
+                rotate_rec(right);
+            }
+            swap(&mut node.left, &mut node.right);
+        }
+
+        rotate_rec(self);
     }
 }
 
