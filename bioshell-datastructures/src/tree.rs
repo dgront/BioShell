@@ -3,6 +3,15 @@
 //! BinaryTreeNode struct holds a value with the generic type T.
 //! Option enum is used to represent its left and right child, which indeed are both optional.
 //!
+//! The following example builds a tree like this:
+//! ```text
+//!             1
+//!          /    \
+//!         2      3
+//!        / \
+//!       4   5
+//! ```
+//!
 //! ```rust
 //! use bioshell_datastructures::{BinaryTreeNode, depth_first_inorder};
 //! // create a small tree
@@ -11,7 +20,13 @@
 //!             .set_left(BinaryTreeNode::new(4))
 //!             .set_right(BinaryTreeNode::new(5))
 //!     ).set_right(BinaryTreeNode::new(3));
-//! // count its nodes
+//! assert!(root.left().is_some());
+//! assert!(root.left().unwrap().value == 2);
+//! let right = root.right().unwrap();
+//! assert!(right.left().is_none());
+//! assert!(right.right().is_none());
+//!
+//! // traverse the tree in-order to count its nodes
 //! let mut node_cnt = 0;
 //! depth_first_inorder(&root, &mut |_n| {node_cnt += 1});
 //! assert_eq!(node_cnt, 5);
@@ -52,6 +67,20 @@ impl<T> BinaryTreeNode<T> {
     pub fn set_right(mut self, node: BinaryTreeNode<T>) -> Self {
         self.right = Some(Box::new(node));
         self
+    }
+
+    /// Returns true if the node has a left child
+    pub fn has_left( &self ) -> bool { self.left.is_some() }
+
+    /// Returns true if the node has a right child
+    pub fn has_right(&self) -> bool { self.right.is_some() }
+
+    pub fn left(&self) -> Option<&BinaryTreeNode<T>> {
+        self.left.as_ref().map(|n| n.as_ref())
+    }
+
+    pub fn right(&self) -> Option<&BinaryTreeNode<T>> {
+        self.right.as_ref().map(|n| n.as_ref())
     }
 }
 
