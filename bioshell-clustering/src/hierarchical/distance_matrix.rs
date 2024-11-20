@@ -52,7 +52,10 @@ impl DistanceMatrix {
         }
     }
 
-    pub fn update_distances(&mut self, i: usize, j: usize, merging_rule: fn(usize, usize, usize, f32, f32, f32) -> f32, new_index: usize) {
+    pub fn update_distances<M>(&mut self, i: usize, j: usize, merging_rule: &M, new_index: usize)
+    where
+        M: Fn(usize, usize, usize, f32, f32, f32) -> f32
+    {
         let row_i = &self.matrix[i];
         let row_j = &self.matrix[j];
         let size_i = self.sizes[i];
@@ -60,7 +63,6 @@ impl DistanceMatrix {
 
         let mut result = vec![0.0_f32; self.order];
         for k in 0..self.order {
-            // if k == i || k == j { continue; }
             result[k] = merging_rule(size_i, size_j, self.sizes[j], self.matrix[i][j], row_i[k], row_j[k]);
         }
         for k in 0..self.order {
