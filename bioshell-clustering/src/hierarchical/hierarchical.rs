@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
-use std::marker::PhantomData;
 use log::info;
 use bioshell_datastructures::{BinaryTreeNode, depth_first_preorder};
 use crate::hierarchical::{DistanceMatrix};

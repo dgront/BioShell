@@ -1,4 +1,4 @@
-use regex::{Error, Regex};
+use regex::{Regex};
 
 use crate::sequence::{count_residue_type, Sequence};
 use crate::SequenceError;

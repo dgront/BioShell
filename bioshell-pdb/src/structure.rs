@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use std::ops::Range;
 
 use itertools::{Itertools};
-use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties, KNOWN_RESIDUE_TYPES, MonomerType};
+use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties, KNOWN_RESIDUE_TYPES};
 use bioshell_seq::sequence::Sequence;
 
 use crate::pdb_atom::{PdbAtom, same_residue_atoms};
