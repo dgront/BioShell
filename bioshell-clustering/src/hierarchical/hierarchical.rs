@@ -6,46 +6,23 @@ use log::info;
 use bioshell_datastructures::{BinaryTreeNode, collect_leaf_values, depth_first_inorder, depth_first_preorder};
 use crate::hierarchical::{DistanceMatrix, single_link};
 
-type  HierarchicalCluster = BinaryTreeNode<(usize, f32)>;
-
-/// Defines a merging point in the hierarchical clustering process.
-pub trait MergingPoint {
-    /// size of a cluster, i.e. number of its nodes including itself
-    fn size(&self) -> usize;
-
-    /// distance at which this node has been created, i.e. the distance between the two leaves of this [`MergingPoint`]
-    fn merging_distance(&self) -> f32;
-
-    /// converts this [`MergingPoint`] to a string
-    fn to_string(&self) -> String;
+/// Describes a cluster in a hierarchical clustering process.
+pub struct HierarchicalCluster {
+    /// The number of data points in this cluster
+    pub cluster_size: usize,
+    /// The distance at which this cluster was created
+    pub merging_distance: f32,
 }
 
-/// Extracts the [`MergingPoint`] data from the [`HierarchicalCluster`]
-impl MergingPoint for HierarchicalCluster {
 
-    fn size(&self) -> usize { self.value.0 }
-
-    fn merging_distance(&self) -> f32 { self.value.1 }
-
-    fn to_string(&self) -> String {
-        let left_str = match self.left() {
-            Some(l) => l.id.to_string(),
-            None => "-".to_string()
-        };
-        let right_str = match self.right() {
-            Some(l) => l.id.to_string(),
-            None => "-".to_string()
-        };
-        format!("{} : {} {} @ {}", self.id, left_str, right_str, self.merging_distance())
-    }
-}
+type HierarchicalTreeNode = BinaryTreeNode<HierarchicalCluster>;
 
 /// Provides hierarchical clustering calculations
 pub struct HierarchicalClustering {
     n_points: usize,
     dmatrix: DistanceMatrix,
-    clusters: HashMap<usize, HierarchicalCluster>,
-    root: Option<HierarchicalCluster>,
+    clusters: HashMap<usize, HierarchicalTreeNode>,
+    root: Option<HierarchicalTreeNode>,
 }
 
 impl HierarchicalClustering  {
@@ -55,7 +32,7 @@ impl HierarchicalClustering  {
         let dmatrix = DistanceMatrix::new(n_data, distance);
         let mut clusters = HashMap::new();
         for i in 0..n_data {
-            let mut c = BinaryTreeNode::new((1, 0.0));
+            let mut c = BinaryTreeNode::new(HierarchicalCluster { cluster_size: 1, merging_distance: 0.0 });
             c.id = i as u32;
             clusters.insert(i, c);
         }
@@ -63,7 +40,7 @@ impl HierarchicalClustering  {
     }
 
     /// Calculates the hierarchical clustering
-    pub fn cluster(&mut self) -> Option<&HierarchicalCluster> {
+    pub fn cluster(&mut self) -> Option<&HierarchicalTreeNode> {
 
         let mut current_cluster_id = self.n_points;
 
@@ -78,7 +55,8 @@ impl HierarchicalClustering  {
 
             // --- merge the two clusters
             let merging_distance = self.dmatrix.matrix[i][j];
-            let mut c = BinaryTreeNode::new((ci.size() + cj.size(), merging_distance));
+            let new_merge = HierarchicalCluster{ cluster_size: ci.value.cluster_size + cj.value.cluster_size, merging_distance };
+            let mut c = BinaryTreeNode::new(new_merge);
             c = c.set_left(ci).set_right(cj);
             c.id = current_cluster_id as u32;
             info!("Merging clusters {} and {} into {} with distance {} at step {}",
@@ -111,12 +89,16 @@ impl HierarchicalClustering  {
     /// borrows the root of the hierarchical clustering.
     ///
     /// The option is `None` if the clustering has not been calculated yet.
-    pub fn root(&self) -> Option<&HierarchicalCluster> { self.root.as_ref() }
+    pub fn root(&self) -> Option<&HierarchicalTreeNode> { self.root.as_ref() }
 
-    pub fn clustered_data<T:Copy>(cluster: &HierarchicalCluster, all_data: &[T]) -> Vec<T> {
+    /// Copies the clustered data into a vector, according to the order defined by the clustering tree.
+    ///
+    /// If you call [`balance_clustering_tree()`] before calling this method, the returned items will be grouped
+    /// together by their mutual distance.
+    pub fn clustered_data<T:Copy>(cluster: &HierarchicalTreeNode, all_data: &[T]) -> Vec<T> {
 
         let mut indexes: Vec<usize> = Vec::new();
-        let mut collector = |n: &HierarchicalCluster| {
+        let mut collector = |n: &HierarchicalTreeNode| {
             if n.is_leaf() {
                 indexes.push(n.id as usize);
             }
@@ -134,7 +116,7 @@ impl HierarchicalClustering  {
     /// trying to minimize the distance between the neighboring leaves.
     pub fn balance_clustering_tree<F: Fn(usize, usize) -> f32>(&mut self, distance: &F) {
 
-        fn rotate_rec<F: Fn(usize, usize) -> f32>(tree_node: &mut HierarchicalCluster, distance: &F) {
+        fn rotate_rec<F: Fn(usize, usize) -> f32>(tree_node: &mut HierarchicalTreeNode, distance: &F) {
 
             if let Some(left) = tree_node.left_mut() { rotate_rec(left, distance);}
             if let Some(right) = tree_node.right_mut() { rotate_rec(right, distance);}
@@ -150,7 +132,7 @@ impl HierarchicalClustering  {
     /// Finds the ID of the left-most leaf node.
     ///
     /// This method is used to balance the clustering tree
-    fn get_leftmost_id(c: &HierarchicalCluster) -> usize {
+    fn get_leftmost_id(c: &HierarchicalTreeNode) -> usize {
 
         if c.has_left() {
             HierarchicalClustering::get_leftmost_id(c.left().unwrap())
@@ -162,7 +144,7 @@ impl HierarchicalClustering  {
     /// Finds the ID of the right-most leaf node.
     ///
     /// This method is used to balance the clustering tree
-    fn get_rightmost_id(c: &HierarchicalCluster) -> usize {
+    fn get_rightmost_id(c: &HierarchicalTreeNode) -> usize {
 
         if c.has_right() {
             HierarchicalClustering::get_rightmost_id(c.right().unwrap())
@@ -170,7 +152,7 @@ impl HierarchicalClustering  {
             c.id as usize
         }
     }
-    fn if_rotate<F: Fn(usize, usize) -> f32>(c: &mut HierarchicalCluster, distance: F)  -> (bool, bool) {
+    fn if_rotate<F: Fn(usize, usize) -> f32>(c: &mut HierarchicalTreeNode, distance: F) -> (bool, bool) {
 
         if c.is_leaf() { return (false, false); }
 
@@ -225,9 +207,9 @@ impl Display for HierarchicalClustering {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 
-        fn print_node_rec(n: &HierarchicalCluster, output_string: &mut String, indent: usize) {
+        fn print_node_rec(n: &HierarchicalTreeNode, output_string: &mut String, indent: usize) {
             output_string.push_str(&"  ".repeat(indent));
-            output_string.push_str(&n.to_string());
+            output_string.push_str(&node_to_string(n));
             output_string.push_str("\n");
             if n.has_left() {
                 print_node_rec(n.left().unwrap(), output_string, indent + 1);
@@ -247,4 +229,16 @@ impl Display for HierarchicalClustering {
 
         write!(f, "{}", output_string)
     }
+}
+
+fn node_to_string(n: &HierarchicalTreeNode) -> String {
+    let left_str = match n.left() {
+        Some(l) => l.id.to_string(),
+        None => "-".to_string()
+    };
+    let right_str = match n.right() {
+        Some(l) => l.id.to_string(),
+        None => "-".to_string()
+    };
+    format!("{} : {} {} @ {}", n.id, left_str, right_str, n.value.merging_distance)
 }

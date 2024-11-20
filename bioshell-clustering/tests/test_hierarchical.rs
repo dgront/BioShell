@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use bioshell_clustering::hierarchical::{HierarchicalClustering, MergingPoint};
+    use bioshell_clustering::hierarchical::{HierarchicalClustering};
 
     #[test]
     fn cluster_numbers() {
@@ -12,7 +12,7 @@ mod tests {
         assert!(clustering.root().is_none());
 
         clustering.cluster();
-        assert_eq!(clustering.root().unwrap().size(), 4);
+        assert_eq!(clustering.root().unwrap().value.cluster_size, 4);
         let clustered_items = HierarchicalClustering::clustered_data(clustering.root().unwrap(), &data);
         assert_eq!(clustered_items, [6.0, 5.9, 2.0, 2.5]);
 
@@ -31,7 +31,7 @@ mod tests {
         assert!(clustering.root().is_none());
 
         let root = clustering.cluster().unwrap();
-        assert_eq!(root.size(), data.len());
+        assert_eq!(root.value.cluster_size, data.len());
 
         let clustered_items = HierarchicalClustering::clustered_data(clustering.root().unwrap(), &data);
         assert_eq!(clustered_items, ['A', 'B', 'D', 'C', 'F', 'Z', 'Y', 'X', 'W', 'V']);
