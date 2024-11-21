@@ -1,5 +1,5 @@
 use std::time::Instant;
-use log::info;
+use log::{debug, info};
 use crate::alignment::{aligned_sequences, AlignmentReporter, GlobalAligner};
 use crate::scoring::{SequenceSimilarityScore, SubstitutionMatrixList};
 use crate::sequence::Sequence;
@@ -30,6 +30,9 @@ pub fn align_all_pairs(queries: &Vec<Sequence>, templates: &Vec<Sequence>,
             }
             gcups += (query.len() * template.len()) as f64;
             n_pairs += 1;
+            if n_pairs % 100 == 0 {
+                debug!("{}", format!("{} sequence pairs aligned", n_pairs));
+            }
         }
     }
     info!("{}", format!("{} sequence pairs aligned in {:?}", n_pairs, start.elapsed()));

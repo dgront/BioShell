@@ -3,7 +3,9 @@ use crate::sequence::{count_identical, len_ungapped, Sequence};
 
 /// Provides staple statistics for a sequence alignment.
 ///
-/// The struct is created based on two [Sequence]s that are assumed to be aligned.
+/// The struct is created based on two [`Sequence`]s that are assumed to be aligned. It provides
+/// description line for both sequences (trimmed to desired length) and numerical statistics computed from
+/// the alignment such as the number of identical residues, the length of the alignment, etc.
 ///
 /// # Example
 /// ```
