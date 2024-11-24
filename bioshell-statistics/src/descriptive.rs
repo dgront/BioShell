@@ -98,6 +98,101 @@ pub fn cov_weighted(x: &[f64], y: &[f64], weights: &[f64]) -> f64 {
     return cov / weights.iter().sum::<f64>();
 }
 
+/// Provides on-line statistics for a random sample
+///
+/// This struct accumulates observations without actually storing them, and on the fly provides
+/// basic descriptive parameters of the accumulated sample. Just toss some double data in and ask
+/// the object for average, variance etc. The class uses Welford's on-line algorithm.
+///
+/// See [`OnlineMultivariateStatistics`](OnlineMultivariateStatistics) for N-dimensional variant of the statistics.
+///
+/// # Examples
+/// ```rust
+/// use bioshell_statistics::OnlineStatistics;
+/// let sample = vec![30.0, 10.0, 20.0, 40.0, 50.0];
+/// let mut stats = OnlineStatistics::new();
+/// for x in sample { stats.accumulate(x); }
+///
+/// assert!((stats.avg() - 30.0).abs() < 0.00001);
+/// assert!((stats.var() - 250.0).abs() < 0.00001);
+/// assert!((stats.min() - 10.0).abs() < 0.00001);
+/// assert!((stats.max() - 50.0).abs() < 0.00001);
+/// assert!((stats.skewness()).abs() < 0.00001);
+///
+/// ```
+#[derive(Clone)]
+pub struct OnlineStatistics {
+    count: usize,
+    m1: f64,
+    m2: f64,
+    m3: f64,
+    m4: f64,
+    min: f64,
+    max: f64,
+}
+
+impl OnlineStatistics {
+
+    /// Create a new object to gather statistics of a random sample
+    pub fn new() -> OnlineStatistics {
+        OnlineStatistics{
+            count: 0,
+            m1: 0.0,
+            m2: 0.0,
+            m3: 0.0,
+            m4: 0.0,
+            min: 0.0,
+            max: 0.0,
+        }
+    }
+
+    /// Accumulate a single N-dimensional point
+    pub fn accumulate(&mut self, x:f64) {
+
+        if self.count == 0 {                  // --- if this is the very first observation...
+            self.min = x;                     // --- copy it as min and max
+            self.max = x;
+        } else {
+            self.min = self.min.min(x);     // --- otherwise, update min and max
+            self.max = self.max.max(x);
+        }
+
+        let n1 = self.count;
+        self.count += 1;
+
+        let delta = x - self.m1;
+        let delta_n = delta / self.count as f64;
+        let delta_n2 = delta_n * delta_n;
+        let term1 = delta * delta_n * n1 as f64;
+        self.m1 += delta_n;
+        self.m4 += term1 * delta_n2 * (self.count as f64 * self.count as f64 - 3.0 * self.count as f64 + 3.0)
+                + 6.0 * delta_n2 * self.m2 - 4.0 * delta_n * self.m3;
+        self.m3 += term1 * delta_n * (self.count as f64 - 2.0) - 3.0 * delta_n * self.m2;
+        self.m2 += term1;
+    }
+
+    /// Returns the number of observed samples
+    pub fn count(&self) -> usize{ self.count }
+
+    /// Returns the minimum value observed.
+    pub fn min(&self) -> f64 { self.min }
+
+    /// Returns the maximum value observed.
+    pub fn max(&self) -> f64 { self.max }
+
+    /// Returns the average value
+    pub fn avg(&self) -> f64 { self.m1 }
+
+    /// Returns the variance
+    pub fn var(&self) -> f64 { return self.m2 / (self.count as f64  - 1.0); }
+
+    /// Returns the skewness of the values observed so far
+    pub fn  skewness(&self) -> f64 { return (self.count as f64).sqrt() * f64::powf(self.m3 / self.m2, 1.5); }
+
+    /// Returns the kurtosis of the values observed so far
+    pub fn  kurtosis(&self) -> f64 { return (self.count as f64) * self.m4 / (self.m2 * self.m2); }
+}
+
 /// Provides on-line statistics for N-dimensional samples
 ///
 /// This struct accumulates observations without actually storing them, and on the fly provides
@@ -193,7 +288,11 @@ impl OnlineMultivariateStatistics {
         }
     }
 
-    /// Accumulate a single 1-dimensional point
+    /// Accumulate a single 1-dimensional point.
+    ///
+    /// This is a special case of [`accumulate`] method to allow [`OnlineMultivariateStatistics`]
+    /// handle also 1-dimensional data. In most of the cases however you should use the  [`OnlineStatistics`]
+    /// which is 1-dimensional by design.
     pub fn accumulate_1d(&mut self, x:f64) {
         let v = [x];
         self.accumulate(&v);

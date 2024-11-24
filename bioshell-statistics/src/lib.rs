@@ -20,7 +20,7 @@ mod descriptive;
 mod autocorrelation;
 mod histogram_nd;
 
-pub use descriptive::{OnlineMultivariateStatistics, OnlineMultivariateWeighted, QuantileP2,
+pub use descriptive::{OnlineStatistics, OnlineMultivariateStatistics, OnlineMultivariateWeighted, QuantileP2,
                       avg, avg_weighted, var, var_weighted, cov, cov_weighted, avg_var_weighted};
 
 pub use histograms::{Histogram};
