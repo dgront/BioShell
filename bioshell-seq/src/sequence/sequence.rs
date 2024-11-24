@@ -216,6 +216,22 @@ impl Hash for Sequence {
 ///
 /// This object iterates over a buffer without loading its whole content which allows processing
 /// very large FASTA files.
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::FastaIterator;
+/// let sequences: &str = "> 1clf:A
+/// AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
+///
+/// > 1dur:A
+/// AYVINDSCIACGACKPECPVNCIQEGSIYAIDADSCIDCGSCASVCPVGAPNPED
+///
+/// > 1fca:A
+/// AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
+/// let seqs = FastaIterator::new(sequences.as_bytes());
+/// let seq_ids: Vec<String> = seqs.map(|s| s.id().to_string()).collect();
+/// assert_eq!(seq_ids, vec!["1clf:A", "1dur:A", "1fca:A"]);
+/// ```
 pub struct FastaIterator<R> {
     reader: BufReader<R>,
     buffer: String,

@@ -1,11 +1,12 @@
 use crate::alignment::AlignmentStatistics;
 use crate::sequence::{len_ungapped_str, Sequence};
 
-/// Reports a sequence alignment
+/// Reports a sequence alignment calculated by a sequence alignment algorithm.
 pub trait AlignmentReporter {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence);
 }
 
+/// Reporter that combines multiple reporters.
 pub struct MultiReporter {
     reporters: Vec<Box<dyn AlignmentReporter>>,
 }
@@ -41,13 +42,12 @@ impl AlignmentReporter for PrintAsFasta {
 /// use bioshell_seq::alignment::{AlignmentReporter, PrintAsPairwise};
 /// use bioshell_seq::sequence::Sequence;
 /// let query = Sequence::from_str("query", "AL-IV");
-/// let template = Sequence::from_str("query", "ALRIV");
+/// let template = Sequence::from_str("template", "ALRIV");
 /// let mut reporter = PrintAsPairwise::new(5, 10);
 /// reporter.report(&query, &template);
 /// ```
 pub struct PrintAsPairwise {
     /// maximum number of characters available to print a sequence name
-    ///
     pub seq_name_width: usize,
     pub alignment_width: usize
 }
