@@ -6,6 +6,25 @@ pub trait AlignmentReporter {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence);
 }
 
+pub struct MultiReporter {
+    reporters: Vec<Box<dyn AlignmentReporter>>,
+}
+impl MultiReporter {
+    pub fn new() -> Self { MultiReporter { reporters: vec![] } }
+    pub fn add_reporter(&mut self, reporter: Box<dyn AlignmentReporter>) {
+        self.reporters.push(reporter);
+    }
+    pub fn count_reporters(&self) -> usize { self.reporters.len() }
+}
+
+impl AlignmentReporter for MultiReporter {
+    fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
+        for reporter in &mut self.reporters {
+            reporter.report(aligned_query, aligned_template);
+        }
+    }
+}
+
 /// Prints a sequence alignment in the FASTA format
 pub struct PrintAsFasta;
 
@@ -38,7 +57,6 @@ impl PrintAsPairwise {
         PrintAsPairwise { seq_name_width, alignment_width }
     }
 }
-
 
 impl AlignmentReporter for PrintAsPairwise {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {

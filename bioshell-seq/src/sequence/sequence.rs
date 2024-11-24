@@ -84,9 +84,9 @@ impl Sequence {
     /// ```
     pub fn description(&self) -> &str { self.description.as_ref() }
 
-    /// Return the first n characters of the description line of this Sequence.
+    /// Return the first n characters of the description line of this [`Sequence`].
     ///
-    /// The whole description string is returned when it's shorter than ``n``
+    /// The whole description string is returned when it's shorter than ``n``, or when ``n`` is set to 0
     ///
     /// # Example
     /// ```rust
@@ -98,6 +98,8 @@ impl Sequence {
     /// assert_eq!(seq.description_n(10), "gi|5524211");
     /// ```
     pub fn description_n(&self, n: usize) -> &str {
+        if n==0 { return self.description.as_ref(); }
+
         let len = self.description.len().min(n);
         self.description[0..len].as_ref()
     }
