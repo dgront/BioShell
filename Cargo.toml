@@ -33,6 +33,9 @@ clap = { version = "4.5.20", features = ["derive"] }
 rand = { version = "0.8.5", features = [ "small_rng" ] }
 rand_distr="0.4.3"
 nalgebra = "0.31.1"
+
+# ---------- Logging
+log = "0.4.22"
 env_logger = "0.11.5"
 
 [build-dependencies]
@@ -41,14 +44,14 @@ chrono = "0.4"
 git2 = "0.19.0"
 md5 = "0.7"
 
-# ---------- Logging
-log = "0.4.0"
-env_logger = "0.9.0"
 
 [[bin]]
 name = "bioshell"
 path = "./bin/bioshell.rs"
 
+[[bin]]
+name = "cluster_sequences"
+path = "./bin/cluster_sequences.rs"
 
 [package.metadata.docs.rs]
 # To build locally use
