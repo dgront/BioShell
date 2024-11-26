@@ -16,7 +16,8 @@ pub struct HierarchicalCluster {
     pub merging_distance: f32,
 }
 
-type ClusteringTreeNode = BinaryTreeNode<HierarchicalCluster>;
+/// A node in a hierarchical clustering tree.
+pub type ClusteringTreeNode = BinaryTreeNode<HierarchicalCluster>;
 
 pub fn hierarchical_clustering<F, M>(n_data: usize, distance_func: F,
             clustering_strategy: &M) -> ClusteringTreeNode
@@ -96,23 +97,118 @@ pub fn balance_clustering_tree<F: Fn(usize, usize) -> f32>(root: &mut Clustering
     rotate_rec(root, distance);
 }
 
-/// Copies the clustered data into a vector, according to the order defined by the clustering tree.
+/// Selects a medoid element from a cluster, defined as the one for which the longest distance to all other elements is minimal.
+///
+/// For each element in the cluster, the longest distance to all other elements is computed. The *min-max* medoid is
+/// defined as the element for which that longest distance is minimal.
+pub fn medoid_by_min_max<F: Fn(usize, usize) -> f32>(cluster: &ClusteringTreeNode, distance_fn: &F) -> usize {
+
+    let members: Vec<usize> = retrieve_data_id(cluster);
+
+    let mut best_distance = f32::MAX;
+    let mut best_index = 0;
+    for i in 0..members.len() {
+        let mut max_distance = -f32::MAX;
+        for j in 0..members.len() {
+            if i != j {
+                let d = distance_fn(members[i], members[j]);
+                if d > max_distance { max_distance = d; }
+            }
+        }
+        if max_distance < best_distance {
+            best_distance = max_distance;
+            best_index = i;
+        }
+    }
+
+    info!("medoid selected by min-max rule, it's maximum distance is {}", best_distance);
+    return best_index;
+}
+
+/// Finds clusters by stopping the clustering algorithm at a given distance cutoff.
+///
+/// Returns a vector of nodes; each node is a root of a subtree that defines a single cluster.
+pub fn retrieve_clusters(clustering_root: &mut ClusteringTreeNode, max_distance: f32) -> Vec<&ClusteringTreeNode> {
+
+    let mut clusters: Vec<&ClusteringTreeNode> = vec![];
+
+    fn clusters_rec<'a>(node: &'a ClusteringTreeNode, max_distance: f32, clusters: &mut Vec<&'a ClusteringTreeNode>) {
+        if node.is_leaf() {
+            clusters.push(node);
+        } else {
+            if node.value.merging_distance > max_distance {
+                if let Some(left) = node.left() {
+                    if left.value.merging_distance < max_distance {
+                        clusters.push(left);
+                    } else {
+                        clusters_rec(left, max_distance, clusters);
+                    }
+                }
+                if let Some(right) = node.right() {
+                    if right.value.merging_distance < max_distance {
+                        clusters.push(right);
+                    } else {
+                        clusters_rec(right, max_distance, clusters);
+                    }
+                }
+            }
+        }
+    }
+    if clustering_root.value.merging_distance < max_distance {
+        clusters.push(clustering_root);
+    } else {
+        clusters_rec(clustering_root, max_distance, &mut clusters);
+    }
+
+    return clusters;
+}
+
+/// Copies the indexes of all data items found in a cluster into a vector, according to the order defined by the clustering tree.
 ///
 /// If you call [`balance_clustering_tree()`] before calling this method, the returned items will be grouped
 /// together by their mutual distance.
-pub fn clustered_data<T:Copy>(cluster: &ClusteringTreeNode, all_data: &[T]) -> Vec<T> {
+pub fn retrieve_data_id(cluster: &ClusteringTreeNode) -> Vec<usize> {
 
-    let mut indexes: Vec<usize> = Vec::new();
-    let mut collector = |n: &ClusteringTreeNode| {
-        if n.is_leaf() {
-            indexes.push(n.id as usize);
-        }
-    };
+    let mut leaf_ids: Vec<usize> = Vec::new();
+    let mut extract_id = |n: &ClusteringTreeNode| { if n.is_leaf() { leaf_ids.push(n.id as usize); } };
+    depth_first_preorder(cluster, &mut extract_id);
+    return leaf_ids;
+}
 
-    depth_first_preorder(cluster, &mut collector);
+/// Copies all data items found in a cluster into a vector, according to the order defined by the clustering tree.
+///
+/// If you call [`balance_clustering_tree()`] before calling this method, the returned items will be grouped
+/// together by their mutual distance.
+pub fn retrieve_data<T:Copy>(cluster: &ClusteringTreeNode, all_data: &[T]) -> Vec<T> {
+
+    let indexes: Vec<usize> = retrieve_data_id(cluster);
     let ret: Vec<T> = indexes.iter().map(|i| all_data[*i]).collect();
 
     return ret;
+}
+
+/// Finds all outliers in a set of objects given the function of their mutual distances.
+///
+/// An outlier is defined as the element that is further apart than ``cutoff`` from any other element in the set.
+pub fn retrieve_outliers<F: Fn(usize, usize) -> f32>(n_data: usize, distance_fn: &F, cutoff: f32) -> Vec<usize> {
+
+    let mut outliers: Vec<usize> = Vec::new();
+    if n_data < 2 { return outliers; }
+    for i in 0..n_data {
+        let mut min_val = f32::MAX;
+        for j in 0..n_data {
+            if i != j {
+                let d = distance_fn(i, j);
+                if d < min_val { min_val = d; }
+            }
+        }
+        if min_val > cutoff {
+            outliers.push(i);
+            info!("element {} marked as an outlier at distance {}", i, min_val);
+        }
+    }
+
+    return outliers;
 }
 
 /// Finds the ID of the left-most leaf node.
