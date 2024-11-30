@@ -18,9 +18,11 @@ members = [
     "bioshell-pdb",
     "bioshell-seq",
     "bioshell-statistics",
+    "bioshell-hbonds",
 ]
 
 [dependencies]
+# ---------- BioShell
 bioshell-io = { path = "./bioshell-io" }
 bioshell-seq = { path = "./bioshell-seq" }
 bioshell-builder = { path = "./bioshell-builder" }
@@ -29,6 +31,8 @@ bioshell-clustering = { path = "./bioshell-clustering" }
 bioshell-statistics = { path = "./bioshell-statistics" }
 bioshell-datastructures = { path = "./bioshell-datastructures"}
 bioshell-cif = { path = "./bioshell-cif" }
+bioshell-hbonds = { path = "./bioshell-hbonds" }
+# ---------- Common
 clap = { version = "4.5.20", features = ["derive"] }
 rand = { version = "0.8.5", features = [ "small_rng" ] }
 rand_distr="0.4.3"

@@ -5,7 +5,7 @@ edition = "2021"
 description = "Describes hydrogen bonds in a protein structure; also provides the DSSP algorithm"
 homepage = "https://bioshell.pl"
 license = "Apache-2.0"
-keywords = ["bioshell", "DSSP", "hydrogen-bond]
+keywords = ["bioshell", "DSSP", "hydrogen-bond"]
 
 [lib]
 crate-type = ["rlib", "cdylib"]
