@@ -4,7 +4,7 @@ use clap::{Parser};
 use log::{info};
 
 use bioshell_seq::sequence::{load_sequences};
-use bioshell_seq::alignment::{PrintAsPairwise, AlignmentReporter, SimilarityReport, align_all_pairs};
+use bioshell_seq::alignment::{PrintAsPairwise, AlignmentReporter, SimilarityReport, align_all_pairs, MultiReporter};
 use bioshell_seq::scoring::{SubstitutionMatrixList};
 use bioshell_seq::SequenceError;
 
@@ -31,7 +31,7 @@ struct Args {
     /// print sequence identity report (default)
     #[clap(long, action)]
     report: bool,
-    /// length of a sequence name to print; longer names will be cut that size
+    /// length of a sequence name to print; longer names will be trimmed that size
     #[clap(long, short='w', default_value = "20")]
     name_width: usize,
 }
@@ -43,22 +43,22 @@ pub fn main() -> Result<(), SequenceError> {
     env_logger::init();
     let args = Args::parse();
 
-    let width = args.name_width;
-    let mut reporters: Vec<Box<dyn AlignmentReporter>> = vec![];
-    if args.pairwise { reporters.push(Box::new(PrintAsPairwise::new(8, 80))); }
-    if args.report { reporters.push(Box::new(SimilarityReport::new(width))); }
-    if reporters.len() == 0 {  reporters.push(Box::new(SimilarityReport::new(width))); }
+    let name_width = args.name_width;
+    let mut multireports = MultiReporter::new();
+    if args.pairwise { multireports.add_reporter(Box::new(PrintAsPairwise::new(name_width, 80))); }
+    if args.report { multireports.add_reporter(Box::new(SimilarityReport::new(name_width))); }
+    if multireports.count_reporters() == 0 {  multireports.add_reporter(Box::new(SimilarityReport::new(name_width))); }
 
     let queries = load_sequences(&args.query, "query")?;
 
     if let Some(tmpl) = args.template {
         let templates = load_sequences(&tmpl, "template")?;
         align_all_pairs(&queries, &templates, SubstitutionMatrixList::BLOSUM62,
-            args.open, args.extend, false, &mut reporters);
+            args.open, args.extend, false, &mut multireports);
 
     } else {
         align_all_pairs(&queries, &queries, SubstitutionMatrixList::BLOSUM62,
-            args.open, args.extend, true, &mut reporters);
+            args.open, args.extend, true, &mut multireports);
     }
 
     Ok(())

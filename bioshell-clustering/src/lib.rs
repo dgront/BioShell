@@ -8,6 +8,7 @@ pub use points_set::{DistanceByIndex, CartesianPoints, Neighbor, NeighborsOf};
 pub mod optics;
 pub mod em;
 pub mod kmeans;
+pub mod hierarchical;
 
 
 

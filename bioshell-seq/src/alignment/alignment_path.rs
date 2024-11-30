@@ -70,9 +70,9 @@ impl TryFrom<u8> for AlignmentStep {
 
 /// Represents an abstract pairwise alignment.
 ///
-/// An [AlignmentPath] object is an abstract definition of an alignment. It defines which position
+/// An [`AlignmentPath`] object is an abstract definition of an alignment. It defines which position
 /// in a query sequence should be aligned to a given position of a template and where gaps are located.
-/// An alignment path is implemented a vector of [AlignmentStep]s taken on an alignment matrix to
+/// An alignment path is implemented a vector of [`AlignmentStep`]s taken on an alignment matrix to
 /// align a query sequence with a template one.
 pub struct AlignmentPath { path: Vec<AlignmentStep> }
 
@@ -90,7 +90,7 @@ impl TryFrom<&str> for AlignmentPath {
 
     /// Tries to convert a `u8` value into an `AlignmentStep` variant.
     ///
-    /// Each character of a given string is converted to an [AlignmentStep] variant with
+    /// Each character of a given string is converted to an [`AlignmentStep`] variant with
     /// [`AlignmentStep::try_from(s: u8)`](AlignmentStep::try_from())
     /// # Example
     /// ```
@@ -138,16 +138,16 @@ pub fn aligned_symbols<S: Copy>(alignment: &AlignmentPath, query: &[S], template
     return (aliged_q, aliged_t);
 }
 
-/// Expands two sequences into a sequence alignment based on an [AlignmentPath] object.
+/// Expands two sequences into a sequence alignment based on an [`AlignmentPath`] object.
 ///
 /// # Arguments
 ///
-///  * `alignment` - [AlignmentPath] object is an abstract definition of an alignment
+///  * `alignment` - [`AlignmentPath`] object is an abstract definition of an alignment
 ///  * `query` - query sequence (the first of the two aligned)
 ///  * `template` - template sequence (the second of the two aligned)
 ///  * `gap_symbol` - use ``'-'`` or  ``'_'``
 ///
-/// The given [AlignmentPath] object defines an alignment, i.e. which letter of a query sequence should be aligned
+/// The given [`AlignmentPath`] object defines an alignment, i.e. which letter of a query sequence should be aligned
 /// to a given letter of a template and where gaps are located
 ///
 /// # Example
@@ -166,20 +166,24 @@ pub fn aligned_strings(alignment: &AlignmentPath, query: &str, template: &str, g
     return (String::from_utf8(ali_q).unwrap(), String::from_utf8(ali_t).unwrap());
 }
 
-/// Expands two sequences into a sequence alignment based on an [AlignmentPath] object.
+/// Expands two sequences into a sequence alignment based on an [`AlignmentPath`] object.
 ///
 /// For instance, when the two (unaligned) sequences are ``"ALIV"`` and ``"ALRIV"`` and the alignment
 /// path is ``"**-**"``, the expanded (aligned sequences) become ``"AL-IV"`` and ``"ALRIV"``
 ///
 /// # Arguments
 ///
-///  * `alignment` - [AlignmentPath] object is an abstract definition of an alignment
+///  * `alignment` - [`AlignmentPath`] object is an abstract definition of an alignment
 ///  * `query` -  query sequence (the first of the two aligned)
 ///  * `template` - template sequence (the second of the two aligned)
 ///  * `gap_symbol` - use ``'-'`` or  ``'_'``
 ///
-/// The given [AlignmentPath] object defines an alignment, i.e. which letter of a query sequence should be aligned
-/// to a given letter of a template and where gaps are located
+/// The given [`AlignmentPath`] object defines an alignment, i.e. which letter of a query sequence should be aligned
+/// to a given letter of a template and where gaps are located.
+///
+/// # Returns
+/// A tuple of two [`Sequence`] objects, the first one is the query sequence, the second one is the template sequence.
+/// Description strings for the aligned sequences are set to the query and template data, respectively.
 ///
 /// # Example
 /// ```

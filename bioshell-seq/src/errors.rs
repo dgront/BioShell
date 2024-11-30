@@ -27,7 +27,7 @@ pub enum SequenceError {
         /// multiplied description
         description: String,
     },
-    #[error("General I/O error occurred while reading a sequence file")]
+    #[error("General I/O error occurred while reading or writing a sequence file")]
     /// I/O error occurred while reading a sequence file
     Io(#[from] std::io::Error),
 

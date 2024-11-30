@@ -1,9 +1,29 @@
 use crate::alignment::AlignmentStatistics;
 use crate::sequence::{len_ungapped_str, Sequence};
 
-/// Reports a sequence alignment
+/// Reports a sequence alignment calculated by a sequence alignment algorithm.
 pub trait AlignmentReporter {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence);
+}
+
+/// Reporter that combines multiple reporters.
+pub struct MultiReporter {
+    reporters: Vec<Box<dyn AlignmentReporter>>,
+}
+impl MultiReporter {
+    pub fn new() -> Self { MultiReporter { reporters: vec![] } }
+    pub fn add_reporter(&mut self, reporter: Box<dyn AlignmentReporter>) {
+        self.reporters.push(reporter);
+    }
+    pub fn count_reporters(&self) -> usize { self.reporters.len() }
+}
+
+impl AlignmentReporter for MultiReporter {
+    fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
+        for reporter in &mut self.reporters {
+            reporter.report(aligned_query, aligned_template);
+        }
+    }
 }
 
 /// Prints a sequence alignment in the FASTA format
@@ -22,13 +42,12 @@ impl AlignmentReporter for PrintAsFasta {
 /// use bioshell_seq::alignment::{AlignmentReporter, PrintAsPairwise};
 /// use bioshell_seq::sequence::Sequence;
 /// let query = Sequence::from_str("query", "AL-IV");
-/// let template = Sequence::from_str("query", "ALRIV");
+/// let template = Sequence::from_str("template", "ALRIV");
 /// let mut reporter = PrintAsPairwise::new(5, 10);
 /// reporter.report(&query, &template);
 /// ```
 pub struct PrintAsPairwise {
     /// maximum number of characters available to print a sequence name
-    ///
     pub seq_name_width: usize,
     pub alignment_width: usize
 }
@@ -38,7 +57,6 @@ impl PrintAsPairwise {
         PrintAsPairwise { seq_name_width, alignment_width }
     }
 }
-
 
 impl AlignmentReporter for PrintAsPairwise {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
