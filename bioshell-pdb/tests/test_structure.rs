@@ -93,7 +93,7 @@ fn test_atoms_by_range() {
     let strctr = deposit.structure();
     let first = ResidueId::new("A", 4, ' ');
     let last = ResidueId::new("B", 2, ' ');
-    let iterator = strctr.atom_in_range(first, last);
+    let iterator = strctr.atoms_in_range(first, last);
     assert_eq!(iterator.count(), 5);
 }
 
