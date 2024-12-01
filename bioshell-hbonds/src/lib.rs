@@ -14,3 +14,6 @@ const MIN_AHD_ANGLE: f64 = 100.0;
 
 /// The minimum value of C=O..H angle to exist in a hydrogen bond (in degrees). If the angle is smaller, a H-bond is not detected
 const MIN_PAH_ANGLE: f64 = 100.0;
+
+/// Length of the amide N-H bond, used in reconstruction of amide H position
+const N_H_BOND_LENGTH: f64 = 1.0;

@@ -2,7 +2,6 @@ use chrono::Utc;
 use git2::Repository;
 
 
-
 fn main() {
     // Get the current time
     let now = Utc::now();
