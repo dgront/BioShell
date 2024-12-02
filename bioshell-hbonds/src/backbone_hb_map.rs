@@ -53,19 +53,23 @@ impl<'a> BackboneHBond<'a> {
         BackboneHBond{ the_structure: strctr, donated_h, donor_n, acceptor_o, acceptor_c, }
     }
 
+    #[allow(non_snake_case)]
     pub fn distance_AH(&self) -> f64 { self.the_structure.atoms()[self.acceptor_o].pos.distance_to(&self.donated_h) }
 
+    #[allow(non_snake_case)]
     pub fn distance_DA(&self) -> f64 {
         let n_atom = &self.the_structure.atoms()[self.donor_n];
         self.the_structure.atoms()[self.acceptor_o].pos.distance_to(&n_atom.pos)
     }
 
+    #[allow(non_snake_case)]
     pub fn angle_AHD(&self) -> f64 {
         let n_atom = &self.the_structure.atoms()[self.donor_n];
         let o_atom = &self.the_structure.atoms()[self.acceptor_o];
         planar_angle3(&n_atom.pos, &self.donated_h, &o_atom.pos)
     }
 
+    #[allow(non_snake_case)]
     pub fn angle_PAH(&self) -> f64 {
         let c_atom = &self.the_structure.atoms()[self.acceptor_c];
         let o_atom = &self.the_structure.atoms()[self.acceptor_o];

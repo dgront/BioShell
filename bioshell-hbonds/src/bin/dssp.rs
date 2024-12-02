@@ -6,11 +6,12 @@ use bioshell_pdb::Deposit;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None, arg_required_else_help = true)]
-/// Command line tool to operate on PDB files
-/// say pdb_tool -h to see options
+/// Command line tool to detect hydrogen bonds in a protein structure and to assign secondary structure
+/// using the DSSP algorithm.
+///
+/// say dssp -h to see options
 struct Args {
-    /// input PDB file name
-    #[clap(short, long, short='i', required=true)]
+    /// input protein structure in either CIF or PDB format
     infile: String,
     /// print sequence and secondary structure in FASTA format
     #[clap(short, long, short='f')]
@@ -22,6 +23,7 @@ struct Args {
     #[clap(short, long, short='v')]
     verbose: bool
 }
+
 fn main() {
     // ---------- BioShell app setup ----------
     let args = Args::parse();
@@ -39,7 +41,7 @@ fn main() {
 
     // ---------- INPUT section ----------
     let deposit = Deposit::from_file(&args.infile).unwrap();
-    let mut strctr= deposit.structure();
+    let strctr= deposit.structure();
 
     // ---------- Detect H-bonds ----------
     let hbonds = BackboneHBondMap::new(&strctr);
