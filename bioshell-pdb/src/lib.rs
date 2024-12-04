@@ -126,6 +126,36 @@ pub use unit_cell::{UnitCell};
 pub use load_cif::{is_cif_file, find_cif_file_name};
 pub use entity::{EntitySource, EntityType, Entity, PolymerEntityType};
 
+/// Returns a tuple of (pdb_id, chain_id) extracted from a given string.
+///
+/// The function attempts to parse a string and extract the PDB ID and chain ID:
+/// ```
+/// let (pdb_id, chain_id) = bioshell_pdb::code_and_chain("1abc:A");
+/// assert_eq!(pdb_id, "1abc");
+/// assert_eq!(chain_id, Some("A".to_string()));
+/// let (pdb_id, chain_id) = bioshell_pdb::code_and_chain("1abcA");
+/// assert_eq!(pdb_id, "1abc");
+/// assert_eq!(chain_id, Some("A".to_string()));
+/// let (pdb_id, chain_id) = bioshell_pdb::code_and_chain("1abc_ABC");
+/// assert_eq!(pdb_id, "1abc");
+/// assert_eq!(chain_id, Some("ABC".to_string()));
+/// ```
+pub fn code_and_chain(pdb_code: &str) -> (String, Option<String>) {
+
+    return if pdb_code.contains(':') {
+        let tokens: Vec<&str> = pdb_code.split(':').collect();
+        (tokens[0].to_string(), Some(tokens[1].to_string()))
+    } else {
+        if pdb_code.len() > 4 {
+            let deposit = pdb_code[0..4].to_string();
+            let chain_id = pdb_code[4..].to_string().chars().filter(|&c| c != '_').collect();
+            (deposit, Some(chain_id))
+        } else {
+            (pdb_code.to_string(), None)
+        }
+    }
+}
+
 mod macros {
     #[macro_export]
     macro_rules! value_or_missing_key_pdb_error {
@@ -135,5 +165,7 @@ mod macros {
         };
     }
 }
+
+
 
 
