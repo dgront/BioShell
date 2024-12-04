@@ -320,10 +320,10 @@ impl Structure {
     /// let strctr = deposit.structure();
     /// let first = ResidueId::new("A", 4, ' ');
     /// let last = ResidueId::new("B", 2, ' ');
-    /// let mut iterator = strctr.atom_in_range(first, last);
+    /// let mut iterator = strctr.atoms_in_range(first, last);
     /// assert_eq!(iterator.count(), 5);
     /// ```
-    pub fn atom_in_range(&self, first_res: ResidueId, last_res: ResidueId) -> impl Iterator<Item = &PdbAtom> {
+    pub fn atoms_in_range(&self, first_res: ResidueId, last_res: ResidueId) -> impl Iterator<Item = &PdbAtom> {
         let check = ByResidueRange::new(first_res, last_res);
         self.atoms.iter().filter(move |&a| check.check(a))
     }
