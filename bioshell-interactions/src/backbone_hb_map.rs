@@ -37,6 +37,18 @@ impl ResidueIndexer {
 
 
 
+/// A single hydrogen bond between a backbone nitrogen and an oxygen atoms.
+///
+/// [`BackboneHBond`] provides a detailed description of a protein backbone hydrogen bond:
+/// ```text
+///     O=C             N-H
+///        \           /
+///         N-H ... O=C
+///        /           \
+///     R-C             C-R
+/// ```
+/// marked as `N-H ... O=C`, between an amide group `N-H` donating its  hydrogen `H` to a carbonyl group `O=C` accepting the hydrogen.
+/// The `N` atom is referred to as the `donor` (`'D'`) and the `O` atom is referred to as the `acceptor` (`'A'`).
 pub struct BackboneHBond<'a> {
     the_structure: &'a Structure,
     donated_h: Vec3,
@@ -53,15 +65,18 @@ impl<'a> BackboneHBond<'a> {
         BackboneHBond{ the_structure: strctr, donated_h, donor_n, acceptor_o, acceptor_c, }
     }
 
+    /// Calculates the distance between the hydrogen atom, and it's acceptor (a carbonyl oxygen in the case of a backbone hydrogen bond).
     #[allow(non_snake_case)]
     pub fn distance_AH(&self) -> f64 { self.the_structure.atoms()[self.acceptor_o].pos.distance_to(&self.donated_h) }
 
+    /// Calculates the distance between the donor and acceptor atoms
     #[allow(non_snake_case)]
     pub fn distance_DA(&self) -> f64 {
         let n_atom = &self.the_structure.atoms()[self.donor_n];
         self.the_structure.atoms()[self.acceptor_o].pos.distance_to(&n_atom.pos)
     }
 
+    /// Calculates the planar angle between the acceptor, the donated proton and the donor atom
     #[allow(non_snake_case)]
     pub fn angle_AHD(&self) -> f64 {
         let n_atom = &self.the_structure.atoms()[self.donor_n];
@@ -69,6 +84,7 @@ impl<'a> BackboneHBond<'a> {
         planar_angle3(&n_atom.pos, &self.donated_h, &o_atom.pos)
     }
 
+    /// Calculates the planar angle between the atom preceding the acceptor, the acceptor atom and the donated proton.
     #[allow(non_snake_case)]
     pub fn angle_PAH(&self) -> f64 {
         let c_atom = &self.the_structure.atoms()[self.acceptor_c];
@@ -81,7 +97,7 @@ impl<'a> BackboneHBond<'a> {
     /// DSSP energy was defined by Kabsch and Sander using the following formula:
     ///
     /// ```math
-    /// E = 0.084 { 1/r_ON + 1/r_CH - 1/r_OH - 1/r_CN } * 332 kcal/mol
+    /// E = 0.084 { 1/r_{ON} + 1/r_{CH} - 1/r_{OH} - 1/r_{CN} } * 332 kcal/mol
     /// ```
     ///
     /// # References
@@ -126,6 +142,7 @@ impl<'a> BackboneHBondMap<'a> {
     pub fn h_bonds(&self)-> impl Iterator<Item = (&(usize, usize), &BackboneHBond<'a>)> {
         self.h_bonds.iter()
     }
+
     pub fn get_h_bond(&self, donor_residue: &ResidueId, acceptor_residue: &ResidueId) -> Option<&BackboneHBond<'a>> {
 
         let d = self.indexer.index(donor_residue);

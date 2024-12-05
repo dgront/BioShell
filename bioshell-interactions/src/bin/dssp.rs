@@ -1,7 +1,7 @@
 use std::env;
 use clap::Parser;
 use log::info;
-use bioshell_hbonds::BackboneHBondMap;
+use bioshell_interactions::BackboneHBondMap;
 use bioshell_pdb::Deposit;
 
 #[derive(Parser, Debug)]

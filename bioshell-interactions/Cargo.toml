@@ -1,11 +1,11 @@
 [package]
-name = "bioshell-hbonds"
+name = "bioshell-interactions"
 version = "4.0.0-dev"
 edition = "2021"
-description = "Describes hydrogen bonds in a protein structure; also provides the DSSP algorithm"
+description = "Describes interactions in a protein structure; also provides the DSSP algorithm"
 homepage = "https://bioshell.pl"
 license = "Apache-2.0"
-keywords = ["bioshell", "DSSP", "hydrogen-bond"]
+keywords = ["bioshell", "DSSP", "hydrogen-bond", "interactions"]
 
 [lib]
 crate-type = ["rlib", "cdylib"]
