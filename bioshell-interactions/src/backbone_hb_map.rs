@@ -148,10 +148,8 @@ impl<'a> BackboneHBondMap<'a> {
         let d = self.indexer.index(donor_residue);
         let a = self.indexer.index(acceptor_residue);
         if let (Some(d), Some(a)) = (d, a) {
-            self.h_bonds.get(&(d, a));
+            return self.h_bonds.get(&(d, a));
         } else { return None }
-
-        return return None;
     }
 
     fn find_donors_acceptors(&mut self) {
