@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use std::sync::{Mutex, MutexGuard};
 use once_cell::sync::Lazy;
 use crate::chemical::MonomerType::NonPolymer;
@@ -171,6 +172,11 @@ impl ResidueTypeProperties for ResidueType {
     fn id(&self) -> u16 { self.parent_type.id() }
     fn code3(&self) -> String { self.code3.clone() }
     fn chem_compound_type(&self) -> MonomerType { self.chem_compound_type.clone() }
+}
+
+impl Display for ResidueType {
+    /// Prints the three-letter code of the residue type, e.g. ``"ALA"`` for alanine
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { write!(f, "{}", self.code3) }
 }
 
 /// Provides unique integer ID for each registered ResidueType
