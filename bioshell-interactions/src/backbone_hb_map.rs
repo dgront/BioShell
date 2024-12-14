@@ -9,30 +9,45 @@ const DSSP_CONST: f64  = 0.42 * 0.2 * 332.0;
 ///
 /// The struct converts a residue id to an integer index and vice versa.
 pub struct ResidueIndexer {
+    residue_ids: Vec<ResidueId>,
     residue_index: HashMap<ResidueId, usize>,
 }
 
 impl ResidueIndexer {
 
     pub fn from_structure(strctr: &Structure) -> ResidueIndexer {
-        let mut residue_index: HashMap<ResidueId, usize> = strctr.residue_ids().iter()
-            .filter(|id| strctr.residue_type(id).unwrap().chem_compound_type.is_peptide_linking())
-            .enumerate()
-            .map(|(i, id)| (id.clone(), i))
-            .collect();
 
-        ResidueIndexer { residue_index }
+        let mut residue_ids: Vec<ResidueId> = vec![];
+        let mut residue_index: HashMap<ResidueId, usize> = Default::default();
+
+        let mut idx = 0;
+        for residue_id in strctr.residue_ids() {
+            if !strctr.residue_type(residue_id).unwrap().chem_compound_type.is_peptide_linking() { continue; }
+            residue_index.insert(residue_id.clone(), idx);
+            residue_ids.push(residue_id.clone());
+            idx += 1;
+        }
+        ResidueIndexer { residue_ids, residue_index }
     }
 
-    pub fn index(&self, residue_id: &ResidueId) -> Option<usize> {
-        self.residue_index.get(residue_id).copied()
-    }
+    /// Returns the index of the given residue.
+    ///
+    /// The opposite operation to this is [`ResidueIndexer::residue_id()`].
+    pub fn index(&self, residue_id: &ResidueId) -> Option<usize> { self.residue_index.get(residue_id).copied() }
 
-    pub fn residue_id(&self, index: usize) -> &ResidueId {
-        self.residue_index.iter().find(|(_, i)| **i == index).unwrap().0
-    }
+    /// Iterates over all the residues in the structure indexed by this [`ResidueIndexer`].
+    pub fn residue_ids(&self) -> impl Iterator<Item=&ResidueId> { self.residue_ids.iter() }
 
-    pub fn len(&self) -> usize { self.residue_index.len() }
+    /// Returns the [`ResidueId`] for the given residue index.
+    ///
+    /// The opposite operation to this is [`ResidueIndexer::index()`].
+    pub fn residue_id(&self, index: usize) -> &ResidueId { &self.residue_ids[index] }
+
+    /// Provides the number of residues in the structure indexed by this object.
+    ///
+    /// Note, that not all the residues of the structure may be indexed. Some, like ions and water molecules
+    /// are omitted.
+    pub fn n_residues(&self) -> usize { self.residue_index.len() }
 }
 
 
@@ -139,11 +154,105 @@ impl<'a> BackboneHBondMap<'a> {
         return hbonds;
     }
 
+    /// The number of residues in the structure indexed by this map.
+    ///
+    /// Note, that not all the residues create hydrogen bonds.
+    pub fn n_residues(&self) -> usize { self.indexer.n_residues() }
+
+    /// Iterates over all the residues in the structure indexed by this [`BackboneHBondMap`].
+    pub fn residue_ids(&self) -> impl Iterator<Item=&ResidueId> { self.indexer.residue_ids() }
+
     pub fn h_bonds(&self)-> impl Iterator<Item = (&(usize, usize), &BackboneHBond<'a>)> {
         self.h_bonds.iter()
     }
 
-    pub fn get_h_bond(&self, donor_residue: &ResidueId, acceptor_residue: &ResidueId) -> Option<&BackboneHBond<'a>> {
+    /// Checks if the specified residue accepts a proton in an N-turn hydrogen bond.
+    ///
+    /// In such a case, the hydrogen bond is formed with the residue at `which_residue + n`.
+    /// Proper values of n are:
+    /// - n = 3: part of a $3_{10}$ helix
+    /// - n = 4: part of an $\alpha$-helix
+    /// - n = 5: part of a $\pi$-helix
+    ///
+    /// # Arguments
+    /// * `which_residue` - The index of the residue of interest.
+    /// * `n` - The turn type; should be 3, 4, or 5.
+    ///
+    /// # Returns
+    /// `true` if the specified residue forms an N-turn hydrogen bond, `false` otherwise.
+    pub fn accepts_n_turn(&self, acceptor_residue: &ResidueId, n: usize) -> bool {
+        let a = self.indexer.index(acceptor_residue).unwrap();
+        if a+n >= self.n_residues() { return false; }
+        self.h_bond_for_indexes(a + n, a).is_some()
+    }
+
+    /// Checks if the specified residue accepts a proton in an N-turn hydrogen bond.
+    ///
+    /// In such a case, the hydrogen bond is formed with the residue at `which_residue - n`.
+    /// Proper values of n are:
+    /// - n = 3: part of a $3_{10}$ helix
+    /// - n = 4: part of an $\alpha$-helix
+    /// - n = 5: part of a $\pi$-helix
+    ///
+    /// # Arguments
+    /// * `which_residue` - The index of the residue of interest.
+    /// * `n` - The turn type; should be 3, 4, or 5.
+    ///
+    /// # Returns
+    /// `true` if the specified residue forms an N-turn hydrogen bond, `false` otherwise.
+    pub fn donates_n_turn(&self, donor_residue: &ResidueId, n: usize) -> bool {
+        let d = self.indexer.index(donor_residue).unwrap();
+        if d < n { return false; }
+        self.h_bond_for_indexes(d, d - n).is_some()
+    }
+
+    /// Checks if two residues form a parallel beta bridge.
+    ///
+    /// The order of residues is unimportant in this case.
+    ///
+    /// # Arguments
+    /// * `i_residue` - the first residue of interest.
+    /// * `j_residue` - the second residue of interest.
+    ///
+    /// # Returns
+    /// `true` if `i_residue` and `j_residue` form a parallel beta bridge, `false` otherwise.
+    pub fn is_parallel_bridge(&self, i_residue: &ResidueId, j_residue: &ResidueId) -> bool {
+        let i_idx = self.indexer.index(i_residue).unwrap();
+        let j_idx = self.indexer.index(j_residue).unwrap();
+
+        if i_idx > 0 && i_idx+1 < self.n_residues() {
+            if self.is_hb(j_idx,i_idx-1) && self.is_hb(i_idx+1,j_idx) { return true; }
+        }
+
+        if j_idx > 0 && j_idx + 1 < self.n_residues() {
+            if self.is_hb(i_idx,j_idx-1) && self.is_hb(j_idx+1,i_idx) { return true; }
+        }
+        return false;
+    }
+
+    /// Checks if two residues form an antiparallel beta bridge.
+    ///
+    /// The order of residues is unimportant in this case.
+    ///
+    /// # Arguments
+    /// * `i_residue` - the first residue of interest.
+    /// * `j_residue` - the second residue of interest.
+    ///
+    /// # Returns
+    /// `true` if `i_residue` and `j_residue` form an antiparallel beta bridge, `false` otherwise.
+    pub fn is_antiparallel_bridge(&self, i_residue: &ResidueId, j_residue: &ResidueId) -> bool {
+        let i_idx = self.indexer.index(i_residue).unwrap();
+        let j_idx = self.indexer.index(j_residue).unwrap();
+
+        if self.is_hb(j_idx, i_idx) && self.is_hb(i_idx, j_idx) { return true; }
+        if i_idx > 0 && j_idx > 0 && i_idx < self.n_residues() - 1 && j_idx < self.n_residues() - 1 {
+            if self.is_hb(j_idx + 1, i_idx - 1) && self.is_hb(i_idx + 1, j_idx - 1) { return true; }
+        }
+
+        return false;
+    }
+
+    pub fn h_bond_for_residues(&self, donor_residue: &ResidueId, acceptor_residue: &ResidueId) -> Option<&BackboneHBond<'a>> {
 
         let d = self.indexer.index(donor_residue);
         let a = self.indexer.index(acceptor_residue);
@@ -152,10 +261,17 @@ impl<'a> BackboneHBondMap<'a> {
         } else { return None }
     }
 
+    pub fn h_bond_for_indexes(&self, donor_index: usize, acceptor_index: usize) -> Option<&BackboneHBond<'a>> {
+        return self.h_bonds.get(&(donor_index, acceptor_index));
+    }
+
+    /// Returns ``true`` if the specified residue ``a`` accepts a hydrogen bond from a donor ``d``
+    fn is_hb(&self, d: usize, a: usize) -> bool { self.h_bond_for_indexes(d, a).is_some() }
+
     fn find_donors_acceptors(&mut self) {
 
         // ---------- Extract backbone atoms ------------
-        let mut bb: Vec<BackboneResidue> = vec![BackboneResidue::new(); self.indexer.len()];
+        let mut bb: Vec<BackboneResidue> = vec![BackboneResidue::new(); self.indexer.n_residues()];
         for (idx, atom) in self.the_structure.atoms().iter().enumerate() {
             let res_id = ResidueId::try_from(atom).unwrap();
             if let Some(res_idx) = self.indexer.index(&res_id) {
@@ -170,7 +286,7 @@ impl<'a> BackboneHBondMap<'a> {
         }
 
         // ---------- Calculate positions of hydrogen atoms ------------
-        let mut hydrogens: Vec<Option<Vec3>> = vec![None; self.indexer.len()];
+        let mut hydrogens: Vec<Option<Vec3>> = vec![None; self.indexer.n_residues()];
         for (idx, res) in bb.iter().enumerate() {
             if !res.is_complete() { continue; }
             if idx == 0 { continue; }
