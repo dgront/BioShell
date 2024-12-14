@@ -267,6 +267,10 @@ impl<'a> BackboneHBondMap<'a> {
     /// Returns ``true`` if the specified residue ``a`` accepts a hydrogen bond from a donor ``d``
     fn is_hb(&self, d: usize, a: usize) -> bool { self.h_bond_for_indexes(d, a).is_some() }
 
+    pub fn h_bond_for_indexes(&self, donor_index: usize, acceptor_index: usize) -> Option<&BackboneHBond<'a>> {
+        return self.h_bonds.get(&(donor_index, acceptor_index));
+    }
+
     fn find_donors_acceptors(&mut self) {
 
         // ---------- Extract backbone atoms ------------
