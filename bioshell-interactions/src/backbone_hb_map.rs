@@ -252,17 +252,16 @@ impl<'a> BackboneHBondMap<'a> {
         return false;
     }
 
-    pub fn h_bond_for_residues(&self, donor_residue: &ResidueId, acceptor_residue: &ResidueId) -> Option<&BackboneHBond<'a>> {
+    /// Provides an H-bond between two residues.
+    ///
+    /// If the residues are not H-bonded, returns `None`
+    pub fn h_bond(&self, donor_residue: &ResidueId, acceptor_residue: &ResidueId) -> Option<&BackboneHBond<'a>> {
 
         let d = self.indexer.index(donor_residue);
         let a = self.indexer.index(acceptor_residue);
         if let (Some(d), Some(a)) = (d, a) {
             return self.h_bonds.get(&(d, a));
         } else { return None }
-    }
-
-    pub fn h_bond_for_indexes(&self, donor_index: usize, acceptor_index: usize) -> Option<&BackboneHBond<'a>> {
-        return self.h_bonds.get(&(donor_index, acceptor_index));
     }
 
     /// Returns ``true`` if the specified residue ``a`` accepts a hydrogen bond from a donor ``d``
