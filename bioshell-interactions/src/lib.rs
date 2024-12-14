@@ -1,7 +1,10 @@
 //! Discovers and describes hydrogen bonds in protein molecules.
 
 mod backbone_hb_map;
+mod dssp;
+
 pub use backbone_hb_map::*;
+pub use dssp::*;
 
 /// Define the maximum allowed distance between a hydrogen atom and its acceptor to still record a hydrogen bond
 const MAX_AH_DISTANCE: f64 = 3.0;
