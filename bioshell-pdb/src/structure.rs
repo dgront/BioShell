@@ -372,6 +372,17 @@ impl Structure {
         }
     }
 
+    /// Returns the secondary structure a given residue belongs to.
+    ///
+    pub fn residue_secondary(&self, res_id: &ResidueId) -> Result<SecondaryStructureTypes, PDBError> {
+
+        // --- check if such a residue has at least one atom in this struct
+        if let Some(atom) = self.atoms().iter().find(|&a| res_id.check(a)) {
+            return Ok(atom.secondary_struct_type.clone());
+        } else {                        // --- atom doesn't exist
+            return Err(NoSuchResidue { res_id: res_id.clone() });
+        }
+    }
     /// Provides a sequence of a given chain.
     ///
     /// The sequence contains only in the residues found in atoms of this structure; some of its residues
