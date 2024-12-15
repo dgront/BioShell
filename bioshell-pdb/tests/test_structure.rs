@@ -1,6 +1,6 @@
 use std::io::BufReader;
-use bioshell_pdb::{Deposit, PdbAtom, ResidueId, Structure};
-
+use itertools::assert_equal;
+use bioshell_pdb::{Deposit, PdbAtom, ResidueId, Structure, PDBError};
 #[allow(non_upper_case_globals)]
 const lines_ca:  [&str;9] = [
     "ATOM    514  CA  MET A  60      26.532  28.200  28.365  1.00 17.85           N",
@@ -59,6 +59,19 @@ fn test_2gb1_loading() {
     assert_eq!(strctr.count_atoms(), 855);
     assert_eq!(strctr.count_residues(), 56);
     assert_eq!(strctr.count_chains(), 1);
+}
+
+#[test]
+fn test_secondary() -> Result<(), PDBError> {
+    let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_2gb1.as_bytes()))?;
+    let strctr: Structure = deposit.structure();
+    let mut ss_vec: Vec<u8> = vec![];
+    for res in strctr.residue_ids() {
+        ss_vec.push(strctr.residue_secondary(res).unwrap().hec_code());
+    }
+    let ss_str = String::from_utf8_lossy(&ss_vec).to_string();
+    assert_eq!(&ss_str, &strctr.secondary("A").to_string());
+    Ok(())
 }
 
 #[allow(non_upper_case_globals)]
