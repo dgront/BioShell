@@ -3,7 +3,7 @@ use bioshell_cif::CifData;
 
 /// Represents experimental method types used to determine a structure of a macromolecular assembly.
 ///
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ExperimentalMethod {
     /// X-ray diffraction method
     XRay,
