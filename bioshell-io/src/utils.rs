@@ -300,6 +300,27 @@ pub fn open_file(filename: &str) -> Result<Box<dyn BufRead>, Error> {
     }
 }
 
+/// Returns the full extension of a file path.
+///
+/// Unlike the `path.extension()` function, this function returns the full extension, including all its components.
+///
+/// ```
+/// use std::path::PathBuf;
+/// use bioshell_io::full_extension;
+/// assert_eq!(&full_extension(&PathBuf::from("test.txt")).unwrap(), "txt");
+/// assert_eq!(&full_extension(&PathBuf::from("file.tar.gz")).unwrap(), "tar.gz");
+/// ```
+pub fn full_extension(path: &PathBuf) -> Option<String> {
+    let file_name = path.file_name()?.to_str()?;
+    let parts: Vec<&str> = file_name.split('.').collect();
+
+    if parts.len() > 1 {
+        Some(parts[1..].join(".")) // Join all parts after the first dot
+    } else {
+        None
+    }
+}
+
 /// Counts the number of rows in a text file.
 pub fn count_rows(file_path: &str) -> Result<usize, Error> {
     let file = File::open(file_path)?;
