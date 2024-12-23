@@ -264,6 +264,8 @@ impl CifLoop {
         self.column_names.iter().position(|r| r == data_name)
     }
 
+    /// Returns ``true`` if any column of this loop block contains the given substring.
+    ///
     /// # Example
     /// ```
     /// use std::io::BufReader;
@@ -287,6 +289,33 @@ impl CifLoop {
     /// ```
     pub fn column_name_contains(&self, substring: &str) -> bool {
         return self.column_names.iter().any(|name| name.contains(substring));
+    }
+
+    /// Returns ``true`` if any column of this loop block starts with the given substring.
+    ///
+    /// # Example
+    /// ```
+    /// use std::io::BufReader;
+    /// use bioshell_cif::read_cif_buffer;
+    /// let cif_block = "data_loop_example
+    /// loop_
+    /// _atom_site_label
+    /// _atom_site_Cartn_x
+    /// _atom_site_Cartn_y
+    /// _atom_site_Cartn_z
+    /// O1 4.154 5.699 3.026
+    /// C2 5.630 5.087 4.246
+    /// ";
+    /// let data_blocks = read_cif_buffer(&mut BufReader::new(cif_block.as_bytes())).unwrap();
+    /// # assert_eq!(data_blocks.len(), 1);
+    /// # assert_eq!(data_blocks[0].name(),"loop_example");
+    /// let a_loop = data_blocks[0].loop_blocks().next().unwrap();
+    /// assert_eq!(a_loop.column_name_starts_with("atom_site"), false);
+    /// assert_eq!(a_loop.column_name_starts_with("x"), false);
+    /// assert_eq!(a_loop.column_name_starts_with("_atom_site"), true);
+    /// ```
+    pub fn column_name_starts_with(&self, substring: &str) -> bool {
+        return self.column_names.iter().any(|name| name.starts_with(substring));
     }
 
     /// Provides access to a data item from a given row of this loop
@@ -469,7 +498,7 @@ impl CifData {
     /// The provided ``data_name`` doesn't have to be a full name of an entry. Partial name is also accepted
     /// as long as it is unique.
     pub fn get_loop(&self, data_name: &str) -> Option<&CifLoop> {
-        self.loops.iter().filter(|l| l.column_name_contains(data_name)).next()
+        self.loops.iter().filter(|l| l.column_name_starts_with(data_name)).next()
     }
 
     /// Get an iterator of mutable references to loop-blocks.
