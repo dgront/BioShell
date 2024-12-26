@@ -113,6 +113,7 @@ pub(crate) mod crate_utils;
 mod deposit;
 mod ligands;
 
+use std::path::Path;
 pub use structure::Structure;
 pub use deposit::*;
 pub use ligands::*;
@@ -154,6 +155,33 @@ pub fn code_and_chain(pdb_code: &str) -> (String, Option<String>) {
             (pdb_code.to_string(), None)
         }
     }
+}
+
+/// Returns the PDB ID code from a given file name.
+///
+/// Attempts to find a PDB-id of a deposit file by testing most commonly used file naming convensions,
+/// as show by the examples below.
+///
+/// # Examples
+/// ```
+/// let pdb_id = bioshell_pdb::code_from_filename("pdb1abc.ent");
+/// assert_eq!(pdb_id, Some("1abc".to_string()));
+/// let pdb_id = bioshell_pdb::code_from_filename("1abc.cif.gz");
+/// assert_eq!(pdb_id, Some("1abc".to_string()));
+/// let pdb_id = bioshell_pdb::code_from_filename("./path/to/folder/1ABC.cif");
+/// assert_eq!(pdb_id, Some("1abc".to_string()));
+/// ```
+pub fn code_from_filename(file_path: &str) -> Option<String> {
+    let path = Path::new(file_path);
+    if let Some(filename) = path.file_name() {
+        let filename = filename.to_string_lossy();
+        if filename.starts_with("pdb") && filename.len() >= 7 {
+            return Some(filename[3..7].to_lowercase().to_string());
+        } else {
+            return Some(filename[..4].to_lowercase().to_string());
+        }
+    }
+    None
 }
 
 mod macros {
