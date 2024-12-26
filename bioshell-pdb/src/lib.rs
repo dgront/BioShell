@@ -159,7 +159,7 @@ pub fn code_and_chain(pdb_code: &str) -> (String, Option<String>) {
 
 /// Returns the PDB ID code from a given file name.
 ///
-/// Attempts to find a PDB-id of a deposit file by testing most commonly used file naming convensions,
+/// Attempts to find a PDB-id of a deposit file by testing most commonly used file naming conventions,
 /// as show by the examples below.
 ///
 /// # Examples
@@ -173,7 +173,27 @@ pub fn code_and_chain(pdb_code: &str) -> (String, Option<String>) {
 /// ```
 pub fn code_from_filename(file_path: &str) -> Option<String> {
     let path = Path::new(file_path);
-    if let Some(filename) = path.file_name() {
+    code_from_path(path)
+}
+
+/// Returns the PDB ID code from a given path.
+///
+/// Attempts to find a PDB-id of a deposit file by testing most commonly used file naming conventions,
+/// as show by the examples below.
+///
+/// # Examples
+/// ```
+/// use std::path::Path;
+/// let pdb_id = bioshell_pdb::code_from_path(Path::new("pdb1abc.ent"));
+/// assert_eq!(pdb_id, Some("1abc".to_string()));
+/// let pdb_id = bioshell_pdb::code_from_path(Path::new("1abc.cif.gz"));
+/// assert_eq!(pdb_id, Some("1abc".to_string()));
+/// let pdb_id = bioshell_pdb::code_from_path(Path::new("./path/to/folder/1ABC.cif"));
+/// assert_eq!(pdb_id, Some("1abc".to_string()));
+/// ```
+pub fn code_from_path(file_path: &Path) -> Option<String> {
+
+    if let Some(filename) = file_path.file_name() {
         let filename = filename.to_string_lossy();
         if filename.starts_with("pdb") && filename.len() >= 7 {
             return Some(filename[3..7].to_lowercase().to_string());
