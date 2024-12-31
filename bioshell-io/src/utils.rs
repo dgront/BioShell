@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, fs, io};
 use std::ffi::OsStr;
 use std::io::{BufRead, BufReader, Error, stdout, stderr, ErrorKind, Write};
 use std::path::{Path, PathBuf};
@@ -373,4 +373,53 @@ pub fn find_bioshell_path() -> Option<PathBuf> {
     }
 
     None
+}
+
+/// Recursively finds files in a directory matching an extension specified by a regex.
+///
+/// # Arguments
+/// - `dir`: The directory to search.
+/// - `extension`: The file extension regex to match (e.g., "rs" for Rust files).
+///
+/// # Returns
+/// A `Result<Vec<PathBuf>, io::Error>` containing the paths of matching files or an error.
+///
+/// # Example
+/// ```
+/// use std::path::Path;
+/// use bioshell_io::glob;
+/// let toml_files = glob(Path::new("./"), "toml").unwrap();
+/// assert_eq!(toml_files.len(), 1);
+/// let csv_gz_files = glob(Path::new("./"), r"csv\.gz").unwrap();
+/// assert_eq!(csv_gz_files.len(), 1);
+/// let csv_gz_files = glob(Path::new("./"), r"toml$|csv\.gz$").unwrap();
+/// assert_eq!(csv_gz_files.len(), 2);
+/// ```
+pub fn glob(dir: &Path, extension_regex: &str) -> Result<Vec<PathBuf>, Error> {
+    let mut results = Vec::new();
+
+    // Compile the regular expression
+    let regex = regex::Regex::from_str(extension_regex).map_err(|_| {
+        Error::new(io::ErrorKind::InvalidInput, "Failed to parse the regex pattern")
+    })?;
+
+    if dir.is_dir() {
+        // Read the directory entries
+        for entry in fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            // If the path is a directory, recurse into it
+            if path.is_dir() {
+                results.extend(glob(&path, extension_regex)?);
+            } else if let Some(file_name) = path.file_name() {
+                // Check if the file name matches the regex
+                if regex.is_match(file_name.to_string_lossy().as_ref()) {
+                    results.push(path);
+                }
+            }
+        }
+    }
+
+    Ok(results)
 }
