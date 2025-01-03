@@ -546,6 +546,44 @@ impl Structure {
             });
     }
 
+    /// Creates a vector of [`ResidueId`](ResidueId) object for each residue found in a given vector of atoms
+    ///
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, Structure};
+    /// let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+    ///                      "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+    ///                      "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+    ///                      "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+    /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    /// let res_idx = Structure::residue_ids_from_atoms(atoms.iter());
+    /// assert_eq!(format!("{}", res_idx[0]), "A:68 ");
+    /// assert_eq!(format!("{}", res_idx[1]), "A:69 ");
+    /// assert_eq!(res_idx.len(), 2);
+    /// ```
+    pub fn residue_ids_from_atoms<'a>(atoms: impl Iterator<Item = &'a PdbAtom>) -> Vec<ResidueId> {
+        // --- predicate used to check whether we are entering a new residue
+        let same_res = SameResidue{};
+        // --- turn a given iterator into a peekable one
+        let mut peek_iter = atoms.peekable();
+        // --- take the first PdbAtom, if there is any
+        let maybe_first = peek_iter.peek();
+
+        if let Some(&first) = maybe_first {
+            // --- take the ResidueIdx of the first PdbAtom
+            let first_idx = ResidueId::try_from(first).unwrap();
+            let mut ret: Vec<ResidueId> = peek_iter.tuple_windows()
+                .filter(|(a,b)| !same_res.check(&a, &b))
+                .map(|(_, b)| ResidueId::try_from(b).unwrap()).collect();
+
+            // --- insert the first ResidueIdx which we actually juped over during the iteration above
+            ret.insert(0, first_idx);
+
+            return ret;
+        }
+        // --- return empty vector if there are no atoms in the given iterator
+        return Vec::new();
+    }
+
     /// Sorts all the atoms of this structure.
     pub fn sort(&mut self) { self.atoms.sort(); }
 
@@ -596,42 +634,5 @@ impl Structure {
     /// Borrows the very last atom of this [`Structure`]
     fn last_atom(&self) -> &PdbAtom { &self.atoms[self.atoms.len()-1] }
 
-    /// Creates a vector of [`ResidueId`](ResidueId) object for each residue found in a given vector of atoms
-    ///
-    /// ```
-    /// # use bioshell_pdb::{PdbAtom, Structure};
-    /// let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
-    ///                      "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
-    ///                      "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
-    ///                      "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
-    /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// let res_idx = Structure::residue_ids_from_atoms(atoms.iter());
-    /// assert_eq!(format!("{}", res_idx[0]), "A:68 ");
-    /// assert_eq!(format!("{}", res_idx[1]), "A:69 ");
-    /// assert_eq!(res_idx.len(), 2);
-    /// ```
-    pub fn residue_ids_from_atoms<'a>(atoms: impl Iterator<Item = &'a PdbAtom>) -> Vec<ResidueId> {
-        // --- predicate used to check whether we are entering a new residue
-        let same_res = SameResidue{};
-        // --- turn a given iterator into a peekable one
-        let mut peek_iter = atoms.peekable();
-        // --- take the first PdbAtom, if there is any
-        let maybe_first = peek_iter.peek();
-
-        if let Some(&first) = maybe_first {
-            // --- take the ResidueIdx of the first PdbAtom
-            let first_idx = ResidueId::try_from(first).unwrap();
-            let mut ret: Vec<ResidueId> = peek_iter.tuple_windows()
-                .filter(|(a,b)| !same_res.check(&a, &b))
-                .map(|(_, b)| ResidueId::try_from(b).unwrap()).collect();
-
-            // --- insert the first ResidueIdx which we actually juped over during the iteration above
-            ret.insert(0, first_idx);
-
-            return ret;
-        }
-        // --- return empty vector if there are no atoms in the given iterator
-        return Vec::new();
-    }
 }
 
