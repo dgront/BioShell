@@ -30,7 +30,7 @@ impl Deposit {
     pub fn from_cif_reader<R: BufRead>(reader: R) -> Result<Deposit, PDBError> {
         let start = Instant::now();
         // --- parse the file content into CIF struct
-        let cif_data = read_cif_buffer(reader)?;
+        let mut cif_data = read_cif_buffer(reader)?;
         if cif_data.len() > 1 {
             return Err(CifParsingError(ExtraDataBlock));
         }
@@ -38,13 +38,9 @@ impl Deposit {
 
         // --- name of the data block must be the deposit ID
         let mut deposit = Deposit::new(cif_data_block.name());
-        deposit.structure = Structure::new(cif_data_block.name());
 
         // ---------- load the residue types into the ResidueTypeManager before atoms and entities
         load_residue_types(cif_data_block)?;
-
-        // --- load all the atoms
-        PdbAtom::from_cif_data(cif_data_block, &mut deposit.structure)?;
 
         // --- header data
         deposit.classification = cif_data_block.get_item("_struct_keywords.pdbx_keywords");
@@ -65,32 +61,20 @@ impl Deposit {
             deposit.entities.insert(entity_id, entity);
         }
 
-        // todo: fix the helix type! Now it's only an alpha helix
-        // --- secondary structure
-        let helices = PdbHelix::from_cif_data(cif_data_block)?;
-        for h in &helices {
-            let range = ByResidueRange::new(h.init_res_id(), h.end_res_id());
-            deposit.structure.atoms.iter_mut().for_each(|a| if range.check(a) {
-                a.secondary_struct_type = SecondaryStructureTypes::RightAlphaHelix
-            });
-        }
-        let strands = PdbSheet::from_cif_data(cif_data_block)?;
-        for s in &strands {
-            let range = ByResidueRange::new(s.init_res_id(), s.end_res_id());
-            deposit.structure.atoms.iter_mut().for_each(|a| if range.check(a) {
-                a.secondary_struct_type = SecondaryStructureTypes::Strand
-            });
-        }
-
         // --- crystallography parameters
         deposit.unit_cell = if let Ok(uc) = UnitCell::from_cif_data(cif_data_block) { Some(uc) } else { None };
-        deposit.structure.update();
-        debug!("Structure loaded in: {:?}", start.elapsed());
+        debug!("{} deposit loaded in: {:?}", &deposit.id_code, start.elapsed());
+
+        // --- store the CIF data block for future access
+        deposit.cif_buffer = Some(cif_data.remove(0));
 
         return Ok(deposit);
     }
 
-    /// Reads a [`Deposit`](Deposit) from a mmCIF file
+    /// Reads a [`Deposit`](Deposit) from a mmCIF file.
+    ///
+    /// This method loads all the data from the CIF file, except for the atoms; these are loaded
+    /// in a lazy manner at the first at the first time the [`Structure`](Structure) is accessed.
     ///
     pub fn from_cif_file(file_name: &str) -> Result<Deposit, PDBError> {
         info!("Loading an mmCIF deposit: {}", file_name);
@@ -98,7 +82,44 @@ impl Deposit {
 
         return Self::from_cif_reader(reader);
     }
+
+    /// Creates a new [`Structure`](Structure) from a CifData block stored in this [`Deposit`](Deposit).
+    ///
+    /// This method is called by the [`Deposit::structure()`](Deposit::structure()) method.
+    pub(crate) fn structure_from_cif_data(cif_data_block: &CifData) -> Result<Structure, PDBError> {
+
+        let start = Instant::now();
+
+        // --- Create a new structure
+        let mut structure = Structure::new(cif_data_block.name());
+
+        // --- load all the atoms
+        PdbAtom::from_cif_data(cif_data_block, &mut structure)?;
+
+
+        // todo: fix the helix type! Now it's only an alpha helix
+        // --- annotate secondary structure
+        let helices = PdbHelix::from_cif_data(cif_data_block)?;
+        for h in &helices {
+            let range = ByResidueRange::new(h.init_res_id(), h.end_res_id());
+            structure.atoms.iter_mut().for_each(|a| if range.check(a) {
+                a.secondary_struct_type = SecondaryStructureTypes::RightAlphaHelix
+            });
+        }
+        let strands = PdbSheet::from_cif_data(cif_data_block)?;
+        for s in &strands {
+            let range = ByResidueRange::new(s.init_res_id(), s.end_res_id());
+            structure.atoms.iter_mut().for_each(|a| if range.check(a) {
+                a.secondary_struct_type = SecondaryStructureTypes::Strand
+            });
+        }
+        structure.update();
+        debug!("Structure loaded in: {:?}", start.elapsed());
+
+        return Ok(structure);
+    }
 }
+
 /// Returns true if a given file is in CIF format.
 ///
 /// This function simply tests whether the first non-empty data line of a given file starts with ``data_``,
@@ -186,4 +207,5 @@ fn load_residue_types(cif_data_block: &CifData) -> Result<(), PDBError>{
     }
     Ok(())
 }
+
 

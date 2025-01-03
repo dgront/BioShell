@@ -378,7 +378,7 @@ impl PdbAtomPredicate for IsCA {
 /// ATOM    153  HA2 GLY A   9      10.848  -2.565  -0.927  1.00  0.20           H
 /// ATOM    154  HA3 GLY A   9      11.018  -2.149   0.770  1.00  0.21           H";
 /// let deposit = Deposit::from_pdb_reader(BufReader::new(gly_pdb.as_bytes())).unwrap();
-/// let mut strctr = deposit.structure();
+/// let mut strctr = deposit.structure().unwrap();
 /// let is_h = IsHydrogen;
 /// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !is_h.check(&a)));
 /// # assert_eq!(new_strctr.count_atoms(), 4);

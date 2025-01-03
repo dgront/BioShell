@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use bioshell_cif::CifData;
 use crate::{Entity, ExperimentalMethod, is_cif_file, is_pdb_file, PDBError, Structure, UnitCell};
 
 /// Holds all the data describing a macromolecular deposit, parsed from either an mmCIF or PDB file.
@@ -30,8 +31,11 @@ pub struct Deposit {
     pub r_free: Option<f64>,
     /// unit cell parameters, when available
     pub unit_cell: Option<UnitCell>,
+    /// the number of structural models in this deposit
+    pub n_models: usize,
     pub(crate) entities: HashMap<String, Entity>,
-    pub(crate) structure: Structure,
+    pub(crate) structure: Option<Structure>,
+    pub(crate) cif_buffer: Option<CifData>
 }
 
 impl Deposit {
@@ -49,8 +53,10 @@ impl Deposit {
             r_factor: None,
             r_free: None,
             unit_cell: None,
+            n_models: 0,
             entities: Default::default(),
-            structure: Structure::new(id_code),
+            structure: None,
+            cif_buffer: None,
         }
     }
 
@@ -94,9 +100,20 @@ impl Deposit {
     /// Provides information about a given entity
     pub fn entity(&self, entity_id: &str) -> &Entity { &self.entities[entity_id] }
 
-    /// returns a [`Structure`] object
-    pub fn structure(&self) -> Structure { self.structure.clone() }
-
-    /// Count models of a macromolecular structure(s) stored in this deposit
-    pub fn count_models(&self) -> usize { self.structure.count_models() }
+    /// Returns a [`Structure`] object.
+    ///
+    /// A structure is lazily parsed from a PDB or mmCIF file, i.e. it is not parsed until this method is called.
+    /// This allows fast access to a deposit's data, without the need to parse the whole file.
+    /// If the structure has been already parsed, the method returns clone of a [`Structure`] object.
+    pub fn structure(&self) -> Option<Structure> {
+        match &self.structure {
+            Some(structure) => Some(structure.clone()),
+            None => {
+                match &self.cif_buffer {
+                    Some(cif_data) => Self::structure_from_cif_data(cif_data).ok(),
+                    None => None,
+                }
+            },
+        }
+    }
 }

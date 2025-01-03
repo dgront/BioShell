@@ -35,7 +35,7 @@ impl Deposit {
     /// ATOM     97  CA  ILE A   6       2.338  -5.105   2.255  1.00  0.13           C";
     ///
     /// let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
-    /// let seq = deposit.structure().sequence("A");
+    /// let seq = deposit.structure().unwrap().sequence("A");
     /// assert_eq!(seq.to_string(100), "MTYKLI");
     /// ```
     pub fn from_pdb_reader<R: BufRead>(reader: R) -> Result<Deposit, PDBError> {
@@ -161,7 +161,7 @@ impl Deposit {
         }
 
         pdb_structure.update();
-        deposit.structure = pdb_structure;
+        deposit.structure = Some(pdb_structure);
 
         debug!("Structure loaded in: {:?}", start.elapsed());
 

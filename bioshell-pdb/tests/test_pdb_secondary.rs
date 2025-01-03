@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use std::io::BufReader;
-    use bioshell_cif::read_cif_buffer;
     use bioshell_pdb::{Deposit, SecondaryStructure};
 
     #[allow(non_upper_case_globals)]
@@ -21,7 +20,7 @@ mod tests {
             let reader = BufReader::new(input.as_bytes());
             let deposit = Deposit::from_cif_reader(reader);
             assert!(deposit.is_ok());
-            let strctr = deposit.unwrap().structure();
+            let strctr = deposit.unwrap().structure().unwrap();
 
             assert_eq!(strctr.secondary("A").to_string(), expctd);
         }

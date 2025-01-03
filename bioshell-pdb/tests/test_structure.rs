@@ -64,7 +64,7 @@ fn test_2gb1_loading() {
 #[test]
 fn test_secondary() -> Result<(), PDBError> {
     let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_2gb1.as_bytes()))?;
-    let strctr: Structure = deposit.structure();
+    let strctr: Structure = deposit.structure().unwrap();
     let mut ss_vec: Vec<u8> = vec![];
     for res in strctr.residue_ids() {
         ss_vec.push(strctr.residue_secondary(res).unwrap().hec_code());
@@ -91,7 +91,7 @@ ATOM     78  CA  LEU B   5      -0.651  -2.752   2.466  1.00  0.11           C";
 #[test]
 fn test_loading_from_reader() {
     let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
-    let strctr = deposit.structure();
+    let strctr = deposit.structure().unwrap();
     let seq = strctr.sequence("A");
     assert_eq!(seq.to_string(80), "MTYKLI");
 
@@ -103,7 +103,7 @@ fn test_loading_from_reader() {
 fn test_atoms_by_range() {
 
     let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
-    let strctr = deposit.structure();
+    let strctr = deposit.structure().unwrap();
     let first = ResidueId::new("A", 4, ' ');
     let last = ResidueId::new("B", 2, ' ');
     let iterator = strctr.atoms_in_range(first, last);

@@ -33,7 +33,7 @@ fn main() {
         return;
     }
     let deposit = Deposit::from_file(&fname).unwrap();
-    let strctr = deposit.structure();
+    let strctr = deposit.structure().unwrap();
 
     for ai in strctr.atoms().iter().filter(|&a|selector.check(a)) {
         for aj in strctr.atoms().iter().filter(|&a|selector.check(a)) {

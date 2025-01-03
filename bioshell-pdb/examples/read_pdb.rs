@@ -9,7 +9,7 @@ fn main(){
 
     let args: Vec<String> = env::args().collect();
     let deposit = Deposit::from_file(&args[1]).unwrap();
-    let strctr = deposit.structure();
+    let strctr = deposit.structure().unwrap();
     println!("Chains: {:?}",strctr.chain_ids());
 
     for chain_id in strctr.chain_ids() {

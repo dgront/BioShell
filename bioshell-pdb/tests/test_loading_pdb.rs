@@ -10,7 +10,7 @@ mod tests {
     #[test]
     fn load_2gb1_from_pdb() {
         let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_2gb1.as_bytes())).unwrap();
-        let strctr = deposit.structure();
+        let strctr = deposit.structure().unwrap();
 
         assert_eq!(strctr.count_atoms(), 855);
         assert_eq!(strctr.count_residues(), 56);

@@ -89,7 +89,7 @@ mod tests {
         assert_eq!(deposit.entities().count(), 2);
         let entity = deposit.entity("1");
         assert_eq!(entity.entity_type(), EntityType::Polymer(PolypeptideL));
-        let strctr = deposit.structure();
+        let strctr = deposit.structure().unwrap();
 
         // --- amino acids as seen in an entity
         let n_all_aa_a = entity.chain_monomers("A")?.len();
@@ -110,7 +110,7 @@ mod tests {
     fn test_1cn5_chain_sequences() -> Result<(), PDBError> {
 
         let deposit = Deposit::from_cif_reader(cif_1c5n.as_bytes())?;
-        let strctr = deposit.structure();
+        let strctr = deposit.structure().unwrap();
         assert_eq!(deposit.entities().count(), 7);
         let first_entity = deposit.entity("1");
         let n_aa_l = first_entity.chain_monomers("L")?.len();

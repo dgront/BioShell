@@ -13,7 +13,7 @@ mod tests {
     #[test]
     fn load_2gb1_from_cif() {
         let reader = BufReader::new(cif_2gb1.as_bytes());
-        let strctr = Deposit::from_cif_reader(reader).unwrap().structure();
+        let strctr = Deposit::from_cif_reader(reader).unwrap().structure().unwrap();
         assert_eq!(strctr.count_atoms(), 855);
         assert_eq!(strctr.count_chains(), 1);
         assert_eq!(strctr.count_models(), 1);
@@ -24,7 +24,7 @@ mod tests {
     fn load_2fdo_from_cif() {
         let reader = BufReader::new(cif_2fdo.as_bytes());
         let deposit = Deposit::from_cif_reader(reader).unwrap();
-        let strctr = deposit.structure();
+        let strctr = deposit.structure().unwrap();
         assert_eq!(strctr.count_atoms(), 1456);
         assert_eq!(strctr.count_chains(), 2);
         assert_eq!(strctr.count_models(), 1);

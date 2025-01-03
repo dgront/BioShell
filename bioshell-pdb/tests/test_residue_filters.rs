@@ -28,7 +28,7 @@ mod test_residue_filters {
     fn test_heavy_atoms_predicate() -> Result<(), PDBError> {
         let reader = BufReader::new(cif_2gb1.as_bytes());
         let deposit = Deposit::from_cif_reader(reader).unwrap();
-        let strctr = deposit.structure();
+        let strctr = deposit.structure().unwrap();
         let all_heavy = HasAllHeavyAtoms;
         let outcome = all_heavy.check(&strctr, &ResidueId::new("A", 1, ' '));
         assert!(outcome);

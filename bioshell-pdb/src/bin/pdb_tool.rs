@@ -113,7 +113,7 @@ fn main() {
 
     // ---------- INPUT section
     let deposit = Deposit::from_file(&args.infile).unwrap();
-    let mut strctr= deposit.structure();
+    let mut strctr= deposit.structure().ok_or("No structure found").expect("Failed to read structure");
 
     // ---------- FILTER section
     let mut multi_filter = MatchAll::new();

@@ -7,7 +7,7 @@ use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypePropert
 use bioshell_seq::sequence::Sequence;
 
 use crate::pdb_atom::{PdbAtom, same_residue_atoms};
-use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, SameChain, ByResidueRange};
+use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, ByResidueRange};
 use crate::pdb_parsing_error::PDBError;
 use crate::pdb_parsing_error::PDBError::{NoSuchAtom, NoSuchResidue};
 use crate::{ResidueId, SecondaryStructureTypes};
@@ -221,8 +221,7 @@ impl Structure {
     /// assert_eq!(strctr.count_chains(), 2);
     /// ```
     pub fn count_chains(&self) -> usize {
-        let same_chain = SameChain{};
-        return self.atoms().windows(2).filter(|a| !same_chain.check(&a[0], &a[1])).count() + 1
+        self.atoms.iter().map(|a| &a.chain_id).collect::<HashSet<_>>().len()
     }
 
     /// Counts models i.e. distinct conformations of this [`Structure`](Structure)
@@ -346,7 +345,7 @@ impl Structure {
     /// ATOM     56  CA  LYS B   4      -3.922  -3.881   4.044  1.00  0.10           C
     /// ATOM     78  CA  LEU B   5      -0.651  -2.752   2.466  1.00  0.11           C";
     /// let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_txt.as_bytes())).unwrap();
-    /// let strctr = deposit.structure();
+    /// let strctr = deposit.structure().unwrap();
     /// let first = ResidueId::new("A", 4, ' ');
     /// let last = ResidueId::new("B", 2, ' ');
     /// let mut iterator = strctr.atoms_in_range(first, last);
@@ -435,7 +434,7 @@ impl Structure {
     /// HETATM 4836 CA    CA H 521      18.674 -16.434  38.353  0.36  7.57          CA
     /// ";
     /// let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_data.as_bytes()))?;
-    /// let strctr = deposit.structure();
+    /// let strctr = deposit.structure().unwrap();
     /// let seq = strctr.sequence("H");
     /// assert_eq!("QFGE", &seq.to_string(10));
     /// # Ok(())
@@ -525,7 +524,7 @@ impl Structure {
     /// HETATM 4562 FE   HEM E 148      -1.727   4.699  23.942  1.00 15.46          FE";
     ///
     /// let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_lines.as_bytes())).unwrap();
-    /// let mut strctr = deposit.structure();
+    /// let mut strctr = deposit.structure().unwrap();
     /// strctr.remove_ligands();
     /// assert_eq!(strctr.count_atoms(), 2);
     /// ```
