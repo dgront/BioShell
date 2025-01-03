@@ -72,11 +72,11 @@ use crate::secondary_structure::SecondaryStructure;
 ///
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
-/// use bioshell_pdb::pdb_atom_filters::{IsWater, PdbAtomPredicate};
+/// use bioshell_pdb::pdb_atom_filters::{IsNotWater, PdbAtomPredicate};
 /// # let mut strctr = Structure::new("1xyz");
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
-/// let hoh = IsWater;
+/// let hoh = IsNotWater;
 /// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !hoh.check(&a)));
 /// # assert_eq!(new_strctr.count_atoms(), 1);
 /// ```
@@ -141,6 +141,35 @@ impl Structure {
         for a in iter { strctr.atoms.push(a.clone()) }
         strctr.update();
 
+        return strctr;
+    }
+
+    /// Renumbers atoms and residues of a copied [`Structure`](Structure).
+    pub fn renumbered_structure(&self) -> Structure {
+        let mut strctr = Structure::new(&self.id_code);
+        let mut atom_id = 0;
+        let mut resid_id = 1;
+        let mut last_resid = self.atoms[0].res_seq;
+        let mut last_icode = self.atoms[0].i_code;
+        let mut last_chain = self.atoms[0].chain_id.clone();
+        for a in self.atoms.iter() {
+            atom_id += 1;
+            if a.res_seq != last_resid || a.i_code != last_icode {
+                resid_id += 1;
+                last_resid = a.res_seq;
+                last_icode = a.i_code;
+            }
+            if a.chain_id != last_chain {
+                last_chain = a.chain_id.clone();
+                resid_id = 1;
+            }
+            let mut a = a.clone();
+            a.res_seq = resid_id;
+            a.serial = atom_id;
+            a.i_code = ' ';
+            strctr.atoms.push(a);
+        }
+        strctr.update();
         return strctr;
     }
 
@@ -386,11 +415,11 @@ impl Structure {
     /// Provides a sequence of a given chain.
     ///
     /// The sequence contains only in the residues found in atoms of this structure; some of its residues
-    /// may be missing. The original sequence of a chain can be obtained from the respective entity object.
+    /// may be missing. The original sequence of a chain can be obtained from the respective [`Entity`](crate::Entity) object.
     ///
-    /// This method includes only the residues included in a [`Polymer`](Polymer) entity of the requested chain.
-    /// Because such an information is not provided by the PDB file format, in that case the method
-    /// includes residues listed in the requested chain until the `TER` record.
+    /// This method includes only the residues included in a [`Polymer`](crate::EntityType::Polymer)
+    /// entity of the requested chain. Because such an information is not provided by the PDB file format,
+    /// in that case the method includes residues listed in the requested chain until the `TER` record.
     /// ```
     /// # use std::io::BufReader;
     /// # use bioshell_pdb::Deposit;
@@ -541,7 +570,7 @@ impl Structure {
         if self.atoms.is_empty() { return; }
 
         // --- sort atoms, just in case
-        self.sort();
+        // self.sort();
         // --- assign atom range for every residue
         self.setup_atom_ranges();
     }

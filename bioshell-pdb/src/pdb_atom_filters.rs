@@ -400,19 +400,19 @@ impl PdbAtomPredicate for IsHydrogen {
 /// The following example removes water molecules from a structure:
 /// ```
 /// # use bioshell_pdb::{PdbAtom, Structure};
-/// use bioshell_pdb::pdb_atom_filters::{IsWater, PdbAtomPredicate};
+/// use bioshell_pdb::pdb_atom_filters::{IsNotWater, PdbAtomPredicate};
 /// # let mut strctr = Structure::new("1xyz");
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
-/// let hoh = IsWater;
-/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !hoh.check(&a)));
+/// let hoh = IsNotWater;
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| hoh.check(&a)));
 /// # assert_eq!(new_strctr.count_atoms(), 1);
 /// # assert_eq!(new_strctr.atoms()[0].name, " CA ");
 /// ```
-pub struct IsWater;
+pub struct IsNotWater;
 
-impl PdbAtomPredicate for IsWater {
-    fn check(&self, a: &PdbAtom) -> bool { a.res_name == "HOH" }
+impl PdbAtomPredicate for IsNotWater {
+    fn check(&self, a: &PdbAtom) -> bool { a.res_name != "HOH" }
 }
 
 /// A filter defined for a pair of atoms.

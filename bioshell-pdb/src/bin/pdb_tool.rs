@@ -3,7 +3,7 @@ use clap::{Parser};
 use log::info;
 use bioshell_io::{out_writer};
 use bioshell_pdb::{Deposit, Structure};
-use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, MatchAll, PdbAtomPredicate};
+use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, IsNotWater, MatchAll, PdbAtomPredicate};
 
 mod deposit_info;
 
@@ -48,12 +48,18 @@ struct Args {
     /// break FASTA lines when longer that given cutoff
     #[clap(long, default_value="80")]
     out_fasta_width: usize,
+    /// renumber residues of a structure
+    #[clap(long, action)]
+    renumber: bool,
     /// keep only selected chains
     #[clap(long)]
     select_chain: Option<String>,
     /// keep only alpha-carbon atoms
-    #[clap(long)]
+    #[clap(long, action)]
     select_ca: bool,
+    /// neglect water molecules while parsing the deposit
+    #[clap(long, action)]
+    skip_water: bool,
     /// keep only selected entities
     #[clap(long, group = "select")]
     select_entity: Option<String>,
@@ -93,9 +99,9 @@ fn write_pdb(strctr: &Structure, fname: &str) {
 
 fn main() {
     let args = Args::parse();
-    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
-    if args.verbose {
-        env::set_var("RUST_LOG", "debug");
+    unsafe {
+        if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+        if args.verbose { env::set_var("RUST_LOG", "debug"); }
     }
     env_logger::init();
 
@@ -119,12 +125,19 @@ fn main() {
         info!("Selecting only alpha-carbon atoms");
         multi_filter.add_predicate(Box::new(IsCA));
     }
+    if args.skip_water {
+        info!("Removing water molecules");
+        multi_filter.add_predicate(Box::new(IsNotWater));
+    }
     if let Some(entity_id) = args.select_entity {
         info!("Selecting entity: {}", entity_id);
         multi_filter.add_predicate(Box::new(ByEntity::new(&entity_id)));
     }
     if multi_filter.count_filters() > 0 {
         strctr = filter(&strctr, &multi_filter);
+    }
+    if args.renumber {
+        strctr = strctr.renumbered_structure();
     }
 
     // ---------- OUTPUT section
