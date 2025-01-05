@@ -367,12 +367,15 @@ impl PolymerEntity {
     pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<PolymerEntity>, PDBError> {
         // ------------- HasMap to store data extracted from cif_data
         let mut entities: HashMap<String, (String, Vec<String>, Vec<String>)> = HashMap::new();
+        let mut entity_order: Vec<String> = vec![];
         // ------------- Extract the list of all polymer entities
         if let Ok(entity_table)  = CifTable::new(cif_data, "_entity_poly.", ["entity_id", "type", "pdbx_strand_id"]) {
             for [entity_id, poly_type, chain_ids] in entity_table.iter() {
                 // --- chain IDs are separated by commas like "A,B,C", so we need to split them
-                let chain_ids: Vec<String> = chain_ids.split(',').map(|s| s.to_string()).collect();
+                let chain_ids: Vec<String> = chain_ids.split(',').map(|s| s.trim().to_string()).collect();
                 entities.insert(entity_id.to_string(), (poly_type.to_string(), chain_ids, Vec::new()));
+                // --- record the order in which the entities were found
+                entity_order.push(entity_id.to_string());
             }
         } else {
             return Ok(vec![]);        // --- no polymer entities found!
@@ -392,6 +395,78 @@ impl PolymerEntity {
             poly_entities.push(PolymerEntity::from_str(&entity_id, &poly_type, chain_ids, monomer_sequence).unwrap());
         }
 
+        // --- Sort entities based on the order in entity_order
+        // Create a HashMap for quick index lookups
+        let order_map: HashMap<_, _> = entity_order.iter().enumerate().map(|(i, id)| (id, i)).collect();
+        // Sort entities based on the order in entity_order
+        poly_entities.sort_by_key(|e| order_map.get(&e.entity_id).copied().unwrap_or(usize::MAX));
+
         Ok(poly_entities)
     }
+}
+
+#[cfg(test)]
+mod test_poly_entity {
+    use std::io::BufReader;
+    use bioshell_cif::read_cif_buffer;
+    use crate::{PDBError};
+    use super::PolymerEntity;
+    #[test]
+    fn polymer_6qyd_entities() -> Result<(), PDBError> {
+
+        let reader = BufReader::new(entities_6qyd.as_bytes());
+        let cif_data = read_cif_buffer(reader).unwrap();
+        let entities = PolymerEntity::from_cif_data(&cif_data[0]).unwrap();
+        assert_eq!(entities.len(), 2);
+        assert_eq!(entities[0].entity_id, "1");
+        assert_eq!(entities[0].chain_ids.len(), 235);
+        assert_eq!(entities[0].chain_ids[0], "1A");
+        assert_eq!(entities[0].chain_ids[234], "9E");
+        assert_eq!(entities[1].entity_id, "2");
+        assert_eq!(entities[1].chain_ids.len(), 165);
+        Ok(())
+    }
+
+    const entities_6qyd: &str = "data_6QYD
+#
+loop_
+_entity_poly.entity_id
+_entity_poly.type
+_entity_poly.nstd_linkage
+_entity_poly.nstd_monomer
+_entity_poly.pdbx_seq_one_letter_code
+_entity_poly.pdbx_seq_one_letter_code_can
+_entity_poly.pdbx_strand_id
+_entity_poly.pdbx_target_identifier
+1 'polypeptide(L)' no no
+;MRIT
+;
+;MRIT
+;
+;1A,1B,1C,1D,1E,1F,2A,2B,2C,2D,2E,3A,3B,3C,3D,3E,3F,4A,4B,4C,4D,4E,4F,5A,5B,5C,5D,5E,5F,6A,6B,6C,6D,6E,6F,7A,7B,7C,7D,7E,8A,8B,8C,8D,8E,8F,9A,1G,1H,1I,1J,1K,1L,2F,2G,2H,2I,2J,3G,3H,3I,3J,3K,3L,4G,4H,4I,4J,4K,4L,5G,5H,5I,5J,5K,5L,6G,6H,6I,6J,6K,6L,7F,7G,7H,7I,7J,8G,8H,8I,8J,8K,8L,9B,1M,1N,1O,1P,1Q,1R,2K,2L,2M,2N,2O,3M,3N,3O,3P,3Q,3R,4M,4N,4O,4P,4Q,4R,5M,5N,5O,5P,5Q,5R,6M,6N,6O,6P,6Q,6R,7K,7L,7M,7N,7O,8M,8N,8O,8P,8Q,8R,9C,1S,1T,1U,1V,1W,1X,2P,2Q,2R,2S,2T,3S,3T,3U,3V,3W,3X,4S,4T,4U,4V,4W,4X,5S,5T,5U,5V,5W,5X,6S,6T,6U,6V,6W,6X,7P,7Q,7R,7S,7T,8S,8T,8U,8V,8W,8X,9D,1Y,1Z,1a,1b,1c,1d,2U,2V,2W,2X,2Y,3Y,3Z,3a,3b,3c,3d,4Y,4Z,4a,4b,4c,4d,5Y,5Z,5a,5b,5c,5d,6Y,6Z,6a,6b,6c,6d,7U,7V,7W,7X,7Y,8Y,8Z,8a,8b,8c,8d,9E
+;
+?
+2 'polypeptide(L)' no no
+;MMVS
+;
+;MMVS
+;
+;1e,1f,1g,1h,2Z,2a,2b,2c,2d,3e,3f,3g,3h,4e,4f,5e,5f,6e,6f,6g,6h,7Z,7a,7b,7c,7d,8e,8f,8g,8h,8i,8j,9F,1i,1j,1k,1l,2e,2f,2g,2h,2i,3i,3j,3k,3l,4g,4h,5g,5h,6i,6j,6k,6l,7e,7f,7g,7h,7i,8k,8l,8m,8n,8o,8p,9G,1m,1n,1o,1p,2j,2k,2l,2m,2n,3m,3n,3o,3p,4i,4j,5i,5j,6m,6n,6o,6p,7j,7k,7l,7m,7n,8q,8r,8s,8t,8u,8v,9H,1q,1r,1s,1t,2o,2p,2q,2r,2s,3q,3r,3s,3t,4k,4l,5k,5l,6q,6r,6s,6t,7o,7p,7q,7r,7s,8w,8x,8y,8z,9K,9L,9I,1u,1v,1w,1x,2t,2u,2v,2w,2x,3u,3v,3w,3x,4m,4n,5m,5n,6u,6v,6w,6x,7t,7u,7v,7w,7x,9M,9N,9O,9P,9Q,9R,9J
+;
+?
+#
+loop_
+_entity_poly_seq.entity_id
+_entity_poly_seq.num
+_entity_poly_seq.mon_id
+_entity_poly_seq.hetero
+1 1   MET n
+1 2   ARG n
+1 3   ILE n
+1 4   THR n
+2 1   MET n
+2 2   MET n
+2 3   VAL n
+2 4   SER n
+";
 }

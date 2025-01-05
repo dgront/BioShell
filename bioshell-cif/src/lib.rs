@@ -235,7 +235,7 @@ impl CifLoop {
     ///
     /// If the very last row contains the same number of entries as the number of columns,
     /// this method starts a new row.
-    pub fn add_data(&mut self, data_value: &String) {
+    pub fn add_data(&mut self, data_value: &str) {
 
         if self.last_row_complete() {   // --- start a new row by inserting a new vector holding the given entry
             self.data_rows.push(vec![data_value.to_string()]);
@@ -697,7 +697,11 @@ pub fn read_cif_buffer<R: BufRead>(buffer: R) -> Result<Vec<CifData>, CifError> 
 
             Ok(CifLine::MultilineString(val)) => {
                 if let Some(a_loop) = &mut current_loop {
-                    a_loop.add_data(&val);
+                    if val.starts_with(";") {
+                        a_loop.add_data(val[1..].trim_end_matches(";"));
+                    } else {
+                        a_loop.add_data(val.trim_end_matches(";"));
+                    }
                 } else {
                     if data_item_open.is_some() {
                         data_blocks.last_mut().unwrap().data_items_mut().insert(data_item_open.unwrap(), val);
