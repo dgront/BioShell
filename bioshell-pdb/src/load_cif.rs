@@ -10,6 +10,7 @@ use crate::pdb_sheet::PdbSheet;
 use crate::pdb_helix::PdbHelix;
 use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
 use crate::crate_utils::find_deposit_file_name;
+use crate::ExperimentalMethod::{ElectronCrystallography, FiberDiffraction, ElectronMicroscopy, XRay};
 use crate::pdb_atom_filters::{ByResidueRange, PdbAtomPredicate};
 use crate::PDBError::{CifParsingError, IncorrectCompoundTypeName};
 
@@ -49,9 +50,20 @@ impl Deposit {
 
         // --- exp details and resolution
         deposit.methods = ExperimentalMethod::from_cif_data(cif_data_block);
-        deposit.resolution = cif_data_block.get_item("_refine.ls_d_res_high");
-        deposit.r_factor = cif_data_block.get_item("_refine.ls_R_factor_obs");
-        deposit.r_free = cif_data_block.get_item("_refine.ls_R_factor_R_free");
+        if deposit.methods.contains(&XRay) {
+            deposit.resolution = cif_data_block.get_item("_refine.ls_d_res_high");
+            deposit.r_factor = cif_data_block.get_item("_refine.ls_R_factor_obs");
+            deposit.r_free = cif_data_block.get_item("_refine.ls_R_factor_R_free");
+        }
+        if deposit.methods.contains(&ElectronMicroscopy) {
+            deposit.resolution = cif_data_block.get_item("_em_3d_reconstruction.resolution");
+        }
+        if deposit.methods.contains(&FiberDiffraction) {
+            deposit.resolution = cif_data_block.get_item("_pd_proc.reflns_resolution");
+        }
+        if deposit.methods.contains(&ElectronCrystallography) {
+            deposit.resolution = cif_data_block.get_item("_em_3d_reconstruction.resolution");
+        }
         if let Some(keywds) = cif_data_block.get_item::<String>("_struct_keywords.text") {
             deposit.keywords = keywds.split(",").map(|s| s.to_string()).collect();
         }
