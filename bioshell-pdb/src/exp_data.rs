@@ -15,6 +15,8 @@ pub enum ExperimentalMethod {
     ElectronCrystallography,
     /// Electron microscopy
     ElectronMicroscopy,
+    /// Powder diffraction
+    PowderDiffraction,
     /// Solution nuclear magnetic resonance (NMR)
     SolidStateNMR,
     /// Solution nuclear magnetic resonance (NMR)
@@ -48,6 +50,7 @@ impl ExperimentalMethod {
             ExperimentalMethod::SolidStateNMR => "SOLID-STATE NMR",
             ExperimentalMethod::SolutionScattering => "SOLUTION SCATTERING",
             ExperimentalMethod::InfraredSpectroscopy => {"INFRARED SPECTROSCOPY"}
+            ExperimentalMethod::PowderDiffraction => {"POWDER DIFFRACTION"}
         }
     }
 
@@ -77,6 +80,7 @@ impl ExperimentalMethod {
             if let Some(method) = match tokens.as_slice() {
                 ["X-RAY", "DIFFRACTION"] => Some(ExperimentalMethod::XRay),
                 ["FIBER", "DIFFRACTION"] => Some(ExperimentalMethod::FiberDiffraction),
+                ["POWDER", "DIFFRACTION"] => Some(ExperimentalMethod::PowderDiffraction),
                 ["NEUTRON", "DIFFRACTION"] => Some(ExperimentalMethod::NeutronDiffraction),
                 ["ELECTRON", "CRYSTALLOGRAPHY"] => Some(ExperimentalMethod::ElectronCrystallography),
                 ["ELECTRON", "MICROSCOPY"] => Some(ExperimentalMethod::ElectronMicroscopy),
