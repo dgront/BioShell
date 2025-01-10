@@ -372,7 +372,12 @@ impl PolymerEntity {
         if let Ok(entity_table)  = CifTable::new(cif_data, "_entity_poly.", ["entity_id", "type", "pdbx_strand_id"]) {
             for [entity_id, poly_type, chain_ids] in entity_table.iter() {
                 // --- chain IDs are separated by commas like "A,B,C", so we need to split them
-                let chain_ids: Vec<String> = chain_ids.split(',').map(|s| s.trim().to_string()).collect();
+                // --- the first character is a semicolon, so we need to skip it
+                let chain_ids: Vec<String> =  if chain_ids.starts_with(";") {
+                    chain_ids[1..].split(',').map(|s| s.trim().to_string()).collect()
+                } else {
+                    chain_ids.split(',').map(|s| s.trim().to_string()).collect()
+                };
                 entities.insert(entity_id.to_string(), (poly_type.to_string(), chain_ids, Vec::new()));
                 // --- record the order in which the entities were found
                 entity_order.push(entity_id.to_string());
