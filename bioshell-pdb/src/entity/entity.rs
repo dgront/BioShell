@@ -373,11 +373,8 @@ impl PolymerEntity {
             for [entity_id, poly_type, chain_ids] in entity_table.iter() {
                 // --- chain IDs are separated by commas like "A,B,C", so we need to split them
                 // --- the first character is a semicolon, so we need to skip it
-                let chain_ids: Vec<String> =  if chain_ids.starts_with(";") {
-                    chain_ids[1..].split(',').map(|s| s.trim().to_string()).collect()
-                } else {
-                    chain_ids.split(',').map(|s| s.trim().to_string()).collect()
-                };
+                let chains_fixed = chain_ids.trim_matches(';').trim();
+                let chain_ids: Vec<String> =  chains_fixed.split(',').map(|s| s.trim().to_string()).collect();
                 entities.insert(entity_id.to_string(), (poly_type.to_string(), chain_ids, Vec::new()));
                 // --- record the order in which the entities were found
                 entity_order.push(entity_id.to_string());
