@@ -4,7 +4,7 @@ use clap::{Parser};
 use log::{info};
 
 use bioshell_seq::sequence::{load_sequences};
-use bioshell_seq::alignment::{PrintAsPairwise, AlignmentReporter, SimilarityReport, align_all_pairs, MultiReporter};
+use bioshell_seq::alignment::{PrintAsPairwise, AlignmentReporter, SimilarityReport, align_all_pairs, MultiReporter, IdentityMatrixReporter};
 use bioshell_seq::scoring::{SubstitutionMatrixList};
 use bioshell_seq::SequenceError;
 
@@ -30,7 +30,10 @@ struct Args {
     pairwise: bool,
     /// print sequence identity report (default)
     #[clap(long, action)]
-    report: bool,
+    identity: bool,
+    /// print sequence identity as a triangular matrix; this output is much more concise than the --identity output
+    #[clap(long, action)]
+    identity_matrix: bool,
     /// length of a sequence name to print; longer names will be trimmed that size
     #[clap(long, short='w', default_value = "20")]
     name_width: usize,
@@ -46,7 +49,10 @@ pub fn main() -> Result<(), SequenceError> {
     let name_width = args.name_width;
     let mut multireports = MultiReporter::new();
     if args.pairwise { multireports.add_reporter(Box::new(PrintAsPairwise::new(name_width, 80))); }
-    if args.report { multireports.add_reporter(Box::new(SimilarityReport::new(name_width))); }
+    if args.identity { multireports.add_reporter(Box::new(SimilarityReport::new(name_width))); }
+    if args.identity_matrix {
+        multireports.add_reporter(Box::new(IdentityMatrixReporter::new(name_width, "stdout")));
+    }
     if multireports.count_reporters() == 0 {  multireports.add_reporter(Box::new(SimilarityReport::new(name_width))); }
 
     let queries = load_sequences(&args.query, "query")?;

@@ -99,5 +99,5 @@ pub fn align_all_pairs<R: AlignmentReporter>(queries: &Vec<Sequence>, templates:
     info!("{}", format!("{} sequence pairs aligned in {:?}", n_pairs, start.elapsed()));
     gcups /= 1.0e6;
     gcups /= start.elapsed().as_millis() as f64;
-    info!("{}", format!("{} GCUPS", gcups));
+    info!("{}", format!("{} MCUPS", gcups));
 }
