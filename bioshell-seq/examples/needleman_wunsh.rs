@@ -2,9 +2,9 @@ use std::env;
 use clap::{Parser};
 #[allow(unused_imports)]
 use log::{info};
-
+use log::warn;
 use bioshell_seq::sequence::{load_sequences};
-use bioshell_seq::alignment::{PrintAsPairwise, AlignmentReporter, SimilarityReport, align_all_pairs, MultiReporter, IdentityMatrixReporter};
+use bioshell_seq::alignment::{PrintAsPairwise, SimilarityReport, align_all_pairs, MultiReporter, IdentityMatrixReporter};
 use bioshell_seq::scoring::{SubstitutionMatrixList};
 use bioshell_seq::SequenceError;
 
@@ -42,7 +42,10 @@ struct Args {
 
 pub fn main() -> Result<(), SequenceError> {
 
-    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    unsafe {
+        if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    }
+
     env_logger::init();
     let args = Args::parse();
 
@@ -56,9 +59,17 @@ pub fn main() -> Result<(), SequenceError> {
     if multireports.count_reporters() == 0 {  multireports.add_reporter(Box::new(SimilarityReport::new(name_width))); }
 
     let queries = load_sequences(&args.query, "query")?;
+    if queries.len() == 0 {
+        warn!("No sequences found in the query set. Exiting.");
+        return Ok(());
+    }
 
     if let Some(tmpl) = args.template {
         let templates = load_sequences(&tmpl, "template")?;
+        if templates.len() == 0 {
+            warn!("No sequences found in the templates set. Exiting.");
+            return Ok(());
+        }
         align_all_pairs(&queries, &templates, SubstitutionMatrixList::BLOSUM62,
             args.open, args.extend, false, &mut multireports);
 
