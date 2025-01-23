@@ -283,6 +283,17 @@ impl Structure {
         return output;
     }
 
+    /// Creates a vector that holds string identifiers for all entities of this [`Structure`](Structure)
+    ///
+    /// The vector is sorted alphabetically.
+    pub fn entity_ids(&self) -> Vec<String> {
+        let uniq: HashSet<&String> = self.atoms.iter().map(|a| &a.entity_id).collect();
+        let mut output = Vec::from_iter(uniq.iter().map(|s| *s).cloned());
+        output.sort();
+
+        return output;
+    }
+
     /// Returns atoms of a given chain
     ///
     /// ```

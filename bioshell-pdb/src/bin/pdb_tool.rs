@@ -3,7 +3,7 @@ use clap::{Parser};
 use log::info;
 use bioshell_io::{out_writer};
 use bioshell_pdb::{Deposit, Structure};
-use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, IsNotWater, MatchAll, PdbAtomPredicate};
+use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
 
 mod deposit_info;
 
@@ -51,6 +51,15 @@ struct Args {
     /// renumber residues of a structure
     #[clap(long, action)]
     renumber: bool,
+    /// print a summary of the entities in the structure
+    #[clap(long, action)]
+    entities: bool,
+    /// keep only amino acid residues; all ligands and cofactors will be removed
+    #[clap(long)]
+    select_protein: bool,
+    /// keep only nucleic acid residues; all proteins and ligands will be removed
+    #[clap(long)]
+    select_nucleic: bool,
     /// keep only selected chains
     #[clap(long)]
     select_chain: Option<String>,
@@ -97,6 +106,25 @@ fn write_pdb(strctr: &Structure, fname: &str) {
     outstream.flush().unwrap();
 }
 
+/// Print a list of all entities found in a structure.
+///
+/// This function lists only these entities that are present in the given structure; those present
+/// in the deposit but not in the structure are not listed.
+///
+/// # Arguments
+/// - substructure - structure to print entities for
+/// - deposit - deposit containing the information about entities
+fn print_entities(substructure: &Structure, deposit: &Deposit) {
+    let entities = substructure.entity_ids();
+    for (name, entity) in deposit.entities() {
+        if !entities.contains(&name) { continue; }
+        print!("{} {}", name, entity.description());
+        for chain in entity.chain_ids() {
+            if substructure.chain_ids().contains(chain) { print!(" {}", chain); }
+        }
+        println!();
+    }
+}
 fn main() {
     let args = Args::parse();
     unsafe {
@@ -117,6 +145,14 @@ fn main() {
 
     // ---------- FILTER section
     let mut multi_filter = MatchAll::new();
+    if  args.select_protein {
+        info!("Selecting only protein chains");
+        multi_filter.add_predicate(Box::new(KeepProtein));
+    }
+    if args.select_nucleic {
+        info!("Selecting only nucleic chains");
+        multi_filter.add_predicate(Box::new(KeepNucleicAcid));
+    }
     if let Some(chain_id) = args.select_chain {
         info!("Selecting only chain {}", &chain_id);
         multi_filter.add_predicate(Box::new(ByChain::new(&chain_id)));
@@ -145,6 +181,9 @@ fn main() {
         for chain_id in &strctr.chain_ids() {
             println!("{}",strctr.sequence(chain_id));
         }
+    }
+    if args.entities {
+        print_entities(&strctr, &deposit);
     }
     if args.out_secondary {
         for chain_id in &strctr.chain_ids() {

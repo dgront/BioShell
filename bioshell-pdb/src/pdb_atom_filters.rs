@@ -52,6 +52,7 @@
 //! let bb_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|b| bb.check(b)));
 //! ```
 
+use bioshell_seq::chemical::ResidueTypeManager;
 use crate::{PdbAtom, ResidueId};
 
 /// A handy filter to process atoms of a [`Structure`](crate::Structure) with iterators.
@@ -389,6 +390,39 @@ impl PdbAtomPredicate for IsHydrogen {
     fn check(&self, a: &PdbAtom) -> bool {
         if let Some(element) = &a.element {
             if element == "H" { return true }
+        }
+        return false;
+    }
+}
+
+/// Returns `true` if an atom belongs to a protein
+///
+/// This filter checks whether the type of the residue this atom belongs to is `ResidueType::PeptideLinking`
+pub struct KeepProtein;
+
+impl PdbAtomPredicate for KeepProtein {
+    fn check(&self, a: &PdbAtom) -> bool {
+        let mgr = ResidueTypeManager::get();
+        let res_type_opt = mgr. by_code3(&String::from(&a.res_name));
+        if let Some(res_type) = res_type_opt {
+            return res_type.chem_compound_type.is_peptide_linking()
+        }
+        return false;
+    }
+}
+
+/// Returns `true` if an atom belongs to a nucleic acid
+///
+/// This filter checks whether the type of the residue this atom belongs to is [`RNALinking`](ResidueType::RNALinking),
+/// [`DNALinking`](ResidueType::DNALinking) or similar.
+pub struct KeepNucleicAcid;
+
+impl PdbAtomPredicate for KeepNucleicAcid {
+    fn check(&self, a: &PdbAtom) -> bool {
+        let mgr = ResidueTypeManager::get();
+        let res_type_opt = mgr. by_code3(&String::from(&a.res_name));
+        if let Some(res_type) = res_type_opt {
+            return res_type.chem_compound_type.is_nucleic_linking()
         }
         return false;
     }
