@@ -14,24 +14,25 @@ const USAGE: &str = "Simple program to compute a matrix of inter-atomic distance
 fn main() {
     let args: Vec<String> = env::args().collect();
     let mut selector: Box<dyn PdbAtomPredicate> = Box::new(AlwaysPass);
-    let fname: &str;
+    let mut fname: &str = "-h";
     match args.len() {
-        1 => { panic!("No input PDB file given") }
+        1 => { eprintln!("No input PDB file given! Use distance_map -h for help") }
         2 => { fname = &args[1] }
         3 => {
             match args[1].as_str() {
                 "--ca" => { selector = Box::new(IsCA); }
                 "--bb" => { selector = Box::new(IsBackbone); }
-                _ => { panic!("Unknown PDB atom predicate; run `distance_map -h` for help")}
+                _ => { eprintln!("Unknown PDB atom predicate; run `distance_map -h` for help")}
             }
             fname = &args[2];
         }
-        _ => { panic!("Too many arguments; run `distance_map -h` for help") }
+        _ => { eprintln!("Too many arguments; run `distance_map -h` for help") }
     };
     if fname == "--help" || fname == "-h" {
-        println!("{:?}", USAGE);
+        eprintln!("{:?}", USAGE);
         return;
     }
+
     let deposit = Deposit::from_file(&fname).unwrap();
     let strctr = deposit.structure().unwrap();
 
