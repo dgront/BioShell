@@ -362,6 +362,33 @@ impl PdbAtomPredicate for IsCA {
     }
 }
 
+/// Returns `true` if an atom is a beta carbon
+///
+/// # Examples
+/// ```
+/// # use bioshell_pdb::{PdbAtom, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{IsCB, PdbAtomPredicate};
+/// # let mut strctr = Structure::new("1xyz");
+/// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N"));
+/// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
+/// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
+/// let cb = IsCB;
+/// let cb_count = strctr.atoms().iter().filter(|a| cb.check(a)).count();
+/// # assert_eq!(cb_count, 1);
+///
+/// let mut a = PdbAtom::new();
+/// a.name = String::from("CB");
+/// assert!(cb.check(&a));          // the predicate can handle incorrectly padded atom names
+/// ```
+pub struct IsCB;
+
+impl PdbAtomPredicate for IsCB {
+    fn check(&self, a: &PdbAtom) -> bool {
+        let name: &str = format_name!(&a.name);
+        name == " CB "
+    }
+}
+
 /// Returns `true` if an atom is a hydrogen.
 ///
 /// The following example removes all hydrogen atoms from a structure

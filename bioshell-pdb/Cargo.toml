@@ -34,3 +34,7 @@ md5 = "0.7"
 [[bin]]
 name = "pdb_tool"
 path = "src/bin/pdb_tool.rs"
+
+[[distance_map]]
+name = "pdb_tool"
+path = "src/bin/distance_map.rs"
