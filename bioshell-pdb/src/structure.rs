@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
+use std::io::Write;
 use std::ops::Range;
 
 use itertools::{Itertools};
@@ -307,8 +308,8 @@ impl Structure {
     /// let chain_A_atoms = strctr.atoms_in_chain("A");
     /// # assert_eq!(chain_A_atoms.len(),4);
     /// ```
-    pub fn atoms_in_chain(&self, chain_id: & str) -> Vec<&PdbAtom> {
-        self.atoms.iter().filter(move |&atm| atm.chain_id==chain_id).collect()
+    pub fn atoms_in_chain<'a>(&'a self, chain_id: &'a str) -> impl Iterator<Item = &'a PdbAtom> + 'a {
+        self.atoms.iter().filter(move |atm| atm.chain_id == chain_id)
     }
 
     /// Returns atoms of a given residue
@@ -645,4 +646,35 @@ impl Structure {
     fn last_atom(&self) -> &PdbAtom { &self.atoms[self.atoms.len()-1] }
 
 }
+
+/// Write a given structure in the PDB format.
+///
+/// The structure stored in a file may differ from the given object, as it may need to be adapted to the PDB file format.
+/// For example, if:
+///  - a given structure has a chain with its name longer than a single character, all chains will be renamed
+pub fn write_pdb(strctr: &Structure, mut outstream: Box<dyn Write>) -> bool {
+
+    let mut if_rename_chains = false;
+    for chain_id  in &strctr.chain_ids() {
+        if chain_id.len() > 1 {
+            if_rename_chains = true;
+            break
+        }
+    }
+    if if_rename_chains {
+        let new_chain_codes: Vec<char> = ('A'..='Z').chain('0'..='9').collect();
+        for (i, chain_id)  in strctr.chain_ids().iter().enumerate() {
+            for atom in strctr.atoms_in_chain(chain_id) {
+                let mut a = atom.clone();
+                a.chain_id = new_chain_codes[i].to_string();
+                writeln!(outstream, "{}", a).unwrap();
+            }
+        }
+    }
+
+    outstream.flush().unwrap();
+
+    return true;
+}
+
 

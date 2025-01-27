@@ -114,7 +114,7 @@ mod deposit;
 mod ligands;
 
 use std::path::Path;
-pub use structure::Structure;
+pub use structure::{Structure, write_pdb};
 pub use deposit::*;
 pub use ligands::*;
 pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};

@@ -102,8 +102,7 @@ fn print_info_row(deposit: &Deposit, tokens: &Vec<String>) {
 
 fn write_pdb(strctr: &Structure, fname: &str) {
     let mut outstream = out_writer(fname, false);
-    for a in strctr.atoms() { write!(outstream, "{}\n", a).unwrap(); }
-    outstream.flush().unwrap();
+    bioshell_pdb::write_pdb(strctr, outstream);
 }
 
 /// Print a list of all entities found in a structure.
