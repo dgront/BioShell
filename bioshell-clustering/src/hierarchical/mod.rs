@@ -36,9 +36,11 @@
 //! which returns the root node of a binary clustering tree.
 //!
 mod hierarchical;
-mod distance_matrix;
+mod clustering_matrix;
 pub mod strategies;
+mod distance_matrix;
 
 pub use hierarchical::*;
-use distance_matrix::*;
+pub use distance_matrix::DistanceMatrix;
+use clustering_matrix::*;
 

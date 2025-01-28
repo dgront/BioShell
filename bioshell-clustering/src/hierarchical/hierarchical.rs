@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use log::info;
 use bioshell_datastructures::{BinaryTreeNode, depth_first_preorder};
-use crate::hierarchical::{DistanceMatrix};
+use crate::hierarchical::{HierarchicalClusteringMatrix};
 
 /// Describes a single merging step in a hierarchical clustering process.
 ///
@@ -26,7 +26,7 @@ where
     M: Fn(usize, usize, usize, f32, f32, f32) -> f32 {
 
     // --- create the distance matrix used by the clustering algorithm
-    let mut dmatrix = DistanceMatrix::new(n_data, distance_func);
+    let mut dmatrix = HierarchicalClusteringMatrix::new(n_data, distance_func);
 
     // --- create the initial clusters
     let mut clusters = HashMap::new();

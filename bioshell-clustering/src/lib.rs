@@ -9,6 +9,7 @@ pub mod optics;
 pub mod em;
 pub mod kmeans;
 pub mod hierarchical;
+pub mod errors;
 
 
 
