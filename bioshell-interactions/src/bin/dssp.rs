@@ -27,9 +27,9 @@ struct Args {
 fn main() {
     // ---------- BioShell app setup ----------
     let args = Args::parse();
-    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
-    if args.verbose {
-        env::set_var("RUST_LOG", "debug");
+    unsafe {
+        if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+        if args.verbose { env::set_var("RUST_LOG", "debug"); }
     }
     env_logger::init();
 
@@ -41,7 +41,7 @@ fn main() {
 
     // ---------- INPUT section ----------
     let deposit = Deposit::from_file(&args.infile).unwrap();
-    let strctr= deposit.structure();
+    let strctr= deposit.structure().ok_or("No structure found").expect("Failed to read structure");
 
     // ---------- Detect H-bonds ----------
     let hbonds = BackboneHBondMap::new(&strctr);

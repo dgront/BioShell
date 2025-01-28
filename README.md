@@ -15,10 +15,10 @@ the BioShell v.3 package.
 Curretnly the BioShell v.4 project has been divided into the following crates:
 
  - **bioshell-seq**: works with biological sequences
- - **bioshell-pdb**: a library to work on with crystallographic Protein DataBank files. It can parse PDB files and perform calculations on macromolecular structures.
- - **bioshell-cif**: reads CIF files
+ - **bioshell-pdb**: a library to work on with crystallographic Protein DataBank files. It can parse CIF and PDB files, and perform calculations on macromolecular structures.
+ - **bioshell-cif**: low-level reader for CIF files
  - **bioshell-statistics**: statistical utilities 
- - **bioshell-clustering**: clustering methods, such as K-means and OPTICS
+ - **bioshell-clustering**: clustering methods, such as hierarchical clustering, K-means and OPTICS
  - **bioshell-io**: I/O utilities
 
 ## Building
@@ -26,12 +26,12 @@ You need to install `rust` toolchain to compile the package. You can:
  
  - compile the whole project, i.e. all its libraries (called crates) by executing the following command in the root folder of the project: 
 ```bash
-cargo build --release
+cargo build --release --all
 ```
-This will compile also all the executables (currently the ``surpass_alfa`` application)
+This will compile also all the executables across all the crates.
 - compile all examples:
 ```bash
-cargo build --examples --release
+cargo build --all --examples --release
 ```
 - compile a selected example:
 ```bash
