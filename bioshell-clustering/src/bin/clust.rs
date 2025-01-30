@@ -8,8 +8,8 @@ use bioshell_clustering::hierarchical::strategies::{average_link, centroid_link,
 use bioshell_io::{out_writer};
 
 #[derive(Parser, Debug)]
-#[clap(name = "filter_fasta")]
-#[clap(about = "Cluster amino acid sequences by sequence identity", long_about = None)]
+#[clap(name = "clust")]
+#[clap(about = "Performs hierarchical clustering analysis.", long_about = None)]
 struct Args {
     #[clap(long, short='d')]
     /// input file with distances: TSV format

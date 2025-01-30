@@ -122,7 +122,7 @@ pub fn medoid_by_min_max<F: Fn(usize, usize) -> f32>(cluster: &ClusteringTreeNod
     }
 
     info!("medoid selected by min-max rule, it's maximum distance is {}", best_distance);
-    return best_index;
+    return members[best_index];
 }
 
 /// Finds clusters by stopping the clustering algorithm at a given distance cutoff.
