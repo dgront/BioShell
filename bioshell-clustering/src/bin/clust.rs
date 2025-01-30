@@ -121,6 +121,7 @@ pub fn main() -> Result<(), ClusteringError> {
             let medoid_idx = medoid_by_min_max(cluster, &distance_fn);
             writeln!(out_file, "# size: {}", cluster.value.cluster_size)?;
             writeln!(out_file, "# medoid: {}", distance_matrix.element_id(medoid_idx))?;
+            writeln!(out_file, "# distance: {}", cluster.value.merging_distance)?;
             let leaf_ids: Vec<usize> = retrieve_data_id(&cluster);
             for id in &leaf_ids {
                 writeln!(out_file, "{}", distance_matrix.element_id(*id))?;
