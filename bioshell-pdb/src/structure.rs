@@ -661,14 +661,14 @@ pub fn write_pdb(strctr: &Structure, mut outstream: Box<dyn Write>) -> bool {
             break
         }
     }
-    if if_rename_chains {
-        let new_chain_codes: Vec<char> = ('A'..='Z').chain('0'..='9').collect();
-        for (i, chain_id)  in strctr.chain_ids().iter().enumerate() {
-            for atom in strctr.atoms_in_chain(chain_id) {
-                let mut a = atom.clone();
+    let new_chain_codes: Vec<char> = ('A'..='Z').chain('0'..='9').collect();
+    for (i, chain_id)  in strctr.chain_ids().iter().enumerate() {
+        for atom in strctr.atoms_in_chain(chain_id) {
+            let mut a = atom.clone();
+            if if_rename_chains {
                 a.chain_id = new_chain_codes[i].to_string();
-                writeln!(outstream, "{}", a).unwrap();
             }
+            writeln!(outstream, "{}", a).unwrap();
         }
     }
 
