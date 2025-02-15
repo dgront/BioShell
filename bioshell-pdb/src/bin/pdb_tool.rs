@@ -10,9 +10,10 @@ mod deposit_info;
 
 const PDB_TOOL_EXAMPLES: &str = include_str!("../documentation/pdb_tool.md");
 
+fn create_cookbook() -> String { format!("{}{}", "\x1B[4mCookbook:\x1B[0m\n", markdown_to_text(PDB_TOOL_EXAMPLES)) }
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None, arg_required_else_help = true, after_long_help = markdown_to_text(PDB_TOOL_EXAMPLES))]
+#[clap(author, version, about, long_about = None, arg_required_else_help = true, after_long_help = create_cookbook())]
 /// Command line tool to operate on PDB files
 /// say pdb_tool -h to see options
 struct Args {

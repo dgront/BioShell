@@ -426,7 +426,18 @@ pub fn glob(dir: &Path, extension_regex: &str) -> Result<Vec<PathBuf>, Error> {
 
 /// Converts a Markdown string to plain text.
 ///
-/// The function attempts to preserve the formatting of the Markdown text. Handles newlines, lists, and other formatting elements.
+/// The function uses [`pulldown-cmark`](https://docs.rs/pulldown_cmark) crate to parse a markdown file.
+/// It attempts to preserve the formatting of the Markdown text. Handles newlines, lists, and other formatting elements.
+///
+/// # Example
+/// ```
+/// let markdown = "# Heading
+/// - List item 1
+/// - List item 2
+/// ";
+/// let text = bioshell_io::markdown_to_text(markdown);
+/// assert_eq!(text, "Heading\n- List item 1\n- List item 2\n");
+/// ```
 pub fn markdown_to_text(md: &str) -> String {
 
     fn new_list_item(lists_started: &mut Vec<Option<u64>>) -> Option<u64> {
@@ -443,7 +454,7 @@ pub fn markdown_to_text(md: &str) -> String {
     }
 
     let parser = pulldown_cmark::Parser::new(md);
-    let mut plain_text = String::from("\x1B[4mCookbook:\x1B[0m\n");
+    let mut plain_text = String::new();
     let mut lists_started: Vec<Option<u64>> = vec![]; // Tracks started lists
     for event in parser {
         match event {
@@ -485,5 +496,7 @@ pub fn markdown_to_text(md: &str) -> String {
             _ => {}
         }
     }
-    plain_text.trim().to_string()
+    if !plain_text.ends_with('\n') { plain_text.push('\n'); }
+
+    plain_text.to_string()
 }
