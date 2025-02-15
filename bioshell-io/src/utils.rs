@@ -423,3 +423,67 @@ pub fn glob(dir: &Path, extension_regex: &str) -> Result<Vec<PathBuf>, Error> {
 
     Ok(results)
 }
+
+/// Converts a Markdown string to plain text.
+///
+/// The function attempts to preserve the formatting of the Markdown text. Handles newlines, lists, and other formatting elements.
+pub fn markdown_to_text(md: &str) -> String {
+
+    fn new_list_item(lists_started: &mut Vec<Option<u64>>) -> Option<u64> {
+        if lists_started.is_empty() { return None; }
+        if let Some(last) = lists_started.last_mut() {
+            if let Some(n) = last {
+                let current = *n;
+                *last = Some(current + 1);
+                return Some(current);
+            }
+        }
+
+        None
+    }
+
+    let parser = pulldown_cmark::Parser::new(md);
+    let mut plain_text = String::from("\x1B[4mCookbook:\x1B[0m\n");
+    let mut lists_started: Vec<Option<u64>> = vec![]; // Tracks started lists
+    for event in parser {
+        match event {
+            pulldown_cmark::Event::Start(pulldown_cmark::Tag::CodeBlock(_)) => {
+                plain_text.push('\n'); // Start a new line before the code block
+            }
+            pulldown_cmark::Event::End(pulldown_cmark::Tag::CodeBlock(_)) => {
+                plain_text.push('\n'); // End the code block with a newline
+            }
+            pulldown_cmark::Event::Text(text) => {
+                plain_text.push_str(&text);
+            }
+            pulldown_cmark::Event::Start(pulldown_cmark::Tag::List(Some(start))) => {
+                lists_started.push(Some(start)); // Start ordered list at given number
+            }
+            pulldown_cmark::Event::Start(pulldown_cmark::Tag::List(None)) => {
+                lists_started.push(None); // Start unordered list
+            }
+            pulldown_cmark::Event::Start(pulldown_cmark::Tag::Item) => {
+
+                if let Some(ref mut num) = new_list_item(&mut lists_started) {
+                    plain_text.push_str(&format!("\n{}. ", num)); // Add numbered list item
+                } else {
+                    plain_text.push_str("\n- "); // Bullet point for unordered lists
+                }
+            }
+            pulldown_cmark::Event::End(pulldown_cmark::Tag::List(_)) => {
+                lists_started.pop(); // End list
+            }
+            pulldown_cmark::Event::SoftBreak => {
+                plain_text.push('\n'); // Soft line breaks
+            }
+            pulldown_cmark::Event::HardBreak => {
+                plain_text.push('\n'); // Explicit line breaks
+            }
+            pulldown_cmark::Event::End(pulldown_cmark::Tag::Paragraph) => {
+                plain_text.push('\n'); // Preserve paragraph separation
+            }
+            _ => {}
+        }
+    }
+    plain_text.trim().to_string()
+}

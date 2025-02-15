@@ -14,6 +14,7 @@ crate-type =["rlib"]
 [dependencies]
 csv = "1.1"
 flate2 = "1.0"
+pulldown-cmark = "0.9"          # Used by BioShell apps to convert cookbook written in markdown to a string
 
 # ---------- Logging
 log = "0.4.0"
