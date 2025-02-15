@@ -3,7 +3,7 @@ use bioshell_pdb::{Deposit, list_ligands_in_deposit};
 
 fn deposit_title(deposit: &Deposit) -> String { deposit.title.clone().unwrap_or("".to_string()) }
 fn deposit_resolution(deposit: &Deposit) -> String {
-    if let Some(res) = deposit.resolution {res.to_string()}
+    if let Some(res) = deposit.resolution { format!("{:.3}", res) }
     else { "".to_string() }
 }
 
@@ -19,7 +19,7 @@ fn deposit_ligands(deposit: &Deposit) -> String {
 fn deposit_classification(deposit: &Deposit) -> String { deposit.classification.clone().unwrap_or("".to_string()) }
 fn deposit_id(deposit: &Deposit) -> String { deposit.id_code.clone() }
 fn deposit_r_factor(deposit: &Deposit) -> String {
-    if let Some(r_fact) = deposit.r_factor { r_fact.to_string() }
+    if let Some(r_fact) = deposit.r_factor { format!("{:.3}", r_fact) }
      else { "".to_string() }
 }
 fn deposit_keywords(deposit: &Deposit) -> String { deposit.keywords.join(",") }

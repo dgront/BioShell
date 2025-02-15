@@ -1,5 +1,4 @@
 use std::env;
-use std::str::FromStr;
 use clap::Parser;
 use log::info;
 use bioshell_io::{out_writer, markdown_to_text};
@@ -91,7 +90,8 @@ fn print_info(deposit: &Deposit, tokens: &Vec<String>) {
 
     let tokens = deposit_info::get_deposit_info(deposit, tokens);
     for token in tokens {
-        println!("{}: {}", token.0, token.1);
+        let val = token.1.replace([';', '\n'], " ");
+        println!("{}: {}", token.0, val.trim());
     }
 }
 
@@ -99,7 +99,8 @@ fn print_info_row(deposit: &Deposit, tokens: &Vec<String>) {
 
     let tokens = deposit_info::get_deposit_info(deposit, tokens);
     for token in tokens {
-        print!("{}\t", token.1);
+        let val = token.1.replace([';', '\n'], " ");
+        print!("{}\t", val.trim());
     }
     println!();
 }
