@@ -1,15 +1,18 @@
 use std::env;
-use clap::{Parser};
+use std::str::FromStr;
+use clap::Parser;
 use log::info;
-use bioshell_io::{out_writer};
+use bioshell_io::{out_writer, markdown_to_text};
 use bioshell_pdb::{Deposit, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
 
 mod deposit_info;
 
+const PDB_TOOL_EXAMPLES: &str = include_str!("../documentation/pdb_tool.md");
+
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None, arg_required_else_help = true)]
+#[clap(author, version, about, long_about = None, arg_required_else_help = true, after_long_help = markdown_to_text(PDB_TOOL_EXAMPLES))]
 /// Command line tool to operate on PDB files
 /// say pdb_tool -h to see options
 struct Args {
@@ -101,7 +104,7 @@ fn print_info_row(deposit: &Deposit, tokens: &Vec<String>) {
 }
 
 fn write_pdb(strctr: &Structure, fname: &str) {
-    let mut outstream = out_writer(fname, false);
+    let outstream = out_writer(fname, false);
     bioshell_pdb::write_pdb(strctr, outstream);
 }
 
