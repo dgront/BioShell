@@ -328,6 +328,7 @@ impl<'a> BackboneHBondMap<'a> {
     }
 }
 
+/// Calculates the position of the amide hydrogen atom in a peptide bond.
 pub fn peptide_hydrogen(prev_c: &Vec3, the_n: &Vec3, the_ca: &Vec3) -> Vec3 {
 
     let mut h = Vec3::new(the_n.x, the_n.y, the_n.z);
