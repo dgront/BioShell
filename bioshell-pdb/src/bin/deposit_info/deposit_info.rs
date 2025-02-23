@@ -2,6 +2,7 @@ use std::str::FromStr;
 use bioshell_pdb::{Deposit, list_ligands_in_deposit};
 
 fn deposit_title(deposit: &Deposit) -> String { deposit.title.clone().unwrap_or("".to_string()) }
+
 fn deposit_resolution(deposit: &Deposit) -> String {
     if let Some(res) = deposit.resolution { format!("{:.3}", res) }
     else { "".to_string() }
@@ -16,17 +17,23 @@ fn deposit_ligands(deposit: &Deposit) -> String {
         .map(|l| l.code3.clone())
         .collect::<Vec<String>>().join(" ")
 }
+
 fn deposit_classification(deposit: &Deposit) -> String { deposit.classification.clone().unwrap_or("".to_string()) }
+
 fn deposit_id(deposit: &Deposit) -> String { deposit.id_code.clone() }
+
 fn deposit_r_factor(deposit: &Deposit) -> String {
     if let Some(r_fact) = deposit.r_factor { format!("{:.3}", r_fact) }
      else { "".to_string() }
 }
+
 fn deposit_keywords(deposit: &Deposit) -> String { deposit.keywords.join(",") }
+
 fn space_group(deposit: &Deposit) -> String { deposit.unit_cell.as_ref().unwrap().space_group.clone() }
 
-const DEPOSIT_INFO_FEATURES: [&str; 10] = ["id", "keywords", "title", "resolution", "methods",
-                                "ligands", "rfactor", "spacegroup", "unitcell", "classification"];
+const DEPOSIT_INFO_FEATURES: [&str; 11] = ["id", "keywords", "title", "resolution", "methods",
+                                "ligands", "rfactor", "spacegroup", "unitcell", "classification",
+                                "entity_res_count", ]; //"chain_res_count"
 
 pub(crate) fn get_deposit_info<'a>(dep: &'a Deposit, deposit_info_names: &'a Vec<String>) -> Vec<(&'a str, String)> {
 

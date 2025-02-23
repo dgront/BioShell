@@ -313,6 +313,9 @@ impl Entity {
     }
 }
 
+/// Loads residue types for each polymer entity
+///
+/// This function loads polymer entities ONLY!
 fn load_chain_residue_types(cif_data: &CifData) -> Result<HashMap<String,HashMap<String, Vec<ResidueType>>>, PDBError> {
 
     let res_mgr = ResidueTypeManager::get();

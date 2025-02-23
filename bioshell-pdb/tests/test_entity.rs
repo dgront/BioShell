@@ -60,6 +60,19 @@ mod tests {
     }
 
     #[test]
+    fn entity_residues_6ins() -> Result<(), PDBError> {
+        let cif_data = include_str!("../tests/test_files/6ins.cif");
+        let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
+
+        assert_eq!(deposit.entities().count(), 3);
+
+        let entity = deposit.entity("1");
+        assert_eq!(entity.entity_monomers().len(), 50);
+
+        Ok(())
+    }
+
+    #[test]
     fn entities_5edw_structure() -> Result<(), PDBError> {
         let cif_data = include_str!("../tests/test_files/5edw.cif");
         let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
