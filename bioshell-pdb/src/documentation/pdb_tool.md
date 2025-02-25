@@ -11,11 +11,22 @@
     ```
     pdb_tool -i 1ehe.cif --info-table id resolution methods
     ```
-   - List entities:
+   
+2) Entities
+   - List entities in a CIF file:
     ```
     pdb_tool -i 1ehe.cif --entities
     ```
-2) Convert between data formats
+   - print the sequence of a selected entity as defined by the coordinates:
+   ```
+   pdb_tool -i 1ehe.cif --select-entity 2 --out-fasta
+   ```
+   - print the full sequence of each entity as defined by the CIF file:
+   ```
+   pdb_tool -i 1ehe.cif --entities --entity-sequence
+   ```
+   
+3) Convert between data formats
 
    - Attempt to convert the whole CIF file to PDB:
    ```

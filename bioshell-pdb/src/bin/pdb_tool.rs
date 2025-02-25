@@ -2,8 +2,9 @@ use std::env;
 use clap::Parser;
 use log::info;
 use bioshell_io::{out_writer, markdown_to_text};
-use bioshell_pdb::{Deposit, Structure};
+use bioshell_pdb::{Deposit, EntityType, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
+use bioshell_seq::chemical::ResidueTypeProperties;
 
 mod deposit_info;
 
@@ -57,6 +58,9 @@ struct Args {
     /// print a summary of the entities in the structure
     #[clap(long, action)]
     entities: bool,
+    /// when printing entities, show also the sequence of an entity (only for polymer entities)
+    #[clap(long, action)]
+    entity_sequence: bool,
     /// keep only amino acid residues; all ligands and cofactors will be removed
     #[clap(long)]
     select_protein: bool,
@@ -118,7 +122,8 @@ fn write_pdb(strctr: &Structure, fname: &str) {
 /// # Arguments
 /// - substructure - structure to print entities for
 /// - deposit - deposit containing the information about entities
-fn print_entities(substructure: &Structure, deposit: &Deposit) {
+/// - print_sequences - print also the sequence of an entity (only for polymer entities)
+fn print_entities(substructure: &Structure, deposit: &Deposit, print_sequences: bool) {
     let entities = substructure.entity_ids();
     for (name, entity) in deposit.entities() {
         if !entities.contains(&name) { continue; }
@@ -126,9 +131,19 @@ fn print_entities(substructure: &Structure, deposit: &Deposit) {
         for chain in entity.chain_ids() {
             if substructure.chain_ids().contains(chain) { print!(" {}", chain); }
         }
+        if let EntityType::Polymer(_poly_type) = entity.entity_type() {
+            if print_sequences {
+                let mut sequence : Vec<char> = vec![];
+                for rt in  entity.entity_monomers() {
+                    sequence.push(rt.parent_type.code1());
+                }
+                print!(" {}", Vec::from_iter(sequence).iter().collect::<String>());
+            }
+        }
         println!();
     }
 }
+
 fn main() {
     let args = Args::parse();
     unsafe {
@@ -187,7 +202,7 @@ fn main() {
         }
     }
     if args.entities {
-        print_entities(&strctr, &deposit);
+        print_entities(&strctr, &deposit, args.entity_sequence);
     }
     if args.out_secondary {
         for chain_id in &strctr.chain_ids() {
