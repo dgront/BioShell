@@ -43,9 +43,12 @@ struct Args {
     /// print the representative sequence for each cluster (i.e. the medoid)
     #[clap(short='m', long, action)]
     medoids: bool,
-    /// writes the clustering tree in the Newick format
-    #[clap(long)]
-    newick: Option<String>,
+    /// prefix to add to the output files: cluster sequences and the medoids; use something like "unique_job_id_" to avoid overwriting previous results
+    #[clap(long, default_value = "")]
+    prefix: String,
+    // /// writes the clustering tree in the Newick format
+    // #[clap(long)]
+    // newick: Option<String>,
     /// writes the input sequences reordered according to the clustering tree
     #[clap(long)]
     fasta: Option<String>,
@@ -118,7 +121,9 @@ impl AlignmentReporter for SequenceIdentityMatrix {
 
 pub fn main() -> Result<(), SequenceError> {
 
-    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    unsafe {
+        if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    }
     env_logger::init();
     let args = Args::parse();
 
@@ -154,7 +159,8 @@ pub fn main() -> Result<(), SequenceError> {
         clusters.sort_by(|a, b| a.value.cluster_size.cmp(&b.value.cluster_size));
         info!("{} clusters rertrieved for seq_id {:?}", clusters.len(), cutoff);
         for (i, cluster) in clusters.iter().enumerate() {
-            let mut out_file = out_writer(&format!("cluster_{}-{}.fasta", i, cluster.value.cluster_size), false);
+            let mut out_file = out_writer(&format!("{}cluster_{}-{}.fasta",
+                    args.prefix, i, cluster.value.cluster_size), false);
             let leaf_ids: Vec<usize> = retrieve_data_id(&cluster);
             for id in &leaf_ids {
                 let sequence = sequences.get(*id).unwrap();
@@ -166,7 +172,8 @@ pub fn main() -> Result<(), SequenceError> {
         if args.medoids {
             for (i, cluster) in clusters.iter().enumerate() {
                 let medoid_idx = medoid_by_min_max(cluster, &distance_fn);
-                let mut out_file = out_writer(&format!("center_{}-{}.fasta", i, cluster.value.cluster_size), false);
+                let mut out_file = out_writer(&format!("{}center_{}-{}.fasta",
+                        args.prefix, i, cluster.value.cluster_size), false);
                 writeln!(out_file, "{:width$}", &sequences[medoid_idx], width = args.sequence_width)?;
             }
         }
