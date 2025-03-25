@@ -6,6 +6,8 @@ mod sequence;
 mod sequence_profile;
 mod residue_type_mapping;
 mod sequence_filters;
+mod sequence_reporter;
+pub use sequence_reporter::*;
 
 use log::info;
 use bioshell_io::open_file;
@@ -31,4 +33,11 @@ pub fn load_sequences(seq_or_fname: &String, seq_name: &str) -> Result<Vec<Seque
     }
 
     return Ok(vec![Sequence::from_str(seq_name, seq_or_fname)]);
+}
+
+/// Returns the first word of a sequence description string.
+pub fn first_word_of_description(description: &str) -> String {
+    let v: Vec<&str> = description.split_whitespace().collect();
+
+    return String::from(v[0]);
 }

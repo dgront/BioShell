@@ -9,7 +9,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
 // use regex::Regex;
 
-use bioshell_seq::sequence::{FastaIterator, Sequence};
+use bioshell_seq::sequence::{FastaIterator, first_word_of_description, Sequence, SequenceReporter, SplitFasta, WriteFasta};
 use bioshell_seq::sequence::{HasSequenceMotif, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan, ContainsX, LogicalNot, DescriptionContains};
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::SequenceError;
@@ -20,6 +20,12 @@ use bioshell_seq::SequenceError;
 struct Args {
     /// input file in FASTA format
     infile: String,
+    /// write output to a file in .fasta format
+    #[clap(short='o', long)]
+    outfile: Option<String>,
+    /// write every sequence into a separate .fasta file; files are stored in the provided directory, which must already exist
+    #[clap(long)]
+    split_fasta: Option<String>,
     /// remove sequences that are too short
     #[clap(short='l', long)]
     longer_than: Option<usize>,
@@ -59,12 +65,6 @@ struct Args {
     /// length of each line of the output sequence; use 0 to print the whole sequence on a single line
     #[clap(short='w', long, default_value_t = 80)]
     out_width: usize,
-}
-
-fn first_word_of_description(description: &str) -> String {
-    let v: Vec<&str> = description.split_whitespace().collect();
-
-    return String::from(v[0]);
 }
 
 
@@ -139,6 +139,14 @@ pub fn main() -> Result<(), SequenceError> {
 
     let mut output_seq: Option<Vec<Sequence>> = if args.sort { Some(vec![]) } else { None };
 
+    // ---------- prepare output file
+    let mut seq_writer: Box<dyn SequenceReporter>;
+    if let Some(out_folder) = args.split_fasta {
+        seq_writer = Box::new(SplitFasta::new(Some(out_folder), args.out_width));
+    } else {
+        seq_writer = Box::new(WriteFasta::new(args.outfile, args.out_width, false));
+    }
+
     let start = Instant::now();
 
     for sequence in seq_iter {
@@ -173,7 +181,8 @@ pub fn main() -> Result<(), SequenceError> {
                     let new_id = format!("{} ({} {}:{}, {:6.2}%)",
                                          sequence.description(), id, from, from + hit.len(), perc);
                     let s = Sequence::new(&new_id, &sequence_as_str);
-                    println!("{:width$}", s, width = out_width);
+                    seq_writer.report(&s)?;
+                    // println!("{:width$}", s, width = out_width);
                 }
             }
             if !if_found { debug!("Nothing found for {}",sequence.id()); }
@@ -198,7 +207,7 @@ pub fn main() -> Result<(), SequenceError> {
         if let Some(v) = &mut output_seq {
             v.push(sequence);
         } else {
-            println!("{:width$}", sequence, width = out_width);
+            seq_writer.report(&sequence)?;
         }
     }
 
@@ -218,7 +227,9 @@ pub fn main() -> Result<(), SequenceError> {
 
     if let Some(v) = &mut output_seq {
         v.sort_by(|si, sj| {si.len().cmp(&sj.len())});
-        for sequence in v { println!("{:width$}", sequence, width = out_width); }
+        for sequence in v {
+            seq_writer.report(sequence)?;
+        }
     }
 
     info!("{} sequences processed in {:?}, {} of them printed in FASTA format",
