@@ -117,6 +117,8 @@ mod deposit;
 mod ligands;
 
 pub mod documentation;
+mod has_cartesians;
+pub use has_cartesians::*;
 
 use std::path::Path;
 pub use structure::{Structure, write_pdb};
