@@ -74,6 +74,20 @@ fn test_secondary() -> Result<(), PDBError> {
     Ok(())
 }
 
+#[test]
+fn test_residues_iter() -> Result<(), PDBError> {
+    let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_2gb1.as_bytes()))?;
+    let strctr: Structure = deposit.structure().unwrap();
+
+    let amino_acid_counts: [(&str, usize); 4] = [("THR", 11), ("ALA", 6), ("ILE", 1), ("MET", 1), ];
+
+    for (code, count) in amino_acid_counts.iter() {
+        let n_res = strctr.residues("A", code).count();
+        assert_eq!(n_res, *count);
+    }
+    Ok(())
+}
+
 #[allow(non_upper_case_globals)]
 const pdb_txt: &str =
     "ATOM      2  CA  MET A   1     -13.296   0.028   3.924  1.00  0.43           C

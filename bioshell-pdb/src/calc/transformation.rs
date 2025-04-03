@@ -139,6 +139,15 @@ impl Rototranslation {
     /// Provides read-only access to the rotation matrix of this [`Rototranslation`](Rototranslation)
     pub fn rotation_matrix(&self) -> &Matrix3x3 { &self._rotation_matrix }
 
+    /// Provides read-only access to translation vector of this [`Rototranslation`](Rototranslation)
+    pub fn center(&self) -> &Vec3 { &self._origin }
+
+
+    /// Provides read-only access to translation vector of this [`Rototranslation`](Rototranslation)
+    pub fn set_center(&mut self, center: &Vec3) {
+        self._origin.set(center);
+    }
+
     pub fn apply_mut(&self, vector: &mut Vec3) {
         *vector -= &self._origin;
         self._rotation_matrix.mul_vec_mut(vector);

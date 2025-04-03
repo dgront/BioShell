@@ -368,6 +368,20 @@ impl Structure {
         self.atoms.iter().filter(move |&a| check.check(a))
     }
 
+    /// Iterates over [`ResidueId`](ResidueId)s of a certain chain and residue name.
+    pub fn residues<'a>(&'a self, chain_id: &'a str, residue_name: &'a str) -> impl Iterator<Item = &'a ResidueId> + 'a {
+
+        self.residue_ids
+            .iter()
+            .zip(self.atoms_for_residue_id.iter())
+            .filter(move |(res_id, range)| {
+                res_id.chain_id == chain_id
+                    && range.start < self.atoms.len() // range safety
+                    && self.atoms[range.start].res_name == residue_name
+            })
+            .map(|(res_id, _)| res_id)
+    }
+
     /// Immutable access to a vector of [`ResidueId`](ResidueId) object for each residue of this [`Structure`](Structure)
     ///
     /// # Examples
@@ -522,8 +536,10 @@ impl Structure {
         Structure::residue_ids_from_atoms(self.atoms.iter().filter(|&a| a.chain_id==chain_id))
     }
 
-    /// Removes
+    /// Removes ligands and waters from a structure.
     ///
+    /// This method assumes a polymer molecule is listed first in a PDB chain, ligands and water molecules
+    /// come after it. This method removes all the entities other than the polymer chain entity.
     /// ```
     /// # use bioshell_pdb::{Deposit, PdbAtom, ResidueId, Structure};
     /// # use std::io::BufReader;

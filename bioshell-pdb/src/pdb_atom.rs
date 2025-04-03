@@ -175,7 +175,8 @@ impl PdbAtom {
     fn create_pdb_atom(tokens: &[&str; 16], pos: Vec3) -> Result<PdbAtom, CifError> {
 
         let serial = parse_item_or_error!(tokens[0], i32);
-        let name = format!("{:^4}", tokens[1]);
+        let element = Some(tokens[12].to_string());
+        let name = format_atom_name(tokens[1], element.as_deref());
         let alt_loc = value_or_default(tokens[2], ' ');
         let res_name = tokens[3].to_string();
         let chain_id = tokens[4].to_string();
@@ -189,7 +190,6 @@ impl PdbAtom {
         let i_code = value_or_default(tokens[6], ' ');
         let occupancy = parse_item_or_error!(tokens[10], f64);
         let temp_factor = parse_item_or_error!(tokens[11], f64);
-        let element = Some(tokens[12].to_string());
         let charge = None;
         let is_hetero_atom = false;
         let secondary_struct_type = SecondaryStructureTypes::Coil;
@@ -288,4 +288,43 @@ impl Display for PdbAtom {
 /// ```
 pub fn same_residue_atoms(ai: &PdbAtom, aj: &PdbAtom) -> bool {
     ai.res_seq==aj.res_seq && ai.i_code==aj.i_code
+}
+
+/// Add whitespaces to a PDB atom name to make it 4 characters long.
+///
+/// # Examples
+/// ```
+/// use bioshell_pdb::format_atom_name;
+/// assert_eq!(format_atom_name("CA", Some("C")), " CA ");
+/// assert_eq!(format_atom_name("CD2", Some("C")), " CD2");
+/// assert_eq!(format_atom_name("CA", Some("CA")), "CA  ");
+/// assert_eq!(format_atom_name("1HA", Some("H")), "1HA ");
+/// assert_eq!(format_atom_name("OXT", None), " OXT");
+/// assert_eq!(format_atom_name("H", Some("H")), " H  ");
+/// ```
+pub fn format_atom_name(atom_name: &str, element: Option<&str>) -> String {
+    let atom_name = atom_name.trim();
+    let element = element.unwrap_or("").trim();
+
+    let mut result = [' '; 4];
+
+    let starts_with_digit = atom_name.chars().next().unwrap().is_ascii_digit();
+
+    if starts_with_digit {
+        // Case 1: starts with a digit → left-aligned
+        for (i, c) in atom_name.chars().take(4).enumerate() {
+            result[i] = c;
+        }
+    } else {
+        // Starts with a letter
+        let element_len = if element.is_empty() { 1 } else { element.len().min(2) };
+        let pad = if element_len == 1 { 1 } else { 0 };
+
+        let start = pad;
+        for (i, c) in atom_name.chars().take(4 - pad).enumerate() {
+            result[start + i] = c;
+        }
+    }
+
+    result.iter().collect()
 }
