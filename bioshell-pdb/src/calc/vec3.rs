@@ -5,6 +5,7 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::ops::{Index, IndexMut, AddAssign, SubAssign, MulAssign, DivAssign};
 use crate::calc::Matrix3x3;
+use crate::HasCartesians;
 
 /// 3D vector used to manipulate with atomic coordinates.
 ///
@@ -182,6 +183,10 @@ impl PartialEq for Vec3 {
     fn eq(&self, other: &Self) -> bool {
         return self.x == other.x && self.y == other.y && self.z == other.z;
     }
+}
+
+impl HasCartesians for Vec3 {
+    fn position(&self) -> &Vec3 { self }
 }
 
 impl Vec3 {

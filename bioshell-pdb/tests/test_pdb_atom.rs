@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use std::string::String;
-    use bioshell_pdb::{PdbAtom, SecondaryStructureTypes};
+    use bioshell_pdb::{assert_delta, HasCartesians, PdbAtom, SecondaryStructureTypes};
 
     #[test]
     fn test_new() {
@@ -48,5 +48,12 @@ mod tests {
         let atom = PdbAtom::from_atom_line(atom_line);
         let str = format!("{}",atom);
         assert_eq!(str, atom_line);
+    }
+
+    #[test]
+    fn test_cartesian_trait() {
+        let atom_line = "ATOM   2831  OE1BGLN A 294C    -27.117  12.343  28.479  1.00  9.58           O  ";
+        let atom = PdbAtom::from_atom_line(atom_line);
+        assert_delta!(atom.position().x, -27.117, 0.001);
     }
 }

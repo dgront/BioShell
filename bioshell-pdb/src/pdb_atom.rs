@@ -5,7 +5,7 @@ use std::string::String;
 use bioshell_cif::{CifData, CifError, CifTable, entry_has_value, parse_item_or_error, value_or_default};
 use bioshell_cif::CifError::ItemParsingError;
 use crate::calc::Vec3;
-use crate::{PDBError, SecondaryStructureTypes, Structure};
+use crate::{HasCartesians, PDBError, SecondaryStructureTypes, Structure};
 use crate::PDBError::CifParsingError;
 
 /// Atom record as found in a single line of a PDB file.
@@ -231,6 +231,19 @@ impl PartialOrd<Self> for PdbAtom {
 
         return  Some(Ordering::Equal);
     }
+}
+
+impl HasCartesians for PdbAtom {
+    /// Provides Cartesian coordinates of this atom
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_pdb::{assert_delta, PdbAtom, HasCartesians};
+    /// let atom_line = "ATOM   2831  OE1BGLN A 294C    -27.117  12.343  28.479  1.00  9.58           O  ";
+    /// let atom = PdbAtom::from_atom_line(atom_line);
+    /// assert_delta!(atom.position().x, -27.117, 0.001);
+    /// ```
+    fn position(&self) -> &Vec3 { &self.pos }
 }
 
 impl Eq for PdbAtom {}
