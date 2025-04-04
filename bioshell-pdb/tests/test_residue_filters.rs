@@ -44,15 +44,12 @@ mod test_residue_filters {
     fn count_resids_in_range() -> Result<(), PDBError> {
         use bioshell_pdb::{Deposit, ResidueId};
         use bioshell_pdb::residue_filters::{ResidueFilter, ResidueInRange};
-        let cif_data = include_str!("../tests/test_files/6ins.cif");
+        let cif_data = include_str!("../tests/test_files/2gb1.cif");
         let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
         let strctr = deposit.structure().unwrap();
-        let range = ResidueInRange::new(ResidueId::new("E", 24, 'B'), ResidueId::new("E", 4, 'A'));
-        for ri in strctr.residues() {
-            println!("{} {}", ri, range.check(&strctr, &ri));
-        }
+        let range = ResidueInRange::new(ResidueId::new("A", 14, ' '), ResidueId::new("A", 24, ' '));
         let n_res = strctr.residues().iter().filter(|ri|  range.check(&strctr, &ri)).count();
-        assert_eq!(n_res, 10);
+        assert_eq!(n_res, 11);
         Ok(())
     }
 }

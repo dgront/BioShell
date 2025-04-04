@@ -306,7 +306,7 @@ impl Structure {
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// # let strctr = Structure::from_iterator("1xyz", atoms.iter());
     /// let chain_A_atoms = strctr.atoms_in_chain("A");
-    /// # assert_eq!(chain_A_atoms.len(),4);
+    /// # assert_eq!(chain_A_atoms.count(),4);
     /// ```
     pub fn atoms_in_chain<'a>(&'a self, chain_id: &'a str) -> impl Iterator<Item = &'a PdbAtom> + 'a {
         self.atoms.iter().filter(move |atm| atm.chain_id == chain_id)
