@@ -4,6 +4,8 @@
 //! Unlike [`PdbAtomFilter`](crate::pdb_atom_filters::PdbAtomFilter), a residue filter operates on
 //! [`ResidueIds`](ResidueIds)
 //!
+
+use bioshell_seq::chemical::{MonomerType};
 use crate::{ResidueId, Structure};
 use crate::monomers::MonomerManager;
 use bioshell_seq::chemical::StandardResidueType::{TYR, PHE, TRP, HIS};
@@ -30,12 +32,28 @@ pub trait ResidueFilter {
     fn check(&self, strctr: &Structure, ri: &ResidueId) -> bool;
 }
 
+/// Returns `true` for any amino acid residue.
+///
+/// The [`IsAminoAcid`] returns `true` if the residue type is of any peptide-linking type.
+pub struct IsAminoAcid;
+
+impl ResidueFilter for IsAminoAcid {
+    fn check(&self, strctr: &Structure, ri: &ResidueId) -> bool {
+        if let Ok(rtype) = &strctr.residue_type(ri) {
+            return  rtype.chem_compound_type == MonomerType::LPeptideLinking
+                || rtype.chem_compound_type == MonomerType::PeptideLinking
+                || rtype.chem_compound_type == MonomerType::DPeptideLinking;
+        }
+        return false
+    }
+}
+
 /// Returns `true` if the residue is aromatic.
 ///
 /// The [`IsAromaticAA`] returns `true` for aromatic amino acids, i.e. TYR, PHE, TRP, HIS
 pub struct IsAromaticAA;
 
-impl ResidueFilter for IsAromaticAA {
+impl ResidueFilter for crate::residue_filters::IsAromaticAA {
     fn check(&self, strctr: &Structure, ri: &ResidueId) -> bool {
         if let Ok(monomer) = &strctr.residue_type(ri) {
             return matches!(monomer.parent_type, TYR | TRP | PHE | HIS);
