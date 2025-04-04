@@ -545,8 +545,8 @@ impl Structure {
     ///
     /// Returned indexes simply comprise the longest entity of that chain; it's
     /// assumed that is the polymer chain. In CIF files water molecules and ligands
-    /// are placed into separate entities. In the PDB format they areseparated from the polymer entity
-    /// by a `TER` record and are marked apropriately by bioshell while loading.
+    /// are placed into separate entities. In the PDB format they are separated from the polymer entity
+    /// by a `TER` record and are marked appropriately by bioshell while loading.
     fn polymer_residues(&self, chain_id: &str) -> Vec<usize> {
 
         let mut counts: HashMap<String, Vec<usize>> = HashMap::new();
