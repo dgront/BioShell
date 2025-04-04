@@ -368,6 +368,17 @@ impl Structure {
         self.atoms.iter().filter(move |&a| check.check(a))
     }
 
+    /// Returns ResidueId at a given position in the structure.
+    ///
+    /// Residue indexes go continuously from 0 through all the chains
+    pub fn residue_by_index(&self, index: usize) -> Option<&ResidueId> {
+        if index < self.residue_ids.len() {
+            Some(&self.residue_ids[index])
+        } else {
+            None
+        }
+    }
+
     /// Iterates over [`ResidueId`](ResidueId)s from a given range of residues
     pub fn residues_in_range<'a>(&'a self, chain_id: &'a str, residue_name: &'a str) -> impl Iterator<Item = &'a ResidueId> + 'a {
 
