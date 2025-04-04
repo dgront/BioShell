@@ -8,7 +8,7 @@ use crate::SecondaryStructureTypes::{Coil, LeftAlphaHelix, LeftGammaHelix, LeftO
 /// [`Coil`](Coil) type, which is not a secondary structure type per se,
 /// nevertheless is a necessary symbol to provide a secondary structure string for a polypeptide chain.
 #[repr(u8)]
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum SecondaryStructureTypes {
     RightAlphaHelix = 1,
     RightOmegaHelix = 2,
@@ -154,6 +154,43 @@ impl SecondaryStructure {
     /// ```
     pub fn to_string(&self) -> String {
         String::from_utf8(self.sec_str.iter().map(|e| e.hec_code()).collect()).unwrap()
+    }
+
+    /// Breaks a secondary structure into secondary structure elements (SSEs).
+    ///
+    /// Each SSE is defined as a block of consecutive residues with the same secondary structure type. Therefore,
+    /// when an alpha-helix is directly followed by a pi-helix, they are considered as two different SSEs,
+    /// even though they both are marked as `'H'` in the `HEC` code.
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_pdb::{SecondaryStructure, SecondaryStructureTypes};
+    /// let sec_str = SecondaryStructure::from_hec_string("CCHHHHHHCCHHHHC");
+    /// let blocks = sec_str.secondary_blocks();
+    /// assert_eq!(blocks.len(), 5);
+    /// assert_eq!(blocks[1], (SecondaryStructureTypes::RightAlphaHelix, 2, 7));
+    /// assert_eq!(blocks[4], (SecondaryStructureTypes::Coil, 14, 14));
+    /// ```
+    pub fn secondary_blocks(&self) -> Vec<(SecondaryStructureTypes, usize, usize)> {
+        let mut result = Vec::new();
+
+        if self.sec_str.is_empty() { return result; }
+
+        let mut start = 0;
+        let mut current_val = self.sec_str[0].clone();
+
+        for (i, &val) in self.sec_str.iter().enumerate().skip(1) {
+            if val != current_val {
+                result.push((current_val, start, i - 1));
+                current_val = val;
+                start = i;
+            }
+        }
+
+        // Push the final group
+        result.push((current_val, start, self.sec_str.len() - 1));
+
+        result
     }
 
     // fn pdb_code_to_hec_code(pdb_code: &u8) -> u8 {
