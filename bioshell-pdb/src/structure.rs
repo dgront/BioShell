@@ -426,8 +426,45 @@ impl Structure {
         }
     }
 
-    /// Returns the secondary structure a given residue belongs to.
+    /// Returns the secondary structure a given residue.
     ///
+    /// Use [`Structure::secondary()`] method to get the secondary structure of a full chain.
+    ///
+    /// # Examples
+    /// Check the secondary structure of a residue in a PDB deposit:
+    /// ```
+    /// # use bioshell_pdb::{Deposit, PDBError, ResidueId, SecondaryStructureTypes};
+    /// # fn main() -> Result<(), PDBError> {
+    /// # let deposit = Deposit::from_file("./tests/test_files/2gb1.cif")?;
+    /// let mut strctr = deposit.structure().unwrap();
+    /// let maybe_helix = strctr.residue_secondary(&ResidueId::new("A", 27, ' '))?;
+    /// assert_eq!(maybe_helix, SecondaryStructureTypes::RightAlphaHelix);
+    /// let maybe_strand = strctr.residue_secondary(&ResidueId::try_from("A:4")?)?;
+    /// assert_eq!(maybe_strand, SecondaryStructureTypes::Strand);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// The example below counts how many times `'H'`, `'E'` and `'C'` appears in the secondary
+    /// structure of the 2gb1 deposit, loaded from a local file:
+    /// ```
+    /// # use bioshell_pdb::{Deposit, PDBError};
+    /// # fn main() -> Result<(), PDBError> {
+    /// use std::collections::HashMap;
+    /// let deposit = Deposit::from_file("./tests/test_files/2gb1.cif")?;
+    /// let mut strctr = deposit.structure().unwrap();
+    /// let counts = strctr.residue_ids().iter()
+    ///     .map(|rid| strctr.residue_secondary(rid).expect("ERROR").hec_code())
+    ///     .fold(HashMap::new(), |mut acc, item| {
+    ///         *acc.entry(item).or_insert(0) += 1;
+    ///         acc
+    ///     });
+    /// assert_eq!(counts[&b'H'], 15);
+    /// assert_eq!(counts[&b'E'], 22);
+    /// assert_eq!(counts[&b'C'], 19);
+    /// # Ok(())
+    /// }
+    /// ```
     pub fn residue_secondary(&self, res_id: &ResidueId) -> Result<SecondaryStructureTypes, PDBError> {
 
         // --- check if such a residue has at least one atom in this struct
@@ -490,6 +527,8 @@ impl Structure {
     /// This method includes only the residues included in a [`Polymer`](Polymer) entity of the requested chain.
     /// Because such an information is not provided by the PDB file format, in that case the method
     /// includes residues listed in the requested chain until the `TER` record.
+    ///
+    /// You can use [`Structure::residue_secondary()`] method to get the secondary structure of a single residue.
     pub fn secondary(&self, chain_id: &str) -> SecondaryStructure {
         let mut sec: Vec<SecondaryStructureTypes> = vec![];
         let res_ids = self.polymer_residues(chain_id);
