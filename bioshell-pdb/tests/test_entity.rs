@@ -111,7 +111,7 @@ mod tests {
         assert_eq!(n_aa_a, 93); // --- one is missing
 
         // --- amino acids as seen in a structure
-        let n_aa_a_strctr = strctr.chain_residue_ids("A").iter()
+        let n_aa_a_strctr = strctr.residue_in_chain("A").iter()
             .filter(|ri| strctr.residue_type(ri).unwrap().chem_compound_type.is_peptide_linking())
             .count();
         assert_eq!(n_aa_a_strctr, 93);
@@ -136,7 +136,7 @@ mod tests {
             .filter(|rt| rt.parent_type==GAP).count();
         assert_eq!(n_gap_h, 7);      // 7 are missing
 
-        let n_aa_h = strctr.chain_residue_ids("H").iter()
+        let n_aa_h = strctr.residue_in_chain("H").iter()
             .filter(|ri| strctr.residue_type(ri).unwrap().chem_compound_type.is_peptide_linking()).count();
         assert_eq!(n_aa_h, 259 - 7);   // n_AA - n_GAP
 

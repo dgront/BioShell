@@ -33,7 +33,7 @@ mod test_residue_filters {
         let outcome = all_heavy.check(&strctr, &ResidueId::new("A", 1, ' '));
         assert!(outcome);
 
-        for res_id in strctr.residue_ids() {
+        for res_id in strctr.residues() {
             assert!(all_heavy.check(&strctr, res_id));
         }
 
@@ -48,10 +48,10 @@ mod test_residue_filters {
         let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
         let strctr = deposit.structure().unwrap();
         let range = ResidueInRange::new(ResidueId::new("E", 24, 'B'), ResidueId::new("E", 4, 'A'));
-        for ri in strctr.residue_ids() {
+        for ri in strctr.residues() {
             println!("{} {}", ri, range.check(&strctr, &ri));
         }
-        let n_res = strctr.residue_ids().iter().filter(|ri|  range.check(&strctr, &ri)).count();
+        let n_res = strctr.residues().iter().filter(|ri|  range.check(&strctr, &ri)).count();
         assert_eq!(n_res, 10);
         Ok(())
     }

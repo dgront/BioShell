@@ -22,7 +22,7 @@ use bioshell_seq::chemical::StandardResidueType::{TYR, PHE, TRP, HIS};
 /// # let cif_data = include_str!("../tests/test_files/2fdo.cif");
 /// let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
 /// let strctr = deposit.structure().unwrap();
-/// let n_aro = strctr.residue_ids().iter().filter(|ri| IsAromaticAA.check(&strctr, &ri)).count();
+/// let n_aro = strctr.residues().iter().filter(|ri| IsAromaticAA.check(&strctr, &ri)).count();
 /// assert_eq!(n_aro, 28);
 /// # Ok(())
 /// # }
@@ -163,11 +163,11 @@ impl ResidueFilter for HasAllHeavyAtoms {
 /// let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
 /// let strctr = deposit.structure().unwrap();
 /// let range = ResidueInRange::new(ResidueId::new("A", 24, ' '), ResidueId::new("A", 34, ' '));
-/// let n_res = strctr.residue_ids().iter().filter(|ri| range.check(&strctr, &ri)).count();
+/// let n_res = strctr.residues().iter().filter(|ri| range.check(&strctr, &ri)).count();
 /// assert_eq!(n_res, 11);
 ///
 /// let range = ResidueInRange::new(ResidueId::try_from("A:1")?, ResidueId::try_from("A:5")?);
-/// let n_res = strctr.residue_ids().iter().filter(|ri| range.check(&strctr, &ri)).count();
+/// let n_res = strctr.residues().iter().filter(|ri| range.check(&strctr, &ri)).count();
 /// assert_eq!(n_res, 5);
 /// # Ok(())
 /// # }

@@ -66,7 +66,7 @@ fn test_secondary() -> Result<(), PDBError> {
     let deposit = Deposit::from_pdb_reader(BufReader::new(pdb_2gb1.as_bytes()))?;
     let strctr: Structure = deposit.structure().unwrap();
     let mut ss_vec: Vec<u8> = vec![];
-    for res in strctr.residue_ids() {
+    for res in strctr.residues() {
         ss_vec.push(strctr.residue_secondary(res).unwrap().hec_code());
     }
     let ss_str = String::from_utf8_lossy(&ss_vec).to_string();
@@ -82,7 +82,7 @@ fn test_residues_iter() -> Result<(), PDBError> {
     let amino_acid_counts: [(&str, usize); 4] = [("THR", 11), ("ALA", 6), ("ILE", 1), ("MET", 1), ];
 
     for (code, count) in amino_acid_counts.iter() {
-        let n_res = strctr.residues("A", code).count();
+        let n_res = strctr.residues_in_range("A", code).count();
         assert_eq!(n_res, *count);
     }
     Ok(())

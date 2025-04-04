@@ -21,7 +21,7 @@ impl ResidueIndexer {
         let mut residue_index: HashMap<ResidueId, usize> = Default::default();
 
         let mut idx = 0;
-        for residue_id in strctr.residue_ids() {
+        for residue_id in strctr.residues() {
             if !strctr.residue_type(residue_id).unwrap().chem_compound_type.is_peptide_linking() { continue; }
             residue_index.insert(residue_id.clone(), idx);
             residue_ids.push(residue_id.clone());

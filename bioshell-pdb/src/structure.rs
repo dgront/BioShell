@@ -368,8 +368,8 @@ impl Structure {
         self.atoms.iter().filter(move |&a| check.check(a))
     }
 
-    /// Iterates over [`ResidueId`](ResidueId)s of a certain chain and residue name.
-    pub fn residues<'a>(&'a self, chain_id: &'a str, residue_name: &'a str) -> impl Iterator<Item = &'a ResidueId> + 'a {
+    /// Iterates over [`ResidueId`](ResidueId)s from a given range of residues
+    pub fn residues_in_range<'a>(&'a self, chain_id: &'a str, residue_name: &'a str) -> impl Iterator<Item = &'a ResidueId> + 'a {
 
         self.residue_ids
             .iter()
@@ -394,11 +394,11 @@ impl Structure {
     ///                      "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// let strctr = Structure::from_iterator("1xyz", atoms.iter());
-    /// assert_eq!(strctr.residue_ids().len(), 2);
-    /// assert_eq!(strctr.residue_ids()[0].res_seq, 68);
-    /// assert_eq!(strctr.residue_ids()[1].res_seq, 69);
+    /// assert_eq!(strctr.residues().len(), 2);
+    /// assert_eq!(strctr.residues()[0].res_seq, 68);
+    /// assert_eq!(strctr.residues()[1].res_seq, 69);
     /// ```
-    pub fn residue_ids(&self) -> &Vec<ResidueId> { &self.residue_ids }
+    pub fn residues(&self) -> &Vec<ResidueId> { &self.residue_ids }
 
     /// Returns the chemical type of residue as a [`ResidueType`] object.
     ///
@@ -453,7 +453,7 @@ impl Structure {
     /// use std::collections::HashMap;
     /// let deposit = Deposit::from_file("./tests/test_files/2gb1.cif")?;
     /// let mut strctr = deposit.structure().unwrap();
-    /// let counts = strctr.residue_ids().iter()
+    /// let counts = strctr.residues().iter()
     ///     .map(|rid| strctr.residue_secondary(rid).expect("ERROR").hec_code())
     ///     .fold(HashMap::new(), |mut acc, item| {
     ///         *acc.entry(item).or_insert(0) += 1;
@@ -505,7 +505,7 @@ impl Structure {
     /// ```
     pub fn sequence(&self, chain_id: &str) -> Sequence {
 
-        let res_ids = self.polymer_residues(chain_id);
+        let res_ids = self.residues_in_polymer(chain_id);
         let rtm = ResidueTypeManager::get();
         let mut residue_sequence: Vec<u8> = vec![];
         for i_res in res_ids {
@@ -531,7 +531,7 @@ impl Structure {
     /// You can use [`Structure::residue_secondary()`] method to get the secondary structure of a single residue.
     pub fn secondary(&self, chain_id: &str) -> SecondaryStructure {
         let mut sec: Vec<SecondaryStructureTypes> = vec![];
-        let res_ids = self.polymer_residues(chain_id);
+        let res_ids = self.residues_in_polymer(chain_id);
 
         for i_res in res_ids {
             let first_atom: &PdbAtom = &self.atoms[self.atoms_for_residue_id[i_res].start];
@@ -547,7 +547,7 @@ impl Structure {
     /// assumed that is the polymer chain. In CIF files water molecules and ligands
     /// are placed into separate entities. In the PDB format they are separated from the polymer entity
     /// by a `TER` record and are marked appropriately by bioshell while loading.
-    fn polymer_residues(&self, chain_id: &str) -> Vec<usize> {
+    fn residues_in_polymer(&self, chain_id: &str) -> Vec<usize> {
 
         let mut counts: HashMap<String, Vec<usize>> = HashMap::new();
         for (i_res, res_id) in self.residue_ids.iter().enumerate() {
@@ -570,7 +570,7 @@ impl Structure {
 
     /// Creates a vector of [`ResidueId`](ResidueId) object for each residue of a given chain
     ///
-    pub fn chain_residue_ids(&self, chain_id: &str) -> Vec<ResidueId> {
+    pub fn residue_in_chain(&self, chain_id: &str) -> Vec<ResidueId> {
 
         Structure::residue_ids_from_atoms(self.atoms.iter().filter(|&a| a.chain_id==chain_id))
     }
