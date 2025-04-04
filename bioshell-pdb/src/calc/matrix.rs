@@ -385,6 +385,12 @@ impl Matrix3x3 {
         }
     }
 
+    /// Transposes this matrix in-place.
+    pub fn transpose(&mut self) {
+        let lhs = self;
+        let temp = [lhs[0], lhs[3], lhs[6], lhs[1], lhs[4], lhs[7], lhs[2], lhs[5], lhs[8], ];
+        for i in 0..9 { lhs[i] = temp[i]; }
+    }
 
     /// Adds two Matrix3x3 matrices and returns the result.
     ///

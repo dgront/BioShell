@@ -142,10 +142,25 @@ impl Rototranslation {
     /// Provides read-only access to translation vector of this [`Rototranslation`](Rototranslation)
     pub fn center(&self) -> &Vec3 { &self._origin }
 
-
-    /// Provides read-only access to translation vector of this [`Rototranslation`](Rototranslation)
+    /// Sets the translation vector of this [`Rototranslation`](Rototranslation)
     pub fn set_center(&mut self, center: &Vec3) {
         self._origin.set(center);
+    }
+
+    /// Defines whether this [`Rototranslation`](Rototranslation) moves points back to the original center.
+    ///
+    /// By default, this [`Rototranslation`](Rototranslation) moves points to the center of the coordinate system,
+    /// applies the rotation matrix and then moves points back to the original center.
+    /// Use ```if_translate_back(false)`` to leave transformed points at the center of the coordinate system.
+    pub fn if_translate_back(&mut self, flag: bool) {
+        self.translate_back = flag
+    }
+
+    /// Transpose the rotation matrix of this [`Rototranslation`](Rototranslation)
+    ///
+    /// This effects the inverse rotation.
+    pub fn transpose(&mut self) {
+        self._rotation_matrix.transpose();
     }
 
     pub fn apply_mut(&self, vector: &mut Vec3) {
