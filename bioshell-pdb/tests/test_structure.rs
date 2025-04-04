@@ -1,6 +1,6 @@
 use std::io::BufReader;
-use itertools::assert_equal;
 use bioshell_pdb::{Deposit, PdbAtom, ResidueId, Structure, PDBError};
+
 #[allow(non_upper_case_globals)]
 const lines_ca:  [&str;9] = [
     "ATOM    514  CA  MET A  60      26.532  28.200  28.365  1.00 17.85           N",
@@ -122,6 +122,21 @@ fn test_atoms_by_range() {
     let last = ResidueId::new("B", 2, ' ');
     let iterator = strctr.atoms_in_range(first, last);
     assert_eq!(iterator.count(), 5);
+}
+
+#[allow(non_upper_case_globals)]
+const fragm_1akd:  &str = include_str!("./test_files/1akd_fragm.pdb");
+
+#[test]
+fn test_atom_by_residue_id() -> Result<(), PDBError> {
+
+    let deposit = Deposit::from_pdb_reader(BufReader::new(fragm_1akd.as_bytes())).unwrap();
+    let strctr = deposit.structure().unwrap();
+    let atom = strctr.atom(&ResidueId::try_from("A:515")?, " K  ");
+    assert!(atom.is_ok());
+    assert_eq!(atom?.serial, 3209);
+
+    Ok(())
 }
 
 #[test]

@@ -622,9 +622,14 @@ impl Structure {
     /// Returns the index of a residue given its [`ResidueId`](ResidueId)
     ///
     pub(crate) fn residue_pos(&self, which_res: &ResidueId) -> Result<usize, PDBError> {
-        match self.residue_ids.binary_search(which_res) {
-            Ok(pos) => Ok(pos),
-            Err(_) => Err(NoSuchResidue { res_id: which_res.clone() })
+        // --- check if residue_ids are sorted
+        if let Ok(pos) = self.residue_ids.binary_search(which_res) {
+            return Ok(pos);
+        }
+        // --- otherwise go through the vector of residue ids and find the position
+        match self.residue_ids.iter().position(|r| r == which_res) {
+            Some(pos) => Ok(pos),
+            None => Err(NoSuchResidue { res_id: which_res.clone() })
         }
     }
 
