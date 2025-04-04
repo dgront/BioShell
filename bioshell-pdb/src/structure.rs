@@ -400,6 +400,39 @@ impl Structure {
     /// ```
     pub fn residues(&self) -> &Vec<ResidueId> { &self.residue_ids }
 
+    /// Returns a vector of indexes pointing to [`ResidueId`](ResidueId)s  of a given chain.
+    ///
+    /// Returned indexes simply comprise the longest entity of that chain; it's
+    /// assumed that is the polymer chain. In CIF files water molecules and ligands
+    /// are placed into separate entities. In the PDB format they are separated from the polymer entity
+    /// by a `TER` record and are marked appropriately by bioshell while loading.
+    fn residues_in_polymer(&self, chain_id: &str) -> Vec<usize> {
+
+        let mut counts: HashMap<String, Vec<usize>> = HashMap::new();
+        for (i_res, res_id) in self.residue_ids.iter().enumerate() {
+            if res_id.chain_id != chain_id { continue }
+            let first_atom: &PdbAtom = &self.atoms[self.atoms_for_residue_id[i_res].start];
+            if first_atom.res_name == "HOH" { continue }
+            counts.entry(first_atom.entity_id.clone()).or_insert(vec![]).push(i_res);
+        }
+        let mut max_len = 0;
+        let mut max_id: Option<String> = None;
+        for (id, v) in counts.iter() {
+            if v.len() > max_len {
+                max_len = v.len();
+                max_id = Some(id.clone());
+            }
+        }
+        return counts.remove(max_id.as_ref().unwrap()).unwrap();
+    }
+
+    /// Creates a vector of [`ResidueId`](ResidueId) object for each residue of a given chain
+    ///
+    pub fn residue_in_chain(&self, chain_id: &str) -> Vec<ResidueId> {
+
+        Structure::residue_ids_from_atoms(self.atoms.iter().filter(|&a| a.chain_id==chain_id))
+    }
+
     /// Returns the chemical type of residue as a [`ResidueType`] object.
     ///
     /// ```
@@ -539,40 +572,6 @@ impl Structure {
         }
 
         return SecondaryStructure::from_attrs(sec);
-    }
-
-    /// Returns a vector of indexes pointing to [`ResidueId`](ResidueId)s  of a given chain.
-    ///
-    /// Returned indexes simply comprise the longest entity of that chain; it's
-    /// assumed that is the polymer chain. In CIF files water molecules and ligands
-    /// are placed into separate entities. In the PDB format they are separated from the polymer entity
-    /// by a `TER` record and are marked appropriately by bioshell while loading.
-    fn residues_in_polymer(&self, chain_id: &str) -> Vec<usize> {
-
-        let mut counts: HashMap<String, Vec<usize>> = HashMap::new();
-        for (i_res, res_id) in self.residue_ids.iter().enumerate() {
-            if res_id.chain_id != chain_id { continue }
-            let first_atom: &PdbAtom = &self.atoms[self.atoms_for_residue_id[i_res].start];
-            if first_atom.res_name == "HOH" { continue }
-            counts.entry(first_atom.entity_id.clone()).or_insert(vec![]).push(i_res);
-        }
-        let mut max_len = 0;
-        let mut max_id: Option<String> = None;
-        for (id, v) in counts.iter() {
-            if v.len() > max_len {
-                max_len = v.len();
-                max_id = Some(id.clone());
-            }
-        }
-        return counts.remove(max_id.as_ref().unwrap()).unwrap();
-    }
-
-
-    /// Creates a vector of [`ResidueId`](ResidueId) object for each residue of a given chain
-    ///
-    pub fn residue_in_chain(&self, chain_id: &str) -> Vec<ResidueId> {
-
-        Structure::residue_ids_from_atoms(self.atoms.iter().filter(|&a| a.chain_id==chain_id))
     }
 
     /// Removes ligands and waters from a structure.
