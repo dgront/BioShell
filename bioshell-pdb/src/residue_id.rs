@@ -5,6 +5,7 @@ use std::fmt;
 
 use crate::pdb_atom::PdbAtom;
 use crate::pdb_atom_filters::{PdbAtomPredicate};
+use crate::PDBError;
 
 /// Unique identifier for a residue
 ///
@@ -55,11 +56,68 @@ impl fmt::Display for ResidueId {
 impl TryFrom<&PdbAtom> for ResidueId {
     type Error = ();
 
+    /// Creates a new [`ResidueId`](ResidueId) from a [`PdbAtom`](PdbAtom)
+    ///
+    /// # Example
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, PDBError, ResidueId};
+    /// # fn main() -> Result<(), PDBError> {
+    /// let atom = PdbAtom::from_atom_line("ATOM    391  CA  LEU A  51      12.088   9.803  13.653  1.00  9.53           C  ");
+    /// let res_id = ResidueId::try_from(&atom)?;
+    /// assert_eq!(res_id, ResidueId::new("A", 51, ' '));
+    /// # Ok(())
+    /// # }
+    /// ```
     fn try_from(a: &PdbAtom) -> Result<Self, Self::Error> {
         Ok(ResidueId { chain_id: a.chain_id.clone(), res_seq: a.res_seq, i_code: a.i_code })
     }
 }
 
+impl TryFrom<&str> for ResidueId {
+    type Error = PDBError;
+
+    /// Creates a new [`ResidueId`](ResidueId) from a string definition
+    ///
+    /// # Example
+    /// ```
+    /// # use bioshell_pdb::{PdbAtom, PDBError, ResidueId};
+    /// # fn main() -> Result<(), PDBError> {
+    /// assert_eq!(ResidueId::try_from("A:-1")?, ResidueId::new("A", -1, ' '));
+    /// assert_eq!(ResidueId::try_from("AB:123")?, ResidueId::new("AB", 123, ' '));
+    /// assert_eq!(ResidueId::try_from("AA:-1C")?, ResidueId::new("AA", -1, 'C'));
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn try_from(res_id: &str) -> Result<Self, Self::Error> {
+        let mut parts = res_id.splitn(2, ':');
+        let prefix = parts.next().ok_or(PDBError::ResidueIdParsingError{ residue_id: res_id.to_string() })?;
+        let rest = parts.next().ok_or(PDBError::ResidueIdParsingError{ residue_id: res_id.to_string() })?;
+
+        // Separate the number and the optional character
+        let mut num_part = String::new();
+        let mut chars = rest.chars().peekable();
+
+        // Handle optional minus sign
+        if let Some(&'-') = chars.peek() {
+            num_part.push('-');
+            chars.next();
+        }
+
+        while let Some(&c) = chars.peek() {
+            if c.is_ascii_digit() {
+                num_part.push(c);
+                chars.next();
+            } else {
+                break;
+            }
+        }
+
+        let number: i32 = num_part.parse().map_err(|_e| PDBError::ResidueIdParsingError{ residue_id: res_id.to_string() })?;
+        let suffix = chars.next().unwrap_or(' ');   // If there's nothing left after digits, use ' ' as default
+
+        Ok(ResidueId::new(prefix, number, suffix))
+    }
+}
 
 impl PartialEq for ResidueId {
     /// Check whether two [`ResidueId`](ResidueId) objects are equal.

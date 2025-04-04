@@ -72,4 +72,9 @@ pub enum PDBError {
     #[error("The following entity {entity_id} is inconsistent with other data entries: {details}")]
     /// A given entity is inconsistent with other data entries
     InconsistentEntity {entity_id: String, details: String},
+
+    #[error("Error while parsing a residue id string: {residue_id}")]
+    /// Error while parsing a residue id string
+    ResidueIdParsingError {residue_id: String},
+
 }

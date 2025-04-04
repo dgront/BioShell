@@ -1,3 +1,9 @@
+//! Filters that passes atoms that belong to specified residues of a [`Structure`](Structure)
+//!
+//! A [`ResidueFilter`](ResidueFilter) can select residues that are hydrophobic, have all backbone atoms, etc.
+//! Unlike [`PdbAtomFilter`](crate::pdb_atom_filters::PdbAtomFilter), a residue filter operates on
+//! [`ResidueIds`](ResidueIds)
+//!
 use crate::{ResidueId, Structure};
 use crate::monomers::MonomerManager;
 use bioshell_seq::chemical::StandardResidueType::{TYR, PHE, TRP, HIS};
@@ -24,7 +30,9 @@ pub trait ResidueFilter {
     fn check(&self, strctr: &Structure, ri: &ResidueId) -> bool;
 }
 
-/// Returns `true` if the residue has all backbone atoms.
+/// Returns `true` if the residue is aromatic.
+///
+/// The [`IsAromaticAA`] returns `true` for aromatic amino acids, i.e. TYR, PHE, TRP, HIS
 pub struct IsAromaticAA;
 
 impl ResidueFilter for IsAromaticAA {
@@ -42,7 +50,7 @@ const BB_ATOMS: [&str; 4] = [" N  ", " CA ", " C  ", " O  "];
 pub struct HasCompleteBackbone;
 
 impl ResidueFilter for HasCompleteBackbone {
-    /// Creates a new filter that accepts residues with complete backbone atoms
+    /// Check is a residue has all its backbone atoms
     ///
     /// # Example
     /// ```
@@ -120,6 +128,49 @@ impl ResidueFilter for HasAllHeavyAtoms {
         }
 
         return atom_cnt >= res_def.count_residue_heavy();
+    }
+}
+
+/// Returns `true` if the residue is withing specified range, both end inclusive.
+///
+/// This filter assumes the residues are properly ordered in the given structure, that is a chain 'B'
+/// comes after a chain 'A', as well as residues are in numerical order
+///
+/// # Example
+/// ```
+/// # use bioshell_pdb::{Deposit, PDBError, ResidueId};
+/// # fn main() -> Result<(), PDBError> {
+/// # use bioshell_pdb::residue_filters::{ResidueFilter, ResidueInRange};
+/// let cif_data = include_str!("../tests/test_files/2gb1.cif");
+/// let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
+/// let strctr = deposit.structure().unwrap();
+/// let range = ResidueInRange::new(ResidueId::new("A", 24, ' '), ResidueId::new("A", 34, ' '));
+/// let n_res = strctr.residue_ids().iter().filter(|ri| range.check(&strctr, &ri)).count();
+/// assert_eq!(n_res, 11);
+///
+/// let range = ResidueInRange::new(ResidueId::try_from("A:1")?, ResidueId::try_from("A:5")?);
+/// let n_res = strctr.residue_ids().iter().filter(|ri| range.check(&strctr, &ri)).count();
+/// assert_eq!(n_res, 5);
+/// # Ok(())
+/// # }
+/// ```
+pub struct ResidueInRange {
+    first: ResidueId,
+    last: ResidueId,
+}
+
+impl ResidueInRange {
+    /// Creates a new filter for a given residue range
+    pub fn new(first: ResidueId, last: ResidueId) -> Self {
+        ResidueInRange { first, last }
+    }
+}
+impl ResidueFilter for ResidueInRange {
+    /// Passes only residues form a given range
+    fn check(&self, _strctr: &Structure, ri: &ResidueId) -> bool {
+        if ri < &self.first { return false; }
+        if ri > &self.last { return false; }
+        return true;
     }
 }
 
