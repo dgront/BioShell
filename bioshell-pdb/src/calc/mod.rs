@@ -12,4 +12,4 @@ pub use matrix::{Matrix3x3};
 pub use transformation::{Rototranslation};
 
 mod substructures;
-pub use substructures::{HelicalAxis};
+pub use substructures::{SubstructureAxis};

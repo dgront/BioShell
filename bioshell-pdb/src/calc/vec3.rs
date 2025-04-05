@@ -189,6 +189,10 @@ impl HasCartesians for Vec3 {
     fn position(&self) -> &Vec3 { self }
 }
 
+impl HasCartesians for &Vec3 {
+    fn position(&self) -> &Vec3 { self }
+}
+
 impl Vec3 {
 
     /// Creates a new vector from given coordinates.

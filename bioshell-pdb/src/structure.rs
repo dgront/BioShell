@@ -393,6 +393,26 @@ impl Structure {
             .map(|(res_id, _)| res_id)
     }
 
+    /// Finds all residues in a given chain by their 3-letter name.
+    ///
+    /// # Example
+    /// ```
+    /// # use bioshell_pdb::{Deposit, PDBError, ResidueId};
+    /// # fn main() -> Result<(), PDBError> {
+    /// let deposit = Deposit::from_file("./tests/test_files/2gb1.cif")?;
+    /// let mut strctr = deposit.structure().unwrap();
+    /// let n_thr = strctr.residues_in_range("A", "THR").count();
+    /// assert_eq!(n_thr, 11);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn find_residues_by_name<'a>(&'a self, chain_id: &'a str, residue_name: &'a str) -> impl Iterator<Item=&'a ResidueId> + 'a {
+        self.residues()
+            .iter()
+            .filter(move |res_id| res_id.chain_id == chain_id)
+            .filter(move |res_id| self.residue_type(res_id).expect("").code3 == residue_name)
+    }
+
     /// Immutable access to a vector of [`ResidueId`](ResidueId) object for each residue of this [`Structure`](Structure)
     ///
     /// # Examples
@@ -446,6 +466,9 @@ impl Structure {
 
     /// Returns the chemical type of residue as a [`ResidueType`] object.
     ///
+    /// Results in an [`PDBError`] if the type of the residue hasn't been registered in the [`ResidueTypeManager`].
+    ///
+    /// # Example
     /// ```
     /// # use bioshell_pdb::{PdbAtom, ResidueId, Structure};
     /// use bioshell_seq::chemical::StandardResidueType;

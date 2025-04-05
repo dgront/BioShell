@@ -8,7 +8,7 @@ use crate::SecondaryStructureTypes::{Coil, LeftAlphaHelix, LeftGammaHelix, LeftO
 /// [`Coil`](Coil) type, which is not a secondary structure type per se,
 /// nevertheless is a necessary symbol to provide a secondary structure string for a polypeptide chain.
 #[repr(u8)]
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, Eq)]
 pub enum SecondaryStructureTypes {
     RightAlphaHelix = 1,
     RightOmegaHelix = 2,
@@ -61,6 +61,28 @@ impl SecondaryStructureTypes {
             11 => Strand,
             _ => Coil
         }
+    }
+}
+
+use std::fmt;
+
+impl fmt::Display for SecondaryStructureTypes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = match self {
+            RightAlphaHelix => "Right-handed alpha-helix",
+            RightOmegaHelix => "Right-handed omega-helix",
+            RightGammaHelix => "Right-handed gamma-helix",
+            RightPiHelix => "Right-handed pi-helix",
+            Right3_10Helix => "Right-handed 3-10 helix",
+            LeftAlphaHelix => "Left-handed alpha-helix",
+            LeftOmegaHelix => "Left-handed omega-helix",
+            LeftGammaHelix => "Left-handed gamma-helix",
+            RibbonHelix => "Ribbon helix",
+            Polyproline => "Polyproline helix",
+            Strand => "Strand",
+            Coil => "Coil",
+        };
+        write!(f, "{}", name)
     }
 }
 
@@ -164,14 +186,14 @@ impl SecondaryStructure {
     ///
     /// # Example
     /// ```
-    /// use bioshell_pdb::{SecondaryStructure, SecondaryStructureTypes};
+    /// use bioshell_pdb::{SecondaryStructure, SecondaryRange, SecondaryStructureTypes};
     /// let sec_str = SecondaryStructure::from_hec_string("CCHHHHHHCCHHHHC");
-    /// let blocks = sec_str.secondary_blocks();
+    /// let blocks = sec_str.ranges();
     /// assert_eq!(blocks.len(), 5);
-    /// assert_eq!(blocks[1], (SecondaryStructureTypes::RightAlphaHelix, 2, 7));
-    /// assert_eq!(blocks[4], (SecondaryStructureTypes::Coil, 14, 14));
+    /// assert_eq!(blocks[1], SecondaryRange::new(SecondaryStructureTypes::RightAlphaHelix, 2, 7));
+    /// assert_eq!(blocks[4].kind, SecondaryStructureTypes::Coil);
     /// ```
-    pub fn secondary_blocks(&self) -> Vec<(SecondaryStructureTypes, usize, usize)> {
+    pub fn ranges(&self) -> Vec<SecondaryRange> {
         let mut result = Vec::new();
 
         if self.sec_str.is_empty() { return result; }
@@ -181,20 +203,33 @@ impl SecondaryStructure {
 
         for (i, &val) in self.sec_str.iter().enumerate().skip(1) {
             if val != current_val {
-                result.push((current_val, start, i - 1));
+                result.push(SecondaryRange::new(current_val, start, i - 1));
                 current_val = val;
                 start = i;
             }
         }
 
         // Push the final group
-        result.push((current_val, start, self.sec_str.len() - 1));
+        result.push(SecondaryRange::new(current_val, start, self.sec_str.len() - 1));
 
         result
     }
-
-    // fn pdb_code_to_hec_code(pdb_code: &u8) -> u8 {
-    //     let sec_str_type = SecondaryStructureTypes::from_pdb_class(*pdb_code  as usize);
-    //     SecondaryStructureTypes::hec_code(&sec_str_type)
-    // }
 }
+
+/// A range of residues spanning a single Secondary Structure Element: a helix, strand, etc
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SecondaryRange {
+    /// The type of the secondary structure
+    pub kind: SecondaryStructureTypes,
+    /// The first residue of the segment
+    pub first: usize,
+    /// The last residue of the segment (inclusive)
+    pub last: usize
+}
+
+impl SecondaryRange {
+    pub fn new(kind: SecondaryStructureTypes, first: usize, last: usize) -> SecondaryRange {
+        SecondaryRange { kind, first, last }
+    }
+}
+

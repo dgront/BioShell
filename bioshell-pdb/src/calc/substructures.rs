@@ -2,17 +2,18 @@ use nalgebra::{DMatrix, SVD, Vector3};
 use crate::calc::Vec3;
 use crate::HasCartesians;
 
-/// Represents the central axis of a helix, approximated as a cylinder.
-pub struct HelicalAxis {
+/// A 3D vector defined of a molecular fragment, e.g. a helical axis.
+///
+///
+pub struct SubstructureAxis {
     versor: Vec3,   // Unit vector along the axis (direction)
-    begin: Vec3,    // Center of the N-terminal base of the cylinder
-    end: Vec3,      // Center of the C-terminal base of the cylinder
+    begin: Vec3,    // N-terminal end of the vector
+    end: Vec3,      // C-terminal end of the vector
 }
 
-impl HelicalAxis {
-    /// Computes the helical axis from a list of ordered alpha-carbon (Cα) positions.
-    /// Returns an axis defined by its unit direction and base center coordinates.
-    pub fn from_alpha_carbons<T: HasCartesians>(coords: &[T]) -> Self {
+impl SubstructureAxis {
+    /// Computes the helical axis from a list of ordered positions in 3D space.
+    pub fn from_3d_points<T: HasCartesians>(coords: &[T]) -> Self {
         let n = coords.len();
         assert!(n >= 2, "At least two coordinates are required");
 
@@ -88,6 +89,10 @@ impl HelicalAxis {
     /// Returns the center of the base at the C-terminal end.
     pub fn end(&self) -> Vec3 {
         self.end
+    }
+
+    pub fn length(&self) -> f64 {
+        self.begin.distance_to(&self.end)
     }
 
     /// Returns the midpoint of the helix axis (center of the cylinder).

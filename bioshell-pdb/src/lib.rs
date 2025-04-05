@@ -124,7 +124,7 @@ use std::path::Path;
 pub use structure::{Structure, write_pdb};
 pub use deposit::*;
 pub use ligands::*;
-pub use secondary_structure::{SecondaryStructureTypes,SecondaryStructure};
+pub use secondary_structure::{SecondaryStructureTypes, SecondaryStructure, SecondaryRange};
 pub use load_pdb::{is_pdb_file, find_pdb_file_name};
 pub use pdb_parsing_error::PDBError;
 pub use pdb_atom::{PdbAtom, same_residue_atoms, format_atom_name};
@@ -133,6 +133,9 @@ pub use exp_data::{ExperimentalMethod};
 pub use unit_cell::{UnitCell};
 pub use load_cif::{is_cif_file, find_cif_file_name};
 pub use entity::{EntitySource, EntityType, Entity, PolymerEntityType};
+
+mod secondary_view;
+pub use secondary_view::*;
 
 /// Returns a tuple of (pdb_id, chain_id) extracted from a given string.
 ///
