@@ -280,17 +280,17 @@ impl<T: FromStr+Clone> InsertRow<T> for TableOfColumns<T> {
 /// # Ok(())
 /// # }
 /// ```
-pub fn open_file(filename: &str) -> Result<Box<dyn BufRead>, Error> {
-    if filename.len() == 0 {
+pub fn open_file<P: AsRef<Path>>(file_path: P) -> Result<Box<dyn BufRead>, Error> {
+
+    if file_path.as_ref().as_os_str().is_empty() {
         panic!("\nCouldn't open file - file name is an empty string!");
     }
-    let path = Path::new(filename);
-    let file = match File::open(&path) {
+    let file = match File::open(&file_path) {
         Err(why) => {return Err(why)},
         Ok(file) => file,
     };
 
-    if path.extension() == Some(OsStr::new("gz")) {
+    if file_path.as_ref().extension() == Some(OsStr::new("gz")) {
         Ok(Box::new(BufReader::with_capacity(
             128 * 1024,
             read::GzDecoder::new(file),

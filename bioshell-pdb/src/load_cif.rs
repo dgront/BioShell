@@ -1,5 +1,6 @@
 use std::io;
 use std::io::{BufRead};
+use std::path::Path;
 use std::time::Instant;
 use log::{debug, info};
 use bioshell_cif::{read_cif_buffer, CifData, CifTable};
@@ -88,9 +89,9 @@ impl Deposit {
     /// This method loads all the data from the CIF file, except for the atoms; these are loaded
     /// in a lazy manner at the first at the first time the [`Structure`](Structure) is accessed.
     ///
-    pub fn from_cif_file(file_name: &str) -> Result<Deposit, PDBError> {
-        info!("Loading an mmCIF deposit: {}", file_name);
-        let reader = open_file(file_name)?;
+    pub fn from_cif_file<P: AsRef<Path>>(file_path: P) -> Result<Deposit, PDBError> {
+        info!("Loading an mmCIF deposit: {}", file_path.as_ref().display());
+        let reader = open_file(file_path)?;
 
         return Self::from_cif_reader(reader);
     }
@@ -147,7 +148,7 @@ impl Deposit {
 /// assert!(try_2gb1.is_ok());
 /// assert!(!try_2gb1.unwrap());
 /// ```
-pub fn is_cif_file(file_path: &str) -> io::Result<bool> {
+pub fn is_cif_file<P: AsRef<Path>>(file_path: P) -> io::Result<bool> {
     let reader = open_file(file_path)?;
 
     let cif_starts_with = ["data_"];

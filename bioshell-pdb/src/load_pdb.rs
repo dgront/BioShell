@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io;
 use std::io::{BufRead};
+use std::path::Path;
 use std::time::Instant;
 use log::{debug, info};
 use bioshell_io::open_file;
@@ -170,10 +171,10 @@ impl Deposit {
 
     /// Reads a [`Structure`](Structure) from a PDB file
     ///
-    pub fn from_pdb_file(file_name: &str) -> Result<Deposit, PDBError> {
+    pub fn from_pdb_file<P: AsRef<Path>>(file_path: P) -> Result<Deposit, PDBError> {
 
-        info!("Loading a PDB deposit: {}", file_name);
-        let reader = open_file(file_name)?;
+        info!("Loading a PDB deposit: {}", file_path.as_ref().display());
+        let reader = open_file(file_path)?;
         return Self::from_pdb_reader(reader);
     }
 }
@@ -219,7 +220,7 @@ fn parse_seqres_records(seqres_records: Vec<String>) -> HashMap<String, Sequence
 /// This function simply tests whether the first data line of a given file starts with ``HEADER``,
 /// ``REMARK``, ``ATOM`` or ``HETATM``.
 /// Otherwise, it returns ``false``. When the file can't be open returns I/O error..
-pub fn is_pdb_file(file_path: &str) -> io::Result<bool> {
+pub fn is_pdb_file<P: AsRef<Path>>(file_path: P) -> io::Result<bool> {
     let reader = open_file(file_path)?;
 
     let pdb_starts_with = ["HEADER", "ATOM", "HETATM", "REMARK"];

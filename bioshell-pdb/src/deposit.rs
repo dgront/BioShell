@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::Path;
 use bioshell_cif::CifData;
 use crate::{Entity, ExperimentalMethod, is_cif_file, is_pdb_file, PDBError, Structure, UnitCell};
 
@@ -63,10 +64,25 @@ impl Deposit {
     /// Detects the file format and parses its content into a [`Deposit`](Deposit)  struct.
     ///
     /// The method can recognise either mmCIF or PDB file format.
-    pub fn from_file(file_name: &str) -> Result<Deposit, PDBError> {
-        if is_cif_file(file_name)? { return Deposit::from_cif_file(file_name); }
-        if is_pdb_file(file_name)? { return Deposit::from_pdb_file(file_name); }
-        return Err(PDBError::InvalidFileFormat { file_name: file_name.to_string() });
+    ///
+    /// # Examples
+    /// ```
+    /// # use bioshell_pdb::Deposit;
+    /// # use bioshell_pdb::PDBError;
+    /// # fn main() -> Result<(), PDBError> {
+    /// use std::path::{Path, PathBuf};
+    /// let deposit = Deposit::from_file("tests/test_files/2gb1.cif")?;       // from &str
+    /// let deposit = Deposit::from_file(String::from("tests/test_files/2gb1.cif"));  // from String
+    /// let deposit = Deposit::from_file(Path::new("tests/test_files/2gb1.cif"));     // from &Path
+    /// let deposit = Deposit::from_file(PathBuf::from("tests/test_files/2gb1.cif"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn from_file<P: AsRef<Path>>(file_path: P) -> Result<Deposit, PDBError> {
+
+        if is_cif_file(&file_path)? { return Deposit::from_cif_file(&file_path); }
+        if is_pdb_file(&file_path)? { return Deposit::from_pdb_file(&file_path); }
+        return Err(PDBError::InvalidFileFormat { file_name: file_path.as_ref().to_string_lossy().into_owned() });
     }
 
     /// Provides the number of entities of this [`Deposit`](Deposit)
