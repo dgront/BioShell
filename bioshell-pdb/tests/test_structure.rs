@@ -25,7 +25,7 @@ const  lines_ala: [&str; 5] = [
 #[test]
 fn test_sequence_from_structure() {
     let atoms: Vec<PdbAtom> = lines_ca.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    let strctr = Structure::from_iterator("1xyz", atoms.iter());
+    let strctr = Structure::from_iterator("1xyz", atoms.iter().cloned());
     let seq = strctr.sequence("A");
     assert_eq!(seq.to_string(80), "MCGIA");
 
@@ -55,7 +55,7 @@ const pdb_2gb1:  &str = include_str!("./test_files/2gb1.pdb");
 fn test_2gb1_loading() {
     let lines_2gb1: Vec<_> = pdb_2gb1.split("\n").filter(|&l|l.starts_with("ATOM")).collect();
     let atoms: Vec<PdbAtom> = lines_2gb1.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    let strctr = Structure::from_iterator("1xyz", atoms.iter());
+    let strctr = Structure::from_iterator("1xyz", atoms.iter().cloned());
     assert_eq!(strctr.count_atoms(), 855);
     assert_eq!(strctr.count_residues(), 56);
     assert_eq!(strctr.count_chains(), 1);
@@ -144,7 +144,7 @@ fn test_atoms_by_residue() {
 
     let lines_2gb1: Vec<_> = pdb_2gb1.split("\n").filter(|&l|l.starts_with("ATOM")).collect();
     let atoms: Vec<PdbAtom> = lines_2gb1.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    let strctr = Structure::from_iterator("1xyz", atoms.iter());
+    let strctr = Structure::from_iterator("1xyz", atoms.iter().cloned());
 
     assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 1, ' ')).unwrap().count(), 19);
     assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 56, ' ')).unwrap().count(), 16);

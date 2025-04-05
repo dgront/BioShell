@@ -93,7 +93,7 @@ fn main() {
     let strctr = deposit.structure().unwrap();
 
     let atoms_iter = strctr.atoms().iter().filter(|a| multi_filter.check(a));
-    let strctr = Structure::from_iterator(&strctr.id_code, atoms_iter);
+    let strctr = Structure::from_iterator(&strctr.id_code, atoms_iter.cloned());
 
     if let Some(cutoff) = args.cmap {
         print_contacts(&strctr, cutoff);

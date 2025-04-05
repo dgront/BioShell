@@ -5,6 +5,7 @@ use crate::HasCartesians;
 /// A 3D vector defined of a molecular fragment, e.g. a helical axis.
 ///
 ///
+#[derive(Debug, Clone)]
 pub struct SubstructureAxis {
     versor: Vec3,   // Unit vector along the axis (direction)
     begin: Vec3,    // N-terminal end of the vector

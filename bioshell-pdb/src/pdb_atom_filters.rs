@@ -49,7 +49,7 @@
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
 //! # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
 //! # let bb = IsBackbone;
-//! let bb_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|b| bb.check(b)));
+//! let bb_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|b| bb.check(b)).cloned());
 //! ```
 
 use bioshell_seq::chemical::ResidueTypeManager;
@@ -408,7 +408,7 @@ impl PdbAtomPredicate for IsCB {
 /// let deposit = Deposit::from_pdb_reader(BufReader::new(gly_pdb.as_bytes())).unwrap();
 /// let mut strctr = deposit.structure().unwrap();
 /// let is_h = IsHydrogen;
-/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !is_h.check(&a)));
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !is_h.check(&a)).cloned());
 /// # assert_eq!(new_strctr.count_atoms(), 4);
 /// ```
 pub struct IsHydrogen;
@@ -466,7 +466,7 @@ impl PdbAtomPredicate for KeepNucleicAcid {
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
 /// let hoh = IsNotWater;
-/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| hoh.check(&a)));
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| hoh.check(&a)).cloned());
 /// # assert_eq!(new_strctr.count_atoms(), 1);
 /// # assert_eq!(new_strctr.atoms()[0].name, " CA ");
 /// ```

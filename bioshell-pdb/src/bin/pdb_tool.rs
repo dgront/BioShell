@@ -87,7 +87,7 @@ struct Args {
 fn filter<F: PdbAtomPredicate>(strctr: &Structure, filter: &F) -> Structure {
 
     let atoms_iter = strctr.atoms().iter().filter(|a| filter.check(a));
-    return Structure::from_iterator(&strctr.id_code, atoms_iter);
+    return Structure::from_iterator(&strctr.id_code, atoms_iter.cloned());
 }
 
 fn print_info(deposit: &Deposit, tokens: &Vec<String>) {

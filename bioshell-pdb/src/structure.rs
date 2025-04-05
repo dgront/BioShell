@@ -41,7 +41,7 @@ use crate::secondary_structure::SecondaryStructure;
 ///                      "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
 ///                      "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
 /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-/// let strctr = Structure::from_iterator("1xyz", atoms.iter());
+/// let strctr = Structure::from_atoms("1xyz", atoms);
 /// # assert_eq!(strctr.count_atoms(), 4);
 /// ```
 ///
@@ -58,7 +58,7 @@ use crate::secondary_structure::SecondaryStructure;
 /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
 /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
 /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-/// # let strctr = Structure::from_iterator("1xyz", atoms.iter());
+/// # let strctr = Structure::from_atoms("1xyz", atoms);
 /// let is_ca = IsCA;
 /// # let mut n_ca = 0;
 /// for ca in  strctr.atoms().iter().filter(|a| is_ca.check(&a)) {
@@ -78,7 +78,7 @@ use crate::secondary_structure::SecondaryStructure;
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  O   HOH A  69      25.155  27.554  29.987  1.00 21.91           O"));
 /// let hoh = IsNotWater;
-/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !hoh.check(&a)));
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !hoh.check(&a)).cloned());
 /// # assert_eq!(new_strctr.count_atoms(), 1);
 /// ```
 /// Another example removes all hydrogen atoms:
@@ -89,7 +89,7 @@ use crate::secondary_structure::SecondaryStructure;
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    149  CA  GLY A   9      10.920  -2.963   0.070  1.00  0.18           C"));
 /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    153  HA2 GLY A   9      10.848  -2.565  -0.927  1.00  0.20           H"));
 /// let is_h = IsHydrogen;
-/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !is_h.check(&a)));
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| !is_h.check(&a)).cloned());
 /// # assert_eq!(new_strctr.count_atoms(), 1);
 /// ```
 ///
@@ -117,9 +117,35 @@ impl Structure {
         }
     }
 
+    /// Creates a new [`Structure`](Structure) by filling it with provided atoms
+    ///
+    /// Atoms will be consumed in the process.
+    ///
+    /// # Example
+    ///```
+    /// # use bioshell_pdb::{PdbAtom, Structure};
+    /// # use bioshell_pdb::pdb_atom_filters::{IsBackbone, PdbAtomPredicate};
+    /// let pdb_lines = vec!["ATOM    514  N   ALA A  68      26.532  28.200  28.365  1.00 17.85           N",
+    ///                      "ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C",
+    ///                      "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
+    ///                      "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
+    ///let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    /// let strctr = Structure::from_atoms("1xyz", atoms);
+    /// assert_eq!(strctr.count_atoms(), 4);
+    /// ```
+    pub fn from_atoms(id_code: &str, atoms: Vec<PdbAtom>) -> Structure {
+
+        let mut strctr = Structure::new(id_code);
+        strctr.atoms = atoms;
+        strctr.update();
+
+        return strctr;
+    }
+
     /// Creates a new [`Structure`](Structure) by filling it with atoms from an iterator.
     ///
-    /// Atoms provided by an iterator will be cloned.
+    /// Typically, the atoms come from another [`Structure`](Structure) which you want to modify.
+    /// The atoms will be consumed in the process. You may clone them beforehand as in the example below.
     ///
     /// # Example
     ///```
@@ -132,14 +158,14 @@ impl Structure {
     /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    517  O   ALA A  69      26.657  29.867  31.341  1.00 20.90           O"));
     /// # strctr.push_atom(PdbAtom::from_atom_line("ATOM    518  CB  ALA A  69      25.155  27.554  29.987  1.00 21.91           C"));
     /// let bb = IsBackbone{};
-    /// let bb_strctr = Structure::from_iterator(&strctr.id_code, strctr.atoms().iter().filter(|a|bb.check(a)));
+    /// let bb_strctr = Structure::from_iterator(&strctr.id_code, strctr.atoms().iter().filter(|a|bb.check(a)).cloned());
     /// # assert_eq!(bb_strctr.count_atoms(), 4);
     /// ```
-    pub fn from_iterator<'a, T: Iterator+Clone>(id_code: &str, iter: T) -> Structure
-        where T: Iterator<Item=&'a PdbAtom> {
+    pub fn from_iterator<T>(id_code: &str, iter: T) -> Structure
+    where T: IntoIterator<Item = PdbAtom> {
 
         let mut strctr = Structure::new(id_code);
-        for a in iter { strctr.atoms.push(a.clone()) }
+        for a in iter { strctr.atoms.push(a) }
         strctr.update();
 
         return strctr;
@@ -246,10 +272,10 @@ impl Structure {
     /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// # let strctr = Structure::from_iterator("1xyz", atoms.iter());
+    /// # let strctr = Structure::from_atoms("1xyz", atoms);
     /// let a = strctr.atom(&ResidueId::new("A", 69, ' ')," CA ").unwrap();
     /// assert_eq!(a.name, " CA ");
-    /// # assert_eq!(a.res_seq, 69);
+    /// assert_eq!(a.res_seq, 69);
     /// ```
     pub fn atom(&self, res_id: &ResidueId, name: &str) -> Result<&PdbAtom, PDBError> {
         let i_residue = self.residue_pos(res_id)?;
@@ -304,7 +330,7 @@ impl Structure {
     /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// # let strctr = Structure::from_iterator("1xyz", atoms.iter());
+    /// # let strctr = Structure::from_atoms("1xyz", atoms);
     /// let chain_A_atoms = strctr.atoms_in_chain("A");
     /// # assert_eq!(chain_A_atoms.count(),4);
     /// ```
@@ -321,7 +347,7 @@ impl Structure {
     /// #                     "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// # let strctr = Structure::from_iterator("1xyz", atoms.iter());
+    /// # let strctr = Structure::from_atoms("1xyz", atoms);
     /// let res_atoms = strctr.atoms_in_residue(&ResidueId::new("A", 68, ' ')).unwrap();
     /// # assert_eq!(res_atoms.count(),2);
     /// ```
@@ -424,7 +450,7 @@ impl Structure {
     ///                      "ATOM    514  N   ALA A  69      26.532  28.200  28.365  1.00 17.85           N",
     ///                      "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// let strctr = Structure::from_iterator("1xyz", atoms.iter());
+    /// let strctr = Structure::from_atoms("1xyz", atoms);
     /// assert_eq!(strctr.residues().len(), 2);
     /// assert_eq!(strctr.residues()[0].res_seq, 68);
     /// assert_eq!(strctr.residues()[1].res_seq, 69);
@@ -474,7 +500,7 @@ impl Structure {
     /// use bioshell_seq::chemical::StandardResidueType;
     /// let pdb_lines = vec!["ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"];
     /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-    /// let strctr = Structure::from_iterator("1xyz", atoms.iter());
+    /// let strctr = Structure::from_atoms("1xyz", atoms);
     /// let res_type = strctr.residue_type(&ResidueId::new("A", 68, ' ')).unwrap();
     /// assert_eq!(res_type.code3, "ALA");
     /// assert_eq!(res_type.parent_type, StandardResidueType::ALA);
