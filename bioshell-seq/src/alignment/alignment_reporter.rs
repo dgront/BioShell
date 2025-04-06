@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use bioshell_io::out_writer;
 use crate::alignment::AlignmentStatistics;
-use crate::sequence::{len_ungapped, len_ungapped_str, Sequence};
+use crate::sequence::{infer_sequence_id, len_ungapped, len_ungapped_str, Sequence};
 
 /// Reports a sequence alignment calculated by a sequence alignment algorithm.
 pub trait AlignmentReporter {
@@ -92,20 +92,27 @@ impl AlignmentReporter for PrintAsPairwise {
 
 /// Prints staple statistics for a given alignment
 pub struct SimilarityReport {
-    pub header_width: usize
+    pub header_width: usize,
+    pub infer_seq_id: bool
 }
 
 impl SimilarityReport {
-    pub fn new(header_width: usize) -> SimilarityReport { SimilarityReport{ header_width } }
+    pub fn new(header_width: usize, infer_seq_id: bool) -> SimilarityReport {
+        SimilarityReport{ header_width, infer_seq_id }
+    }
 }
 
 impl Default for SimilarityReport {
-    fn default() -> Self { SimilarityReport::new(32) }
+    fn default() -> Self { SimilarityReport::new(32, false) }
 }
 
 impl AlignmentReporter for SimilarityReport {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
-        let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, self.header_width);
+        let mut stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, self.header_width);
+        if self.infer_seq_id {
+            stats.query_header = infer_sequence_id(&stats.query_header);
+            stats.template_header = infer_sequence_id(&stats.template_header);
+        }
         println!("{}", stats);
     }
 }
@@ -118,7 +125,7 @@ impl AlignmentReporter for SimilarityReport {
 /// use bioshell_seq::sequence::Sequence;
 /// let query = Sequence::from_str("query", "AL-IV");
 /// let template = Sequence::from_str("tmplt", "ALRIV");
-/// let mut reporter = IdentityMatrixReporter::new(5, "stdout");
+/// let mut reporter = IdentityMatrixReporter::new(5, false, "stdout");
 /// reporter.report(&query, &template);
 /// assert_eq!(reporter.sequence_index("query"), Some(0));
 /// assert_eq!(reporter.sequence_index("tmplt"), Some(1));
@@ -126,14 +133,15 @@ impl AlignmentReporter for SimilarityReport {
 pub struct IdentityMatrixReporter {
     pub header_width: usize,
     pub out_fname: String,
+    pub infer_seq_id: bool,
     identity_matrix: Vec<Vec<usize>>,
     sequence_order: HashMap<String, usize>,
 }
 
 impl IdentityMatrixReporter {
-    pub fn new(header_width: usize, out_fname: &str) -> IdentityMatrixReporter {
+    pub fn new(header_width: usize, infer_seq_id: bool, out_fname: &str) -> IdentityMatrixReporter {
         IdentityMatrixReporter {
-            header_width, out_fname: out_fname.to_string(),
+            header_width, out_fname: out_fname.to_string(), infer_seq_id,
             identity_matrix: vec![], sequence_order: HashMap::new()
         }
     }
@@ -179,8 +187,10 @@ impl Drop for IdentityMatrixReporter {
 
         // Write the header and corresponding matrix values (second block)
         for (key, &idx) in &sorted_keys {
+            // if requested, extract the seq-id from a sequence header
+            let mut truncated_key = if self.infer_seq_id {infer_sequence_id(key)} else { (*key).clone() };
             // Write the truncated key (header_width characters)
-            let truncated_key: String = key.split_whitespace().next().unwrap().chars().take(self.header_width).collect();
+            truncated_key = truncated_key.split_whitespace().next().unwrap().chars().take(self.header_width).collect();
             write!(file, "{:<width$}", truncated_key, width = self.header_width).expect(&err_msg);
 
             // Write the values from identity_matrix[idx]

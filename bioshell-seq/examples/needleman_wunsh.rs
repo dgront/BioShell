@@ -37,6 +37,9 @@ struct Args {
     /// length of a sequence name to print; longer names will be trimmed that size
     #[clap(long, short='w', default_value = "20")]
     name_width: usize,
+    /// when printing sequence identity results, attempts to print the sequence ID instead the sequence description
+    #[clap(long, action)]
+    infer_seq_id: bool,
 }
 
 
@@ -49,14 +52,15 @@ pub fn main() -> Result<(), SequenceError> {
     env_logger::init();
     let args = Args::parse();
 
+    let if_seq_ids = args.infer_seq_id;
     let name_width = args.name_width;
     let mut multireports = MultiReporter::new();
     if args.pairwise { multireports.add_reporter(Box::new(PrintAsPairwise::new(name_width, 80))); }
-    if args.identity { multireports.add_reporter(Box::new(SimilarityReport::new(name_width))); }
+    if args.identity { multireports.add_reporter(Box::new(SimilarityReport::new(name_width, if_seq_ids))); }
     if args.identity_matrix {
-        multireports.add_reporter(Box::new(IdentityMatrixReporter::new(name_width, "stdout")));
+        multireports.add_reporter(Box::new(IdentityMatrixReporter::new(name_width, if_seq_ids, "stdout")));
     }
-    if multireports.count_reporters() == 0 {  multireports.add_reporter(Box::new(SimilarityReport::new(name_width))); }
+    if multireports.count_reporters() == 0 {  multireports.add_reporter(Box::new(SimilarityReport::new(name_width, if_seq_ids))); }
 
     let queries = load_sequences(&args.query, "query")?;
     if queries.len() == 0 {

@@ -94,8 +94,8 @@ pub fn main() -> Result<(), SequenceError> {
         multireports.add_reporter(Box::new(SimilarityHistogramByQuery::new(2.5, &fname)));
     }
     if args.pairwise { multireports.add_reporter(Box::new(PrintAsPairwise::new(name_width, 80))); }
-    if args.report { multireports.add_reporter(Box::new(SimilarityReport::new(name_width))); }
-    if multireports.count_reporters() == 0 {  multireports.add_reporter(Box::new(SimilarityReport::new(name_width))); }
+    if args.report { multireports.add_reporter(Box::new(SimilarityReport::new(name_width, false))); }
+    if multireports.count_reporters() == 0 {  multireports.add_reporter(Box::new(SimilarityReport::new(name_width, false))); }
 
     align_all_pairs(&queries, &queries, SubstitutionMatrixList::BLOSUM62,
                     args.open, args.extend, true, &mut multireports);

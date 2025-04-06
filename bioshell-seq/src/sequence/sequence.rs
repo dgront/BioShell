@@ -594,3 +594,10 @@ pub fn clone_ungapped(sequence: &Sequence) -> Sequence {
     remove_gaps(&mut s);
     return s
 }
+
+/// Attempts to infer the sequence ID from a sequence description string.
+///
+/// As the last resort, this function returns the first word in the sequence description string.
+pub fn infer_sequence_id(seq_description: &str) -> String {
+    seq_description.split_whitespace().next().unwrap_or("").to_string()
+}
