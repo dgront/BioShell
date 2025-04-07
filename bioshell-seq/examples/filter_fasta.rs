@@ -7,9 +7,9 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
-// use regex::Regex;
 
-use bioshell_seq::sequence::{FastaIterator, first_word_of_description, Sequence, SequenceReporter, SplitFasta, WriteFasta};
+
+use bioshell_seq::sequence::{FastaIterator, parse_sequence_id, Sequence, SequenceReporter, SplitFasta, WriteFasta};
 use bioshell_seq::sequence::{HasSequenceMotif, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan, ContainsX, LogicalNot, DescriptionContains};
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::SequenceError;
@@ -194,13 +194,13 @@ pub fn main() -> Result<(), SequenceError> {
             let mut hasher = DefaultHasher::new();
             sequence.hash(&mut hasher);
             let h = hasher.finish();
-            let seq_id = first_word_of_description(&sequence.description());
+            let seq_id = parse_sequence_id(&sequence.description());
             if represented_sequences.contains_key(&h) {
-                represented_sequences.entry(h).or_default().push(seq_id);
+                represented_sequences.entry(h).or_default().push(seq_id.to_string());
                 continue;
             }
             else {
-                represented_sequences.insert(h, vec![seq_id]);
+                represented_sequences.insert(h, vec![seq_id.to_string()]);
             }
         }
         cnt_ok += 1;

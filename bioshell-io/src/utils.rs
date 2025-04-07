@@ -500,3 +500,28 @@ pub fn markdown_to_text(md: &str) -> String {
 
     plain_text.to_string()
 }
+
+/// Sanitizes a string for safe use as a file name on Windows, Linux, and macOS.
+///
+/// Replaces or removes characters that are not allowed in file names on most platforms.
+/// This includes characters like `<>:"/\\|?*` and control characters.
+///
+/// # Example
+/// ```
+/// use bioshell_io::sanitize_filename;
+/// let name = "RefSeq|XP_123456.1/SwissProt:Q9NQX5.fasta";
+/// assert_eq!(sanitize_filename(name), "RefSeq_XP_123456.1_SwissProt_Q9NQX5.fasta");
+/// ```
+pub fn sanitize_filename<S: AsRef<str>>(name: S) -> String {
+    name.as_ref()
+        .chars()
+        .filter_map(|c| match c {
+            // Disallowed on Windows and/or POSIX systems
+            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => Some('_'),
+            // Control characters (ASCII 0–31) are unsafe
+            c if c.is_control() => None,
+            // Otherwise safe
+            c => Some(c),
+        })
+        .collect()
+}

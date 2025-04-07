@@ -2,7 +2,7 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 use bioshell_io::out_writer;
-use crate::sequence::{first_word_of_description, Sequence};
+use crate::sequence::{parse_sequence_id, SeqIdList, Sequence};
 
 /// A trait for types that can report on a `Sequence`, e.g. write it to a file.
 ///
@@ -61,8 +61,8 @@ impl SplitFasta {
 impl SequenceReporter for SplitFasta {
 
     fn report(&mut self, seq: &Sequence) -> io::Result<()> {
-        let seq_id = first_word_of_description(seq.description());
-        let file_name = format!("{seq_id}.fasta");
+        let seq_id: SeqIdList = parse_sequence_id(seq.description());
+        let file_name = format!("{}.fasta", seq_id.file_name());
         let out_path_fname = match &self.path {
             None => file_name,
             Some(path) => Path::new(path).join(file_name).to_string_lossy().to_string(),

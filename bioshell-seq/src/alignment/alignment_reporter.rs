@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use bioshell_io::out_writer;
 use crate::alignment::AlignmentStatistics;
-use crate::sequence::{infer_sequence_id, len_ungapped, len_ungapped_str, Sequence};
+use crate::sequence::{parse_sequence_id, len_ungapped, len_ungapped_str, Sequence};
 
 /// Reports a sequence alignment calculated by a sequence alignment algorithm.
 pub trait AlignmentReporter {
@@ -110,8 +110,8 @@ impl AlignmentReporter for SimilarityReport {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
         let mut stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, self.header_width);
         if self.infer_seq_id {
-            stats.query_header = infer_sequence_id(&stats.query_header);
-            stats.template_header = infer_sequence_id(&stats.template_header);
+            stats.query_header = parse_sequence_id(&stats.query_header).to_string();
+            stats.template_header = parse_sequence_id(&stats.template_header).to_string();
         }
         println!("{}", stats);
     }
@@ -188,7 +188,7 @@ impl Drop for IdentityMatrixReporter {
         // Write the header and corresponding matrix values (second block)
         for (key, &idx) in &sorted_keys {
             // if requested, extract the seq-id from a sequence header
-            let mut truncated_key = if self.infer_seq_id {infer_sequence_id(key)} else { (*key).clone() };
+            let mut truncated_key = if self.infer_seq_id { parse_sequence_id(key).to_string()} else { (*key).clone() };
             // Write the truncated key (header_width characters)
             truncated_key = truncated_key.split_whitespace().next().unwrap().chars().take(self.header_width).collect();
             write!(file, "{:<width$}", truncated_key, width = self.header_width).expect(&err_msg);

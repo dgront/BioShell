@@ -17,6 +17,9 @@ pub use sequence_profile::*;
 pub use residue_type_mapping::*;
 use crate::SequenceError;
 
+mod sequence_id;
+pub use sequence_id::*;
+
 /// Returns a list of Sequences for a given input string.
 ///
 /// If the input string contains a dot character, it's assumed to be a file name. This function
@@ -33,24 +36,4 @@ pub fn load_sequences(seq_or_fname: &String, seq_name: &str) -> Result<Vec<Seque
     }
 
     return Ok(vec![Sequence::from_str(seq_name, seq_or_fname)]);
-}
-
-/// Returns the first word of a sequence description string.
-///
-/// This function is used to extract the ID of a sequence from it's description, assuming it's the first word
-///
-/// # Examples
-/// ```
-/// use bioshell_seq::sequence::first_word_of_description;
-/// let description = "1ABC A hypothetical protein from E. coli";
-/// let id = first_word_of_description(description);
-/// assert_eq!(id, "1ABC");
-/// let description = "NC_000913.3 Escherichia coli str. K-12 substr. MG1655, complete genome";
-/// let id = first_word_of_description(description);
-/// assert_eq!(id, "NC_000913.3");
-/// ```
-pub fn first_word_of_description(description: &str) -> String {
-    let v: Vec<&str> = description.split_whitespace().collect();
-
-    return String::from(v[0]);
 }
