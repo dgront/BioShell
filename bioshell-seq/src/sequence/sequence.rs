@@ -32,7 +32,7 @@ impl Sequence {
     ///
     /// assert_eq!("MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE", seq.to_string(0))
     /// ```
-    pub fn new(description: &String, seq: &String) -> Self {
+    pub fn new(description: &str, seq: &str) -> Self {
         Sequence {
             description: description.to_owned(),
             seq: Self::filter_to_u8(seq)
@@ -68,7 +68,7 @@ impl Sequence {
     /// assert_eq!(expected, seq.to_string(0));
     /// ```
     pub fn from_str(description: &str, seq: &str) -> Self {
-        Self { description: String::from(description), seq: seq.as_bytes().to_vec()}
+        Self { description: String::from(description), seq: Self::filter_to_u8(seq)}
     }
 
     /// Return the description line of this Sequence.
@@ -167,7 +167,7 @@ impl Sequence {
 
     }
 
-    fn filter_to_u8(seq: &String) -> Vec<u8> {
+    fn filter_to_u8(seq: &str) -> Vec<u8> {
         seq.chars().filter(|c| c != &' ' && c != &'*').map(|c| c as u8).collect()
     }
 }

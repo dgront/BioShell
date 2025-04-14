@@ -38,6 +38,11 @@ impl SequenceFilter for AlwaysTrue {
 /// ```
 pub struct LogicalNot<F> { pub f: F}
 
+impl<F: SequenceFilter> LogicalNot<F> {
+    /// Create a new filter by negating the result of a given [`SequenceFilter`](SequenceFilter)
+    pub fn new(f: F) -> Self { Self { f } }
+}
+
 impl<F: SequenceFilter> SequenceFilter for LogicalNot<F> {
     fn filter(&self, sequence: &Sequence) -> bool { !self.f.filter(sequence) }
 }
@@ -146,7 +151,7 @@ impl SequenceFilter for IsNucleic {
 /// let sequence3 = Sequence::from_str("test_seq", "MRAG!SXA");
 /// let filter = IsProtein;
 /// assert!(filter.filter(&sequence1));     // 'X' is a legal amino acid for IsProtein() filter
-/// assert!(!filter.filter(&sequence2));    // ... but '*' is not allowed
+/// assert!(filter.filter(&sequence2));     // '*' chars are automatically removed by Sequence::from_str()
 /// assert!(!filter.filter(&sequence3));    // Neither does '!'
 /// ```
 pub struct IsProtein;
@@ -161,7 +166,12 @@ macro_rules! is_amino_acid {
 
 impl SequenceFilter for IsProtein {
     fn filter(&self, sequence: &Sequence) -> bool {
-        sequence.as_u8().iter().all(|l| is_amino_acid!(l))
+        println!("{}", sequence.as_u8().len());
+        for c in sequence.as_u8() {
+            let cc: char = *c as char;
+            print!("{} {}  ",cc, is_amino_acid!(c));
+        }
+        sequence.as_u8().iter().all(|l|  is_amino_acid!(l))
     }
 }
 
@@ -189,7 +199,7 @@ impl SequenceFilter for ShorterThan {
 /// use bioshell_seq::sequence::{Sequence, LongerThan, SequenceFilter};
 /// let sequence1 = Sequence::from_str("test_seq", "MRAGSXA");
 /// let sequence2 = Sequence::from_str("test_seq", "MRAGS");
-/// let filter = LongerThan{min_length: 0};
+/// let filter = LongerThan{min_length: 6};
 /// assert!(filter.filter(&sequence1));
 /// assert!(!filter.filter(&sequence2));
 /// ```

@@ -60,7 +60,10 @@ struct Args {
     name_width: usize,
     /// length of a sequence itself to print; use 0 to print the whole sequence in a single line
     #[clap(long, default_value = "80")]
-    sequence_width: usize
+    sequence_width: usize,
+    /// be more verbose and log program actions on the screen
+    #[clap(short, long, short='v')]
+    verbose: bool
 }
 
 
@@ -121,11 +124,12 @@ impl AlignmentReporter for SequenceIdentityMatrix {
 
 pub fn main() -> Result<(), SequenceError> {
 
+    let args = Args::parse();
     unsafe {
         if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+        if args.verbose { env::set_var("RUST_LOG", "debug"); }
     }
     env_logger::init();
-    let args = Args::parse();
 
     // ---------- load sequences ----------
     let sequences = load_sequences(&args.infile, "")?;

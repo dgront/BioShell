@@ -43,7 +43,7 @@ use crate::sequence::Sequence;
 /// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes());
 /// # let sequences: Vec<Sequence> = fasta_iter.collect();
 ///
-/// let mut reporter = SimilarityReport::new(0);
+/// let mut reporter = SimilarityReport::new(0, false);
 /// align_all_pairs(&sequences, &sequences, SubstitutionMatrixList::BLOSUM62, -10, -1, true, &mut reporter);
 /// ```
 ///
@@ -65,7 +65,7 @@ use crate::sequence::Sequence;
 /// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes());
 /// # let templates: Vec<Sequence> = fasta_iter.collect();
 ///
-/// let mut reporter = SimilarityReport::new(0);
+/// let mut reporter = SimilarityReport::new(0, false);
 /// align_all_pairs(&queries, &templates, SubstitutionMatrixList::BLOSUM62, -10, -1, false, &mut reporter);
 /// ```
 pub fn align_all_pairs<R: AlignmentReporter>(queries: &Vec<Sequence>, templates: &Vec<Sequence>,

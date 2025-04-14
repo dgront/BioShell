@@ -67,15 +67,16 @@ impl MonomerType {
     pub fn is_peptide_linking(&self) -> bool {
         matches!(self, MonomerType::PeptideLinking | MonomerType::LPeptideLinking | MonomerType::LPeptideCOOH | MonomerType::LPeptideNH3 | MonomerType::DPeptideCOOH | MonomerType::DPeptideNH3 | MonomerType::DPeptideLinking | MonomerType::PeptideLike)
     }
+
     /// Returns `true` if the monomer can form a nucleic acid
     ///
     /// # Examples
     /// ``` rust
     /// use bioshell_seq::chemical::MonomerType::{LRNALinking, RNALinking, DNALinking, DSaccharide};
-    /// assert!(LRNALinking.is_peptide_linking());
-    /// assert!(RNALinking.is_peptide_linking());
-    /// assert!(DNALinking.is_peptide_linking());
-    /// assert!(! DSaccharide.is_peptide_linking());
+    /// assert!(LRNALinking.is_nucleic_linking());
+    /// assert!(RNALinking.is_nucleic_linking());
+    /// assert!(DNALinking.is_nucleic_linking());
+    /// assert!(! DSaccharide.is_nucleic_linking());
     /// ```
     pub fn is_nucleic_linking(&self) -> bool {
         matches!(self, MonomerType::RNALinking | MonomerType::LRNALinking
@@ -192,19 +193,34 @@ impl Display for ResidueType {
 /// // --- This should pass, as all standard residue types (including alanine) are preloaded by a constructor
 /// let ala = mgr.by_code3(&String::from("ALA"));
 /// assert!(ala.is_some());
-/// // --- There are 33 standard residue types
-/// assert_eq!(mgr.count(), 33);
+/// // --- There are 34 standard residue types
+/// assert_eq!(mgr.count(), 34);
 /// // --- ALN hasn't been inserted yet
 /// assert!(mgr.by_code3(&String::from("ALN")).is_none());
 /// let aln = ResidueType::from_attrs("ALN", StandardResidueType::ALA, MonomerType::PeptideLinking);
 /// mgr.register_residue_type(aln);
 /// assert!(mgr.by_code3(&String::from("ALN")).is_some());
-/// // --- ALN residue type has been registered at index the 33
-/// assert_eq!(mgr.index(&String::from("ALN")).unwrap(), 33);
+/// // --- ALN residue type has been registered at index the 34 since we cound from 0
+/// assert_eq!(mgr.index(&String::from("ALN")).unwrap(), 34);
 /// ```
 pub struct ResidueTypeManager {
     registered_types: Vec<ResidueType>,
     by_code_3: HashMap<String, usize>
+}
+
+impl Display for ResidueTypeManager {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ResidueTypeManager with {} registered types:\n", self.count())?;
+        for (i, rt) in self.registered_types.iter().enumerate() {
+            write!(f, "{:3}", rt)?;
+            if i%10 == 9 {
+                write!(f, "\n")?
+            } else {
+                write!(f, " ")?
+            }
+        }
+        Ok(())
+    }
 }
 
 impl ResidueTypeManager {
@@ -215,7 +231,9 @@ impl ResidueTypeManager {
     /// use [`KnownResidueTypes`] object instead of creating a new one.
     ///
     /// ``ResidueType`` objects corresponding to standard StandardResidueType enum values are
-    /// automatically created and registered in this manager
+    /// automatically created and registered in this manager. In addition, when the manager
+    /// is created, it also creates residue types corresponding to most commonly used non-standard
+    /// chemical compounds, such as water.
     pub(crate) fn new() ->  ResidueTypeManager {
         let mut out = ResidueTypeManager{registered_types: vec![], by_code_3: HashMap::new()};
 
@@ -225,6 +243,7 @@ impl ResidueTypeManager {
             out.by_code_3.insert(srt.code3(), out.registered_types.len());
             out.registered_types.push(rt);
         }
+
         // --- register water as well
         let hoh = ResidueType::from_attrs("HOH", UNK, NonPolymer);
         out.register_residue_type(hoh);

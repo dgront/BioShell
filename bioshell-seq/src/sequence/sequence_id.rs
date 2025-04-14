@@ -157,7 +157,7 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
 /// ids.sort();  // Sort by biological database importance
 ///
 /// // Format as a standard header string
-/// let header = ids.to_string();
+/// let mut header = ids.to_string();
 /// assert_eq!(header, "PDB|1HHP:A|sp|Q9NQX5|RefSeq|XP_123456.1");
 ///
 /// println!("Formatted Header: {}", ids); // uses Display
@@ -243,26 +243,28 @@ impl DerefMut for SeqIdList {
     fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
 }
 
-/// Allows formatting the entire list using `.to_string()` or `{}`.
-///
-/// The output is a `|`-separated string of alternating database names and identifiers,
-/// e.g., `PDB|1HHP:A|sp|P12345|RefSeq|XP_001234567.1`.
-///
-/// # Example
-/// ```
-/// use bioshell_seq::sequence::{SeqId, SeqIdList};
-///
-/// let ids = vec![
-///     SeqId::SwissProt("Q9NQX5".to_string()),
-///     SeqId::RefSeq("XP_001234567.1".to_string()),
-///     SeqId::PDB("1HHP:A".to_string()),
-/// ];
-///
-/// let ids = SeqIdList::from(ids);
-/// let header = ids.to_string();
-/// assert_eq!(header, "PDB|1HHP:A|sp|Q9NQX5|RefSeq|XP_001234567.1");
-/// ```
+
 impl fmt::Display for SeqIdList {
+    /// Allows formatting the entire list using `.to_string()` or `{}`.
+    ///
+    /// The output is a `|`-separated string of alternating database names and identifiers,
+    /// e.g., `PDB|1HHP:A|sp|P12345|RefSeq|XP_001234567.1`.
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_seq::sequence::{SeqId, SeqIdList};
+    ///
+    /// let ids = vec![
+    ///     SeqId::SwissProt("Q9NQX5".to_string()),
+    ///     SeqId::RefSeq("XP_001234567.1".to_string()),
+    ///     SeqId::PDB("1HHP:A".to_string()),
+    /// ];
+    ///
+    /// let mut ids = SeqIdList::from(ids);
+    /// ids.sort();
+    /// let header = ids.to_string();
+    /// assert_eq!(header, "PDB|1HHP:A|sp|Q9NQX5|RefSeq|XP_001234567.1");
+    /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, id) in self.0.iter().enumerate() {
             if i > 0 { write!(f, "|")?; }

@@ -20,6 +20,9 @@ use crate::SequenceError;
 mod sequence_id;
 pub use sequence_id::*;
 
+mod greedy_clustering;
+pub use greedy_clustering::{cdhit_clustering};
+
 /// Returns a list of Sequences for a given input string.
 ///
 /// If the input string contains a dot character, it's assumed to be a file name. This function
