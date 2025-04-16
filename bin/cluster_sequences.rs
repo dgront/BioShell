@@ -7,14 +7,14 @@ use log::{debug, info};
 use std::time::Instant;
 use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers};
 use bioshell_clustering::hierarchical::strategies::{average_link, complete_link, single_link};
-use bioshell_seq::sequence::{load_sequences, Sequence};
+use bioshell_seq::sequence::{bucket_clustering, load_sequences, Sequence};
 use bioshell_io::{out_writer};
 use bioshell_seq::alignment::{align_all_pairs, AlignmentReporter, AlignmentStatistics};
 use bioshell_seq::scoring::SubstitutionMatrixList;
 use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
-#[clap(name = "filter_fasta")]
+#[clap(name = "cluster_sequences", version, author)]
 #[clap(about = "Cluster amino acid sequences by sequence identity", long_about = None)]
 struct Args {
     /// input file in FASTA format
@@ -43,6 +43,9 @@ struct Args {
     /// print the representative sequence for each cluster (i.e. the medoid)
     #[clap(short='m', long, action)]
     medoids: bool,
+    /// clusters sequences into buckets at the given sequence identity fraction
+    #[clap(short='b', long)]
+    bucket_clustering: Option<f32>,
     /// prefix to add to the output files: cluster sequences and the medoids; use something like "unique_job_id_" to avoid overwriting previous results
     #[clap(long, default_value = "")]
     prefix: String,
@@ -133,6 +136,20 @@ pub fn main() -> Result<(), SequenceError> {
 
     // ---------- load sequences ----------
     let sequences = load_sequences(&args.infile, "")?;
+
+    if let Some(cutoff) = args.bucket_clustering {
+        info!("Bucket clustering of {} sequences aligned at {}", sequences.len(), cutoff);
+        let clusters = bucket_clustering(&sequences, cutoff);
+        for (i, cluster) in clusters.iter().enumerate() {
+            let mut out_file = out_writer(&format!("{}cluster_{}-{}.fasta",
+                                                   args.prefix, i, cluster.len()), false);
+            for sequence in cluster.iter() {
+                writeln!(out_file, "{:width$}", sequence, width = args.sequence_width)?;
+            }
+            out_file.flush().unwrap();
+        }
+        return Ok(());
+    }
 
     // ---------- align all sequence pairs ----------
     let mut matrix_reporter = SequenceIdentityMatrix::new(&sequences, args.name_width)?;

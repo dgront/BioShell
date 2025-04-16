@@ -20,8 +20,8 @@ use crate::SequenceError;
 mod sequence_id;
 pub use sequence_id::*;
 
-mod greedy_clustering;
-pub use greedy_clustering::{cdhit_clustering};
+mod bucket_clustering;
+pub use bucket_clustering::{bucket_clustering};
 
 /// Returns a list of Sequences for a given input string.
 ///
