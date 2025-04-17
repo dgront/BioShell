@@ -185,7 +185,14 @@ pub fn main() -> Result<(), SequenceError> {
     // ---------- cluster the sequences using the sequence identity matrix as distances ----------
     let start = Instant::now();
     let distance_fn = |i: usize, j: usize| 100.0 - matrix_reporter.percent_identity(i, j);
-    let mut clustering = hierarchical_clustering(sequences.len(), distance_fn, &complete_link);
+
+    let mut clustering = match (args.single_link, args.complete_link, args.average_link) {
+        (true, false, false) => hierarchical_clustering(sequences.len(), distance_fn, &single_link),
+        (false, true, false) => hierarchical_clustering(sequences.len(), distance_fn, &complete_link),
+        (false, false, true) => hierarchical_clustering(sequences.len(), distance_fn, &average_link),
+        _ => { panic!("Exactly one of --single-link, --complete-link, or --average-link must be specified."); }
+    };
+
     info!("{} sequences clustered in {:?}", sequences.len(), start.elapsed());
 
     // ---------- retrieve actual clusters of sequences----------
