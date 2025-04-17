@@ -265,6 +265,34 @@ impl<T: FromStr+Clone> InsertRow<T> for TableOfColumns<T> {
     }
 }
 
+/// Attempts to create a file at the specified path to check if it can be written.
+///
+/// This function tries to create (or truncate) the file at the given path.
+/// If the file is successfully created, it is immediately deleted to avoid side effects.
+///
+/// # Arguments
+///
+/// * `path` - A reference to a path that specifies where to attempt file creation.
+///
+/// # Returns
+///
+/// * `true` if the file can be created for writing.
+/// * `false` if the file cannot be created (e.g., due to permission issues, invalid path, etc.).
+///
+/// # Notes
+///
+/// * If the file already exists, it **will be truncated** during this check.
+/// * This operation requires appropriate write permissions for the target directory.
+pub fn can_create_file<P: AsRef<Path>>(path: P) -> bool {
+    match File::create(&path) {
+        Ok(_) => {
+            let _ = std::fs::remove_file(&path);    // --- File successfully created, now remove it
+            true
+        }
+        Err(_) => false,
+    }
+}
+
 /// Opens a file for reading.
 ///
 /// This function can open a regular file or a gzipped one, as determined by the extension
