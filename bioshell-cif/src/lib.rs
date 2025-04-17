@@ -85,7 +85,7 @@ use cif_line_iterator::CifLineIterator;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::io;
-use std::io::{BufRead, Lines};
+use std::io::{BufRead};
 use std::ops::{Index, IndexMut};
 use std::str::FromStr;
 use std::time::Instant;
@@ -800,48 +800,6 @@ pub fn value_or_default<T: FromStr>(data_entry: &str, default_val: T) -> T {
     if entry_has_value(data_entry) { data_entry.parse().ok().unwrap() } else { default_val }
 }
 
-/// Returns true if the input string starts and end with a semicolon, a single or a double quote.
-///
-/// The input string must be trimmed!
-fn is_quoted_string(input: &str) -> bool {
-    let first = input.chars().nth(0).unwrap();
-    if first != '\'' && first != '"' && first != ';' { return false }
-    let last = input.chars().last().unwrap();
-    if last != '\'' && last != '"' && last != ';' { return false }
-
-    return true
-}
-
-fn read_string<R>(prefix: &str, line_iter: &mut Lines<R>) -> String where R: BufRead {
-    let mut lines: Vec<String> = vec![prefix.to_string()];
-    let mut multiline_opened = prefix.starts_with(';');
-    while let Some(line) = line_iter.next() {
-        match line {
-            Ok(line) => {
-                if line.trim().len() == 0 { continue }                  // skip empty lines
-                let first_char = line.chars().nth(0).unwrap();
-                if first_char != ';' && !multiline_opened {             // it's not a multiline string
-                    return line;
-                }
-                if first_char == ';' {
-                    if !multiline_opened {                              // a ';' character opens a multiline
-                        lines.push(";".to_string());
-                        multiline_opened = true;
-                    } else {                                            // ... or closes if it has been opened
-                        lines.push(";".to_string());
-                        return lines.join("\n");                    // return the multiline string
-                    }
-                }
-                // --- now the only remaining possibility is the string is a continuation of a multiline
-                lines.push(line);
-            }
-            Err(err) => { panic!("{:?}",err); }
-        }
-
-    }
-
-    panic!("End of CIF file reached while searching for the ';' closing a multi-line string");
-}
 
 /// Parses a string into a boolean value.
 ///

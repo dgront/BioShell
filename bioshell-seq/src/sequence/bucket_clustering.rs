@@ -1,7 +1,6 @@
 use std::collections::HashSet;
-use std::cmp::min;
 use std::hash::{Hash, Hasher};
-use log::{debug, info, warn};
+use log::{debug};
 use crate::alignment::{aligned_sequences, GlobalAligner};
 use crate::scoring::{SequenceSimilarityScore, SubstitutionMatrixList};
 use crate::sequence::{count_identical, Sequence};
@@ -30,20 +29,6 @@ fn generate_kmers<'a>(seq: &'a [u8], k: usize) -> HashSet<Kmer<'a>> {
         kmers.insert(Kmer(&seq[i..i + k]));
     }
     kmers
-}
-
-/// Fast ungapped identity: count matches over the shorter length
-fn fast_identity(seq1: &[u8], seq2: &[u8]) -> f32 {
-    let len = min(seq1.len(), seq2.len());
-    if len == 0 {
-        return 0.0;
-    }
-    let matches = seq1.iter()
-        .zip(seq2.iter())
-        .take(len)
-        .filter(|(a, b)| a == b)
-        .count();
-    matches as f32 / len as f32
 }
 
 
@@ -154,7 +139,7 @@ fn kmer_identity_bounds(different_kmers: usize, kmer_len: usize, min_seq_len: us
     let upper_identity = (min_seq_len - min_mutations) as f32 / min_seq_len as f32;
 
     // lower bound
-    let max_mutations = (different_kmers + kmer_len - 1);
+    let max_mutations = different_kmers + kmer_len - 1;
     let lower_identity = (min_seq_len - max_mutations) as f32 / min_seq_len as f32;
 
     (lower_identity.max(0.0), upper_identity.min(1.0))

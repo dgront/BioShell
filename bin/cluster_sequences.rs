@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::env;
-use std::fmt::{Display, format};
+use std::fmt::{Display};
 use std::io::Write;
 use clap::{Parser};
-use log::{debug, error, info};
+use log::{error, info};
 use std::time::Instant;
 use rand::Rng;
 use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers};

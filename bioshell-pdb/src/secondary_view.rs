@@ -23,14 +23,13 @@ pub struct SecondaryView<'a> {
     structure: &'a Structure,
     annotation: SecondaryStructure,
     residues: Vec<&'a ResidueId>, // Cached for slicing later
-    chain_id: String
 }
 
 impl<'a> SecondaryView<'a> {
     pub fn new(structure: &'a Structure, chain_id : &str) -> Self {
         let residues: Vec<&'a ResidueId> = structure.residues().into_iter().collect();
         let secondary = structure.secondary(chain_id);
-        Self { structure, chain_id: chain_id.to_string(), annotation: secondary, residues }
+        Self { structure, annotation: secondary, residues }
     }
 
     /// Returns an iterator over secondary structure segments

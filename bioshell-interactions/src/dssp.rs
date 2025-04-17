@@ -1,5 +1,5 @@
 use bioshell_pdb::ResidueId;
-use crate::{BackboneHBond, BackboneHBondMap};
+use crate::{BackboneHBondMap};
 
 
 /// Implements the DSSP algorithm to detect the secondary structure of a protein.

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fs::File;
 use bioshell_io::out_writer;
 use crate::alignment::AlignmentStatistics;
 use crate::sequence::{parse_sequence_id, len_ungapped, len_ungapped_str, Sequence};
