@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 use std::env;
-use std::fmt::Display;
+use std::fmt::{Display, format};
 use std::io::Write;
 use clap::{Parser};
-use log::{debug, info};
+use log::{debug, error, info};
 use std::time::Instant;
+use rand::Rng;
 use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers};
 use bioshell_clustering::hierarchical::strategies::{average_link, complete_link, single_link};
 use bioshell_seq::sequence::{bucket_clustering, load_sequences, Sequence};
-use bioshell_io::{out_writer};
+use bioshell_io::{can_create_file, out_writer};
 use bioshell_seq::alignment::{align_all_pairs, AlignmentReporter, AlignmentStatistics};
 use bioshell_seq::scoring::SubstitutionMatrixList;
 use bioshell_seq::SequenceError;
@@ -138,8 +139,21 @@ pub fn main() -> Result<(), SequenceError> {
     let sequences = load_sequences(&args.infile, "")?;
 
     if let Some(cutoff) = args.bucket_clustering {
+        // ---------- create a random name of a dummy file to check if we can write
+        let filename: String = rand::thread_rng()
+            .sample_iter(rand::distributions::Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
+        let prefix = &args.prefix;
+        if !can_create_file(&format!("{}{}", prefix, filename)) {
+            error!("Can't write with prefix {}", prefix);
+            return Ok(());
+        }
+        let start = Instant::now();
         info!("Bucket clustering of {} sequences aligned at {}", sequences.len(), cutoff);
         let clusters = bucket_clustering(&sequences, cutoff);
+        info!("{} sequences clustered in {:?}", sequences.len(), start.elapsed());
         for (i, cluster) in clusters.iter().enumerate() {
             let mut out_file = out_writer(&format!("{}cluster_{}-{}.fasta",
                                                    args.prefix, i, cluster.len()), false);

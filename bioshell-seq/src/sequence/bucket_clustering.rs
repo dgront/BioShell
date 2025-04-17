@@ -115,6 +115,7 @@ pub fn bucket_clustering<'a>(sequences: &'a Vec<Sequence>, id_level: f32) -> Vec
                 // Fast exclusion based on upper bound - they must be in a different cluster
                 continue;
             } else {
+                debug!("Sequence identity in range {:.2} {:.2} for: {} {}, computing alignment", lower, upper, rep.description_n(10), candidate.description_n(10));
                 // Ambiguous: fall back to exact sequence identity check
                 scoring.template_from_sequence(candidate);
                 scoring.query_from_sequence(rep);
