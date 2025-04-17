@@ -1,4 +1,5 @@
-1) Basic information about a deposit
+
+1) **Basic information about a deposit**
    - Print basic information from a file header:
    ```ignore
    pdb_tool -i 1akd.cif --info
@@ -12,7 +13,7 @@
     pdb_tool -i 1ehe.cif --info-table id resolution methods
     ```
    
-2) Entities
+2) **Entities**
    - List entities in a CIF file:
     ```ignore
     pdb_tool -i 1ehe.cif --entities
@@ -26,7 +27,7 @@
    pdb_tool -i 1ehe.cif --entities --entity-sequence
    ```
    
-3) Convert between data formats
+3) **Convert between data formats**
 
    - Attempt to convert the whole CIF file to PDB:
    ```ignore

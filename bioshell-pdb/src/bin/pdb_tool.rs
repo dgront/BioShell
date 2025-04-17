@@ -1,3 +1,5 @@
+#![doc(hidden)]
+
 use std::env;
 use clap::Parser;
 use log::info;
