@@ -24,11 +24,6 @@ impl PDBRemarks {
             .push(remark_line.to_string());
     }
 
-    /// Returns true if a given remark was loaded from a PDB file.
-    pub fn has_remark(&self, remark_number: &str) -> bool {
-        self.remarks.contains_key(remark_number)
-    }
-
     /// Provides remark strings for a specific remark number
     pub fn get_remark(&self, remark_number: &str) -> Option<&Vec<String>> {
         self.remarks.get(remark_number)

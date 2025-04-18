@@ -331,6 +331,7 @@ impl Structure {
     /// #                     "ATOM    515  CA  ALA A  69      25.790  28.757  29.513  1.00 16.12           C"];
     /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     /// # let strctr = Structure::from_atoms("1xyz", atoms);
+    /// # #[allow(non_snake_case)]
     /// let chain_A_atoms = strctr.atoms_in_chain("A");
     /// # assert_eq!(chain_A_atoms.count(),4);
     /// ```

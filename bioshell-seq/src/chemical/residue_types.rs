@@ -327,6 +327,7 @@ impl ResidueTypeManager {
 pub static KNOWN_RESIDUE_TYPES: Lazy<Mutex<ResidueTypeManager>>
     = Lazy::new(|| Mutex::new(ResidueTypeManager::new()));
 
+#[allow(unreachable_patterns)]
 macro_rules! define_res_types {
 
     ($($name:ident $id:literal $one_letter_code:literal $three_letters_code:literal $res_type:ident),*) => {

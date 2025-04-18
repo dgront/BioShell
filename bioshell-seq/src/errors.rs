@@ -75,6 +75,7 @@ mod test_error {
     use crate::sequence::Sequence;
     use crate::SequenceError::{IdenticalSequenceDescriptions, AlignedSequencesOfDifferentLengths};
 
+    #[allow(unused_macros)]
     macro_rules! assert_err {
         ($expression:expr, $($pattern:tt)+) => {
           match $expression {

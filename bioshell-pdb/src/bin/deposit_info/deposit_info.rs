@@ -96,7 +96,7 @@ impl FromStr for DepositInfo {
             "methods" => Ok(DepositInfo::Methods(("methods", deposit_methods))),
             "ligands" => Ok(DepositInfo::Ligands(("ligands", deposit_ligands))),
             "rfactor" => Ok(DepositInfo::RFactor(("rfactor", deposit_r_factor))),
-            "spacegroup" => Ok(DepositInfo::SpaceGroup(("space group", deposit_ligands))),
+            "spacegroup" => Ok(DepositInfo::SpaceGroup(("spacegroup", space_group))),
             "unitcell" => Ok(DepositInfo::UnitCell(("unit cell", deposit_r_factor))),
             "classification" => Ok(DepositInfo::Classification(("classification", deposit_classification))),
             _ => Err("Error: Unknown deposit property"),

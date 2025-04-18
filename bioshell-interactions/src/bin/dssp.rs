@@ -2,7 +2,7 @@ use std::env;
 use clap::Parser;
 use log::info;
 use bioshell_interactions::BackboneHBondMap;
-use bioshell_pdb::Deposit;
+use bioshell_pdb::{Deposit, PDBError};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None, arg_required_else_help = true)]
@@ -24,7 +24,7 @@ struct Args {
     verbose: bool
 }
 
-fn main() {
+fn main() -> Result<(), PDBError> {
     // ---------- BioShell app setup ----------
     let args = Args::parse();
     unsafe {
@@ -40,8 +40,8 @@ fn main() {
     info!("Git commit MD5 sum: {}", git_commit_md5);
 
     // ---------- INPUT section ----------
-    let deposit = Deposit::from_file(&args.infile).unwrap();
-    let strctr= deposit.structure().ok_or("No structure found").expect("Failed to read structure");
+    let deposit = Deposit::from_file(&args.infile)?;
+    let strctr= deposit.structure()?;
 
     // ---------- Detect H-bonds ----------
     let hbonds = BackboneHBondMap::new(&strctr);
@@ -52,4 +52,5 @@ fn main() {
         }
     }
 
+    Ok(())
 }

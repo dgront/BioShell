@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use bioshell_pdb::{PdbAtom, ResidueId, Structure};
+use bioshell_pdb::{ResidueId, Structure};
 use bioshell_pdb::calc::{planar_angle3, Vec3};
 use crate::{MAX_AD_DISTANCE, MAX_AH_DISTANCE, MIN_AHD_ANGLE, MIN_PAH_ANGLE, N_H_BOND_LENGTH};
 
@@ -134,7 +134,6 @@ impl<'a> BackboneHBond<'a> {
 
 pub struct BackboneHBondMap<'a> {
     the_structure: &'a Structure,
-    hydrogens: Vec<PdbAtom>,
     indexer: ResidueIndexer,
     h_bonds: HashMap<(usize,usize), BackboneHBond<'a>>,
 }
@@ -144,7 +143,6 @@ impl<'a> BackboneHBondMap<'a> {
     pub fn new(strctr: &'a Structure) -> Self {
         let mut hbonds = BackboneHBondMap {
             the_structure: strctr,
-            hydrogens: vec![],
             indexer: ResidueIndexer::from_structure(strctr),
             h_bonds: Default::default()
         };
@@ -305,7 +303,6 @@ impl<'a> BackboneHBondMap<'a> {
         }
 
         // ---------- Detect hydrogen bonds ------------
-        let atoms = self.the_structure.atoms(); // --- alias to avoid repeated calls
         for (d_idx, d_res) in bb.iter().enumerate() {
             if !d_res.is_complete() { continue; }
             if hydrogens[d_idx].is_none() { continue; }
