@@ -4,6 +4,7 @@ mod tests {
     use std::io::BufReader;
     use bioshell_cif::read_cif_buffer;
     use bioshell_pdb::{Deposit, Entity, EntityType, PDBError};
+    use bioshell_pdb::PDBError::NoSuchEntity;
     use bioshell_pdb::PolymerEntityType::{PolypeptideL, DNA};
     use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager};
     use bioshell_seq::chemical::StandardResidueType::{GAP, UNK};
@@ -66,7 +67,7 @@ mod tests {
 
         assert_eq!(deposit.entities().count(), 3);
 
-        let entity = deposit.entity("1");
+        let entity = deposit.entity("1").ok_or(NoSuchEntity{ entity_id: "1".to_string() })?;
         assert_eq!(entity.entity_monomers().len(), 50);
 
         Ok(())
@@ -100,7 +101,7 @@ mod tests {
         let deposit = Deposit::from_cif_reader(cif_2fdo.as_bytes())?;
 
         assert_eq!(deposit.entities().count(), 2);
-        let entity = deposit.entity("1");
+        let entity = deposit.entity("1").ok_or(NoSuchEntity{ entity_id: "1".to_string() })?;
         assert_eq!(entity.entity_type(), EntityType::Polymer(PolypeptideL));
         let strctr = deposit.structure().unwrap();
 
@@ -125,11 +126,11 @@ mod tests {
         let deposit = Deposit::from_cif_reader(cif_1c5n.as_bytes())?;
         let strctr = deposit.structure().unwrap();
         assert_eq!(deposit.entities().count(), 7);
-        let first_entity = deposit.entity("1");
+        let first_entity = deposit.entity("1").ok_or(NoSuchEntity{ entity_id: "1".to_string() })?;
         let n_aa_l = first_entity.chain_monomers("L")?.len();
         assert_eq!(n_aa_l, 36);
 
-        let first_entity = deposit.entity("2");
+        let first_entity = deposit.entity("2").ok_or(NoSuchEntity{ entity_id: "1".to_string() })?;
         let n_aa_h = first_entity.chain_monomers("H")?.len();
         assert_eq!(n_aa_h, 259);      // 7 are missing
         let n_gap_h = first_entity.chain_monomers("H").unwrap().iter()

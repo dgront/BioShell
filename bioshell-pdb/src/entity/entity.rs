@@ -66,11 +66,12 @@ impl FromStr for EntitySource {
 /// # fn main() -> Result<(), PDBError> {
 /// # use std::io::BufReader;
 /// # use bioshell_pdb::{Deposit, EntityType};
+/// # use bioshell_pdb::PDBError::NoSuchEntity;
 /// # use bioshell_pdb::PolymerEntityType::PolypeptideL;
 /// # let pdb_data = include_str!("../../tests/test_files/4esa.cif");
 /// # let reader = BufReader::new(pdb_data.as_bytes());
 /// # let deposit_4esa = Deposit::from_cif_reader(reader)?;
-/// let entity_1 = deposit_4esa.entity("1");
+/// let entity_1 = deposit_4esa.entity("1").ok_or_else(||NoSuchEntity{ entity_id: "1".to_string() })?;
 /// assert_eq!(entity_1.entity_type(), EntityType::Polymer(PolypeptideL));
 /// assert_eq!(entity_1.chain_ids(), &["A", "C"]);
 ///
@@ -104,11 +105,12 @@ impl FromStr for EntitySource {
 /// # fn main() -> Result<(), PDBError> {
 /// # use std::io::BufReader;
 /// # use bioshell_pdb::{Deposit, EntityType};
+/// # use bioshell_pdb::PDBError::NoSuchEntity;
 /// # use bioshell_pdb::PolymerEntityType::PolypeptideL;
 /// # use bioshell_seq::chemical::StandardResidueType::GAP;
 /// # let pdb_data = include_str!("../../tests/test_files/4esa.cif");
 /// # let reader = BufReader::new(pdb_data.as_bytes());
-/// # let deposit_4esa = Deposit::from_cif_reader(reader)?;
+/// # let deposit_4esa = Deposit::from_cif_reader(reader).ok_or(NoSuchEntity{ entity_id: "1".to_string() })?;;
 /// let entity_2 = deposit_4esa.entity("2");
 /// assert_eq!(entity_2.entity_monomers().len(), 146);
 /// assert_eq!(entity_2.chain_monomers("B")?.iter().filter(|m| m.parent_type==GAP).count(), 2);
@@ -184,9 +186,10 @@ impl Entity {
     /// use bioshell_pdb::{PDBError, Deposit};
     /// # fn main() -> Result<(), PDBError> {
     /// use bioshell_pdb::Deposit;
+    /// use bioshell_pdb::PDBError::NoSuchEntity;
     /// let cif_data = include_str!("../../tests/test_files/2fdo.cif");
     /// let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
-    /// let entity = deposit.entity("1");
+    /// let entity = deposit.entity("1").ok_or_else(|| NoSuchEntity{ entity_id: "1".to_string() })?;;
     /// assert_eq!(entity.chain_ids(), &vec!["B", "A"]);
     /// assert_eq!(entity.entity_monomers().len(), 94);
     /// # Ok(())

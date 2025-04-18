@@ -61,16 +61,17 @@
 //!
 //! When loaded from an mmCIF file, a [`Deposit`](Deposit) struct provides also detailed information
 //! about [`Entities`](Entity) found in that deposit:
-//! ```
+//!```
 //! # use std::io::BufReader;
 //! # use bioshell_pdb::{Deposit, PDBError};
 //! # fn main() -> Result<(), PDBError> {
+//! # use bioshell_pdb::PDBError::NoSuchEntity;
 //! # let cif_data = include_str!("../tests/test_files/2fdo.cif");
 //! # let reader = BufReader::new(cif_data.as_bytes());
 //! let deposit = Deposit::from_cif_reader(reader)?;
 //! println!("Number of entities: {}", deposit.count_entities());
 //! # assert_eq!(deposit.count_entities(), 2);
-//! let first_entity = deposit.entity("1");
+//! let first_entity = deposit.entity("1").ok_or_else(|| NoSuchEntity{ entity_id: "1".to_string() })?;
 //! println!("First entity in chains: {:?}", first_entity.chain_ids());
 //! # assert_eq!(first_entity.chain_ids(), &vec!["B", "A"]);
 //! # Ok(())

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use bioshell_cif::CifData;
 use crate::{Entity, ExperimentalMethod, is_cif_file, is_pdb_file, PDBError, Structure, UnitCell};
@@ -113,8 +113,57 @@ impl Deposit {
     ///
     pub fn entities(&self) -> impl Iterator<Item = (&String, &Entity)> { self.entities.iter() }
 
+    /// Returns an iterator over all unique chain IDs present in the deposit.
+    ///
+    /// This method collects all chain identifiers (`chain_ids`) from each `Entity`
+    /// stored in the deposit and returns an iterator over the unique identifiers.
+    ///
+    /// # Returns
+    /// An iterator over `&str` representing the unique chain IDs.
+    ///
+    /// # Example
+    /// ```
+    /// # use bioshell_pdb::Deposit;
+    /// # use bioshell_pdb::PDBError;
+    /// # fn main() -> Result<(), PDBError> {
+    /// let cif_data = include_str!("../tests/test_files/5edw.cif");
+    /// let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
+    /// let chain_ids: Vec<_> = deposit.chain_ids().collect();
+    /// for id in &chain_ids {
+    ///     println!("{}", id);
+    /// }
+    /// assert_eq!(chain_ids.len(), 3);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn chain_ids(&self) -> impl Iterator<Item = &str> {
+
+        let mut unique_ids = HashSet::new();
+        for entity in self.entities.values() {
+            for id in entity.chain_ids() {
+                unique_ids.insert(id.as_str());
+            }
+        }
+        unique_ids.into_iter()
+    }
+
     /// Provides information about a given entity
-    pub fn entity(&self, entity_id: &str) -> &Entity { &self.entities[entity_id] }
+    ///
+    /// # Example
+    /// ```
+    /// # use bioshell_pdb::Deposit;
+    /// # use bioshell_pdb::PDBError;
+    /// # fn main() -> Result<(), PDBError> {
+    /// let cif_data = include_str!("../tests/test_files/2gb1.cif");
+    /// let deposit = Deposit::from_cif_reader(cif_data.as_bytes())?;
+    /// let entity = deposit.entity("1");
+    /// assert!(entity.is_some());
+    /// let entity = deposit.entity("2");   // 2gb1 deposit has only one entity!
+    /// assert!(entity.is_none());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn entity(&self, entity_id: &str) -> Option<&Entity>  { self.entities.get(entity_id) }
 
     /// Returns a [`Structure`] object.
     ///
