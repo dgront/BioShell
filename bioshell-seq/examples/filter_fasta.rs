@@ -70,9 +70,19 @@ struct Args {
 
 pub fn main() -> Result<(), SequenceError> {
 
-    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
-    env_logger::init();
     let args = Args::parse();
+    unsafe {
+        if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+        if args.verbose { env::set_var("RUST_LOG", "debug"); }
+    }
+    env_logger::init();
+
+    let build_time = env!("BUILD_TIME");
+    let git_commit_md5 = env!("GIT_COMMIT_MD5");
+
+    info!("Build time: {}", build_time);
+    info!("Git commit MD5 sum: {}", git_commit_md5);
+
     let fname= args.infile;
     let out_width = args.out_width;
 

@@ -158,7 +158,7 @@ pub fn main() -> Result<(), SequenceError> {
             let mut out_file = out_writer(&format!("{}cluster_{}-{}.fasta",
                                                    args.prefix, i, cluster.len()), false);
             for sequence in cluster.iter() {
-                writeln!(out_file, "{:width$}", sequence, width = args.sequence_width)?;
+                writeln!(out_file, "{:width$}", sequence, width = args.sequence_width as usize)?;
             }
             out_file.flush().unwrap();
         }
@@ -206,7 +206,7 @@ pub fn main() -> Result<(), SequenceError> {
             let leaf_ids: Vec<usize> = retrieve_data_id(&cluster);
             for id in &leaf_ids {
                 let sequence = sequences.get(*id).unwrap();
-                writeln!(out_file, "{:width$}", sequence, width = args.sequence_width)?;
+                writeln!(out_file, "{:width$}", sequence, width = args.sequence_width as usize)?;
             }
             out_file.flush().unwrap();
         }
@@ -216,7 +216,7 @@ pub fn main() -> Result<(), SequenceError> {
                 let medoid_idx = medoid_by_min_max(cluster, &distance_fn);
                 let mut out_file = out_writer(&format!("{}center_{}-{}.fasta",
                         args.prefix, i, cluster.value.cluster_size), false);
-                writeln!(out_file, "{:width$}", &sequences[medoid_idx], width = args.sequence_width)?;
+                writeln!(out_file, "{:width$}", &sequences[medoid_idx], width = args.sequence_width as usize)?;
             }
         }
     }
