@@ -4,7 +4,7 @@ use std::env;
 use clap::Parser;
 use log::info;
 use bioshell_io::{out_writer, markdown_to_text};
-use bioshell_pdb::{Deposit, EntityType, Structure};
+use bioshell_pdb::{Deposit, EntityType, PDBError, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
 use bioshell_seq::chemical::ResidueTypeProperties;
 
@@ -146,7 +146,8 @@ fn print_entities(substructure: &Structure, deposit: &Deposit, print_sequences: 
     }
 }
 
-fn main() {
+fn main() -> Result<(), PDBError> {
+
     let args = Args::parse();
     unsafe {
         if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
@@ -162,7 +163,7 @@ fn main() {
 
     // ---------- INPUT section
     let deposit = Deposit::from_file(&args.infile).unwrap();
-    let mut strctr= deposit.structure().ok_or("No structure found").expect("Failed to read structure");
+    let mut strctr= deposit.structure()?;
 
     // ---------- FILTER section
     let mut multi_filter = MatchAll::new();
@@ -222,5 +223,7 @@ fn main() {
     if let Some(out_fname) = args.out_pdb {
         write_pdb(&strctr, &out_fname);
     }
+
+    Ok(())
 }
 

@@ -170,13 +170,13 @@ impl Deposit {
     /// A structure is lazily parsed from a PDB or mmCIF file, i.e. it is not parsed until this method is called.
     /// This allows fast access to a deposit's data, without the need to parse the whole file.
     /// If the structure has been already parsed, the method returns clone of a [`Structure`] object.
-    pub fn structure(&self) -> Option<Structure> {
+    pub fn structure(&self) -> Result<Structure, PDBError> {
         match &self.structure {
-            Some(structure) => Some(structure.clone()),
+            Some(structure) => Ok(structure.clone()),
             None => {
                 match &self.cif_buffer {
-                    Some(cif_data) => Self::structure_from_cif_data(cif_data).ok(),
-                    None => None,
+                    Some(cif_data) => Self::structure_from_cif_data(cif_data),
+                    None => Err(PDBError::NoStructureDataLoaded),
                 }
             },
         }

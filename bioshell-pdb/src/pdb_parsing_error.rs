@@ -81,4 +81,7 @@ pub enum PDBError {
     /// Error while parsing a residue id string
     ResidueIdParsingError {residue_id: String},
 
+    #[error("No PDB / CIF data loaded")]
+    /// No PDB / CIF data loaded
+    NoStructureDataLoaded,
 }

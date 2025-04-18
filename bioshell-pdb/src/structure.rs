@@ -352,12 +352,10 @@ impl Structure {
     /// # assert_eq!(res_atoms.count(),2);
     /// ```
     pub fn atoms_in_residue(&self, residue_id: &ResidueId) -> Result<impl Iterator<Item = &PdbAtom>, PDBError> {
-        match self.residue_ids.binary_search(residue_id) {
-            Ok(pos) =>  {
-                let range = self.atoms_for_residue_id[pos].clone();
-                Ok(range.map(|i| &self.atoms[i]))
-            },
-            Err(_) => Err(NoSuchResidue{res_id: residue_id.clone()})
+        if let Some(pos) = self.residue_ids.iter().position(|x| x == residue_id) {
+            return Ok(self.atoms_for_residue_id[pos].clone().map(|i| &self.atoms[i]));
+        } else {
+            return  Err(NoSuchResidue{res_id: residue_id.clone()})
         }
     }
 
