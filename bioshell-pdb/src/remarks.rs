@@ -55,7 +55,7 @@ mod tests {
         let line = "REMARK 290 CRYSTALLOGRAPHIC SYMMETRY";
         let mut remarks = PDBRemarks::new();
         remarks.add_remark(&line);
-        assert!(remarks.has_remark("290"));
+        assert!(remarks.get_remark("290").is_some());
     }
 
     #[test]

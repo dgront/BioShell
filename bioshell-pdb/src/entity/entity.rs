@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use std::str::FromStr;
+use log::debug;
 use bioshell_cif::{CifData, CifTable};
 use crate::{EntityType, PDBError, PolymerEntityType};
 use crate::PDBError::{CantParseEnumVariant, InconsistentEntity, NoSuchChain, UnknownResidueType};
 use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
-
+use bioshell_seq::sequence::{parse_sequence_id, SeqId};
 
 /// Represents the different sources an entity in CIF data may be obtained from.
 ///
@@ -130,6 +131,8 @@ pub struct Entity {
     src_method: EntitySource,
     /// Molecular mass of the entity in Daltons.
     formula_weight: f64,
+    /// Reference to the parent database
+    db_ref: Option<SeqId>,
     /// Which chains contain that entity?
     chain_ids: Vec<String>,
     /// Monomers (or ligands) comprising this entity.
@@ -146,6 +149,8 @@ impl Entity {
     ///
     /// * `id` - A string slice that holds the ID of the entity.
     /// * `description` - A string slice that holds a description of the entity.
+    /// * `db_ref` - An optional string slice that holds the reference to the parent database, such as SwissProt or GeneBank.
+    ///         Use empty string if the entity is not associated with any database.
     /// * `entity_type` - The type of the entity, represented by the `EntityType` enum.
     /// * `src_method` - The source method of the entity,
     /// * `formula_weight` - An optional string slice that holds the sequence information of the entity.
@@ -153,17 +158,18 @@ impl Entity {
     /// # Example
     /// ```
     /// use bioshell_pdb::{Entity, EntitySource, EntityType, PolymerEntityType};
-    /// let entity = Entity::from_strings("1", "HIV protease", "polymer", "man", 10916.0).unwrap();
+    /// let entity = Entity::from_strings("1", "HIV protease", "AAP15109", "polymer", "man", 10916.0).unwrap();
     /// assert_eq!(entity.id(), "1");
     /// assert_eq!(entity.description(), "HIV protease");
     /// assert_eq!(entity.entity_type(), EntityType::Polymer(PolymerEntityType::Other));
     /// assert_eq!(entity.src_method(), EntitySource::GeneticallyManipulated);
     /// assert_eq!(entity.formula_weight(), 10916.0);
     /// ```
-    pub fn from_strings(id: &str, description: &str, entity_type: &str,
+    pub fn from_strings(id: &str, description: &str, db_ref: &str, entity_type: &str,
                         src_method: &str, formula_weight: f64, ) -> Result<Entity, PDBError> {
         Ok(Entity {
             id: id.to_string(), description: description.to_string(),
+            db_ref: if db_ref.is_empty() { None } else { parse_sequence_id(db_ref).get(0).cloned() },
             entity_type:EntityType::from_str(entity_type)?,
             src_method: EntitySource::from_str(src_method)?, formula_weight,
             chain_ids: vec![],
@@ -197,6 +203,9 @@ impl Entity {
     /// ```
     ///
     pub fn chain_ids(&self) -> &Vec<String> { &self.chain_ids }
+
+    /// Returns the reference of the entity in the reference database.
+    pub fn db_ref(&self) -> Option<&SeqId> { self.db_ref.as_ref() }
 
     /// Provides monomers (or ligands) comprising this entity.
     ///
@@ -260,7 +269,7 @@ impl Entity {
             ["id", "pdbx_description", "type", "src_method", "formula_weight",])?;
         for tokens in entity_table.iter() {
             let mass = tokens[4].parse::<f64>().unwrap_or(0.0);
-            entity_map.insert(tokens[0].to_string(),Entity::from_strings(tokens[0], tokens[1], tokens[2], tokens[3], mass)?);
+            entity_map.insert(tokens[0].to_string(),Entity::from_strings(tokens[0], tokens[1], "",tokens[2], tokens[3], mass)?);
         }
 
         // ---------- extract also the vector of polymer entities
@@ -312,6 +321,25 @@ impl Entity {
             }
         }
 
+        // ------------- Extract the db_code for each of the polymer entities
+        let mut dbref_map: HashMap<String, Option<SeqId>> = HashMap::new();
+        if let Ok(dbref_table) = CifTable::new(cif_data, "_struct_ref.", ["id", "db_name", "db_code"]) {
+            for [entity_id, db_name, db_code] in dbref_table.iter() {
+                let mut seq_id = parse_sequence_id(db_code).get(0).cloned();
+                // --- fix for UNP database, when the db_code is provided with species, e.g. A0A100JTL7_STRSC
+                if matches!(seq_id, Some(SeqId::Default(_))) && db_name == "UNP" {
+                    seq_id = parse_sequence_id(db_code.split("_").next().unwrap()).get(0).cloned();
+                }
+                debug!("{} database code: {} recognized as {:?}", &db_name, &db_code, &seq_id);
+                dbref_map.insert(entity_id.to_string(), seq_id);
+            }
+        }
+        for (entity_id, entity) in entity_map.iter_mut() {
+            if let Some(seq_id) = dbref_map.get(entity_id) {
+                entity.db_ref = seq_id.clone();
+            }
+        }
+
         Ok(entity_map)
     }
 }
@@ -354,6 +382,9 @@ struct PolymerEntity {
 }
 
 impl PolymerEntity {
+    /// Loads polymer entities from strings
+    ///
+    /// sequence_id is not loaded, should be set separately
     pub fn from_str(entity_id: &str, poly_type: &str, chain_ids: Vec<String>, monomer_sequence: Vec<String>) -> Result<Self, PDBError> {
         let poly_type = PolymerEntityType::from_str(poly_type)?;
         let mgr = ResidueTypeManager::get();
@@ -362,6 +393,7 @@ impl PolymerEntity {
             let m = mgr.by_code3(&code).ok_or(PDBError::UnknownResidueType{res_type: code.clone()})?;
             monomers.push(m.clone());
         }
+
         Ok(PolymerEntity {
             entity_id: entity_id.to_string(),
             poly_type,
@@ -371,7 +403,7 @@ impl PolymerEntity {
     }
 
     pub fn from_cif_data(cif_data: &CifData) -> Result<Vec<PolymerEntity>, PDBError> {
-        // ------------- HasMap to store data extracted from cif_data
+        // ------------- HasMap to store data extracted from cif_data: entity_id -> (poly_type, chain_ids, monomer_sequence)
         let mut entities: HashMap<String, (String, Vec<String>, Vec<String>)> = HashMap::new();
         let mut entity_order: Vec<String> = vec![];
         // ------------- Extract the list of all polymer entities
@@ -388,6 +420,7 @@ impl PolymerEntity {
         } else {
             return Ok(vec![]);        // --- no polymer entities found!
         }
+
         // ------------- Extract the sequence for each of the polymer entities
         let entity_table = CifTable::new(cif_data, "_entity_poly_seq.",["entity_id", "mon_id"])?;
         for [entity_id, mon_id] in entity_table.iter() {
@@ -397,7 +430,7 @@ impl PolymerEntity {
                 seq.push(mon_id);
             }
         }
-        // ------------- Convert the data into PolymerEntity objects and return them
+        // ------------- Convert the data into PolymerEntity objects
         let mut poly_entities: Vec<PolymerEntity> = vec![];
         for (entity_id, (poly_type, chain_ids, monomer_sequence)) in entities {
             poly_entities.push(PolymerEntity::from_str(&entity_id, &poly_type, chain_ids, monomer_sequence).unwrap());
@@ -412,6 +445,7 @@ impl PolymerEntity {
         Ok(poly_entities)
     }
 }
+
 
 #[cfg(test)]
 mod test_poly_entity {

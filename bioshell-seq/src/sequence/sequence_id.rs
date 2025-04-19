@@ -82,6 +82,32 @@ impl SeqId {
     }
 }
 
+impl fmt::Display for SeqId {
+    /// Formats the sequence ID for display.
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_seq::sequence::SeqId;
+    /// let seq_id = SeqId::RefSeq("XP_001234567.1".to_string());
+    /// let header = seq_id.to_string();
+    /// assert_eq!(header, "RefSeq|XP_001234567.1");
+    /// ```
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SeqId::PDB(s) => write!(f, "PDB|{}", s),
+            SeqId::SwissProt(s) => write!(f, "sp|{}", s),
+            SeqId::UniProtID(s) => write!(f, "UniProtID|{}", s),
+            SeqId::UniRef(s) => write!(f, "UniRef|{}", s),
+            SeqId::RefSeq(s) => write!(f, "RefSeq|{}", s),
+            SeqId::GenBank(s) => write!(f, "GenBank|{}", s),
+            SeqId::Ensembl(s) => write!(f, "Ensembl|{}", s),
+            SeqId::NCBIGI(s) => write!(f, "NCBIGI|{}", s),
+            SeqId::TrEmbl(s) => write!(f, "tr|{}", s),
+            SeqId::Default(s) => write!(f, "{}", s),
+        }
+    }
+}
+
 /// Attempts to extract  sequence identifiers from a free-text description string.
 ///
 /// This function scans the input for standard database identifiers such as those from
@@ -268,18 +294,7 @@ impl fmt::Display for SeqIdList {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, id) in self.0.iter().enumerate() {
             if i > 0 { write!(f, "|")?; }
-            match id {
-                SeqId::PDB(s) => write!(f, "PDB|{}", s)?,
-                SeqId::SwissProt(s) => write!(f, "sp|{}", s)?,
-                SeqId::UniProtID(s) => write!(f, "UniProtID|{}", s)?,
-                SeqId::UniRef(s) => write!(f, "UniRef|{}", s)?,
-                SeqId::RefSeq(s) => write!(f, "RefSeq|{}", s)?,
-                SeqId::GenBank(s) => write!(f, "GenBank|{}", s)?,
-                SeqId::Ensembl(s) => write!(f, "Ensembl|{}", s)?,
-                SeqId::NCBIGI(s) => write!(f, "NCBIGI|{}", s)?,
-                SeqId::TrEmbl(s) => write!(f, "tr|{}", s)?,
-                SeqId::Default(s) => write!(f, "{}", s)?,
-            }
+            write!(f, "{id}")?;
         }
         Ok(())
     }

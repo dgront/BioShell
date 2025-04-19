@@ -129,11 +129,14 @@ fn print_entities(substructure: &Structure, deposit: &Deposit, print_sequences: 
     let entities = substructure.entity_ids();
     for (name, entity) in deposit.entities() {
         if !entities.contains(&name) { continue; }
-        print!("{} {}", name, entity.description());
+        print!("{} {}", name, entity.description().trim());
         for chain in entity.chain_ids() {
             if substructure.chain_ids().contains(chain) { print!(" {}", chain); }
         }
         if let EntityType::Polymer(_poly_type) = entity.entity_type() {
+            if let Some(db_ref) = entity.db_ref() {
+                print!(" {}", &db_ref);
+            }
             if print_sequences {
                 let mut sequence : Vec<char> = vec![];
                 for rt in  entity.entity_monomers() {

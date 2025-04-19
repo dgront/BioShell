@@ -117,6 +117,9 @@ mod tests {
             .count();
         assert_eq!(n_aa_a_strctr, 93);
 
+        // --- db_code
+        assert!(entity.db_ref().is_some());
+
         Ok(())
     }
 
