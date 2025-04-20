@@ -215,6 +215,10 @@ where T: FromStr+Clone,R: BufRead,
     Ok(table.table.data)
 }
 
+// -------------------------------------------------------------------------------------------------------------------
+// Private structs used by read_whitespace_delimited_columns(), read_whitespace_delimited_values() and read_delimited_columns()
+// -------------------------------------------------------------------------------------------------------------------
+
 struct Table<T:FromStr> { data: Vec<Vec<T>>, }
 
 trait InsertRow<T: FromStr> {
