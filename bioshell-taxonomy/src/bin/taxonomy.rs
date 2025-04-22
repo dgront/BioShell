@@ -2,13 +2,13 @@ use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use clap::Parser;
-use bioshell_taxonomy::{Node, Rank, Taxonomy}; // Assuming your module is named `bioshell_taxonomy`
+use bioshell_taxonomy::{Node, Rank, Taxonomy, TaxonomyMatcher}; // Assuming your module is named `bioshell_taxonomy`
 use std::path::PathBuf;
-use aho_corasick::{AhoCorasick};
 use log::info;
 use env_logger;
 
-use bioshell_io::{markdown_to_text};
+use bioshell_io::{markdown_to_text, open_file};
+use bioshell_seq::sequence::{FastaIterator, Sequence, SequenceReporter, WriteFasta};
 
 const TAXONOMY_EXAMPLES: &str = include_str!("../documentation/taxonomy.md");
 fn create_cookbook() -> String { format!("{}{}", "\x1B[4mCookbook:\x1B[0m\n", markdown_to_text(TAXONOMY_EXAMPLES)) }
@@ -157,21 +157,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(())
     }
 
-    let all_names = taxonomy.nodes().map(|n| &n.name).collect::<Vec<&String>>();
-    let matcher = AhoCorasick::new(&all_names)?;
+    let matcher: TaxonomyMatcher = TaxonomyMatcher::new(&taxonomy)?;
 
     if let Some(desc) = args.detect {
-        let desc = desc.replace("_", " ");
-        let mut matches = matcher.find_overlapping_iter(&desc);
-        let mut matched_nodes: Vec<&Node> = vec![];
-        while let Some(m) = matches.next() {
-            let detected_name = all_names[m.pattern()];
-            let taxid = taxonomy.taxid(detected_name).unwrap();
-            matched_nodes.push(taxonomy.node(taxid).unwrap());
+        let taxid = matcher.find(&desc);
+        if let Some(taxid) = taxid {
+            let node = taxonomy.node(taxid).unwrap();
+            println!("TaxId={} {}", node.tax_id, node.name);
         }
-        if matched_nodes.len() > 0 {
-            matched_nodes.sort_by_key(|node| node.rank);
-            println!("TaxId={} {}", matched_nodes[0].tax_id, matched_nodes[0].name);
+    }
+
+    if let Some(fasta) = args.detect_fasta {
+        let mut reporter = WriteFasta::new(None, 0, false);
+        let sequences = FastaIterator::new(open_file(fasta)?);
+        for seq in sequences {
+            let desc = seq.description();
+            if let Some(taxid) = matcher.find(&desc) {
+                let node = taxonomy.node(taxid).unwrap();
+                let new_desc = format!("{} TaxId={}[{}]", desc, node.tax_id, node.name);
+                let s = Sequence::new(&new_desc, std::str::from_utf8(seq.as_u8())?);
+                reporter.report(&s)?;
+            } else {
+                reporter.report(&seq)?;
+            }
         }
     }
 
