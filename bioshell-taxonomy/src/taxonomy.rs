@@ -42,6 +42,20 @@ impl Rank {
     }
 }
 
+use std::cmp::Ordering;
+
+impl PartialOrd for Rank {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Rank {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (*self as u8).cmp(&(*other as u8))
+    }
+}
+
 #[derive(Debug)]
 pub struct Node {
     pub tax_id: u32,
