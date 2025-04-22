@@ -14,7 +14,7 @@ const TAXONOMY_EXAMPLES: &str = include_str!("../documentation/taxonomy.md");
 fn create_cookbook() -> String { format!("{}{}", "\x1B[4mCookbook:\x1B[0m\n", markdown_to_text(TAXONOMY_EXAMPLES)) }
 
 
-/// Query NCBI Taxonomy from a local taxdump.tar.gz
+/// Provides taxonomy information based on  NCBI taxonomy data loaded from a local taxdump.tar.gz file
 #[derive(Parser, Debug)]
 #[command(name = "taxonomy")]
 #[clap(author, version, about, long_about = None, arg_required_else_help = true, after_long_help = create_cookbook())]
@@ -44,6 +44,10 @@ struct Cli {
     /// path to the taxonomy.dat or to taxdump.tar.gz file
     #[arg(short = 'p', long = "path", default_value = "./")]
     path: PathBuf,
+
+    /// download the most recent taxdump.tar.gz file from the NCBI website
+    #[clap(long)]
+    download: bool,
 
     /// print also the selected nodes of the lineage for each species
     #[clap(short, long, short='l')]
@@ -79,6 +83,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Build time: {}", build_time);
     info!("Git commit MD5 sum: {}", git_commit_md5);
+
+    if args.download {
+        Taxonomy::download_from_ncbi("taxdump.tar.gz")?;
+    }
 
     info!("Loading taxonomy from {}", args.path.display());
     let dump_file = format!("{}/taxdump.tar.gz", args.path.display());

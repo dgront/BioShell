@@ -164,12 +164,13 @@ impl Taxonomy {
         Ok(Taxonomy { nodes, taxid_to_index, name_to_taxid })
     }
 
-    #[allow(dead_code)]
-    fn download_taxdump_to_file(url: &str, output_path: &Path) -> Result<(), Box<dyn Error>> {
+    const TEST_TAXDUMP_URL: &'static str = "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz";
+
+    pub fn download_from_ncbi<P: AsRef<Path>>(output_path: P) -> Result<(), Box<dyn Error>> {
         let start = Instant::now();
 
         let mut file = File::create(output_path)?;
-        let response = get(url)?;
+        let response = get(Self::TEST_TAXDUMP_URL)?;
         let content = response.bytes()?;
         file.write_all(&content)?;
 
