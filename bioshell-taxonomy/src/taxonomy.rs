@@ -5,7 +5,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 use std::time::Instant;
 use flate2::read::GzDecoder;
-use log::info;
+use log::{debug, info};
 use tar::Archive;
 use reqwest::blocking::get;
 
@@ -47,6 +47,7 @@ pub struct Node {
     pub tax_id: u32,
     pub parent_tax_id: u32,
     pub rank: Rank,
+    /// Scientific name, e.g. "Homo sapiens"
     pub name: String,
 }
 
@@ -54,21 +55,41 @@ pub struct Node {
 pub struct Taxonomy {
     nodes: Vec<Node>,
     taxid_to_index: HashMap<u32, usize>,
+    // maps any name to its taxid, e.g. "human" -> 9606, "Homo sapiens" -> 9606
     name_to_taxid: HashMap<String, u32>,
 }
 
 impl Taxonomy {
 
-    pub fn species(&self, taxid: u32) -> Option<&Node> {
-        let mut current = self.taxid_to_index.get(&taxid).cloned();
-        while let Some(idx) = current {
-            let node = &self.nodes[idx];
-            if node.rank == Rank::Species {
-                return Some(node);
-            }
-            current = self.taxid_to_index.get(&node.parent_tax_id).cloned();
-        }
-        None
+    /// Node for a given tax_id
+    pub fn node(&self, taxid: u32) -> Option<&Node> {
+        let current = self.taxid_to_index.get(&taxid).cloned();
+        if let Some(idx) = current {
+            return Some(&self.nodes[idx]);
+        } else { None }
+    }
+
+    /// Provides an iterator over all nodes in this taxonomy.
+    ///
+    /// The nodes provided by the iterator can be filtered, e.g by rank:
+    ///
+    /// # Example
+    /// ```no_run
+    /// use bioshell_taxonomy::{Rank, Taxonomy};
+    /// let taxonomy = Taxonomy::load_from_file("taxdump.tar.gz").unwrap();
+    /// for phylum  in taxonomy.nodes().filter(|node| node.rank == Rank::Phylum) {
+    ///     println!("{}", phylum.name);
+    /// }
+    /// ```
+    pub fn nodes(&self) -> impl Iterator<Item = &Node> {
+        self.nodes.iter()
+    }
+
+    pub fn names(&self, taxid: u32) -> impl Iterator<Item = &String> {
+        self.name_to_taxid
+            .iter()
+            .filter(move |&(_, &id)| id == taxid)
+            .map(|(name, _)| name)
     }
 
     pub fn lineage(&self, taxid: u32) -> Vec<&Node> {
@@ -87,6 +108,7 @@ impl Taxonomy {
     }
 
     pub fn taxid(&self, name: &str) -> Option<u32> {
+        debug!("Resolving name: {}", name);
         self.name_to_taxid.get(name).cloned()
     }
 
@@ -114,6 +136,8 @@ impl Taxonomy {
 
         let mut nodes_raw: Vec<(u32, u32, Rank)> = Vec::new();
         let mut names_raw: HashMap<u32, String> = HashMap::new();
+        let mut name_to_taxid = HashMap::new();
+        let mut primary_names: HashMap<u32, String> = HashMap::new();
 
         for entry in archive.entries()? {
             let entry = entry?;
@@ -136,10 +160,19 @@ impl Taxonomy {
                 for line in reader.lines() {
                     let line = line?;
                     let fields: Vec<&str> = line.split("\t|\t").map(|s| s.trim_matches('|')).collect();
-                    if fields.len() >= 4 && fields[3].trim() == "scientific name" {
+                    if fields.len() >= 4 {
                         let tax_id = fields[0].trim().parse()?;
                         let name = fields[1].trim().to_string();
-                        names_raw.insert(tax_id, name);
+                        let name_class = fields[3].trim();
+                        // ---------- extract scientific names for Node
+                        if name_class == "scientific name" {
+                            primary_names.insert(tax_id, name.clone());
+                        }
+                        // --------- Also allow searching by these names
+                        if matches!(name_class, "synonym" | "common name" | "genbank common name") {
+                            names_raw.insert(tax_id, name.clone());
+                            name_to_taxid.insert(name, tax_id);
+                        }
                     }
                 }
             }
@@ -147,13 +180,13 @@ impl Taxonomy {
 
         let mut nodes = Vec::new();
         let mut taxid_to_index = HashMap::new();
-        let mut name_to_taxid = HashMap::new();
 
         for (i, (tax_id, parent_tax_id, rank)) in nodes_raw.into_iter().enumerate() {
-            let name = names_raw.get(&tax_id).cloned().unwrap_or_else(|| "".to_string());
+            let name = primary_names.get(&tax_id).cloned().unwrap_or_else(|| "".to_string());
             if !name.is_empty() {
                 name_to_taxid.insert(name.clone(), tax_id);
             }
+
             nodes.push(Node { tax_id, parent_tax_id, rank, name });
             taxid_to_index.insert(tax_id, i);
         }

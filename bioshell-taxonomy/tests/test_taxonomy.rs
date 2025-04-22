@@ -26,7 +26,7 @@ mod tests {
         let human_taxid = human_taxid.unwrap();
 
         // Test species function
-        let species_node = taxonomy.species(human_taxid);
+        let species_node = taxonomy.node(human_taxid);
         assert!(species_node.is_some(), "Species node for Homo sapiens not found");
         assert_eq!(species_node.unwrap().name, "Homo sapiens");
 
@@ -47,7 +47,7 @@ mod tests {
         let ecoli_taxid = taxonomy.taxid("Escherichia coli");
         assert!(ecoli_taxid.is_some(), "E. coli taxid not found");
 
-        let ecoli_node = taxonomy.species(ecoli_taxid.unwrap());
+        let ecoli_node = taxonomy.node(ecoli_taxid.unwrap());
         assert!(ecoli_node.is_some(), "Species node for E. coli not found");
     }
 }

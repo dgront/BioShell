@@ -48,6 +48,10 @@ struct Cli {
     #[clap(long)]
     lineage_table: bool,
 
+    /// list known kingdoms
+    #[clap(long)]
+    kingdoms: bool,
+
     /// be more verbose and log program actions on the screen
     #[clap(short, long, short='v')]
     verbose: bool
@@ -74,14 +78,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut nodes: Vec<&Node> = vec![];
     if let Some(name) = args.name {
         if let Some(taxid) = taxonomy.taxid(&name) {
-            nodes.push(taxonomy.species(taxid).unwrap());
+            nodes.push(taxonomy.node(taxid).unwrap());
         } else {
             println!("Name '{}' not found in taxonomy.", name);
         }
     }
 
     if let Some(taxid) = args.taxid {
-        if let Some(node) = taxonomy.species(taxid) {
+        if let Some(node) = taxonomy.node(taxid) {
             nodes.push(node);
         } else {
             println!("TaxID '{}' not found in taxonomy.", taxid);
@@ -93,15 +97,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let reader = BufReader::new(file);
         reader.lines().map(|line| line.unwrap()).for_each(|line| {
             if let Some(taxid) = taxonomy.taxid(&line) {
-                if let Some(node) = taxonomy.species(taxid) {
+                if let Some(node) = taxonomy.node(taxid) {
                     nodes.push(node);
                 }
             }
         });
     }
-
+    if args.kingdoms {
+        for n in taxonomy.nodes().filter(|ni|ni.rank==Rank::Kingdom) {
+            let name = &n.name;
+            let taxid = n.tax_id;
+            print!("{} {} : ",n.tax_id, &name);
+            for synonym in taxonomy.names(taxid) {
+                if synonym != name { print!("{}; ", synonym); }
+            }
+            println!()
+        }
+    }
     for n in nodes {
-        println!("{} {}", n.tax_id, n.name);
+        print!("{} {} : ", n.tax_id, n.name);
+        for synonym in taxonomy.names(n.tax_id) {
+            if synonym != &n.name { print!("{}; ", synonym); }
+        }
+        println!();
+
         if args.lineage {
             let lineage = taxonomy.lineage(n.tax_id);
             println!("Lineage:");
@@ -110,7 +129,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         if args.lineage_table {
-            let ranks = vec![Rank::Superkingdom, Rank::Phylum, Rank::Class, Rank::Order, Rank::Family, Rank::Genus, Rank::Species];
+            let ranks = vec![Rank::Superkingdom,Rank::Kingdom, Rank::Phylum, Rank::Class, Rank::Order, Rank::Family, Rank::Genus, Rank::Species];
             for r in ranks {
                 if let Some(rnk_node) = taxonomy.rank(n.tax_id, r) {
                     print!("{}\t", rnk_node.name);
