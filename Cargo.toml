@@ -19,6 +19,7 @@ members = [
     "bioshell-seq",
     "bioshell-statistics",
     "bioshell-interactions",
+    "bioshell-taxonomy",
 ]
 
 [dependencies]
@@ -32,6 +33,8 @@ bioshell-statistics = { path = "./bioshell-statistics" }
 bioshell-datastructures = { path = "./bioshell-datastructures"}
 bioshell-cif = { path = "./bioshell-cif" }
 bioshell-interactions = { path = "./bioshell-interactions" }
+bioshell-taxonomy = { path = "./bioshell-taxonomy" }
+
 # ---------- Common
 clap = { version = "4.5.20", features = ["derive"] }
 rand = { version = "0.8.5", features = [ "small_rng" ] }
