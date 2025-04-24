@@ -10,26 +10,94 @@ use tar::Archive;
 use reqwest::blocking::get;
 use crate::Rank;
 
+/// A node of a taxonomy tree.
+///
+/// A node can represent a species, genus, family, order, etc.
+///
+/// # Examples
+/// ```
+/// use bioshell_taxonomy::{Taxonomy, Rank};
+/// # use std::error::Error;
+/// # fn main() -> Result<(), Box<dyn Error>> {
+/// # let path = "./tests/test_files/test_taxdump.tar.gz";
+/// let taxonomy = Taxonomy::load_from_tar_gz(&path)?;
+/// let human_node = taxonomy.node(9606).unwrap();
+/// assert_eq!(human_node.name, "Homo sapiens");
+/// assert_eq!(human_node.rank, Rank::Species);
+/// let human_node = taxonomy.node(9443).unwrap();
+/// assert_eq!(human_node.name, "Primates");
+/// assert_eq!(human_node.rank, Rank::Order);
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug)]
 pub struct Node {
+    /// Taxonomy-wide unique identifier
     pub tax_id: u32,
+    /// ``taxid`` identifier of the parent node
     pub parent_tax_id: u32,
+    /// Rank of the node, e.g. [``Rank::Genus``](Rank::Genus) or [``Rank::Phylum``](Rank::Phylum)
     pub rank: Rank,
     /// Scientific name, e.g. "Homo sapiens"
     pub name: String,
 }
+
+/// Stores a taxonomy tree, build from a NCBI taxonomy `taxdump.tar.gz` dump.
+///
+/// The taxonomy data file can be downloaded from NCBI:
+/// https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz
+///
+/// Having the file on your computer, you can load it into a `Taxonomy` object:
+/// ```no_run
+/// use bioshell_taxonomy::Taxonomy;
+/// let taxonomy = Taxonomy::load_from_tar_gz("taxdump.tar.gz")
+///             .expect("Can't load taxdump.tar.gz file!");
+/// ```
+/// which then you can use to find information about any taxid:
+/// ```
+/// # use bioshell_taxonomy::{Rank, Taxonomy};
+/// # let taxonomy = Taxonomy::load_from_tar_gz("./tests/test_files/test_taxdump.tar.gz").expect("Can't load taxdump.tar.gz file!");
+/// let human = taxonomy.node(9606).unwrap(); // returns the node for human
+/// assert_eq!(human.name, "Homo sapiens");
+/// assert_eq!(human.rank, Rank::Species);
+/// ```
+/// It's also possible to find taxonomy information by name:
+/// ```
+/// # use bioshell_taxonomy::{Rank, Taxonomy};
+/// # let taxonomy = Taxonomy::load_from_tar_gz("./tests/test_files/test_taxdump.tar.gz").expect("Can't load taxdump.tar.gz file!");
+/// if let Some(human_taxid) = taxonomy.taxid("Homo sapiens") {
+///     let human_node = taxonomy.node(human_taxid).unwrap();
+///     assert_eq!(human_node.rank, Rank::Species);
+/// }
+/// ```
+///
 
 #[derive(Debug)]
 pub struct Taxonomy {
     nodes: Vec<Node>,
     taxid_to_index: HashMap<u32, usize>,
     // maps any name to its taxid, e.g. "human" -> 9606, "Homo sapiens" -> 9606
-    name_to_taxid: HashMap<String, u32>,
+    pub(crate) name_to_taxid: HashMap<String, u32>,
 }
 
 impl Taxonomy {
 
-    /// Node for a given tax_id
+    /// Returns the node for a given ``taxid``.
+    ///
+    /// # Examples
+    /// ```
+    /// # use bioshell_taxonomy::Taxonomy;
+    /// # use std::error::Error;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # use bioshell_taxonomy::Rank;
+    /// # let path = "./tests/test_files/test_taxdump.tar.gz";
+    /// let taxonomy = Taxonomy::load_from_tar_gz(&path)?;
+    /// let human_node = taxonomy.node(9606).unwrap();
+    /// assert_eq!(human_node.name, "Homo sapiens");
+    /// assert_eq!(human_node.rank, Rank::Species);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn node(&self, taxid: u32) -> Option<&Node> {
         let current = self.taxid_to_index.get(&taxid).cloned();
         if let Some(idx) = current {
@@ -44,7 +112,7 @@ impl Taxonomy {
     /// # Example
     /// ```no_run
     /// use bioshell_taxonomy::{Rank, Taxonomy};
-    /// let taxonomy = Taxonomy::load_from_file("taxdump.tar.gz").unwrap();
+    /// let taxonomy = Taxonomy::load_from_tar_gz("./tests/test_files/test_taxdump.tar.gz").unwrap();
     /// for phylum  in taxonomy.nodes().filter(|node| node.rank == Rank::Phylum) {
     ///     println!("{}", phylum.name);
     /// }
@@ -53,6 +121,10 @@ impl Taxonomy {
         self.nodes.iter()
     }
 
+    /// Iterates over all the names associated with a given `taxid`
+    ///
+    /// The iterator provides the scientific name, synonyms as well as common names,
+    /// as they are defined in the NCBI taxonomy.
     pub fn names(&self, taxid: u32) -> impl Iterator<Item = &String> {
         self.name_to_taxid
             .iter()
@@ -60,6 +132,9 @@ impl Taxonomy {
             .map(|(name, _)| name)
     }
 
+    /// Provides the lineage of a given taxonomy node, e.g. for a species.
+    ///
+    /// The lineage is returned as a vector of [`Node`]s, starting from the root to the given taxid.
     pub fn lineage(&self, taxid: u32) -> Vec<&Node> {
         let mut lineage = Vec::new();
         let mut current = self.taxid_to_index.get(&taxid).cloned();
@@ -75,11 +150,39 @@ impl Taxonomy {
         lineage
     }
 
+    /// Finds a species given its name and returns `taxid`
+    /// ```
+    /// # use bioshell_taxonomy::{Rank, Taxonomy};
+    /// # let taxonomy = Taxonomy::load_from_tar_gz("./tests/test_files/test_taxdump.tar.gz").expect("Can't load taxdump.tar.gz file!");
+    /// if let Some(human_taxid) = taxonomy.taxid("Homo sapiens") {
+    ///     let human_node = taxonomy.node(human_taxid).unwrap();
+    ///     assert_eq!(human_node.rank, Rank::Species);
+    /// }
+    /// ```
     pub fn taxid(&self, name: &str) -> Option<u32> {
         debug!("Resolving name: {}", name);
         self.name_to_taxid.get(name).cloned()
     }
 
+    /// Look for a specific rank in the lineage of a given node.
+    ///
+    /// This method traverses the taxonomy tree staring from the node given by taxid to the top
+    /// of the tree and returns the first node that matches the given rank.
+    ///
+    ///
+    /// # Examples
+    /// ```
+    /// use bioshell_taxonomy::{Taxonomy, Rank};
+    /// # use std::error::Error;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # let path = "./tests/test_files/test_taxdump.tar.gz";
+    /// let taxonomy = Taxonomy::load_from_tar_gz(&path)?;
+    /// let order = taxonomy.rank(9606, Rank::Order).unwrap();
+    /// assert_eq!(order.name, "Primates");
+    /// assert_eq!(order.rank, Rank::Order);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn rank(&self, tax_id: u32, rank: Rank) -> Option<&Node> {
         let mut current = self.taxid_to_index.get(&tax_id).cloned();
         while let Some(idx) = current {
@@ -95,6 +198,14 @@ impl Taxonomy {
         None
     }
 
+    /// Create the taxonomy from a given NCBI taxonomy dump.
+    ///
+    /// The taxonomy data should be downloaded from NCBI website. Don't unpack the file; this method loads the whole archive.
+    /// # Example
+    /// ``` no_run
+    /// use bioshell_taxonomy::{Taxonomy};
+    /// let taxonomy = Taxonomy::load_from_tar_gz("./taxdump.tar.gz").expect("Can't load taxdump.tar.gz file!");
+    /// ```
     pub fn load_from_tar_gz<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
         let start = Instant::now();
 
@@ -166,6 +277,10 @@ impl Taxonomy {
 
     const TEST_TAXDUMP_URL: &'static str = "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz";
 
+    /// Download the latest NCBI taxonomy dump from the NCBI FTP server.
+    ///
+    /// This method downloads the [`"https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz"`](https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz) file
+    /// to the current folder.
     pub fn download_from_ncbi<P: AsRef<Path>>(output_path: P) -> Result<(), Box<dyn Error>> {
         let start = Instant::now();
 
