@@ -2,7 +2,7 @@
 mod tests {
     use std::error::Error;
     use std::path::PathBuf;
-    use bioshell_taxonomy::{Taxonomy, TaxonomyMatcher};
+    use bioshell_taxonomy::{Rank, Taxonomy, TaxonomyMatcher};
 
     const TEST_TAXDUMP_FILE: &str = "./tests/test_files/test_taxdump.tar.gz";
 
@@ -58,6 +58,24 @@ mod tests {
         for name in ["Mus musculus", "mouse", "house mouse"] {
             let taxid = matcher.find(name);
             assert!(taxid.is_some(), "Taxid for {} not found", name);
+        }
+        Ok(())
+    }
+
+    // #[test]
+    fn list_kingdoms() -> Result<(), Box<dyn Error>> {
+        let path = PathBuf::from("taxdump.tar.gz");
+        let taxonomy = Taxonomy::load_from_tar_gz(&path)
+            .expect("Failed to load taxonomy from taxdump.tar.gz");
+
+        for n in taxonomy.nodes().filter(|ni|ni.rank==Rank::Kingdom) {
+            let name = &n.name;
+            let taxid = n.tax_id;
+            print!("{} {} : ",n.tax_id, &name);
+            for synonym in taxonomy.names(taxid) {
+                if synonym != name { print!("{}; ", synonym); }
+            }
+            println!()
         }
         Ok(())
     }

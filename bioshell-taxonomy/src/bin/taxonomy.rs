@@ -41,6 +41,10 @@ struct Cli {
     #[arg(short = 't', long = "taxid")]
     taxid: Option<u32>,
 
+    /// file that lists taxonomic ID (taxid) to lookup
+    #[arg(long)]
+    taxid_file: Option<String>,
+
     /// path to the taxonomy.dat or to taxdump.tar.gz file
     #[arg(short = 'p', long = "path", default_value = "./")]
     path: PathBuf,
@@ -61,9 +65,17 @@ struct Cli {
     #[clap(long)]
     lineage_table: bool,
 
-    /// list known kingdoms
+    /// print the kingdom each taxid / name belongs to
     #[clap(long)]
-    kingdoms: bool,
+    kingdom: bool,
+
+    /// print the domain (superkingdom) each taxid / name  belongs to
+    #[clap(long)]
+    domain: bool,
+
+    /// print the rank for each requested each taxid / name
+    #[clap(long)]
+    rank: bool,
 
     /// be more verbose and log program actions on the screen
     #[clap(short, long, short='v')]
@@ -120,19 +132,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         });
     }
-    if args.kingdoms {
-        for n in taxonomy.nodes().filter(|ni|ni.rank==Rank::Kingdom) {
-            let name = &n.name;
-            let taxid = n.tax_id;
-            print!("{} {} : ",n.tax_id, &name);
-            for synonym in taxonomy.names(taxid) {
-                if synonym != name { print!("{}; ", synonym); }
+    if let Some(fname) = args.taxid_file {
+        let file = File::open(fname)?;
+        let reader = BufReader::new(file);
+        for taxid in reader.lines().map(|line| line.unwrap().parse::<u32>().unwrap()) {
+            if let Some(node) = taxonomy.node(taxid) {
+                nodes.push(node);
             }
-            println!()
         }
     }
+
     for n in &nodes {
-        print!("{} {} : ", n.tax_id, n.name);
+        print!("{} {} ", n.tax_id, n.name);
+        if args.rank { print!("{:?} ", n.rank); }
+        if args.kingdom {
+            if let Some(kingdom) = taxonomy.rank(n.tax_id, Rank::Kingdom) { print!("{} ", kingdom.name); }
+        }
+        if args.domain {
+            if let Some(domain) = taxonomy.rank(n.tax_id, Rank::Superkingdom) { print!("{} ", domain.name); }
+        }
+        print!(": ");
+
         for synonym in taxonomy.names(n.tax_id) {
             if synonym != &n.name { print!("{}; ", synonym); }
         }
@@ -161,8 +181,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("  {} ({:?})", node.name, node.rank);
             }
         }
+    }
 
-        return Ok(())
+    if args.detect.is_none() && args.detect_fasta.is_none() {
+        return Ok(());
     }
 
     let matcher: TaxonomyMatcher = TaxonomyMatcher::new(&taxonomy)?;
