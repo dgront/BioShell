@@ -1,7 +1,7 @@
 use crate::{HasCartesians, PDBError, ResidueId, SecondaryStructure, SecondaryStructureTypes, Structure};
 use crate::calc::{SubstructureAxis, Vec3};
 
-/// A Secondary Structure Segment: a helix, strand, etc
+/// Iterates over [`SecondarySegment`](SecondarySegment)s of a given chain.
 ///
 /// ```
 /// # use bioshell_pdb::{Deposit, PDBError, ResidueId, SecondaryStructureTypes};
@@ -56,10 +56,15 @@ impl<'a> SecondaryView<'a> {
 
     /// Provides an iterator over all beta strands
     pub fn strands(&'a self) -> impl Iterator<Item = SecondarySegment<'a>> {
-        self.segments().into_iter().filter(|seg| seg.kind == SecondaryStructureTypes::Strand)
+        self.segments()
+            .into_iter()
+            .filter(|seg| matches!(seg.kind, SecondaryStructureTypes::Strand(_)))
     }
 }
 
+/// Lists all the residues that belong to a secondary structure segment.
+///
+/// [`SecondarySegment`](SecondarySegment)s are provided by the [`SecondaryView`](SecondaryView) struct.
 #[derive(Clone)]
 pub struct SecondarySegment<'a> {
     /// The type of the secondary structure

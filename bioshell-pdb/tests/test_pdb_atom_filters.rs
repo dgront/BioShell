@@ -30,7 +30,7 @@ mod tests {
     #[test]
     fn test_backbone_filtering() {
         let atoms: Vec<PdbAtom> = lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
-        let mut strctr = Structure::from_iterator("1xyz", atoms.iter().cloned());
+        let strctr = Structure::from_iterator("1xyz", atoms.iter().cloned());
         let bb = IsBackbone {};
         let bb_count = strctr.atoms().iter().filter(|a| bb.check(a)).count();
         assert_eq!(bb_count, 12);

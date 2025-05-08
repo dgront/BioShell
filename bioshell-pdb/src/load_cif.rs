@@ -113,18 +113,21 @@ impl Deposit {
         // todo: fix the helix type! Now it's only an alpha helix
         // --- annotate secondary structure
         let helices = PdbHelix::from_cif_data(cif_data_block)?;
+        let mut sse_index = 0;
         for h in &helices {
             let range = ByResidueRange::new(h.init_res_id(), h.end_res_id());
             structure.atoms.iter_mut().for_each(|a| if range.check(a) {
-                a.secondary_struct_type = SecondaryStructureTypes::RightAlphaHelix
+                a.secondary_struct_type = SecondaryStructureTypes::RightAlphaHelix((sse_index % 255) as u8)
             });
+            sse_index += 1;
         }
         let strands = PdbSheet::from_cif_data(cif_data_block)?;
         for s in &strands {
             let range = ByResidueRange::new(s.init_res_id(), s.end_res_id());
             structure.atoms.iter_mut().for_each(|a| if range.check(a) {
-                a.secondary_struct_type = SecondaryStructureTypes::Strand
+                a.secondary_struct_type = SecondaryStructureTypes::Strand((sse_index % 255) as u8)
             });
+            sse_index += 1;
         }
         structure.update();
         debug!("Structure loaded in: {:?}", start.elapsed());
@@ -165,7 +168,7 @@ pub fn is_cif_file<P: AsRef<Path>>(file_path: P) -> io::Result<bool> {
 static CIF_PREFIXES: [&str; 2] = ["", "pdb"];
 static CIF_SUFFIXES: [&str; 6] = [".cif", ".cif.gz", ".gz", ".CIF", ".CIF.gz", ""];
 
-/// Attempts to find a CIF file in a given directory.
+/// Attempts to find a CIF file in a given directory, given the PDB-id.
 ///
 /// Looks in the specified path for a file with a given PDB data, identified by
 /// a given PDB code. For a given 4-character ID (digit + 3 letters), the method checks

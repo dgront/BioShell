@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use std::io::BufReader;
-    use bioshell_pdb::{Deposit, SecondaryStructure};
+    use bioshell_pdb::{Deposit, PDBError, SecondaryStructure, SecondaryView};
 
     #[allow(non_upper_case_globals)]
     const cif_2gb1:  &str = include_str!("./test_files/2gb1.cif");
@@ -31,5 +31,17 @@ mod tests {
         let sec_str = SecondaryStructure::new(10);
         assert_eq!(sec_str.len(), 10);
         assert_eq!(sec_str.hec_code(5), b'C');
+    }
+    #[test]
+    fn secondary_view_from_cif() -> Result<(), PDBError> {
+        let reader = BufReader::new(cif_4esa.as_bytes());
+        let deposit = Deposit::from_cif_reader(reader)?;
+        let strctr = deposit.structure()?;
+        let sec_vew = SecondaryView::new(&strctr, "A");
+        assert_eq!(sec_vew.helices().count(), 8);
+
+        let sec_vew = SecondaryView::new(&strctr, "B");
+        assert_eq!(sec_vew.helices().count(), 10);
+        Ok(())
     }
 }

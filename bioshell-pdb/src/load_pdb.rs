@@ -132,10 +132,11 @@ impl Deposit {
             let from = helices[i].init_res_id();
             let to = helices[i].end_res_id();
             let check = ByResidueRange::new(from,to);
+            let sse_index = (i % 255) as u8;
             for a in &mut pdb_structure.atoms {
                 if check.check(a) {
                     a.secondary_struct_type
-                        = SecondaryStructureTypes::from_pdb_class(helices[i].helix_class as usize)
+                        = SecondaryStructureTypes::from_pdb_class(helices[i].helix_class as usize, sse_index)
                 }
             }
         }
@@ -143,8 +144,9 @@ impl Deposit {
             let from = strands[i].init_res_id();
             let to = strands[i].end_res_id();
             let check = ByResidueRange::new(from,to);
+            let sse_index = ((i+helices.len()) % 255) as u8;
             for a in &mut pdb_structure.atoms {
-                if check.check(a) { a.secondary_struct_type = SecondaryStructureTypes::Strand  }
+                if check.check(a) { a.secondary_struct_type = SecondaryStructureTypes::Strand(sse_index) }
             }
         }
 
@@ -237,7 +239,7 @@ pub fn is_pdb_file<P: AsRef<Path>>(file_path: P) -> io::Result<bool> {
 static PDB_PREFIXES: [&str; 4] = ["pdb", "PDB", "pdb", ""];
 static PDB_SUFFIXES: [&str; 7] = [".ent", ".ent.gz", ".gz", ".pdb", ".PDB", ".pdb.gz", ""];
 
-/// Attempts to find a PDB file in a given directory.
+/// Attempts to find a PDB file in a given directory, given the PDB-id.
 ///
 /// Looks in the specified path for a file with a given PDB data, identified by
 /// a given PDB code. For a given 4-character ID (digit + 3 letters), the method checks

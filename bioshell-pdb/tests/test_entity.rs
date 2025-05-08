@@ -82,7 +82,7 @@ mod tests {
 
         let mut protein_entities = 0;
         let mut dna_entities = 0;
-        for (id, entity) in deposit.entities() {
+        for (_id, entity) in deposit.entities() {
             if entity.entity_type() == EntityType::Polymer(PolypeptideL) {
                 protein_entities += 1;
                 assert_eq!(entity.chain_ids(), &["A"]);

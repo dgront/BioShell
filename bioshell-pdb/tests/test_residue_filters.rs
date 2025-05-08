@@ -1,9 +1,8 @@
 #[cfg(test)]
 mod test_residue_filters {
     use std::io::BufReader;
-    use bioshell_cif::read_cif_buffer;
     use bioshell_pdb::residue_filters::{HasAllHeavyAtoms, ResidueFilter};
-    use bioshell_pdb::{Deposit, PDBError, ResidueId, Structure};
+    use bioshell_pdb::{Deposit, PDBError, ResidueId};
 
     #[test]
     fn test_bb_predicate() {

@@ -520,6 +520,9 @@ impl Structure {
 
     /// Returns the secondary structure a given residue.
     ///
+    /// This method returns [`SecondaryStructureTypes`](SecondaryStructureTypes) enum variant
+    /// to define the type of secondary structure element a given residue belongs to. The enum stores
+    /// also the index of a secondary structure element in the structure.
     /// Use [`Structure::secondary()`] method to get the secondary structure of a full chain.
     ///
     /// # Examples
@@ -530,9 +533,9 @@ impl Structure {
     /// # let deposit = Deposit::from_file("./tests/test_files/2gb1.cif")?;
     /// let mut strctr = deposit.structure().unwrap();
     /// let maybe_helix = strctr.residue_secondary(&ResidueId::new("A", 27, ' '))?;
-    /// assert_eq!(maybe_helix, SecondaryStructureTypes::RightAlphaHelix);
+    /// assert!(matches!(maybe_helix, SecondaryStructureTypes::RightAlphaHelix(_)));
     /// let maybe_strand = strctr.residue_secondary(&ResidueId::try_from("A:4")?)?;
-    /// assert_eq!(maybe_strand, SecondaryStructureTypes::Strand);
+    /// assert!(matches!(maybe_strand, SecondaryStructureTypes::Strand(_)));
     /// # Ok(())
     /// # }
     /// ```
