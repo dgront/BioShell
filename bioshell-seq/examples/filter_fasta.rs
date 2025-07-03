@@ -65,6 +65,9 @@ struct Args {
     /// length of each line of the output sequence; use 0 to print the whole sequence on a single line
     #[clap(short='w', long, default_value_t = 80)]
     out_width: usize,
+    /// be more verbose and log program actions on the screen
+    #[clap(short, long, short='v')]
+    verbose: bool
 }
 
 
@@ -111,7 +114,6 @@ pub fn main() -> Result<(), SequenceError> {
             query_fasta.push((sequence.to_string(out_width), id));
         }
     }
-
 
     let reader = open_file(&fname)?;
     let seq_iter = FastaIterator::new(reader);
