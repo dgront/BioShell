@@ -7,10 +7,10 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
-
-
+use clap::builder::TypedValueParser;
 use bioshell_seq::sequence::{FastaIterator, parse_sequence_id, Sequence, SequenceReporter, SplitFasta, WriteFasta};
-use bioshell_seq::sequence::{HasSequenceMotif, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan, ContainsX, LogicalNot, DescriptionContains};
+use bioshell_seq::sequence::{HasSequenceMotif, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan,
+                             ContainsAA, ContainsX, LogicalNot, DescriptionContains};
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::SequenceError;
 
@@ -35,6 +35,12 @@ struct Args {
     /// remove sequences with more than given number of 'X' residues (unknowns)
     #[clap(short='x', long)]
     max_x: Option<usize>,
+    /// keep only these sequences which contain at least an N occurrences of AA residue type
+    #[clap(long, num_args = 2)]
+    min_aa: Option<Vec<String>>,
+    /// keep only these sequences which contain at most an N occurrences of AA residue type
+    #[clap(long, num_args = 2)]
+    max_aa: Option<Vec<String>>,
     /// print only valid protein sequences ('X' symbol is allowed)
     #[clap(short='p', long, action)]
     protein_only: bool,
@@ -131,6 +137,26 @@ pub fn main() -> Result<(), SequenceError> {
     // ---------- filter by X
     if let Some(max_x) = args.max_x {
         basic_filters.push(Box::new(LogicalNot{ f: ContainsX{ min_x: max_x}}));
+    }
+
+    if let Some(params) = args.min_aa {
+        if let [code_str, count_str] = &params[..] {
+            let code = code_str.chars().next().expect("Expected a char as the first value passed to --min-aa flag");
+            let count: usize = count_str.parse().expect("Expected an integer as the second value passed to --min-aa flag");
+            basic_filters.push(Box::new(ContainsAA { res_type: code, min_cnt: count }));
+        } else {
+            eprintln!("--flag expects exactly two values: a char and an integer, e.g. --min-aa C 4 to find at least 4 CYS residues");
+        }
+    }
+
+    if let Some(params) = args.max_aa {
+        if let [code_str, count_str] = &params[..] {
+            let code = code_str.chars().next().expect("Expected a char as the first value passed to --max-aa flag");
+            let count: usize = count_str.parse().expect("Expected an integer as the second value passed to --max-aa flag");
+            basic_filters.push(Box::new(LogicalNot { f: ContainsAA { res_type: code, min_cnt: count } }));
+        } else {
+            eprintln!("--flag expects exactly two values: a char and an integer, e.g. --max-aa G 0 to find sequences without any glycine");
+        }
     }
 
     // ---------- filter by type: protein or nucleic acid

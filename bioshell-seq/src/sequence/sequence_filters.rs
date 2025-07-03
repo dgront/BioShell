@@ -90,6 +90,26 @@ impl SequenceFilter for ContainsX {
     }
 }
 
+/// Returns `true` if a given [`Sequence`](Sequence) contains a given amino acid type at least `n` times
+///
+/// # Examples
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, ContainsX, SequenceFilter, ContainsAA};
+/// let fdx_seq = Sequence::from_str("test_seq", "VVFGCKRCGKCRDVCPVGAIYEENELAKIDTEKCNLCMKCIDECTNRSIIYME");
+/// let filter = ContainsAA{res_type: 'C',min_cnt: 7};
+/// assert_eq!(filter.filter(&fdx_seq),true);
+/// ```
+pub struct ContainsAA {
+    pub res_type: char,
+    pub min_cnt: usize,
+}
+
+impl SequenceFilter for ContainsAA {
+    fn filter(&self, sequence: &Sequence) -> bool {
+        count_residue_type(sequence, self.res_type) >= self.min_cnt
+    }
+}
+
 /// Returns `true` if a given [`Sequence`](Sequence) contains at least `f` fraction of unknown residues, marked as `'X'`
 ///
 /// # Examples
