@@ -26,6 +26,9 @@ mod tests {
         assert_eq!(record.taxid, Some(86416));
         assert_eq!(record.sequence, "MKGFVDKDTCIGCGLCTSICPEVFIMDDKGKAERSKNEILETLVASAQEAATECPVNAITVE");
 
+        let seq = record.sequence();
+        assert_eq!(seq.description(),"tr.R4K4X3.R4K4X3_CLOPA Ferredoxin OS=Clostridium pasteurianum BC1. OX=86416");
+
         Ok(())
     }
 

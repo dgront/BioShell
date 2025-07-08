@@ -2,6 +2,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 use std::path::Path;
+use crate::sequence::Sequence;
 
 /// A general representation of a biological sequence record.
 ///
@@ -12,7 +13,7 @@ use std::path::Path;
 ///
 /// [`SequenceRecord`] entries can be loaded from files in SwissProt or GenBank formats.
 ///
-/// # Examples
+/// # Example
 /// ```
 /// use bioshell_io::open_file;
 /// use bioshell_seq::sequence::SwissProtIterator;
@@ -57,14 +58,14 @@ pub struct SequenceRecord {
 }
 
 impl SequenceRecord {
-    /// Constructs a SwissProt-style FASTA header line (without the leading '>').
+    /// Constructs a SwissProt-style FASTA description line (without the leading '>').
     ///
     /// Format: `sp.accession.id Full name OS=Species Name OX=TaxID`
     ///
     /// - `sp` is used if the record is reviewed (`is_reviewed == true`), otherwise `tr`
     /// - `full_name` is always included
     /// - `OS=...` and `OX=...` are included if data is present
-    pub fn header(&self) -> String {
+    pub fn description(&self) -> String {
         let db_prefix = if self.is_reviewed { "sp" } else { "tr" };
         let mut header = format!("{db_prefix}.{}.{} {}", self.accession, self.id, self.full_name);
 
@@ -78,6 +79,31 @@ impl SequenceRecord {
         }
 
         header
+    }
+
+    /// Create a new [`Sequence`](Sequence) struct containing the sequence of this record.
+    ///
+    /// Some data of this record are stored in the sequence description
+    ///
+    /// # Examples
+    /// ```
+    /// use bioshell_io::open_file;
+    /// use bioshell_seq::sequence::SwissProtIterator;
+    /// use std::io::{BufRead, BufReader, Error};
+    /// # fn main() -> Result<(), Error> {
+    /// let reader = open_file("tests/test_files/R4K4X3.spt")?;
+    /// let mut iterator = SwissProtIterator::new(reader);
+    /// let record = iterator.next().expect("expected one record");
+    /// let seq = record.sequence();
+    /// let seq_fasta = format!("{}", seq);
+    /// let expected = "> tr.R4K4X3.R4K4X3_CLOPA Ferredoxin OS=Clostridium pasteurianum BC1. OX=86416
+    /// MKGFVDKDTCIGCGLCTSICPEVFIMDDKGKAERSKNEILETLVASAQEAATECPVNAITVE\n";
+    /// assert_eq!(seq_fasta, expected);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn sequence(&self) -> Sequence {
+        Sequence::from_attrs(self.description(), self.sequence.as_bytes().to_vec())
     }
 }
 
