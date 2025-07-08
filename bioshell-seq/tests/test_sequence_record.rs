@@ -7,6 +7,7 @@ mod tests {
     use bioshell_seq::sequence::{NCBIIterator, SwissProtFolderIterator, SwissProtIterator};
 
     #[test]
+    #[allow(non_snake_case)]
     fn test_SwissProtIterator() -> Result<(), std::io::Error> {
         let reader = open_file("tests/test_files/A0A068Q5V6.spt")?;
         let mut iterator = SwissProtIterator::new(reader);
@@ -33,6 +34,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(non_snake_case)]
     fn test_SwissProtFolderIterator() -> Result<(), std::io::Error> {
         let all_records = SwissProtFolderIterator::from_folder("tests/test_files/", "spt")?;
 
@@ -43,6 +45,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(non_snake_case)]
     fn test_NCBIIterator() {
         let path = Path::new("tests/test_files/WP_015613896.gp");
         let file = File::open(path).expect("failed to open WP_015613896.gp test file");

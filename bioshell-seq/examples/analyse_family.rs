@@ -37,6 +37,9 @@ struct Args {
     /// length of a sequence name to print; longer names will be cut that size
     #[clap(long, short='w', default_value = "20")]
     name_width: usize,
+    /// be more verbose and log program actions on the screen
+    #[clap(short, long, short='v')]
+    verbose: bool
 }
 
 struct SimilarityHistogramByQuery {

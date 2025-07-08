@@ -3,8 +3,9 @@ use clap::{Parser};
 #[allow(unused_imports)]
 use log::{debug, info};
 
+use bioshell_seq::sequence::filters::{AlwaysTrue, DescriptionContains, SequenceFilter};
 use bioshell_seq::sequence::{clone_ungapped, count_identical, len_ungapped, ProfileColumnOrder,
-            SequenceProfile, StockholmIterator, AlwaysTrue, DescriptionContains, SequenceFilter};
+            SequenceProfile, StockholmIterator};
 
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::msa::MSA;
@@ -42,7 +43,9 @@ struct Args {
 
 pub fn main() -> Result<(), SequenceError> {
 
-    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    unsafe {
+        if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+    }
     env_logger::init();
     let args = Args::parse();
 

@@ -31,7 +31,8 @@ impl SequenceFilter for AlwaysTrue {
 /// Reverse the result of a given [`SequenceFilter`](SequenceFilter)
 ///
 /// ```
-/// use bioshell_seq::sequence::{AlwaysTrue, LogicalNot, Sequence, SequenceFilter};
+/// use bioshell_seq::sequence::Sequence;
+/// use bioshell_seq::sequence::filters::{AlwaysTrue, LogicalNot, SequenceFilter};
 /// let f = LogicalNot::new(AlwaysTrue);
 /// let sequence = Sequence::from_str("test_seq", "MRAA");
 /// assert!(!f.filter(&sequence));
@@ -51,7 +52,8 @@ impl<F: SequenceFilter> SequenceFilter for LogicalNot<F> {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, SequenceLengthWithinRange, SequenceFilter};
+/// use bioshell_seq::sequence::Sequence;
+/// use bioshell_seq::sequence::filters::{SequenceLengthWithinRange, SequenceFilter};
 /// let sequence1 = Sequence::from_str("test_seq", "MRAA");
 /// let sequence2 = Sequence::from_str("test_seq", "MRAGIA");
 /// let filter = SequenceLengthWithinRange{from: 3,to: 5};
@@ -73,7 +75,8 @@ impl SequenceFilter for SequenceLengthWithinRange {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, ContainsX, SequenceFilter};
+/// use bioshell_seq::sequence::Sequence;
+/// use bioshell_seq::sequence::filters::{ContainsX, SequenceFilter};
 /// let sequence1 = Sequence::from_str("test_seq", "MRAXXA");
 /// let sequence2 = Sequence::from_str("test_seq", "MRAXXXA");
 /// let filter = ContainsX{min_x: 3};
@@ -94,7 +97,8 @@ impl SequenceFilter for ContainsX {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, ContainsX, SequenceFilter, ContainsAA};
+/// use bioshell_seq::sequence::Sequence;
+/// use bioshell_seq::sequence::filters::{ContainsX, SequenceFilter, ContainsAA};
 /// let fdx_seq = Sequence::from_str("test_seq", "VVFGCKRCGKCRDVCPVGAIYEENELAKIDTEKCNLCMKCIDECTNRSIIYME");
 /// let filter = ContainsAA{res_type: 'C',min_cnt: 7};
 /// assert_eq!(filter.filter(&fdx_seq),true);
@@ -114,7 +118,8 @@ impl SequenceFilter for ContainsAA {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, FractionX, SequenceFilter};
+/// use bioshell_seq::sequence::Sequence;
+/// use bioshell_seq::sequence::filters::{FractionX, SequenceFilter};
 /// let sequence1 = Sequence::from_str("test_seq", "MRAXXA");
 /// let sequence2 = Sequence::from_str("test_seq", "MRAGSXA");
 /// let filter = FractionX{min_x_fraction: 0.25};
@@ -135,7 +140,8 @@ impl SequenceFilter for FractionX {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, IsNucleic, SequenceFilter};
+/// use bioshell_seq::sequence::Sequence;
+/// use bioshell_seq::sequence::filters::{IsNucleic, SequenceFilter};
 /// let sequence1 = Sequence::from_str("test_seq", "CGCGTATACGCG");
 /// let sequence2 = Sequence::from_str("test_seq", "cgcgtatacgc");
 /// let sequence3 = Sequence::from_str("test_seq", "CGATAGS");
@@ -165,7 +171,8 @@ impl SequenceFilter for IsNucleic {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, IsProtein, SequenceFilter};
+/// use bioshell_seq::sequence::Sequence;
+/// use bioshell_seq::sequence::filters::{IsProtein, SequenceFilter};
 /// let sequence1 = Sequence::from_str("test_seq", "MRAGSXA");
 /// let sequence2 = Sequence::from_str("test_seq", "MRAGSXA*");
 /// let sequence3 = Sequence::from_str("test_seq", "MRAG!SXA");
@@ -199,7 +206,8 @@ impl SequenceFilter for IsProtein {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, ShorterThan, SequenceFilter};
+/// use bioshell_seq::sequence::Sequence;
+/// use bioshell_seq::sequence::filters::{ShorterThan, SequenceFilter};
 /// let sequence1 = Sequence::from_str("test_seq", "MRAGSXA");
 /// let sequence2 = Sequence::from_str("test_seq", "MRAGS");
 /// let filter = ShorterThan{max_length: 6};
@@ -216,7 +224,8 @@ impl SequenceFilter for ShorterThan {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, LongerThan, SequenceFilter};
+/// use bioshell_seq::sequence::Sequence;
+/// use bioshell_seq::sequence::filters::{LongerThan, SequenceFilter};
 /// let sequence1 = Sequence::from_str("test_seq", "MRAGSXA");
 /// let sequence2 = Sequence::from_str("test_seq", "MRAGS");
 /// let filter = LongerThan{min_length: 6};
@@ -233,7 +242,8 @@ impl SequenceFilter for LongerThan {
 ///
 /// # Examples
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, HasSequenceMotif, SequenceFilter};
+/// use bioshell_seq::sequence::Sequence;
+/// use bioshell_seq::sequence::filters::{HasSequenceMotif, SequenceFilter};
 /// use bioshell_seq::SequenceError;
 /// # fn main() -> Result<(), SequenceError> {
 /// let sequence1 = Sequence::from_str("no_motifs", "MRAGS");

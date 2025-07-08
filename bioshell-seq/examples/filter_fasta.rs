@@ -9,7 +9,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
 use clap::builder::TypedValueParser;
 use bioshell_seq::sequence::{FastaIterator, parse_sequence_id, Sequence, SequenceReporter, SplitFasta, WriteFasta};
-use bioshell_seq::sequence::{HasSequenceMotif, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan,
+use bioshell_seq::sequence::filters::{HasSequenceMotif, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan,
                              ContainsAA, ContainsX, LogicalNot, DescriptionContains};
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::SequenceError;

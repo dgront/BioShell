@@ -5,14 +5,15 @@
 mod sequence;
 mod sequence_profile;
 mod residue_type_mapping;
-mod sequence_filters;
+
+pub mod filters;
+
 mod sequence_reporter;
 pub use sequence_reporter::*;
 
 use log::info;
 use bioshell_io::open_file;
 pub use sequence::*;
-pub use sequence_filters::*;
 pub use sequence_profile::*;
 pub use residue_type_mapping::*;
 use crate::SequenceError;
@@ -22,6 +23,7 @@ pub use sequence_id::*;
 
 mod bucket_clustering;
 mod sequence_record;
+
 pub use sequence_record::*;
 
 pub use bucket_clustering::{bucket_clustering};
