@@ -8,10 +8,10 @@
 //! derived from _standard_ amino acids or bases by a chemical modification. Residue typing engine
 //! facilitates conversion from a modified residue type into it's original (_parent_) counterpart.
 //!
-//! Since the set of _standard_ monomer is closed, all of them have been listed in [`StandardResidueType`](StandardResidueType) enum;
-//! on the other hand [`ResidueType`](ResidueType) structs may be created dynamically.
+//! Since the set of _standard_ monomer is closed, all of them have been listed in [`StandardResidueType`] enum;
+//! on the other hand [`ResidueType`] structs may be created dynamically.
 //!
-//! Finally, a [`ResidueTypeManager`](ResidueTypeManager) can provide a unique integer ID for each [`ResidueType`](ResidueType) instance
+//! Finally, a [`ResidueTypeManager`] can provide a unique integer ID for each [`ResidueType`] instance
 //!
 mod residue_types;
 

@@ -1,4 +1,4 @@
-//! Provides [`Sequence`](crate::sequence::Sequence) and [`SequenceProfile`](crate::sequence::SequenceProfile) stucts
+//! Provides [`Sequence`], [`SequenceRecord`] and [`SequenceProfile`] structs
 //! as well as numerous utility functions to operate on them
 
 

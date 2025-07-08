@@ -4,14 +4,15 @@ use std::io::{BufRead, BufReader, Lines};
 use std::path::Path;
 use crate::sequence::Sequence;
 
-/// A general representation of a biological sequence record.
+/// Stores a biological sequence record, i.e. a sequence itself with its metadata and annotations.
 ///
 /// This struct captures essential metadata and sequence information from
 /// flat file-based sources such as GenBank, SwissProt, or similar databases. Each entry provides a sequence
 /// (amino acids or nucleotides) and associated metadata, such as the taxid of the source organism,
 /// and a unique identifier.
 ///
-/// [`SequenceRecord`] entries can be loaded from files in SwissProt or GenBank formats.
+/// [`SequenceRecord`] entries can be loaded from files in SwissProt or GenBank formats. It can be
+/// easily converted to a [`Sequence`] with ``SequenceRecord::sequence()``.
 ///
 /// # Example
 /// ```
@@ -22,6 +23,7 @@ use crate::sequence::Sequence;
 /// let reader = open_file("tests/test_files/R4K4X3.spt")?;
 /// let mut iterator = SwissProtIterator::new(reader);
 /// let record = iterator.next().expect("expected one record");
+///
 /// assert_eq!(&record.accession, "R4K4X3");
 /// assert_eq!(&record.taxid, &Some(86416));
 /// assert_eq!(&record.sequence, "MKGFVDKDTCIGCGLCTSICPEVFIMDDKGKAERSKNEILETLVASAQEAATECPVNAITVE");
@@ -60,7 +62,7 @@ pub struct SequenceRecord {
 impl SequenceRecord {
     /// Constructs a SwissProt-style FASTA description line (without the leading '>').
     ///
-    /// Format: `sp.accession.id Full name OS=Species Name OX=TaxID`
+    /// The description string follows the UniProt format: `sp.accession.id Full name OS=Species Name OX=TaxID`
     ///
     /// - `sp` is used if the record is reviewed (`is_reviewed == true`), otherwise `tr`
     /// - `full_name` is always included
