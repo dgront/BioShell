@@ -15,4 +15,3 @@
 
 mod sequence_filters;
 pub use sequence_filters::*;
-use crate::sequence::Sequence;

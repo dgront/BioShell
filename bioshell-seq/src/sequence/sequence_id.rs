@@ -10,7 +10,6 @@ use bioshell_io::sanitize_filename;
 /// This enum captures various standard sequence ID types used in molecular biology and bioinformatics.
 /// Each variant holds the original matched identifier as a `String`.
 ///
-/// # Examples
 /// ```
 /// use bioshell_seq::sequence::SeqId;
 /// let id = SeqId::RefSeq("XP_123456.1".to_string());
@@ -18,7 +17,18 @@ use bioshell_io::sanitize_filename;
 ///     SeqId::RefSeq(accession) => println!("RefSeq ID: {}", accession),
 ///     _ => println!("Other ID type"),
 /// }
+/// ```
 ///
+/// The [`parse_sequence_id`]() function can be used to parse a sequence description string into a list of `SeqId` variants.
+/// For convenience,  [`parse_sequence_id`]() returns [`SeqIdList`].
+/// ```
+/// use bioshell_seq::sequence::{parse_sequence_id, SeqId};
+/// let ids = parse_sequence_id("sp|A0A009IHW8|ABTIR_ACIB9 2' cyclic ADP-D-ribose synthase [taxid=1310613]");
+/// assert_eq!(ids.len(), 3);
+/// assert!(matches!(ids[0], SeqId::UniProtID(_)));
+/// assert!(matches!(ids[1], SeqId::TrEmbl(_)));
+/// assert!(matches!(ids[2], SeqId::TaxId(_)));
+/// assert_eq!(&ids.to_string(), "UniProtID|ABTIR_ACIB9|tr|A0A009IHW8|[taxid=1310613]");
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SeqId {
@@ -49,6 +59,9 @@ pub enum SeqId {
     /// NCBI GI number (legacy format, e.g., "GI:12345678").
     NCBIGI(String),
 
+    /// NCBI Taxonomy ID (e.g., "[taxid=9606]", "[taxid=10090]").
+    TaxId(String),
+
     /// If nothing has been found, use the first word of the description
     Default(String)
 }
@@ -77,6 +90,7 @@ impl SeqId {
             SeqId::Ensembl(_) => 6,
             SeqId::TrEmbl(_) => 7,
             SeqId::NCBIGI(_) => 8,
+            SeqId::TaxId(_) => 9,
             SeqId::Default(_) => 10,
         }
     }
@@ -103,27 +117,33 @@ impl fmt::Display for SeqId {
             SeqId::Ensembl(s) => write!(f, "Ensembl|{}", s),
             SeqId::NCBIGI(s) => write!(f, "NCBIGI|{}", s),
             SeqId::TrEmbl(s) => write!(f, "tr|{}", s),
+            SeqId::TaxId(s) => write!(f, "[taxid={}]", s),
             SeqId::Default(s) => write!(f, "{}", s),
         }
     }
 }
 
-/// Attempts to extract  sequence identifiers from a free-text description string.
+/// Extract sequence identifiers from a free-text description string.
 ///
 /// This function scans the input for standard database identifiers such as those from
 /// PDB, SwissProt/TrEMBL, UniRef, RefSeq, GenBank/EMBL, Ensembl, and NCBI GI.
-/// It returns all matches found, each represented as a `SequenceID` variant.
+/// It returns all matches found, each represented as a [`SequenceID`] variant, stored in
+/// [`SeqIdList`]
 ///
 /// The identifiers are sorted by database priority:
-/// PDB > SwissProt > UniProtID > UniRef > RefSeq > GenBank > Ensembl > NCBI GI.
+/// PDB > SwissProt > UniProtID > UniRef > RefSeq > GenBank > Ensembl > NCBI GI > NCBI Taxonomy.
 ///
 /// # Examples
 ///
 /// ```
 /// use bioshell_seq::sequence::{parse_sequence_id, SeqId};
 ///
-/// let ids = parse_sequence_id("sp|A0A009IHW8|ABTIR_ACIB9 2' cyclic ADP-D-ribose synthase ");
-/// assert_eq!(&ids.to_string(), "UniProtID|ABTIR_ACIB9|tr|A0A009IHW8");
+/// let ids = parse_sequence_id("sp|A0A009IHW8|ABTIR_ACIB9 2' cyclic ADP-D-ribose synthase [taxid=1310613]");
+/// assert_eq!(ids.len(), 3);
+/// assert!(matches!(ids[0], SeqId::UniProtID(_)));
+/// assert!(matches!(ids[1], SeqId::TrEmbl(_)));
+/// assert!(matches!(ids[2], SeqId::TaxId(_)));
+/// assert_eq!(&ids.to_string(), "UniProtID|ABTIR_ACIB9|tr|A0A009IHW8|[taxid=1310613]");
 /// let ids = parse_sequence_id(">ref|XP_001234567.1| hypothetical protein [Homo sapiens]");
 /// assert_eq!(ids.len(), 1);
 /// assert!(matches!(ids[0], SeqId::RefSeq(_)));
@@ -133,7 +153,6 @@ impl fmt::Display for SeqId {
 /// ```
 pub fn parse_sequence_id(description: &str) -> SeqIdList {
     let patterns: &[(&str, fn(String) -> SeqId)] = &[
-        (r"\b([0-9][A-Za-z0-9]{3})(?:[:_][A-Za-z])?\b", |s| SeqId::PDB(s)),
         (r"\b[A-NR-Z][0-9][A-Z0-9]{3}[0-9](?:-\d+)?\b", |s| SeqId::SwissProt(s)),
         (r"\bUniRef\d{2,3}_[A-Z0-9]+\b", |s| SeqId::UniRef(s)),
         (r"\b(NP|XP|WP|YP|XM|XR|NM|NR|NC)_[0-9]+\.\d+\b", |s| SeqId::RefSeq(s)),
@@ -141,15 +160,28 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         (r"\bENS[TPGR][0-9]{11}\b", |s| SeqId::Ensembl(s)),
         (r"\b[A-Z0-9]{3,6}_[A-Z0-9]{2,6}\b", |s| SeqId::UniProtID(s)),
         (r"\b[A-NR-Z0-9]{10}\b", |s| SeqId::TrEmbl(s)),
+        (r"(?i:\[?taxid=)(\d+)",|s| s.split('=').nth(1)
+            .map(|v| SeqId::TaxId(v.to_string()))
+            .unwrap_or_else(|| SeqId::TaxId("INVALID".to_string()))),
+        (r"OX=\d+",|s| s.split('=').nth(1)
+            .map(|v| SeqId::TaxId(v.to_string()))
+            .unwrap_or_else(|| SeqId::TaxId("INVALID".to_string()))),
         (r"\b[A-Z]{1,2}[0-9]{5,6}(?:\.\d+)?\b", |s| SeqId::GenBank(s)),
+        (r"\b([0-9][A-Za-z0-9]{3})(?:[:_][A-Za-z])?\b", |s| SeqId::PDB(s)),
     ];
 
     let mut found = Vec::new();
-
+    let mut buffer = description.as_bytes().to_vec();
     for (pattern, constructor) in patterns {
         let re = Regex::new(pattern).unwrap();
-        for m in re.find_iter(description) {
-            found.push(constructor(m.as_str().to_string()));
+        let desc_view = std::str::from_utf8(&buffer).unwrap();
+        if let Some(m) = re.find(desc_view) {
+            let matched_str = m.as_str().to_string();
+            found.push(constructor(matched_str.clone()));
+            // Mask out the matched portion with whitespace of same length
+            for i in m.start()..m.end() {
+                buffer[i] = b' ';
+            }
         }
     }
 
@@ -230,6 +262,7 @@ impl SeqIdList {
                 SeqId::Ensembl(s) => ("Ensembl", s),
                 SeqId::NCBIGI(s) => ("NCBIGI", s),
                 SeqId::TrEmbl(s) => ("tr", s),
+                SeqId::TaxId(s) => ("taxid", s),
                 SeqId::Default(s) => ("", s),
             };
             vec![label.to_string(), value.to_string()]
