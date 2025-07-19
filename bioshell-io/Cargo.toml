@@ -1,0 +1,24 @@
+
+[package]
+name = "bioshell-io"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Provides I/O utility functions commonly used by other BioShell v.4 crates"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell"]
+
+[lib]
+crate-type =["rlib"]
+
+[dependencies]
+csv = "1.1"
+flate2 = "1.0"
+pulldown-cmark = "0.9"          # Used by BioShell apps to convert cookbook written in markdown to a string
+
+# ---------- Logging
+log = "0.4.0"
+env_logger = "0.9.0"
+regex = "1.11.1"
+
+

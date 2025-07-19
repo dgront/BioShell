@@ -1,0 +1,40 @@
+
+[package]
+name = "bioshell-taxonomy"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Provides NCBI taxonomy"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell", "taxonomy"]
+
+[lib]
+crate-type =["rlib"]
+
+[dependencies]
+pulldown-cmark = "0.9"          # Used by BioShell apps to convert cookbook written in markdown to a string
+aho-corasick = "1.1.3"                      # Used to find species in fasta headers
+# ---------- Logging
+log = "0.4.0"
+env_logger = "0.9.0"
+clap = { version = "4.5.37", features = ["derive"] }
+
+# ---------- Downloading and reading taxonomy.tar.gz
+tar = "0.4.44"
+flate2 = "1.0"
+
+reqwest = { version = "0.12.15", features = ["blocking"] }
+futures-util = "0.3.31"
+
+bioshell-io  = { path = "../bioshell-io" } 	# for markdown_to_text()
+bioshell-seq  = { path = "../bioshell-seq" } 	# for reading FASTA files
+
+[build-dependencies]
+# ---------- for git md5sum and compilation time
+chrono = "0.4"
+git2 = "0.19.0"
+md5 = "0.7"
+
+[[bin]]
+name = "taxonomy"
+path = "src/bin/taxonomy.rs"

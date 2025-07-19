@@ -1,0 +1,44 @@
+
+[package]
+name = "bioshell-clustering"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Clustering methods"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell"]
+
+[lib]
+crate-type =["rlib", "cdylib"]
+
+#[[bench]]
+#name = "bench_clustering"
+#harness = false
+
+[dependencies]
+rand = {version = "0.8.5", features = [ "small_rng" ]}
+rand_distr="0.4.3"
+nalgebra = "0.31.1"
+clap = { version = "3.1.18", features = ["derive"] }
+num-traits = "0.2"      # for Float trait
+
+bioshell-statistics = { path = "../bioshell-statistics" }
+bioshell-io = { path = "../bioshell-io" }
+bioshell-datastructures = { path = "../bioshell-datastructures" }
+
+# ---------- Logging
+log = "0.4.0"
+env_logger = "0.9.0"
+csv = "1.3.0"
+thiserror = "1.0.61"
+
+
+[build-dependencies]
+# ---------- for git md5sum and compilation time
+chrono = "0.4"
+git2 = "0.19.0"
+md5 = "0.7"
+
+[[bin]]
+name = "clust"
+path = "src/bin/clust.rs"

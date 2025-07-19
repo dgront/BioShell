@@ -1,0 +1,30 @@
+[package]
+name = "bioshell-builder"
+version = "4.0.0-dev"
+edition = "2021"
+description = "Build a macromolecular structure from sequence"
+homepage = "https://bioshell.pl"
+license = "Apache-2.0"
+keywords = ["bioshell"]
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+bioshell-seq = { path = "../bioshell-seq" }
+bioshell-pdb = { path = "../bioshell-pdb" }
+bioshell-cif = { path = "../bioshell-cif" }
+bioshell-io  = { path = "../bioshell-io" } 	# for split_into_strings() and I/O functions
+
+clap = { version = "3.1.18", features = ["derive"] }
+thiserror = "1.0.26"
+itertools = "0.11.0"
+rand = { version = "0.8.5", features = [ "small_rng" ] }
+rand_distr="0.4.3"
+log = "0.4.17"
+env_logger = "0.9.3"   # for logging
+
+[[bin]]
+name = "protein_builder"
+path = "src/bin/protein_builder.rs"

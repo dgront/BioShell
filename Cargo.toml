@@ -6,33 +6,61 @@ description = "Provides the BioShell 4.0 package"
 homepage = "https://bioshell.pl"
 license = "Apache-2.0"
 keywords = ["bioshell"]
+build = "build.rs"
 
 [workspace]
 members = [
-    "bioshell-core",
-    "bioshell-numerical",
-    "bioshell-ff",
-    "bioshell-sim",
+    "bioshell-builder",
+    "bioshell-cif",
+    "bioshell-clustering",
+    "bioshell-datastructures",
+    "bioshell-io",
+    "bioshell-pdb",
+    "bioshell-seq",
+    "bioshell-statistics",
+    "bioshell-interactions",
+    "bioshell-taxonomy",
 ]
 
 [dependencies]
-bioshell-core = { path = "./bioshell-core" }
-bioshell_numerical = { path = "./bioshell-numerical" }
-bioshell-ff = { path = "./bioshell-ff" }
-bioshell-sim = { path = "./bioshell-sim" }
-clap = { version = "3.1.18", features = ["derive"] }
-rand = "0.8.5"
+# ---------- BioShell
+bioshell-io = { path = "./bioshell-io" }
+bioshell-seq = { path = "./bioshell-seq" }
+bioshell-builder = { path = "./bioshell-builder" }
+bioshell-pdb = { path = "./bioshell-pdb" }
+bioshell-clustering = { path = "./bioshell-clustering" }
+bioshell-statistics = { path = "./bioshell-statistics" }
+bioshell-datastructures = { path = "./bioshell-datastructures"}
+bioshell-cif = { path = "./bioshell-cif" }
+bioshell-interactions = { path = "./bioshell-interactions" }
+bioshell-taxonomy = { path = "./bioshell-taxonomy" }
+
+# ---------- Common
+clap = { version = "4.5.20", features = ["derive"] }
+rand = { version = "0.8.5", features = [ "small_rng" ] }
 rand_distr="0.4.3"
 nalgebra = "0.31.1"
 
-[[bin]]
-name = "polymer"
-path = "src/polymer.rs"
+# ---------- Logging
+log = "0.4.22"
+env_logger = "0.11.5"
+
+[build-dependencies]
+# ---------- for git md5sum and compilation time
+chrono = "0.4"
+git2 = "0.19.0"
+md5 = "0.7"
+
 
 [[bin]]
-name = "disks"
-path = "src/disks.rs"
+name = "bioshell"
+path = "./bin/bioshell.rs"
 
 [[bin]]
-name = "argon"
-path = "src/argon.rs"
+name = "cluster_sequences"
+path = "./bin/cluster_sequences.rs"
+
+[package.metadata.docs.rs]
+# To build locally use
+#   RUSTDOCFLAGS="--html-in-header katex-header.html" cargo doc --no-deps --document-private-items --open
+rustdoc-args = ["--html-in-header", "katex-header.html"]
