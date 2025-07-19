@@ -9,13 +9,13 @@ const cif_1c5n:  &str = include_str!("./input_files/1c5n.cif");
 mod test_bb_hbond_map {
     use std::io::BufReader;
     use bioshell_interactions::BackboneHBondMap;
-    use bioshell_pdb::{Deposit, ResidueId};
+    use bioshell_pdb::{Deposit, PDBError, ResidueId};
     use crate::cif_2gb1;
 
     #[test]
-    fn hbonds_2gb1() {
+    fn hbonds_2gb1() -> Result<(), PDBError> {
         let reader = BufReader::new(cif_2gb1.as_bytes());
-        let strctr = Deposit::from_cif_reader(reader).unwrap().structure();
+        let strctr = Deposit::from_cif_reader(reader)?.structure()?;
         let hbonds = BackboneHBondMap::new(&strctr);
 
         assert!(hbonds.is_antiparallel_bridge(&ResidueId::new("A", 16, ' '),
@@ -28,6 +28,8 @@ mod test_bb_hbond_map {
                                               &ResidueId::new("A", 6, ' ')));
 
         assert!(hbonds.donates_n_turn(&ResidueId::new("A", 36,' '), 4));
+
+        Ok(())
     }
 }
 
@@ -35,18 +37,20 @@ mod test_bb_hbond_map {
 mod test_dssp {
     use std::io::BufReader;
     use bioshell_interactions::{BackboneHBondMap, dssp};
-    use bioshell_pdb::Deposit;
+    use bioshell_pdb::{Deposit, PDBError};
     use super::*;
 
     #[test]
-    fn test_dssp() {
+    fn test_dssp() -> Result<(), PDBError> {
         let reader = BufReader::new(cif_1c5n.as_bytes());
-        let strctr = Deposit::from_cif_reader(reader).unwrap().structure();
+        let strctr = Deposit::from_cif_reader(reader)?.structure()?;
         let exp_ss = strctr.secondary("H").to_string();
 
         let hbonds = BackboneHBondMap::new(&strctr);
         let result = dssp(&hbonds);
 
         assert_eq!(result, exp_ss);
+
+        Ok(())
     }
 }
