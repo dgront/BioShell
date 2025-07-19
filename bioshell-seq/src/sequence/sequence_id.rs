@@ -153,6 +153,7 @@ impl fmt::Display for SeqId {
 /// ```
 pub fn parse_sequence_id(description: &str) -> SeqIdList {
     let patterns: &[(&str, fn(String) -> SeqId)] = &[
+        (r"(?:pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?:[\|:_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
         (r"\b[A-NR-Z][0-9][A-Z0-9]{3}[0-9](?:-\d+)?\b", |s| SeqId::SwissProt(s)),
         (r"\bUniRef\d{2,3}_[A-Z0-9]+\b", |s| SeqId::UniRef(s)),
         (r"\b(NP|XP|WP|YP|XM|XR|NM|NR|NC)_[0-9]+\.\d+\b", |s| SeqId::RefSeq(s)),
@@ -167,7 +168,6 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
             .map(|v| SeqId::TaxId(v.to_string()))
             .unwrap_or_else(|| SeqId::TaxId("INVALID".to_string()))),
         (r"\b[A-Z]{1,2}[0-9]{5,6}(?:\.\d+)?\b", |s| SeqId::GenBank(s)),
-        (r"\b([0-9][A-Za-z0-9]{3})(?:[:_][A-Za-z])?\b", |s| SeqId::PDB(s)),
     ];
 
     let mut found = Vec::new();

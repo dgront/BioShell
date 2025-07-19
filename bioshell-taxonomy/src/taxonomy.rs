@@ -45,7 +45,7 @@ pub struct Node {
 /// Stores a taxonomy tree, build from a NCBI taxonomy `taxdump.tar.gz` dump.
 ///
 /// The taxonomy data file can be downloaded from NCBI:
-/// https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz
+/// <https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz>
 ///
 /// Having the file on your computer, you can load it into a `Taxonomy` object:
 /// ```no_run
