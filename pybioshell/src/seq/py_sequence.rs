@@ -6,7 +6,7 @@ use bioshell_seq::sequence::Sequence;
 
 #[pyclass(name = "Sequence")]
 pub struct PySequence {
-    inner: Sequence,
+    pub(crate) inner: Sequence,
 }
 
 #[pymethods]
