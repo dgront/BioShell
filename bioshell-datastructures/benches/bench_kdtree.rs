@@ -1,7 +1,8 @@
 use std::time::Instant;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
-use bioshell_datastructures::kd_tree::{create_kd_tree, find_within, euclidean_distance_squared};
+use bioshell_datastructures::euclidean_distance_squared;
+use bioshell_datastructures::kd_tree::{create_kd_tree, find_within};
 
 fn construct_k3_tree() {
 
