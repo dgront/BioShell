@@ -49,3 +49,19 @@ To run all tests (for all the crates of the project), run the:
 cargo test
 ```
 command in the root folder. Alternatively, you can test a single crate by running that command in a respective subfolder.
+
+## PyBioShell
+To build the PyBioShell distribuion, create (only once): 
+```bash
+python3.10 -m venv .pybioshell
+source .pybioshell/bin/activate
+pip3 install -r requrements.txt
+```
+or just activate virtual environment:
+```bash
+source .pybioshell/bin/activate
+```
+then use Maturin toolchain:
+```
+maturin develop
+```
