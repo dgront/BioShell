@@ -4,6 +4,15 @@ use std::io::BufReader;
 use std::iter::zip;
 use bioshell_seq::msa::MSA;
 
+
+#[test]
+fn test_sequence() {
+    let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
+    let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
+    let seq = Sequence::from_attrs(header, sequence.to_vec());
+    assert_eq!("gi|5524211|gb|AAD44166.1|", seq.id());
+}
+
 #[test]
 fn create_sequence() {
     // ---------- Create a simple amino acid sequence by calling new()

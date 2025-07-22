@@ -56,7 +56,7 @@ pub enum SeqId {
     /// TrEmbl section of UniProtKB (e.g., "tr|A0A009IHW8|").
     TrEmbl(String),
 
-    /// NCBI GI number (legacy format, e.g., "GI:12345678").
+    /// NCBI GI number ("gi|12345678" or "GI:12345678").
     NCBIGI(String),
 
     /// NCBI Taxonomy ID (e.g., "[taxid=9606]", "[taxid=10090]").
@@ -90,8 +90,8 @@ impl SeqId {
             SeqId::Ensembl(_) => 6,
             SeqId::TrEmbl(_) => 7,
             SeqId::NCBIGI(_) => 8,
-            SeqId::TaxId(_) => 9,
             SeqId::Default(_) => 10,
+            SeqId::TaxId(_) => 11,
         }
     }
 }
@@ -115,7 +115,7 @@ impl fmt::Display for SeqId {
             SeqId::RefSeq(s) => write!(f, "RefSeq|{}", s),
             SeqId::GenBank(s) => write!(f, "GenBank|{}", s),
             SeqId::Ensembl(s) => write!(f, "Ensembl|{}", s),
-            SeqId::NCBIGI(s) => write!(f, "NCBIGI|{}", s),
+            SeqId::NCBIGI(s) => write!(f, "gi|{}", s),
             SeqId::TrEmbl(s) => write!(f, "tr|{}", s),
             SeqId::TaxId(s) => write!(f, "[taxid={}]", s),
             SeqId::Default(s) => write!(f, "{}", s),
@@ -153,34 +153,34 @@ impl fmt::Display for SeqId {
 /// ```
 pub fn parse_sequence_id(description: &str) -> SeqIdList {
     let patterns: &[(&str, fn(String) -> SeqId)] = &[
-        (r"(?:pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?:[\|:_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
-        (r"\b[A-NR-Z][0-9][A-Z0-9]{3}[0-9](?:-\d+)?\b", |s| SeqId::SwissProt(s)),
-        (r"\bUniRef\d{2,3}_[A-Z0-9]+\b", |s| SeqId::UniRef(s)),
-        (r"\b(NP|XP|WP|YP|XM|XR|NM|NR|NC)_[0-9]+\.\d+\b", |s| SeqId::RefSeq(s)),
-        (r"\bGI:\d+\b", |s| SeqId::NCBIGI(s)),
-        (r"\bENS[TPGR][0-9]{11}\b", |s| SeqId::Ensembl(s)),
-        (r"\b[A-Z0-9]{3,6}_[A-Z0-9]{2,6}\b", |s| SeqId::UniProtID(s)),
-        (r"\b[A-NR-Z0-9]{10}\b", |s| SeqId::TrEmbl(s)),
-        (r"(?i:\[?taxid=)(\d+)",|s| s.split('=').nth(1)
-            .map(|v| SeqId::TaxId(v.to_string()))
-            .unwrap_or_else(|| SeqId::TaxId("INVALID".to_string()))),
-        (r"OX=\d+",|s| s.split('=').nth(1)
-            .map(|v| SeqId::TaxId(v.to_string()))
-            .unwrap_or_else(|| SeqId::TaxId("INVALID".to_string()))),
-        (r"\b[A-Z]{1,2}[0-9]{5,6}(?:\.\d+)?\b", |s| SeqId::GenBank(s)),
+        (r"(?:pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?::[_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
+        (r"\b([A-NR-Z][0-9][A-Z0-9]{3}[0-9](?:-\d+)?)\b", |s| SeqId::SwissProt(s)),
+        (r"\b(UniRef\d{2,3}_[A-Z0-9]+)\b", |s| SeqId::UniRef(s)),
+        (r"\b((?:NP|XP|WP|YP|XM|XR|NM|NR|NC)_[0-9]+\.\d+)\b", |s| SeqId::RefSeq(s)),
+        (r"\bGI:(\d+)\b", |s| SeqId::NCBIGI(s)),
+        (r"\bgi\|(\d+)\b", |s| SeqId::NCBIGI(s)),
+        (r"\b(ENS[TPGR][0-9]{11})\b", |s| SeqId::Ensembl(s)),
+        (r"\b([A-Z0-9]{3,6}_[A-Z0-9]{2,6})\b", |s| SeqId::UniProtID(s)),
+        (r"\b([A-NR-Z0-9]{10})\b", |s| SeqId::TrEmbl(s)),
+        (r"(?i:\[?taxid=(\d+))", |s| SeqId::TaxId(s)),
+        (r"OX=(\d+)", |s| SeqId::TaxId(s)),
+        (r"(?:\b|\|)gb\|([A-Z]{1,3}[0-9]{4,8}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
     ];
 
     let mut found = Vec::new();
     let mut buffer = description.as_bytes().to_vec();
+
     for (pattern, constructor) in patterns {
         let re = Regex::new(pattern).unwrap();
         let desc_view = std::str::from_utf8(&buffer).unwrap();
-        if let Some(m) = re.find(desc_view) {
-            let matched_str = m.as_str().to_string();
-            found.push(constructor(matched_str.clone()));
-            // Mask out the matched portion with whitespace of same length
-            for i in m.start()..m.end() {
-                buffer[i] = b' ';
+        if let Some(caps) = re.captures(desc_view) {
+            if let Some(m) = caps.get(1) {
+                let matched_str = m.as_str().to_string();
+                found.push(constructor(matched_str));
+                // Mask out the matched portion with whitespace of same length
+                for i in m.start()..m.end() {
+                    buffer[i] = b' ';
+                }
             }
         }
     }
@@ -190,6 +190,7 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
     }
 
     found.sort(); // Sorts by priority
+    // eprintln!("Found: {:?}", &found);
     SeqIdList::from(found)
 }
 

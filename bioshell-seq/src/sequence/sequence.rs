@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use std::hash::{Hash, Hasher};
 use crate::errors::SequenceError;
 use crate::msa::MSA;
+use crate::sequence::parse_sequence_id;
 
 #[derive(Default, Clone, Debug, PartialEq)]
 /// Amino acid / nucleic sequence.
@@ -119,7 +120,10 @@ impl Sequence {
     /// let seq = Sequence::from_attrs(header, sequence.to_vec());
     /// assert_eq!("gi|5524211|gb|AAD44166.1|", seq.id());
     /// ```
-    pub fn id(&self) -> &str { self.description.split_whitespace().next().unwrap() }
+    pub fn id(&self) -> String {
+        eprintln!("{:?}", parse_sequence_id(&self.description));
+        parse_sequence_id(&self.description)[0].to_string()
+    }
 
     /// Return the reference of the sequence itself
     pub fn seq(&self) -> &Vec<u8> { &self.seq }
