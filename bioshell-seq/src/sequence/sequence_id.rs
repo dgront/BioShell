@@ -108,12 +108,12 @@ impl fmt::Display for SeqId {
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SeqId::PDB(s) => write!(f, "PDB|{}", s),
+            SeqId::PDB(s) => write!(f, "pdb|{}", s),
             SeqId::SwissProt(s) => write!(f, "sp|{}", s),
             SeqId::UniProtID(s) => write!(f, "UniProtID|{}", s),
             SeqId::UniRef(s) => write!(f, "UniRef|{}", s),
             SeqId::RefSeq(s) => write!(f, "RefSeq|{}", s),
-            SeqId::GenBank(s) => write!(f, "GenBank|{}", s),
+            SeqId::GenBank(s) => write!(f, "gb|{}", s),
             SeqId::Ensembl(s) => write!(f, "Ensembl|{}", s),
             SeqId::NCBIGI(s) => write!(f, "gi|{}", s),
             SeqId::TrEmbl(s) => write!(f, "tr|{}", s),
@@ -217,7 +217,7 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
 ///
 /// // Format as a standard header string
 /// let mut header = ids.to_string();
-/// assert_eq!(header, "PDB|1HHP:A|sp|Q9NQX5|RefSeq|XP_123456.1");
+/// assert_eq!(header, "pdb|1HHP:A|sp|Q9NQX5|RefSeq|XP_123456.1");
 ///
 /// println!("Formatted Header: {}", ids); // uses Display
 /// ```
@@ -254,7 +254,7 @@ impl SeqIdList {
 
         let name = self.0.iter().flat_map(|id| {
             let (label, value) = match id {
-                SeqId::PDB(s) => ("PDB", s),
+                SeqId::PDB(s) => ("pdb", s),
                 SeqId::SwissProt(s) => ("sp", s),
                 SeqId::UniProtID(s) => ("UniProtID", s),
                 SeqId::UniRef(s) => ("UniRef", s),
@@ -323,7 +323,7 @@ impl fmt::Display for SeqIdList {
     /// let mut ids = SeqIdList::from(ids);
     /// ids.sort();
     /// let header = ids.to_string();
-    /// assert_eq!(header, "PDB|1HHP:A|sp|Q9NQX5|RefSeq|XP_001234567.1");
+    /// assert_eq!(header, "pdb|1HHP:A|sp|Q9NQX5|RefSeq|XP_001234567.1");
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, id) in self.0.iter().enumerate() {

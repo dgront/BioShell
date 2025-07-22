@@ -202,7 +202,7 @@ pub fn main() -> Result<(), SequenceError> {
         // ---------- keep only requested sequences
         if if_retrieve {
             let id = sequence.id();
-            if !requested_ids.contains(id) { continue }
+            if !requested_ids.contains(&id) { continue }
         }
         // ---------- keep only sequences found in the input query fasta
         if if_fasta_retrieve {

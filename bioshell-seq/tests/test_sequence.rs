@@ -10,7 +10,7 @@ fn test_sequence() {
     let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
     let seq = Sequence::from_attrs(header, sequence.to_vec());
-    assert_eq!("gi|5524211|gb|AAD44166.1|", seq.id());
+    assert_eq!("gb|AAD44166.1", seq.id());
 }
 
 #[test]

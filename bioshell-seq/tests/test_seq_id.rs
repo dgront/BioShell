@@ -13,7 +13,7 @@ mod tests {
         let mut ids = SeqIdList::from(ids);
         ids.sort();
         let header = ids.to_string();
-        assert_eq!(header, "PDB|1HHP:A|sp|Q9NQX5|RefSeq|XP_001234567.1");
+        assert_eq!(header, "pdb|1HHP:A|sp|Q9NQX5|RefSeq|XP_001234567.1");
     }
 
     #[test]
