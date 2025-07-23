@@ -37,7 +37,7 @@ impl PySequence {
 
     /// The sequence ID (extracted from the description).
     #[getter]
-    pub fn id(&self) -> &str {
+    pub fn id(&self) -> String {
         self.inner.id()
     }
 
