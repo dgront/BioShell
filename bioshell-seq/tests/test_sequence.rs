@@ -10,7 +10,7 @@ fn test_sequence() {
     let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
     let seq = Sequence::from_attrs(header, sequence.to_vec());
-    assert_eq!("gb|AAD44166.1", seq.id());
+    assert_eq!("gi|5524211|gb|AAD44166.1|", seq.id());
 }
 
 #[test]
@@ -37,6 +37,18 @@ fn create_sequence() {
         write!(actual, "{}", seq).unwrap();
         assert_eq!(actual, expected_out)
     }
+}
+
+#[test]
+fn test_species() {
+    let s1 = Sequence::from_str("sp|P12345|PROT_HUMAN OS=Homo sapiens OX=9606 GN=ABC1", "ACDE");
+    assert_eq!(s1.species(),Some("Homo sapiens"));
+
+    let s2 = Sequence::from_str("gb|P12345| [Elephas maximus]", "ACDE");
+    assert_eq!(s2.species(), Some("Elephas maximus"));
+
+    let s3 = Sequence::from_str("something with no taxon info", "ACDE");
+    assert_eq!(s3.species(), None);
 }
 
 #[allow(non_upper_case_globals)]

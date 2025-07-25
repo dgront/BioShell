@@ -4,6 +4,7 @@ use std::fmt;
 use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
 use std::hash::{Hash, Hasher};
+use regex::Regex;
 use crate::errors::SequenceError;
 use crate::msa::MSA;
 use crate::sequence::parse_sequence_id;
@@ -105,11 +106,13 @@ impl Sequence {
         self.description[0..len].as_ref()
     }
 
-    /// Return a string slice holding the ID of this sequence
+    /// Return a String slice holding the ID of this sequence
     ///
     /// According to the NCBI standard, the FASTA header line should provide the unique identifier.
     /// The ID should be no longer than 25 characters and cannot contain any spaces; its fields should
-    /// be separated by vertical bar (`|`) characters
+    /// be separated by vertical bar (`|`) characters.
+    ///
+    /// Such an ID string as ``gi|5524211|gb|AAD44166.1|`` can be parsed by [`parse_sequence_id()`](crate::parse_sequence_id) function.
     ///
     /// # Example
     /// ```rust
@@ -118,11 +121,26 @@ impl Sequence {
     /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     /// let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
     /// let seq = Sequence::from_attrs(header, sequence.to_vec());
-    /// assert_eq!("gb|AAD44166.1", seq.id());
+    /// assert_eq!("gi|5524211|gb|AAD44166.1|", seq.id());
     /// ```
-    pub fn id(&self) -> String {
-        eprintln!("{:?}", parse_sequence_id(&self.description));
-        parse_sequence_id(&self.description)[0].to_string()
+    pub fn id(&self) -> &str {
+        self.description.split_whitespace().next().unwrap()
+    }
+
+    /// Attempts to extract a species name from the sequence's description.
+    ///
+    /// First looks for ``OS=Species name`` (UniProt format), then for ``[Species name]`` (NCBI format).
+    pub fn species(&self) -> Option<&str> {
+        // Step 1: Try OS=... pattern
+        let re = Regex::new(r"OS=(.+?)(?:\s[A-Z]{2,}=|$)").unwrap();
+        if let Some(cap) = re.captures(&self.description) {
+            return cap.get(1).map(|m| m.as_str().trim());
+        }
+
+        // Step 2: Try [ ... ] pattern
+        let start = self.description.find('[')?;
+        let end = self.description[start + 1..].find(']')?;
+        Some(&self.description[start + 1..start + 1 + end])
     }
 
     /// Return the reference of the sequence itself
