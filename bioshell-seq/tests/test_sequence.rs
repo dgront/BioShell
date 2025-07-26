@@ -49,6 +49,9 @@ fn test_species() {
 
     let s3 = Sequence::from_str("something with no taxon info", "ACDE");
     assert_eq!(s3.species(), None);
+
+    let s4 = Sequence::from_str("some text [other text [nest [nest 2]]] [Miscanthus streak virus - [91]]", "ACDE");
+    assert_eq!(s4.species(), Some("Miscanthus streak virus - [91]"));
 }
 
 #[allow(non_upper_case_globals)]

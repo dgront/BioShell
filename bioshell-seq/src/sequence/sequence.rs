@@ -134,6 +134,15 @@ impl Sequence {
     /// Attempts to extract a species name from the sequence's description.
     ///
     /// First looks for ``OS=Species name`` (UniProt format), then for ``[Species name]`` (NCBI format).
+    /// When parting the NCBI entry, this method extracts the content of the last outer square bracket, e.g.:
+    ///```
+    /// use bioshell_seq::sequence::Sequence;
+    /// let seq = Sequence::from_str("NP_569145.1 unnamed protein product [Miscanthus streak virus - [91]]", "ACDEF");
+    /// assert_eq!(seq.species(), Some("Miscanthus streak virus - [91]"));
+    /// let seq = Sequence::from_str("YP_874065.1 UDP-3-O-[3-hydroxy-myristory] glucosamine N-acyltransferase [Thermus phage phiYS40]", "ACDEF");
+    /// assert_eq!(seq.species(), Some("Thermus phage phiYS40"));
+    ///
+    ///```
     pub fn species(&self) -> Option<&str> {
         // Step 1: Try OS=... pattern
         if let Some(cap) = SPECIES_REGEX.captures(&self.description) {
@@ -141,9 +150,27 @@ impl Sequence {
         }
 
         // Step 2: Try [ ... ] pattern
-        let start = self.description.rfind('[')?;
-        let end = self.description[start + 1..].find(']')?;
-        Some(&self.description[start + 1..start + 1 + end])
+        let mut result = None;
+        let mut depth = 0;
+        let mut start_pos = 0;
+
+        for (i, c) in self.description.char_indices() {
+            match c {
+                '[' => {
+                    if depth == 0 { start_pos = i; }
+                    depth += 1;
+                }
+                ']' => {
+                    if depth > 0 {
+                        depth -= 1;
+                        if depth == 0 { result = Some((start_pos, i)); }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        result.map(|(start, end)| &self.description[start+1..end])
     }
 
     /// Return the reference of the sequence itself
