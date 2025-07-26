@@ -549,7 +549,7 @@ pub fn sanitize_filename<S: AsRef<str>>(name: S) -> String {
         .chars()
         .filter_map(|c| match c {
             // Disallowed on Windows and/or POSIX systems
-            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => Some('_'),
+            '/' | '\\' | ':' | '*' | ' ' |'?' | '"' | '<' | '>' | '|' => Some('_'),
             // Control characters (ASCII 0–31) are unsafe
             c if c.is_control() => None,
             // Otherwise safe

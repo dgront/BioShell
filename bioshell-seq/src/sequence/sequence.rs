@@ -4,10 +4,14 @@ use std::fmt;
 use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
 use std::hash::{Hash, Hasher};
+use once_cell::sync::Lazy;
 use regex::Regex;
 use crate::errors::SequenceError;
 use crate::msa::MSA;
-use crate::sequence::parse_sequence_id;
+
+static SPECIES_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"OS=(.+?)(?:\s[A-Z]{2,}=|$)").expect("Invalid regex for species name extraction!")
+});
 
 #[derive(Default, Clone, Debug, PartialEq)]
 /// Amino acid / nucleic sequence.
@@ -132,13 +136,12 @@ impl Sequence {
     /// First looks for ``OS=Species name`` (UniProt format), then for ``[Species name]`` (NCBI format).
     pub fn species(&self) -> Option<&str> {
         // Step 1: Try OS=... pattern
-        let re = Regex::new(r"OS=(.+?)(?:\s[A-Z]{2,}=|$)").unwrap();
-        if let Some(cap) = re.captures(&self.description) {
+        if let Some(cap) = SPECIES_REGEX.captures(&self.description) {
             return cap.get(1).map(|m| m.as_str().trim());
         }
 
         // Step 2: Try [ ... ] pattern
-        let start = self.description.find('[')?;
+        let start = self.description.rfind('[')?;
         let end = self.description[start + 1..].find(']')?;
         Some(&self.description[start + 1..start + 1 + end])
     }
