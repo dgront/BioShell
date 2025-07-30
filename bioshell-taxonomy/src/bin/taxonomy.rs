@@ -10,15 +10,14 @@ use env_logger;
 use bioshell_io::{markdown_to_text, open_file};
 use bioshell_seq::sequence::{FastaIterator, Sequence, SequenceReporter, WriteFasta};
 
-const TAXONOMY_EXAMPLES: &str = include_str!("../documentation/taxonomy.md");
+const TAXONOMY_EXAMPLES: &str = include_str!("../documentation/taxonomy_app.md");
 fn create_cookbook() -> String { format!("{}{}", "\x1B[4mCookbook:\x1B[0m\n", markdown_to_text(TAXONOMY_EXAMPLES)) }
 
 
-/// Provides taxonomy information based on  NCBI taxonomy data loaded from a local taxdump.tar.gz file
 #[derive(Parser, Debug)]
 #[command(name = "taxonomy")]
 #[clap(author, version, about, long_about = None, arg_required_else_help = true, after_long_help = create_cookbook())]
-/// Provides taxonomy information
+/// Provides taxonomy information based on  NCBI taxonomy data loaded from a local taxdump.tar.gz file
 /// say taxonomy -h to see options
 struct Cli {
     /// species name to lookup
@@ -76,6 +75,10 @@ struct Cli {
     /// print the rank for each requested each taxid / name
     #[clap(long)]
     rank: bool,
+
+    /// print the results as JSON rather than as a free text
+    #[clap(long)]
+    json: bool,
 
     /// be more verbose and log program actions on the screen
     #[clap(short, long, short='v')]
@@ -143,7 +146,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     for n in &nodes {
-        print!("{} {} ", n.tax_id, n.name);
+        if args.json {
+            if !args.lineage {
+                println!("{}", serde_json::to_string_pretty(&n).expect("Can't serialize a Node struct!"));
+            }
+        } else {
+            print!("{} {} ", n.tax_id, n.name);
+        }
         if args.rank { print!("{:?} ", n.rank); }
         if args.kingdom {
             if let Some(kingdom) = taxonomy.rank(n.tax_id, Rank::Kingdom) { print!("{} ", kingdom.name); }
@@ -151,18 +160,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if args.domain {
             if let Some(domain) = taxonomy.rank(n.tax_id, Rank::Superkingdom) { print!("{} ", domain.name); }
         }
-        print!(": ");
+        if !args.json {
+            print!(": ");
 
-        for synonym in taxonomy.names(n.tax_id) {
-            if synonym != &n.name { print!("{}; ", synonym); }
+            for synonym in taxonomy.names(n.tax_id) {
+                if synonym != &n.name { print!("{}; ", synonym); }
+            }
+            println!();
         }
-        println!();
-
         if args.lineage {
             let lineage = taxonomy.lineage(n.tax_id);
-            println!("Lineage:");
-            for node in lineage.iter().filter(|n| n.rank != Rank::Unclassified && n.rank != Rank::Other) {
-                println!("  {} ({:?})", node.name, node.rank);
+            if args.json {
+                println!("{}",serde_json::to_string_pretty(&lineage).expect("Can't serialize a Node struct!"));
+            } else {
+                println!("Lineage:");
+                for node in lineage.iter().filter(|n| n.rank != Rank::Unclassified && n.rank != Rank::Other) {
+                    println!("  {} ({:?})", node.name, node.rank);
+                }
             }
         }
         if args.lineage_table {

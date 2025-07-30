@@ -79,4 +79,24 @@ mod tests {
         }
         Ok(())
     }
+
+    #[test]
+    fn test_serialize() -> Result<(), Box<dyn Error>> {
+        let path = PathBuf::from(TEST_TAXDUMP_FILE);
+        let taxonomy = Taxonomy::load_from_tar_gz(&path)
+            .expect("Failed to load taxonomy from taxdump.tar.gz");
+
+        let ecoli_taxid = taxonomy.taxid("Escherichia coli").expect("E. coli taxid not found");
+        let node = taxonomy.node(ecoli_taxid);
+        let json = serde_json::to_string_pretty(&node).expect("Can't serialize a Node struct!");
+
+        let expected = r#"{
+  "tax_id": 562,
+  "parent_tax_id": 561,
+  "rank": "Species",
+  "name": "Escherichia coli"
+}"#;
+        assert_eq!(&json, expected);
+        Ok(())
+    }
 }

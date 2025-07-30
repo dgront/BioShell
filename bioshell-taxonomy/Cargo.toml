@@ -27,7 +27,11 @@ reqwest = { version = "0.12.15", features = ["blocking"] }
 futures-util = "0.3.31"
 
 bioshell-io  = { path = "../bioshell-io" } 	# for markdown_to_text()
-bioshell-seq  = { path = "../bioshell-seq" } 	# for reading FASTA files
+bioshell-seq  = { path = "../bioshell-seq" }
+
+# ---------- Serialization to JSON
+serde = { version = "1.0.204", features = ["derive"] }
+serde_json = "1.0.141"    # for reading FASTA files
 
 [build-dependencies]
 # ---------- for git md5sum and compilation time
