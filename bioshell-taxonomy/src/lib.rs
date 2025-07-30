@@ -12,6 +12,11 @@
 //! - List all names (including synonyms) for a given taxid.
 //! - Search nodes by rank (e.g., all kingdoms).
 //!
+//! ## Command line application
+//! Basic functionality of the library has been provided as a command line application ``taxonomy``
+//! that can be found in ``target/release/`` folder once the project is built. Manual for this app
+//! can be found in [this documentation](crate::documentation#taxonomy_app)
+//!
 //! ## Examples
 //!
 //! ```rust
@@ -57,6 +62,7 @@
 //!
 //! ## License
 //! Licensed under Apache-2.0
+pub mod documentation;
 
 mod taxonomy;
 pub use taxonomy::*;

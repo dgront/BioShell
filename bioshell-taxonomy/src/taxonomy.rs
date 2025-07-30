@@ -8,6 +8,7 @@ use flate2::read::GzDecoder;
 use log::{debug, info};
 use tar::Archive;
 use reqwest::blocking::get;
+use serde::Serialize;
 use crate::Rank;
 
 /// A node of a taxonomy tree.
@@ -30,7 +31,7 @@ use crate::Rank;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Node {
     /// Taxonomy-wide unique identifier
     pub tax_id: u32,
