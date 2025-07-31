@@ -1,4 +1,5 @@
 use serde::Serialize;
+use std::fmt;
 
 /// Represents the main taxonomic ranks in a biological classification system.
 ///
@@ -43,6 +44,24 @@ impl Rank {
             "domain" => Rank::Superkingdom,
             _ => Rank::Other,
         }
+    }
+}
+
+impl fmt::Display for Rank {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Rank::Unclassified => "Unclassified",
+            Rank::Species => "Species",
+            Rank::Genus => "Genus",
+            Rank::Family => "Family",
+            Rank::Order => "Order",
+            Rank::Class => "Class",
+            Rank::Phylum => "Phylum",
+            Rank::Kingdom => "Kingdom",
+            Rank::Superkingdom => "Superkingdom",
+            Rank::Other => "Other",
+        };
+        write!(f, "{}", s)
     }
 }
 
