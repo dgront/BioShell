@@ -1,4 +1,6 @@
-from bioshell.taxonomy import Taxonomy
+from bioshell.taxonomy import Taxonomy, Rank
+
+assert Rank.from_str("Genus") < Rank.from_str("Family")
 
 taxonomy = Taxonomy.load_from_tar_gz("test_files/test_taxdump.tar.gz")
 human_taxid = taxonomy.taxid("Homo sapiens")
@@ -10,6 +12,7 @@ assert str(human_order.rank) == "Order"
 
 human_family = taxonomy.rank(human_taxid, "Family")
 assert human_family.name == "Hominidae"
+assert human_family.rank == Rank.from_str("Family")
 assert str(human_family.rank) == "Family"
 
 lineage = taxonomy.lineage(human_taxid)

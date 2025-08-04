@@ -2,7 +2,7 @@ use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
 use pyo3::types::{PyAny, PyAnyMethods};
 
-use bioshell_taxonomy::{Node, Taxonomy, Rank};
+use bioshell_taxonomy::{Node, Taxonomy, Rank, TaxonomyMatcher};
 
 use crate::taxonomy::PyRank;
 
@@ -59,15 +59,18 @@ impl From<&Node> for PyNode {
 
 /// Python wrapper for the `Taxonomy` struct.
 #[pyclass(name = "Taxonomy")]
-pub struct PyTaxonomy(pub(crate) Taxonomy);
+pub struct PyTaxonomy{
+    pub(crate) taxonomy: Taxonomy,
+}
 
 #[pymethods]
 impl PyTaxonomy {
     /// Load taxonomy from a `.tar.gz` archive.
     #[staticmethod]
     pub fn load_from_tar_gz(path: &str) -> PyResult<Self> {
+        // let matcher = OnceCell::new();
         Taxonomy::load_from_tar_gz(path)
-            .map(PyTaxonomy)
+            .map(|val| PyTaxonomy { taxonomy: val,  })
             .map_err(|e| PyValueError::new_err(format!("Failed to load taxonomy: {}", e)))
     }
 
@@ -80,27 +83,27 @@ impl PyTaxonomy {
 
     /// Return a node by its taxid.
     pub fn node(&self, taxid: u32) -> Option<PyNode> {
-        self.0.node(taxid).map(PyNode::from)
+        self.taxonomy.node(taxid).map(PyNode::from)
     }
 
     /// Return all nodes as a list.
     pub fn nodes(&self) -> Vec<PyNode> {
-        self.0.nodes().map(PyNode::from).collect()
+        self.taxonomy.nodes().map(PyNode::from).collect()
     }
 
     /// Return all names associated with a taxid.
     pub fn names(&self, taxid: u32) -> Vec<String> {
-        self.0.names(taxid).cloned().collect()
+        self.taxonomy.names(taxid).cloned().collect()
     }
 
     /// Return the full lineage (list of nodes) for a taxid.
     pub fn lineage(&self, taxid: u32) -> Vec<PyNode> {
-        self.0.lineage(taxid).into_iter().map(PyNode::from).collect()
+        self.taxonomy.lineage(taxid).into_iter().map(PyNode::from).collect()
     }
 
     /// Look up a taxid by scientific name.
     pub fn taxid(&self, name: &str) -> Option<u32> {
-        self.0.taxid(name)
+        self.taxonomy.taxid(name)
     }
 
     // /// Return the node in a lineage with the given rank, if found.
@@ -111,9 +114,9 @@ impl PyTaxonomy {
     /// Return the node in the lineage with the given rank.
     pub fn rank<'py>(&self, taxid: u32, rank: &Bound<'py, PyAny>) -> PyResult<Option<PyNode>> {
         if let Ok(py_rank) = rank.extract::<PyRef<PyRank>>() {
-            Ok(self.0.rank(taxid, py_rank.inner).map(PyNode::from))
+            Ok(self.taxonomy.rank(taxid, py_rank.inner).map(PyNode::from))
         } else if let Ok(s) = rank.extract::<&str>() {
-            Ok(self.0.rank(taxid, Rank::from_str(s)).map(PyNode::from))
+            Ok(self.taxonomy.rank(taxid, Rank::from_str(s)).map(PyNode::from))
         } else {
             Err(PyValueError::new_err("Expected a Rank or str as the second argument"))
         }

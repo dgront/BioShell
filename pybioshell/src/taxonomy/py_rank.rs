@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
+use pyo3::basic::CompareOp;
 
 use bioshell_taxonomy::Rank;
 
@@ -30,6 +31,24 @@ impl PyRank {
 
     fn __repr__(&self) -> String {
         format!("Rank::{}", self.inner.to_string())
+    }
+
+    fn __hash__(&self) -> u64 {
+        self.inner as u64
+    }
+
+    fn __richcmp__(&self, other: PyRef<PyRank>, op: CompareOp) -> Py<PyAny> {
+        Python::with_gil(|py| {
+            let result = match op {
+                CompareOp::Eq => self.inner == other.inner,
+                CompareOp::Ne => self.inner != other.inner,
+                CompareOp::Lt => (self.inner as u8) < (other.inner as u8),
+                CompareOp::Le => (self.inner as u8) <= (other.inner as u8),
+                CompareOp::Gt => (self.inner as u8) > (other.inner as u8),
+                CompareOp::Ge => (self.inner as u8) >= (other.inner as u8),
+            };
+            result.into_py(py)
+        })
     }
 }
 
