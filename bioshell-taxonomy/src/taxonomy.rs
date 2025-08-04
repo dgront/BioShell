@@ -9,7 +9,7 @@ use log::{debug, info};
 use tar::Archive;
 use reqwest::blocking::get;
 use serde::Serialize;
-use crate::Rank;
+use crate::{Rank};
 
 /// A node of a taxonomy tree.
 ///
