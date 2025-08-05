@@ -53,7 +53,7 @@ mod tests {
         let path = PathBuf::from(TEST_TAXDUMP_FILE);
         let taxonomy = Taxonomy::load_from_tar_gz(&path)
             .expect("Failed to load taxonomy");
-        let matcher = TaxonomyMatcher::new(&taxonomy)?;
+        let matcher = TaxonomyMatcher::from_taxonomy(taxonomy)?;
 
         for name in ["Mus musculus", "mouse", "house mouse"] {
             let taxid = matcher.find(name);
@@ -62,21 +62,24 @@ mod tests {
         Ok(())
     }
 
-    // #[test]
+    #[test]
     fn list_kingdoms() -> Result<(), Box<dyn Error>> {
-        let path = PathBuf::from("taxdump.tar.gz");
+        // let path = PathBuf::from("taxdump.tar.gz");
+        let path = PathBuf::from(TEST_TAXDUMP_FILE);
         let taxonomy = Taxonomy::load_from_tar_gz(&path)
             .expect("Failed to load taxonomy from taxdump.tar.gz");
 
+        let mut kingdoms = vec![];
         for n in taxonomy.nodes().filter(|ni|ni.rank==Rank::Kingdom) {
             let name = &n.name;
-            let taxid = n.tax_id;
-            print!("{} {} : ",n.tax_id, &name);
-            for synonym in taxonomy.names(taxid) {
-                if synonym != name { print!("{}; ", synonym); }
-            }
-            println!()
+            kingdoms.push(n.tax_id);
+            // print!("{} {} : ",n.tax_id, &name);
+            // for synonym in taxonomy.names(n.tax_id) {
+            //     if synonym != name { print!("{}; ", synonym); }
+            // }
+            // println!()
         }
+        assert_eq!(kingdoms.len(), 2);
         Ok(())
     }
 

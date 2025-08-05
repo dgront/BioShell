@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::sync::Arc;
 use std::time::Instant;
 use aho_corasick::{AhoCorasick};
 use log::{debug, info};
@@ -13,30 +14,32 @@ use crate::{Node, Taxonomy};
 /// use bioshell_taxonomy::Taxonomy;
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<dyn Error>> {
-/// # use bioshell_taxonomy::TaxonomyMatcher;
+/// # use bioshell_taxonomy::{Rank, TaxonomyMatcher};
 /// let path = "./tests/test_files/test_taxdump.tar.gz";
 /// let taxonomy = Taxonomy::load_from_tar_gz(&path)?;
-/// let matcher = TaxonomyMatcher::new(&taxonomy)?;
+/// let matcher = TaxonomyMatcher::from_taxonomy(taxonomy)?;
 ///
 /// let is_it_mouse = matcher.find("Mus musculus");
 /// assert!(is_it_mouse.is_some());
 /// assert_eq!(is_it_mouse.unwrap(), 10090);                // 10090 is the taxid for mouse
 ///
 /// let is_it_mouse = matcher.find("house mouse");          // works also with common names, if listed by NCBI
-/// let mouse_node = taxonomy.node(is_it_mouse.unwrap());
+/// let borrowed_taxonomy = matcher.taxonomy();             // The original taxonomy has been consumed, but we can borrow it again
+/// let mouse_node = borrowed_taxonomy.node(is_it_mouse.unwrap());
+/// assert_eq!(mouse_node.unwrap().rank, Rank::Species);
 /// # Ok(())
 /// # }
 /// ```
-pub struct TaxonomyMatcher<'a> {
-    taxonomy: &'a Taxonomy,
+pub struct TaxonomyMatcher {
+    taxonomy: Arc<Taxonomy>,
     matcher: AhoCorasick,
     patterns: Vec<String>, // store names for mapping back
 }
 
 
-impl<'a> TaxonomyMatcher<'a> {
+impl TaxonomyMatcher {
     /// Creates a new TaxonomyMatcher object based on a given taxonomy
-    pub fn new(taxonomy: &'a Taxonomy) -> Result<Self, Box<dyn Error>> {
+    pub fn from_taxonomy(taxonomy: Taxonomy)-> Result<Self, Box<dyn Error>> {
 
         let start = Instant::now();
         let patterns: Vec<String> = taxonomy.name_to_taxid.keys()
@@ -44,7 +47,8 @@ impl<'a> TaxonomyMatcher<'a> {
             .collect();
         let matcher = AhoCorasick::new(&patterns)?;
         info!("Taxonomy matcher constructed in {:.2?}", start.elapsed());
-        Ok(TaxonomyMatcher { taxonomy, matcher, patterns })
+        let arc = Arc::new(taxonomy);
+        Ok(TaxonomyMatcher { taxonomy: Arc::clone(&arc), matcher, patterns })
     }
 
     /// Finds a taxid by detecting a species name in a given string.
@@ -56,7 +60,7 @@ impl<'a> TaxonomyMatcher<'a> {
     /// # let path = "./tests/test_files/test_taxdump.tar.gz";
     /// let taxonomy = Taxonomy::load_from_tar_gz(&path)
     ///             .expect("Failed to load taxonomy");
-    /// let matcher = TaxonomyMatcher::new(&taxonomy)?;
+    /// let matcher = TaxonomyMatcher::from_taxonomy(taxonomy)?;
     /// let is_it_mouse = matcher.find("house mouse");
     /// assert!(is_it_mouse.is_some());
     /// # Ok(())
@@ -85,6 +89,9 @@ impl<'a> TaxonomyMatcher<'a> {
         }
         None
     }
+
+    /// Access the [`Taxonomy`] object used by this [`TaxonomyMatcher`]
+    pub fn taxonomy(&self) -> &Taxonomy { &self.taxonomy }
 
     fn replace_punctuation_with_spaces(text: &str) -> String {
         let ret = text.chars()
