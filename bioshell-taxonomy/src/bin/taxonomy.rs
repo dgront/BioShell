@@ -201,7 +201,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let matcher: TaxonomyMatcher = TaxonomyMatcher::new(&taxonomy)?;
+    let matcher: TaxonomyMatcher = TaxonomyMatcher::from_taxonomy(taxonomy)?;
+    let taxonomy = matcher.taxonomy();
 
     if let Some(desc) = args.detect {
         let taxid = matcher.find(&desc);
