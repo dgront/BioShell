@@ -2,6 +2,9 @@ use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
 use pyo3::types::{PyAny, PyAnyMethods};
 
+use std::sync::Arc;
+use once_cell::sync::OnceCell;
+
 use bioshell_taxonomy::{Node, Taxonomy, Rank, TaxonomyMatcher};
 
 use crate::taxonomy::PyRank;
@@ -59,8 +62,9 @@ impl From<&Node> for PyNode {
 
 /// Python wrapper for the `Taxonomy` struct.
 #[pyclass(name = "Taxonomy")]
-pub struct PyTaxonomy{
-    pub(crate) taxonomy: Taxonomy,
+pub struct PyTaxonomy {
+    pub(crate) taxonomy: Arc<Taxonomy>,
+    matcher: OnceCell<TaxonomyMatcher>,
 }
 
 #[pymethods]
@@ -68,9 +72,12 @@ impl PyTaxonomy {
     /// Load taxonomy from a `.tar.gz` archive.
     #[staticmethod]
     pub fn load_from_tar_gz(path: &str) -> PyResult<Self> {
-        // let matcher = OnceCell::new();
         Taxonomy::load_from_tar_gz(path)
-            .map(|val| PyTaxonomy { taxonomy: val,  })
+            .map(Arc::new)
+            .map(|taxonomy| Self {
+                taxonomy,
+                matcher: OnceCell::new(),
+            })
             .map_err(|e| PyValueError::new_err(format!("Failed to load taxonomy: {}", e)))
     }
 
@@ -106,11 +113,6 @@ impl PyTaxonomy {
         self.taxonomy.taxid(name)
     }
 
-    // /// Return the node in a lineage with the given rank, if found.
-    // pub fn rank(&self, taxid: u32, rank: &PyRank) -> Option<PyNode> {
-    //     self.0.rank(taxid, rank.inner).map(PyNode::from)
-    // }
-
     /// Return the node in the lineage with the given rank.
     pub fn rank<'py>(&self, taxid: u32, rank: &Bound<'py, PyAny>) -> PyResult<Option<PyNode>> {
         if let Ok(py_rank) = rank.extract::<PyRef<PyRank>>() {
@@ -119,6 +121,23 @@ impl PyTaxonomy {
             Ok(self.taxonomy.rank(taxid, Rank::from_str(s)).map(PyNode::from))
         } else {
             Err(PyValueError::new_err("Expected a Rank or str as the second argument"))
+        }
+    }
+
+    /// Find a species information in a given string.
+    ///
+    pub fn find(&self, description: &str) -> Option<u32> {
+        if let Some(matcher_ref) = self.matcher.get() {
+            matcher_ref.find(description)
+        } else {
+            let matcher = TaxonomyMatcher::from_arc(Arc::clone(&self.taxonomy))
+                .unwrap_or_else(|e| panic!("Failed to initialize matcher: {}", e));
+
+            self.matcher
+                .set(matcher)
+                .unwrap_or_else(|_| panic!("Matcher was already initialized unexpectedly"));
+
+            self.matcher.get().unwrap().find(description)
         }
     }
 }

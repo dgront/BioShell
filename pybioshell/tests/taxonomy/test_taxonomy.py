@@ -19,3 +19,6 @@ lineage = taxonomy.lineage(human_taxid)
 assert str(lineage[0].rank) == "Other"
 assert str(lineage[-1].rank) == "Species"
 assert len(lineage) == 32
+
+found_mouse = taxonomy.find("> blah blah Mus musculus")
+assert found_mouse == 10090
