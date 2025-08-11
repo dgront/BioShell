@@ -41,14 +41,20 @@ impl TaxonomyMatcher {
     /// Creates a new TaxonomyMatcher object based on a given taxonomy
     pub fn from_taxonomy(taxonomy: Taxonomy)-> Result<Self, Box<dyn Error>> {
 
+        let arc = Arc::new(taxonomy);
+        TaxonomyMatcher::from_arc(arc)
+    }
+
+    pub fn from_arc(taxonomy_arc: Arc<Taxonomy>)-> Result<Self, Box<dyn Error>> {
+        let taxonomy = taxonomy_arc.as_ref();
         let start = Instant::now();
         let patterns: Vec<String> = taxonomy.name_to_taxid.keys()
             .cloned().map(|s|  format!(" {} ", s))
             .collect();
         let matcher = AhoCorasick::new(&patterns)?;
         info!("Taxonomy matcher constructed in {:.2?}", start.elapsed());
-        let arc = Arc::new(taxonomy);
-        Ok(TaxonomyMatcher { taxonomy: Arc::clone(&arc), matcher, patterns })
+        Ok(TaxonomyMatcher { taxonomy: Arc::clone(&taxonomy_arc), matcher, patterns })
+
     }
 
     /// Finds a taxid by detecting a species name in a given string.
