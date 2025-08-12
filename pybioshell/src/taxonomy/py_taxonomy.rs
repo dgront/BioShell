@@ -18,29 +18,17 @@ impl PyNode {
     #[getter]
     fn tax_id(&self) -> u32 { self.0.tax_id }
 
-    #[setter]
-    fn set_tax_id(&mut self, value: u32) { self.0.tax_id = value; }
-
     /// Parent tax_id in the taxonomy.
     #[getter]
     fn parent_tax_id(&self) -> u32 { self.0.parent_tax_id }
-
-    #[setter]
-    fn set_parent_tax_id(&mut self, value: u32) { self.0.parent_tax_id = value; }
 
     /// Scientific name.
     #[getter]
     fn name(&self) -> &str { &self.0.name }
 
-    #[setter]
-    fn set_name(&mut self, value: String) { self.0.name = value; }
-
     /// Taxonomic rank.
     #[getter]
     fn rank(&self) -> PyRank { PyRank { inner: self.0.rank } }
-
-    #[setter]
-    fn set_rank(&mut self, py_rank: PyRank) { self.0.rank = py_rank.inner; }
 
     fn __repr__(&self) -> String {
         format!(
