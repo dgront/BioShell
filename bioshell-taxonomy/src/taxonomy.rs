@@ -199,6 +199,44 @@ impl Taxonomy {
         None
     }
 
+    /// Provide taxonomic classification for a given taxid.
+    ///
+    /// This method returns a list of [`Node`]s that correspond to the particular levels of taxonomy.
+    /// Specifically, the returned list contains nine [`Node`]s (which may be `None`) that correspond
+    /// to the nine taxonomic ranks listed [here](Rank), from [`Rank::Species`] to [`Rank::Superkingdom`].
+    ///
+    ///
+    /// # Examples
+    /// ```
+    /// use bioshell_taxonomy::{Taxonomy, Rank};
+    /// # use std::error::Error;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # let path = "./tests/test_files/test_taxdump.tar.gz";
+    /// let taxonomy = Taxonomy::load_from_tar_gz(&path)?;
+    /// let ranks = taxonomy.classification(9606);
+    /// let order = ranks[3].unwrap();
+    /// assert_eq!(order.rank, Rank::Order);
+    /// assert_eq!(order.name, "Primates");
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn classification(&self, tax_id: u32) -> Vec<Option<&Node>> {
+        let mut current = self.taxid_to_index.get(&tax_id).cloned();
+        let mut output: Vec<Option<&Node>> = vec![None;8];
+        while let Some(idx) = current {
+            let node = &self.nodes[idx];
+            let rank_idx = node.rank as u8;
+            if rank_idx >=1 && rank_idx <= 8 {
+                output[(rank_idx-1) as usize] = Some(node);
+            }
+            if node.tax_id == node.parent_tax_id {
+                break; // reached root
+            }
+            current = self.taxid_to_index.get(&node.parent_tax_id).cloned();
+        }
+        return output;
+    }
+
     /// Create the taxonomy from a given NCBI taxonomy dump.
     ///
     /// The taxonomy data should be downloaded from NCBI website. Don't unpack the file; this method loads the whole archive.

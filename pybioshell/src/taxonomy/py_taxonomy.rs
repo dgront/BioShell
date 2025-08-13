@@ -112,6 +112,20 @@ impl PyTaxonomy {
         }
     }
 
+    pub fn classification(&self, tax_id: u32) -> PyResult<Vec<Option<PyNode>>> {
+
+        let mut output = vec![];
+        for rnk in self.taxonomy.classification(tax_id).into_iter() {
+            if let Some(n) = rnk {
+                output.push(Some(PyNode::from(n)))  ;
+            } else {
+                output.push(None);
+            }
+        }
+
+        Ok(output)
+    }
+
     /// Find a species information in a given string.
     ///
     pub fn find(&self, description: &str) -> Option<u32> {

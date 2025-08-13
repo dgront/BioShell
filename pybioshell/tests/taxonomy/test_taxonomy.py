@@ -22,3 +22,7 @@ assert len(lineage) == 32
 
 found_mouse = taxonomy.find("> blah blah Mus musculus")
 assert found_mouse == 10090
+
+human_ranks = taxonomy.classification(9606)
+for rank in human_ranks:
+    print(rank.rank, rank.name)
