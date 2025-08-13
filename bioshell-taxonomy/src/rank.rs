@@ -24,7 +24,8 @@ pub enum Rank {
     Class = 5,
     Phylum = 6,
     Kingdom = 7,
-    Superkingdom = 8,
+    Clade = 8,
+    Superkingdom = 9,
     Other = 255,
 }
 
@@ -40,6 +41,7 @@ impl Rank {
             "class" => Rank::Class,
             "phylum" => Rank::Phylum,
             "kingdom" => Rank::Kingdom,
+            "clade" => Rank::Clade,
             "superkingdom" => Rank::Superkingdom,
             "domain" => Rank::Superkingdom,
             _ => Rank::Other,
@@ -58,6 +60,7 @@ impl fmt::Display for Rank {
             Rank::Class => "Class",
             Rank::Phylum => "Phylum",
             Rank::Kingdom => "Kingdom",
+            Rank::Clade => "Clade",
             Rank::Superkingdom => "Superkingdom",
             Rank::Other => "Other",
         };

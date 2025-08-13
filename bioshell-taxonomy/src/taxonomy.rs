@@ -217,16 +217,17 @@ impl Taxonomy {
     /// let order = ranks[3].unwrap();
     /// assert_eq!(order.rank, Rank::Order);
     /// assert_eq!(order.name, "Primates");
+    /// # assert_eq!(ranks.len(), 9);
     /// # Ok(())
     /// # }
     /// ```
     pub fn classification(&self, tax_id: u32) -> Vec<Option<&Node>> {
         let mut current = self.taxid_to_index.get(&tax_id).cloned();
-        let mut output: Vec<Option<&Node>> = vec![None;8];
+        let mut output: Vec<Option<&Node>> = vec![None;9];
         while let Some(idx) = current {
             let node = &self.nodes[idx];
             let rank_idx = node.rank as u8;
-            if rank_idx >=1 && rank_idx <= 8 {
+            if rank_idx >=1 && rank_idx <= 9 {
                 output[(rank_idx-1) as usize] = Some(node);
             }
             if node.tax_id == node.parent_tax_id {

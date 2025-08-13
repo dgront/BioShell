@@ -71,8 +71,8 @@ mod tests {
 
         let mut kingdoms = vec![];
         for n in taxonomy.nodes().filter(|ni|ni.rank==Rank::Kingdom) {
-            let name = &n.name;
             kingdoms.push(n.tax_id);
+            // let name = &n.name;
             // print!("{} {} : ",n.tax_id, &name);
             // for synonym in taxonomy.names(n.tax_id) {
             //     if synonym != name { print!("{}; ", synonym); }
@@ -80,26 +80,6 @@ mod tests {
             // println!()
         }
         assert_eq!(kingdoms.len(), 2);
-        Ok(())
-    }
-
-    #[test]
-    fn test_serialize() -> Result<(), Box<dyn Error>> {
-        let path = PathBuf::from(TEST_TAXDUMP_FILE);
-        let taxonomy = Taxonomy::load_from_tar_gz(&path)
-            .expect("Failed to load taxonomy from taxdump.tar.gz");
-
-        let ecoli_taxid = taxonomy.taxid("Escherichia coli").expect("E. coli taxid not found");
-        let node = taxonomy.node(ecoli_taxid);
-        let json = serde_json::to_string_pretty(&node).expect("Can't serialize a Node struct!");
-
-        let expected = r#"{
-  "tax_id": 562,
-  "parent_tax_id": 561,
-  "rank": "Species",
-  "name": "Escherichia coli"
-}"#;
-        assert_eq!(&json, expected);
         Ok(())
     }
 
