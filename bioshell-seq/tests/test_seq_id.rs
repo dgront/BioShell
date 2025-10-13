@@ -39,7 +39,12 @@ mod tests {
         assert_eq!(ids[0], SeqId::NCBIGI("5524211".to_string()));
     }
 
-
+    #[test]
+    fn test_filename() {
+        let ids = parse_sequence_id("blabla");
+        let fname = ids.file_name();
+        assert_eq!(fname,"blabla")
+    }
 
     #[test]
     fn test_pbd_id() {
