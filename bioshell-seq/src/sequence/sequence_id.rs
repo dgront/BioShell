@@ -270,7 +270,7 @@ impl SeqIdList {
         })
             .collect::<Vec<_>>()
             .join("_");
-
+        let name = name.trim_matches(&['_']);
         sanitize_filename(&name)
     }
 }
