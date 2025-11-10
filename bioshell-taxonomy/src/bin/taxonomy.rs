@@ -52,6 +52,10 @@ struct Cli {
     #[clap(long)]
     download: bool,
 
+    /// string used as a separator for the text fields in the output; the default is ' : ' (space colon space)
+    #[arg(long = "separator")]
+    separator: Option<String>,
+
     /// print also the selected nodes of the lineage for each species
     #[clap(short, long, short='l')]
     lineage: bool,
@@ -107,6 +111,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dump_file = format!("{}/taxdump.tar.gz", args.path.display());
     let taxonomy = Taxonomy::load_from_tar_gz(&dump_file)?;
 
+    let separator: &str = if let Some(ref sep) = args.separator { sep } else { " : " };
+        
     let mut nodes: Vec<&Node> = vec![];
     if let Some(name) = args.name {
         if let Some(taxid) = taxonomy.taxid(&name) {
@@ -151,20 +157,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("{}", serde_json::to_string_pretty(&n).expect("Can't serialize a Node struct!"));
             }
         } else {
-            print!("{} {} ", n.tax_id, n.name);
+            print!("{}{}{}{} ", n.tax_id, separator, n.name, separator);
         }
-        if args.rank { print!("{:?} ", n.rank); }
+        if args.rank { print!("{:?}{}", n.rank, separator); }
         if args.kingdom {
-            if let Some(kingdom) = taxonomy.rank(n.tax_id, Rank::Kingdom) { print!("{} ", kingdom.name); }
+            if let Some(kingdom) = taxonomy.rank(n.tax_id, Rank::Kingdom) { print!("{}{}", kingdom.name, separator); }
         }
         if args.domain {
-            if let Some(domain) = taxonomy.rank(n.tax_id, Rank::Superkingdom) { print!("{} ", domain.name); }
+            if let Some(domain) = taxonomy.rank(n.tax_id, Rank::Superkingdom) { print!("{}{}", domain.name, separator); }
         }
         if !args.json {
-            print!(": ");
+//            print!("{}", separator);
 
             for synonym in taxonomy.names(n.tax_id) {
-                if synonym != &n.name { print!("{}; ", synonym); }
+                if synonym != &n.name { print!("{}{} ", synonym, separator); }
             }
             println!();
         }
