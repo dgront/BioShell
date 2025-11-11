@@ -4,7 +4,7 @@ use std::io::{BufRead, BufReader};
 use clap::Parser;
 use bioshell_taxonomy::{Node, Rank, Taxonomy, TaxonomyMatcher}; // Assuming your module is named `bioshell_taxonomy`
 use std::path::PathBuf;
-use log::info;
+use log::{info, warn};
 use env_logger;
 
 use bioshell_io::{markdown_to_text, open_file};
@@ -112,13 +112,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let taxonomy = Taxonomy::load_from_tar_gz(&dump_file)?;
 
     let separator: &str = if let Some(ref sep) = args.separator { sep } else { " : " };
-        
+
     let mut nodes: Vec<&Node> = vec![];
     if let Some(name) = args.name {
-        if let Some(taxid) = taxonomy.taxid(&name) {
+        if let Some(taxid) = taxonomy.taxid(&name.replace('_', " ")) {
             nodes.push(taxonomy.node(taxid).unwrap());
         } else {
-            println!("Name '{}' not found in taxonomy.", name);
+            warn!("Name '{}' not found in taxonomy.", name);
         }
     }
 
@@ -126,18 +126,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(node) = taxonomy.node(taxid) {
             nodes.push(node);
         } else {
-            println!("TaxID '{}' not found in taxonomy.", taxid);
+            warn!("TaxID '{}' not found in taxonomy.", taxid);
         }
     }
 
     if let Some(fname) = args.names_file {
+        info!("Reading species names from {fname}");
         let file = File::open(fname)?;
         let reader = BufReader::new(file);
         reader.lines().map(|line| line.unwrap()).for_each(|line| {
+            let line = line.trim();
             if let Some(taxid) = taxonomy.taxid(&line) {
                 if let Some(node) = taxonomy.node(taxid) {
                     nodes.push(node);
                 }
+            } else {
+                warn!("Can't find taxonomy information for >{line}<")
             }
         });
     }
@@ -147,6 +151,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for taxid in reader.lines().map(|line| line.unwrap().parse::<u32>().unwrap()) {
             if let Some(node) = taxonomy.node(taxid) {
                 nodes.push(node);
+            } else {
+                warn!("TaxID '{}' not found in taxonomy.", taxid);
             }
         }
     }
@@ -154,7 +160,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for n in &nodes {
         if args.json {
             if !args.lineage {
-                println!("{}", serde_json::to_string_pretty(&n).expect("Can't serialize a Node struct!"));
+                warn!("{}", serde_json::to_string_pretty(&n).expect("Can't serialize a Node struct!"));
             }
         } else {
             print!("{}{}{}{} ", n.tax_id, separator, n.name, separator);
