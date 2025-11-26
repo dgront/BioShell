@@ -28,6 +28,10 @@ struct Cli {
     #[arg(short = 'd', long)]
     detect: Option<String>,
 
+    /// detect species in sequence description loaded from a file
+    #[arg(long)]
+    detect_file: Option<String>,
+
     /// detect species in every sequence description in a given .fasta file
     #[arg(short = 'f', long)]
     detect_fasta: Option<String>,
@@ -135,7 +139,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let file = File::open(fname)?;
         let reader = BufReader::new(file);
         reader.lines().map(|line| line.unwrap()).for_each(|line| {
-            let line = line.trim();
+            let line = line.trim().replace('_', " ");
             if let Some(taxid) = taxonomy.taxid(&line) {
                 if let Some(node) = taxonomy.node(taxid) {
                     nodes.push(node);
@@ -209,7 +213,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if args.detect.is_none() && args.detect_fasta.is_none() {
+    if args.detect.is_none() && args.detect_fasta.is_none() && args.detect_file.is_none() {
         return Ok(());
     }
 
@@ -225,6 +229,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if let Some(fasta) = args.detect_fasta {
+        info!("Reading sequences in fasta fromat from {fasta}");
         let mut reporter = WriteFasta::new(None, 0, false);
         let sequences = FastaIterator::new(open_file(fasta)?);
         for seq in sequences {
@@ -238,6 +243,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 reporter.report(&seq)?;
             }
         }
+    }
+
+    if let Some(fname) = args.detect_file {
+        info!("Reading sequence descriptions from {fname}");
+        let file = File::open(fname)?;
+        let reader = BufReader::new(file);
+        reader.lines().map(|line| line.unwrap()).for_each(|line| {
+            let line = line.trim().replace('_', " ");
+            let taxid = matcher.find(&line);
+            if let Some(taxid) = taxid {
+                let node = taxonomy.node(taxid).unwrap();
+                println!("{} : {}", node.tax_id, node.name);
+            } else {
+                warn!("Can't find taxonomy information for >{line}<")
+            }
+        });
     }
 
     Ok(())
