@@ -225,7 +225,7 @@ fn parse_seqres_records(seqres_records: Vec<String>) -> HashMap<String, Sequence
 pub fn is_pdb_file<P: AsRef<Path>>(file_path: P) -> io::Result<bool> {
     let reader = open_file(file_path)?;
 
-    let pdb_starts_with = ["HEADER", "ATOM", "HETATM", "REMARK"];
+    let pdb_starts_with = ["HEADER", "ATOM", "HETATM", "REMARK", "MODEL"];
     for line in reader.lines() {
         let line = line?;
         if !line.is_empty() {
@@ -296,4 +296,3 @@ mod tests {
         assert_eq!(sequences["B"].to_string(100), "KTQ".to_string());
     }
 }
-
