@@ -1,11 +1,11 @@
 #![doc(hidden)]
 
 use std::env;
-use clap::Parser;
+use clap::{Parser, ArgGroup};
 use log::info;
 use bioshell_io::{out_writer, markdown_to_text};
-use bioshell_pdb::{Deposit, EntityType, PDBError, Structure};
-use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
+use bioshell_pdb::{Deposit, downlad_deposit_from_rcsb, EntityType, find_cif_file_name, find_pdb_file_name, PDBError, Structure};
+use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsBackbone, IsCA, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
 use bioshell_seq::chemical::ResidueTypeProperties;
 
 mod deposit_info;
@@ -15,13 +15,27 @@ const PDB_TOOL_EXAMPLES: &str = include_str!("../documentation/pdb_tool.md");
 fn create_cookbook() -> String { format!("{}{}", "\x1B[4mCookbook:\x1B[0m\n", markdown_to_text(PDB_TOOL_EXAMPLES)) }
 
 #[derive(Parser, Debug)]
+#[command(group(
+    ArgGroup::new("input")
+    .required(true)
+    .args(&["infile", "pdb_id"])
+))]
 #[clap(author, version, about, long_about = None, arg_required_else_help = true, after_long_help = create_cookbook())]
 /// Command line tool to operate on PDB files
 /// say pdb_tool -h to see options
 struct Args {
     /// input PDB file name
-    #[clap(short, long, short='i', required=true)]
-    infile: String,
+    #[clap(short, long, short='i')]
+    infile: Option<String>,
+    /// pdb_id of the input deposit
+    #[clap(long)]
+    pdb_id: Option<String>,
+    /// path to a folder where a PDB / mmCIF file may be found
+    #[clap(long, default_value="")]
+    path: String,
+    /// download the requested PDB deposit from the rcsb.org website
+    #[clap(long)]
+    online: bool,
     /// print FASTA sequence for every chain in each input file
     #[clap(short, long, short='f')]
     out_fasta: bool,
@@ -75,6 +89,9 @@ struct Args {
     /// keep only alpha-carbon atoms
     #[clap(long, action)]
     select_ca: bool,
+    /// keep only protein backbone atoms
+    #[clap(long, action)]
+    select_bb: bool,
     /// neglect water molecules while parsing the deposit
     #[clap(long, action)]
     skip_water: bool,
@@ -149,6 +166,26 @@ fn print_entities(substructure: &Structure, deposit: &Deposit, print_sequences: 
     }
 }
 
+fn load_deposit(args: &Args) -> Result<Deposit, PDBError> {
+
+    // ---------- if a file name was given, load it
+    if let Some(infile) = &args.infile {
+        return Deposit::from_file(infile);
+    }
+
+    // ---------- if a PDB code was given, look for it online
+    let pdb_id = args.pdb_id.as_ref().unwrap();
+    if args.online {
+        return downlad_deposit_from_rcsb(pdb_id);
+    }
+
+    // ---------- ... or look for a local file given the path
+    let fname = find_cif_file_name(&pdb_id, &args.path)
+        .or_else(|_| find_pdb_file_name(&pdb_id, &args.path))?;
+    Deposit::from_file(fname)
+}
+
+
 fn main() -> Result<(), PDBError> {
 
     let args = Args::parse();
@@ -165,7 +202,7 @@ fn main() -> Result<(), PDBError> {
     info!("Git commit MD5 sum: {}", git_commit_md5);
 
     // ---------- INPUT section
-    let deposit = Deposit::from_file(&args.infile).unwrap();
+    let deposit = load_deposit(&args)?;
     let mut strctr= deposit.structure()?;
 
     // ---------- FILTER section
@@ -186,6 +223,10 @@ fn main() -> Result<(), PDBError> {
         info!("Selecting only alpha-carbon atoms");
         multi_filter.add_predicate(Box::new(IsCA));
     }
+    if args.select_bb {
+        info!("Selecting only proteins backbone atoms");
+        multi_filter.add_predicate(Box::new(IsBackbone));
+    }
     if args.skip_water {
         info!("Removing water molecules");
         multi_filter.add_predicate(Box::new(IsNotWater));
@@ -195,7 +236,7 @@ fn main() -> Result<(), PDBError> {
         multi_filter.add_predicate(Box::new(ByEntity::new(&entity_id)));
     }
     if multi_filter.count_filters() > 0 {
-        strctr = filter(&strctr, &multi_filter);
+            strctr = filter(&strctr, &multi_filter);
     }
     if args.renumber {
         strctr = strctr.renumbered_structure();

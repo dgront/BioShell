@@ -1,8 +1,9 @@
 use std::io;
-use std::io::{BufRead};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::time::Instant;
 use log::{debug, info};
+use reqwest::blocking::get;
 use bioshell_cif::{read_cif_buffer, CifData, CifTable};
 use crate::{Deposit, Entity, ExperimentalMethod, PdbAtom, PDBError, SecondaryStructureTypes, Structure, UnitCell};
 use bioshell_cif::CifError::{ExtraDataBlock};
@@ -207,6 +208,26 @@ pub fn find_cif_file_name(pdb_code: &str, pdb_path: &str) -> Result<String, io::
 }
 
 
+///  Reads a [`Deposit`](Deposit) directly from the RCSB website.
+///
+/// # Example
+/// ```
+/// use bioshell_pdb::PDBError;
+/// use bioshell_pdb::downlad_deposit_from_rcsb;
+/// # fn main() -> Result<(), PDBError> {
+/// let dp = downlad_deposit_from_rcsb("2gb1")?;
+/// assert_eq!(dp.chain_ids().count(), 1);
+/// Ok(())
+/// # }
+/// ```
+pub fn downlad_deposit_from_rcsb(pdb_code: &str) -> Result<Deposit, PDBError> {
+    info!("Downloading an mmCIF deposit: {}", &pdb_code);
+    let response = get(format!("https://files.rcsb.org/view/{}.cif", &pdb_code))
+        .map_err(|e| PDBError::CantDownladFromRCSB { pdb_id: pdb_code.to_string(), reason: e.to_string() })?;
+    let reader = BufReader::new(response);
+
+    return Deposit::from_cif_reader(reader)
+}
 
 /// Loads residue types from a CIF file directly into the [`ResidueTypeManager`]
 fn load_residue_types(cif_data_block: &CifData) -> Result<(), PDBError>{

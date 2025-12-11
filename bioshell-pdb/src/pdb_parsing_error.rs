@@ -84,4 +84,8 @@ pub enum PDBError {
     #[error("No PDB / CIF data loaded")]
     /// No PDB / CIF data loaded
     NoStructureDataLoaded,
+
+    #[error("Can't download the {pdb_id} deposit for from RCSB: {reason}")]
+    /// Can't download mmCIF file from RCSB website a deposit
+    CantDownladFromRCSB{pdb_id: String, reason: String},
 }

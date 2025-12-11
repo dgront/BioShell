@@ -132,7 +132,7 @@ pub use pdb_atom::{PdbAtom, same_residue_atoms, format_atom_name};
 pub use residue_id::{ResidueId};
 pub use exp_data::{ExperimentalMethod};
 pub use unit_cell::{UnitCell};
-pub use load_cif::{is_cif_file, find_cif_file_name};
+pub use load_cif::{is_cif_file, find_cif_file_name, downlad_deposit_from_rcsb};
 pub use entity::{EntitySource, EntityType, Entity, PolymerEntityType};
 
 mod secondary_view;
