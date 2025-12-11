@@ -64,6 +64,37 @@ pub trait PdbAtomPredicate {
     fn check(&self, a: &PdbAtom) -> bool;
 }
 
+/// Inverts a given predicate
+///
+/// # Example
+/// ```rust
+/// use std::io::BufReader;
+/// use bioshell_pdb::{Deposit, Structure};
+/// use bioshell_pdb::pdb_atom_filters::{IsHydrogen, InvertPredicate, PdbAtomPredicate};
+/// let mut skip_h = InvertPredicate::new(IsHydrogen);
+/// let gly_pdb = "ATOM    148  N   GLY A   9       9.692  -3.742   0.370  1.00  0.14           N
+/// ATOM    149  CA  GLY A   9      10.920  -2.963   0.070  1.00  0.18           C
+/// ATOM    150  C   GLY A   9      12.144  -3.871   0.156  1.00  0.20           C
+/// ATOM    151  O   GLY A   9      12.210  -4.757   0.986  1.00  0.24           O
+/// ATOM    152  H   GLY A   9       9.093  -3.471   1.097  1.00  0.14           H
+/// ATOM    153  HA2 GLY A   9      10.848  -2.565  -0.927  1.00  0.20           H
+/// ATOM    154  HA3 GLY A   9      11.018  -2.149   0.770  1.00  0.21           H";
+/// let deposit = Deposit::from_pdb_reader(BufReader::new(gly_pdb.as_bytes())).unwrap();
+/// let mut strctr = deposit.structure().unwrap();
+/// let new_strctr = Structure::from_iterator("1xyz", strctr.atoms().iter().filter(|a| skip_h.check(&a)).cloned());
+/// # assert_eq!(new_strctr.count_atoms(), 4);
+/// ```
+pub struct InvertPredicate<P: PdbAtomPredicate> { inner: P, }
+
+impl<P: PdbAtomPredicate> InvertPredicate<P> {
+    /// Create a [`PdbAtomPredicate`] opposite to the given one
+    pub fn new(predicate: P) -> Self { Self { inner: predicate } }
+}
+
+impl<P: PdbAtomPredicate> PdbAtomPredicate for InvertPredicate<P> {
+    fn check(&self, a: &PdbAtom) -> bool { !self.inner.check(a) }
+}
+
 /// Always returns `true`
 ///
 /// Declare this [`PdbAtomPredicate`](PdbAtomPredicate) when you have to use one but you don't want

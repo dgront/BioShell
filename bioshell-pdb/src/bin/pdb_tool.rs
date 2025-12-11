@@ -5,7 +5,7 @@ use clap::{Parser, ArgGroup};
 use log::info;
 use bioshell_io::{out_writer, markdown_to_text};
 use bioshell_pdb::{Deposit, downlad_deposit_from_rcsb, EntityType, find_cif_file_name, find_pdb_file_name, PDBError, Structure};
-use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsBackbone, IsCA, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
+use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, InvertPredicate, IsBackbone, IsCA, IsHydrogen, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
 use bioshell_seq::chemical::ResidueTypeProperties;
 
 mod deposit_info;
@@ -95,6 +95,9 @@ struct Args {
     /// neglect water molecules while parsing the deposit
     #[clap(long, action)]
     skip_water: bool,
+    /// neglect hydrogen atoms while parsing the deposit
+    #[clap(long, action)]
+    skip_hydrogens: bool,
     /// keep only selected entities
     #[clap(long, group = "select")]
     select_entity: Option<String>,
@@ -230,6 +233,10 @@ fn main() -> Result<(), PDBError> {
     if args.skip_water {
         info!("Removing water molecules");
         multi_filter.add_predicate(Box::new(IsNotWater));
+    }
+    if args.skip_hydrogens {
+        info!("Removing hydrogen atoms");
+        multi_filter.add_predicate(Box::new(InvertPredicate::new(IsHydrogen)));
     }
     if let Some(entity_id) = args.select_entity {
         info!("Selecting entity: {}", entity_id);
