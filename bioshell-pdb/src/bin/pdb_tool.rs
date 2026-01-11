@@ -4,7 +4,7 @@ use std::env;
 use clap::{Parser, ArgGroup};
 use log::info;
 use bioshell_io::{out_writer, markdown_to_text};
-use bioshell_pdb::{Deposit, downlad_deposit_from_rcsb, EntityType, find_cif_file_name, find_pdb_file_name, PDBError, Structure};
+use bioshell_pdb::{Deposit, downlad_deposit_from_rcsb, EntityType, find_cif_file_name, find_pdb_file_name, make_pdb_compatible, PDBError, Structure};
 use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, InvertPredicate, IsBackbone, IsCA, IsHydrogen, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
 use bioshell_seq::chemical::ResidueTypeProperties;
 
@@ -272,7 +272,8 @@ fn main() -> Result<(), PDBError> {
     }
 
     if let Some(out_fname) = args.out_pdb {
-        write_pdb(&strctr, &out_fname);
+        let pdb_strctr = make_pdb_compatible(&strctr)?;
+        write_pdb(&pdb_strctr, &out_fname);
     }
 
     Ok(())

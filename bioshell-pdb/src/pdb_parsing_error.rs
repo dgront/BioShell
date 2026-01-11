@@ -88,4 +88,34 @@ pub enum PDBError {
     #[error("Can't download the {pdb_id} deposit for from RCSB: {reason}")]
     /// Can't download mmCIF file from RCSB website a deposit
     CantDownladFromRCSB{pdb_id: String, reason: String},
+
+    #[error("structure cannot be converted to PDB-compatible form: {reason}")]
+    PdbConversionNotPossible {
+        reason: PdbConversionImpossibleReason,
+    },
+}
+
+/// Provides detailed information why a [`Structure`]
+#[derive(Debug, Error, Clone)]
+pub enum PdbConversionImpossibleReason {
+    #[error("too many chains for PDB: {chains} (max {max}); chain IDs must be 1 character")]
+    TooManyChains { chains: usize, max: usize },
+
+    #[error("too many atoms for PDB atom serial field: {atoms} (max {max})")]
+    TooManyAtoms { atoms: usize, max: usize },
+
+    #[error("atom name too long for PDB (max {max} chars): '{atom_name}'")]
+    AtomNameTooLong { atom_name: String, max: usize },
+
+    #[error("residue name too long for PDB (max {max} chars): '{res_name}'")]
+    ResidueNameTooLong { res_name: String, max: usize },
+
+    #[error("element symbol too long for PDB (max {max} chars): '{element}'")]
+    ElementTooLong { element: String, max: usize },
+
+    #[error("charge field too long for PDB (max {max} chars): '{charge}'")]
+    ChargeTooLong { charge: String, max: usize },
+
+    #[error("residue numbering overflow after renumbering; exceeded PDB limit {max} within a chain")]
+    ResidueNumberOverflow { max: i32 },
 }

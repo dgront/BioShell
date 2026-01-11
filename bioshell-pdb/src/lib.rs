@@ -137,6 +137,8 @@ pub use entity::{EntitySource, EntityType, Entity, PolymerEntityType};
 
 mod secondary_view;
 pub use secondary_view::*;
+mod cif_to_pdb;
+pub use cif_to_pdb::*;
 
 /// Returns a tuple of (pdb_id, chain_id) extracted from a given string.
 ///
