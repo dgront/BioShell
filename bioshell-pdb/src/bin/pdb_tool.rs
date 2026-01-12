@@ -78,14 +78,17 @@ struct Args {
     #[clap(long, action)]
     entity_sequence: bool,
     /// keep only amino acid residues; all ligands and cofactors will be removed
-    #[clap(long)]
+    #[clap(long, action)]
     select_protein: bool,
     /// keep only nucleic acid residues; all proteins and ligands will be removed
-    #[clap(long)]
+    #[clap(long, action)]
     select_nucleic: bool,
-    /// keep only selected chains
+    /// keep only selected chain
     #[clap(long)]
     select_chain: Option<String>,
+    /// keep the longest chain from a deposit; this filter is applied to the already selected part
+    #[clap(long, action)]
+    select_chain_longest: bool,
     /// keep only alpha-carbon atoms
     #[clap(long, action)]
     select_ca: bool,
@@ -242,9 +245,26 @@ fn main() -> Result<(), PDBError> {
         info!("Selecting entity: {}", entity_id);
         multi_filter.add_predicate(Box::new(ByEntity::new(&entity_id)));
     }
+    // ----------- Filter the structure
     if multi_filter.count_filters() > 0 {
             strctr = filter(&strctr, &multi_filter);
     }
+    if args.select_chain_longest {
+        let chain_ids = strctr.chain_ids();
+        let mut longest_id = &chain_ids[0];
+        let mut longest_ln = strctr.residue_in_chain(longest_id);
+        for chain_id in chain_ids.iter().skip(1) {
+            let len = strctr.residue_in_chain(chain_id);
+            if len > longest_ln {
+                longest_ln = len;
+                longest_id = &chain_id;
+            }
+        }
+        info!("Selecting the longest chain: {longest_id}");
+        let filter = ByChain::new(longest_id);
+        strctr = crate::filter(&strctr, &filter);
+    }
+    // ---------- perform actions (e.g. renumber)
     if args.renumber {
         strctr = strctr.renumbered_structure();
     }

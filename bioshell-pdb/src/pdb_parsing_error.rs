@@ -95,7 +95,7 @@ pub enum PDBError {
     },
 }
 
-/// Provides detailed information why a [`Structure`]
+/// Provides detailed information why a [`Structure`] can't be converted to
 #[derive(Debug, Error, Clone)]
 pub enum PdbConversionImpossibleReason {
     #[error("too many chains for PDB: {chains} (max {max}); chain IDs must be 1 character")]
