@@ -1,6 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use bioshell_statistics::HistogramND;
+    use rand::distributions::Distribution;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
+    use rand_distr::Normal;
+    use bioshell_statistics::{HistogramND, into_matrix2d};
     use super::*;
 
     #[test]
@@ -94,5 +98,33 @@ mod tests {
 
         // Check that the tallest bin is the one with the most inserts
         assert_eq!(hist.max(), Some(vec![1, 1]));
+    }
+
+    #[test]
+    fn test_into_matrix() {
+
+        let normal_v = Normal::new(0.0, 1.0).unwrap();
+        let mut rng = StdRng::seed_from_u64(0);
+
+        let mut hist2d = HistogramND::by_bin_widths([1.0, 1.0]);
+        let mut v = [0.0, 0.0];
+        for i in 0..5 {
+            v[0] = normal_v.sample(&mut rng);
+            v[1] = normal_v.sample(&mut rng);
+            hist2d.insert(&v);
+        }
+        let m2d = into_matrix2d(&hist2d, -3.0, 3.0, -3.0, 3.0, 0.0);
+        let [bin_x, bin_y] = hist2d.bin_widths();
+        let mut x = -3.00 + 0.01;
+        for i in 0..m2d.len() {
+            let mut y = -3.00 + 0.01;
+            for j in 0..m2d[i].len() {
+                let idx = hist2d.which_bin(&[x, y]);
+                let v = hist2d.get(&idx);
+                assert!((v - m2d[i][j]).abs() < 0.0001);
+                y += bin_y;
+            }
+            x += bin_x;
+        }
     }
 }

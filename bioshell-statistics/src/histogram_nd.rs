@@ -33,6 +33,8 @@ use std::collections::HashMap;
 pub struct HistogramND<const N: usize> {
     data: HashMap<Vec<i32>, f64>,
     bin_widths: [f64; N],
+    min_values: [f64; N],
+    max_values: [f64; N],
 }
 
 impl<const N: usize> HistogramND<N> {
@@ -44,6 +46,8 @@ impl<const N: usize> HistogramND<N> {
         HistogramND {
             data: HashMap::new(),
             bin_widths: widths,
+            min_values: [f64::MAX; N],
+            max_values: [f64::MIN; N],
         }
     }
 
@@ -58,6 +62,8 @@ impl<const N: usize> HistogramND<N> {
     /// h5.insert(&[0.1, 0.3, 0.5, 0.7, 0.9]);
     /// ```
     pub fn insert(&mut self, x: &[f64; N]) {
+
+        self.update_min_max(x);
         let bin_id = self.which_bin(&x);
         if let Some(count) = self.data.get_mut(&bin_id) {
             *count += 1.0;
@@ -68,6 +74,8 @@ impl<const N: usize> HistogramND<N> {
 
     /// Inserts a value (observation) with a weight
     pub fn insert_weighted(&mut self, x: &[f64; N], w: f64) {
+
+        self.update_min_max(x);
         let bin_id = self.which_bin(&x);
         if let Some(count) = self.data.get_mut(&bin_id) {
             *count += w;
@@ -92,24 +100,25 @@ impl<const N: usize> HistogramND<N> {
             .map(|(key, _)| key.clone())
     }
 
+
     /// Left-hand side range of a given bin in a specified dimension
-    pub fn bin_min(&self, bin_id: &Vec<i32>, dim: usize) -> f64 {
+    pub fn bin_min(&self, bin_id: &[i32], dim: usize) -> f64 {
         bin_id[dim] as f64 * self.bin_widths[dim]
     }
 
     /// Right-hand side range of a given bin (exclusive) in a specified dimension
-    pub fn bin_max(&self, bin_id: &Vec<i32>, dim: usize) -> f64 {
+    pub fn bin_max(&self, bin_id: &[i32], dim: usize) -> f64 {
         (bin_id[dim] + 1) as f64 * self.bin_widths[dim]
     }
 
     /// Returns the count for a given bin
-    pub fn get(&self, bin_id: &Vec<i32>) -> f64 {
+    pub fn get(&self, bin_id: &[i32]) -> f64 {
         *self.data.get(bin_id).unwrap_or(&0.0)
     }
 
     /// Returns the count for a bin that holds a given value
-    pub fn get_by_value(&self, val: [f64; N]) -> f64 {
-        self.get(&self.which_bin(&val))
+    pub fn get_by_value(&self, val: &[f64; N]) -> f64 {
+        self.get(&self.which_bin(val))
     }
 
     /// Total number of counts (weights) in this histogram
@@ -120,6 +129,10 @@ impl<const N: usize> HistogramND<N> {
     /// Returns the bin widths for each dimension
     pub fn bin_widths(&self) -> &[f64; N] {
         &self.bin_widths
+    }
+
+    pub fn data_range(&self, dim: usize) -> (f64, f64) {
+        (self.min_values[dim], self.max_values[dim])
     }
 
     /// Returns the mode of this histogram.
@@ -145,6 +158,42 @@ impl<const N: usize> HistogramND<N> {
 
         (bin_min, bin_max, max_value)
     }
+
+    fn update_min_max(&mut self, val: &[f64; N]) {
+        for i in 0..N {
+            if val[i] < self.min_values[i] {
+                self.min_values[i] = val[i];
+            }
+            if val[i] > self.max_values[i] {
+                self.max_values[i] = val[i];
+            }
+        }
+    }
+}
+
+/// Creates a 2D matrix from HistogramND<2> data.
+///
+/// Returns a 2D array with values mapped from [`x_min`,`x_max`) in X and [`y_min`, `y_max`) in Y directions respectively.
+/// missing values are filled with `default_val`
+pub fn into_matrix2d(hist2d: &HistogramND<2>, x_min: f64, x_max: f64, y_min: f64, y_max: f64, default_val: f64) -> Vec<Vec<f64>> {
+
+    let m = vec![vec![default_val; 0]; 0];
+    if hist2d.data.len() == 0 { return m;}
+    let eps = 0.001;
+    let lower = hist2d.which_bin(&[x_min + eps, y_min + eps]);
+    let upper = hist2d.which_bin(&[x_max + eps, y_max + eps]);
+    let nx = upper[0] - lower[0] + 1;
+    let ny = upper[1] - lower[1] + 1;
+    if nx <= 0 || ny <= 0 { return m; }
+    let mut m = vec![vec![default_val; ny as usize]; nx as usize];
+
+    for (idx,v) in &hist2d.data {
+        let i = idx[0] - lower[0];
+        let j = idx[1] - lower[1];
+        m[i as usize][j as usize] = *v;
+    }
+
+    return m;
 }
 
 use std::fmt;

@@ -26,4 +26,4 @@ pub use descriptive::{OnlineStatistics, OnlineMultivariateStatistics, OnlineMult
 pub use histograms::{Histogram};
 pub use distributions::{NormalDistribution, MultiNormalDistribution, Estimable, Distribution};
 pub use autocorrelation::{autocorrelate_vectors};
-pub use histogram_nd::{HistogramND};
+pub use histogram_nd::{HistogramND, into_matrix2d};
