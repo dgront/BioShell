@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 /// Provides N-dimensional histogram of N-dimensional data.
 ///
+/// Internally, bins of the histogram are indexed by `Vec<i32>`.
+///
 /// # Example
 /// ```rust
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,7 +21,7 @@ use std::collections::HashMap;
 /// for _ in 0..100_000 {
 ///     let x = normal.sample(&mut rng);
 ///     let y = normal.sample(&mut rng);
-///     histogram.insert([x, y]);
+///     histogram.insert(&[x, y]);
 /// }
 ///
 /// // Verify histogram mode (tallest bin)
@@ -51,11 +53,11 @@ impl<const N: usize> HistogramND<N> {
     /// ```
     /// use bioshell_statistics::HistogramND;
     /// let mut h2 = HistogramND::<2>::by_bin_widths([0.1, 0.1]);
-    /// h2.insert([0.1, 0.1]);
+    /// h2.insert(&[0.1, 0.1]);
     /// let mut h5 = HistogramND::<5>::by_bin_widths([0.1, 0.1, 0.1, 0.1, 0.1]);
-    /// h5.insert([0.1, 0.3, 0.5, 0.7, 0.9]);
+    /// h5.insert(&[0.1, 0.3, 0.5, 0.7, 0.9]);
     /// ```
-    pub fn insert(&mut self, x: [f64; N]) {
+    pub fn insert(&mut self, x: &[f64; N]) {
         let bin_id = self.which_bin(&x);
         if let Some(count) = self.data.get_mut(&bin_id) {
             *count += 1.0;
@@ -65,7 +67,7 @@ impl<const N: usize> HistogramND<N> {
     }
 
     /// Inserts a value (observation) with a weight
-    pub fn insert_weighted(&mut self, x: [f64; N], w: f64) {
+    pub fn insert_weighted(&mut self, x: &[f64; N], w: f64) {
         let bin_id = self.which_bin(&x);
         if let Some(count) = self.data.get_mut(&bin_id) {
             *count += w;
@@ -120,7 +122,9 @@ impl<const N: usize> HistogramND<N> {
         &self.bin_widths
     }
 
-    /// Returns the mode of this histogram
+    /// Returns the mode of this histogram.
+    ///
+    /// Mode is represented by most populated bin of this histogram
     pub fn mode(&self) -> (Vec<f64>, Vec<f64>, f64) {
         let mut max_bin: Vec<i32> = vec![0; N];
         let mut max_value: f64 = 0.0;

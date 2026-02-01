@@ -175,7 +175,7 @@ pub fn read_delimited_columns<T: FromStr+Clone, R: BufRead>(reader: R, delimiter
 }
 
 
-/// Reads whitespace-separated data from a `BufReader` and stores it in a `Vec<Vec<T>>`.
+/// Reads whitespace-separated data from a `BufReader` and stores row-wise it in a `Vec<Vec<T>>`.
 ///
 /// The function assumes that the number of columns is constant across all rows.
 pub fn read_whitespace_delimited_values<T, R>(reader: R) -> Result<Vec<Vec<T>>, Error>
