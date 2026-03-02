@@ -1,6 +1,9 @@
 use std::str::FromStr;
 use bioshell_pdb::{Deposit, list_ligands_in_deposit};
 
+/// Provides the date of initial deposition.
+fn deposit_date(deposit: &Deposit) -> String { deposit.dep_date.clone().unwrap_or("".to_string()) }
+
 fn deposit_title(deposit: &Deposit) -> String { deposit.title.clone().unwrap_or("".to_string()) }
 
 fn deposit_resolution(deposit: &Deposit) -> String {
@@ -31,10 +34,26 @@ fn deposit_keywords(deposit: &Deposit) -> String { deposit.keywords.join(",") }
 
 fn space_group(deposit: &Deposit) -> String { deposit.unit_cell.as_ref().unwrap().space_group.clone() }
 
-const DEPOSIT_INFO_FEATURES: [&str; 11] = ["id", "keywords", "title", "resolution", "methods",
-                                "ligands", "rfactor", "spacegroup", "unitcell", "classification",
-                                "entity_res_count", ]; //"chain_res_count"
+/// Returns dimensions of the unit cell of a given deposit, as a string
+///
+/// Returns empty string if the unit cell hasn't been specified.
+fn unit_cell(deposit: &Deposit) -> String {
+    return if let Some(uc) = &deposit.unit_cell {
+        format!("{} x {} x {}", uc.a, uc.b, uc.c)
+    } else { "".to_string() }
+}
 
+/// Counts entities in the given deposit
+fn count_entities(deposit: &Deposit) -> String { deposit.count_entities().to_string() }
+
+const DEPOSIT_INFO_FEATURES: [&str; 12] = ["id", "keywords", "title", "resolution", "methods",
+                                "ligands", "rfactor", "spacegroup", "unitcell", "classification",
+                                "entity_count", "date"];
+
+/// Provides basic info about a given deposit.
+///
+/// Returns a `(&str, String)` tuple of `(key, description)` for each `key` found in the
+/// `deposit_info_names` input list. Each key must
 pub(crate) fn get_deposit_info<'a>(dep: &'a Deposit, deposit_info_names: &'a Vec<String>) -> Vec<(&'a str, String)> {
 
     let tokens = if deposit_info_names.is_empty() {
@@ -60,6 +79,8 @@ pub(crate) fn get_deposit_info<'a>(dep: &'a Deposit, deposit_info_names: &'a Vec
                     DepositInfo::Classification((token_name, func)) => (token_name, func(dep)),
                     DepositInfo::SpaceGroup((token_name, func)) => (token_name, func(dep)),
                     DepositInfo::UnitCell((token_name, func)) => (token_name, func(dep)),
+                    DepositInfo::EntityCount((token_name, func)) => (token_name, func(dep)),
+                    DepositInfo::Date((token_name, func)) => (token_name, func(dep)),
                 };
                 out.push(result);
             }
@@ -82,6 +103,8 @@ pub(crate) enum DepositInfo {
     Classification((&'static str, fn(&Deposit) -> String)),
     SpaceGroup((&'static str, fn(&Deposit) -> String)),
     UnitCell((&'static str, fn(&Deposit) -> String)),
+    EntityCount((&'static str, fn(&Deposit) -> String)),
+    Date((&'static str, fn(&Deposit) -> String)),
 }
 
 impl FromStr for DepositInfo {
@@ -97,8 +120,11 @@ impl FromStr for DepositInfo {
             "ligands" => Ok(DepositInfo::Ligands(("ligands", deposit_ligands))),
             "rfactor" => Ok(DepositInfo::RFactor(("rfactor", deposit_r_factor))),
             "spacegroup" => Ok(DepositInfo::SpaceGroup(("spacegroup", space_group))),
-            "unitcell" => Ok(DepositInfo::UnitCell(("unit cell", deposit_r_factor))),
+            "unitcell" => Ok(DepositInfo::UnitCell(("unit cell", unit_cell))),
             "classification" => Ok(DepositInfo::Classification(("classification", deposit_classification))),
+            "entity_count" => Ok(DepositInfo::EntityCount(("entity count", count_entities))),
+            "date" => Ok(DepositInfo::Date(("deposition date", deposit_date))),
+
             _ => Err("Error: Unknown deposit property"),
         }
     }

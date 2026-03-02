@@ -1,5 +1,6 @@
 #![doc(hidden)]
 
+use std::collections::HashMap;
 use std::env;
 use clap::{Parser, ArgGroup};
 use log::info;
@@ -65,6 +66,11 @@ struct Args {
     /// The option accepts the same keys as the 'info' option
     #[clap(long, value_parser, value_delimiter = ' ', num_args = 0..)]
     info_table: Option<Vec<String>>,
+    /// print basic information about a given structure in the JSON format.
+    ///
+    /// The option accepts the same keys as the 'info' option
+    #[clap(long, value_parser, value_delimiter = ' ', num_args = 0..)]
+    info_json: Option<Vec<String>>,
     /// break FASTA lines when longer that given cutoff
     #[clap(long, default_value="80")]
     out_fasta_width: usize,
@@ -132,6 +138,13 @@ fn print_info_row(deposit: &Deposit, tokens: &Vec<String>) {
         print!("{}\t", val.trim());
     }
     println!();
+}
+
+fn print_info_json(deposit: &Deposit, tokens: &Vec<String>) {
+
+    let map: HashMap<&str, String> = deposit_info::get_deposit_info(deposit, tokens).into_iter().collect();
+    let j = serde_json::to_string(&map).unwrap();
+    println!("{j}");
 }
 
 fn write_pdb(strctr: &Structure, fname: &str) {
@@ -289,6 +302,9 @@ fn main() -> Result<(), PDBError> {
     }
     if let Some(tokens) = args.info_table {
         print_info_row(&deposit, &tokens);
+    }
+    if let Some(tokens) = args.info_json {
+        print_info_json(&deposit, &tokens);
     }
 
     if let Some(out_fname) = args.out_pdb {

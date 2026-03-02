@@ -9,7 +9,7 @@ pub struct Deposit {
     ///
     /// This field should contain one of classifications from a curated list available at the [wwPDB website](http://www.wwpdb.org/)
     pub classification: Option<String>,
-    /// deposition date
+    /// the date of initial deposition.
     pub dep_date: Option<String>,
     /// placeholder for keywords, which may be empty
     pub keywords: Vec<String>,
