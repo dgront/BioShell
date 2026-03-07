@@ -4,13 +4,11 @@ use clap::{Parser};
 use log::{debug, info};
 
 use bioshell_seq::sequence::filters::{AlwaysTrue, DescriptionContains, SequenceFilter};
-use bioshell_seq::sequence::{clone_ungapped, count_identical, len_ungapped, ProfileColumnOrder,
-            SequenceProfile, StockholmIterator};
+use bioshell_seq::sequence::{clone_ungapped, count_identical, FastaIterator, len_ungapped, ProfileColumnOrder, Sequence, SequenceProfile, StockholmIterator};
 
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::msa::MSA;
 use bioshell_seq::SequenceError;
-use bioshell_statistics::OnlineStatistics;
 
 #[derive(Parser, Debug)]
 #[clap(name = "check_msa")]
@@ -85,6 +83,15 @@ pub fn main() -> Result<(), SequenceError> {
     if let Some(fname) = args.in_clw {
         let mut reader = open_file(&fname)?;
         let seq = StockholmIterator::from_stockholm_reader(&mut reader);
+        msa = match MSA::from_sequences(seq) {
+            Ok(msa) => msa,
+            Err(error) => panic!("Incorrect sequence(s) found in MSA: {:?}", error),
+        };
+    }
+    // ---------- Read input MSA in the .fasta format
+    if let Some(fname) = args.in_fasta {
+        let mut reader = open_file(&fname)?;
+        let seq: Vec<Sequence> = FastaIterator::new(reader).collect();
         msa = match MSA::from_sequences(seq) {
             Ok(msa) => msa,
             Err(error) => panic!("Incorrect sequence(s) found in MSA: {:?}", error),
