@@ -18,7 +18,7 @@ struct Args {
     /// input MSA file in the FASTA format
     #[clap(short='f', long)]
     in_fasta: Option<String>,
-    /// input MSA file in the ClustalW or the Stockholm format
+    /// input MSA file in the ClustalW / the Stockholm format
     #[clap(short='w', long)]
     in_clw: Option<String>,
     /// find the most probable sequence and compute its distance from each sequence of an MSA
@@ -39,15 +39,25 @@ struct Args {
     /// output MSA file in the FASTA format; use the --select option to save a part of the MSA
     #[clap(short='o', long)]
     out_fasta: Option<String>,
+    /// be more verbose and log program actions on the screen
+    #[clap(short, long, short='v')]
+    verbose: bool,
 }
 
 pub fn main() -> Result<(), SequenceError> {
 
+    let args = Args::parse();
     unsafe {
         if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+        if args.verbose { env::set_var("RUST_LOG", "debug"); }
     }
     env_logger::init();
-    let args = Args::parse();
+
+    let build_time = env!("BUILD_TIME");
+    let git_commit_md5 = env!("GIT_COMMIT_MD5");
+
+    info!("Build time: {}", build_time);
+    info!("Git commit MD5 sum: {}", git_commit_md5);
 
     let mut msa: MSA = MSA::default();
     // ---------- Read input MSA in the CLW (clustal-w) format
