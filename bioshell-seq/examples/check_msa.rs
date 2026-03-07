@@ -10,6 +10,7 @@ use bioshell_seq::sequence::{clone_ungapped, count_identical, len_ungapped, Prof
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::msa::MSA;
 use bioshell_seq::SequenceError;
+use bioshell_statistics::OnlineStatistics;
 
 #[derive(Parser, Debug)]
 #[clap(name = "check_msa")]
@@ -21,6 +22,9 @@ struct Args {
     /// input MSA file in the ClustalW / the Stockholm format
     #[clap(short='w', long)]
     in_clw: Option<String>,
+    /// prints info about number of sequences in a given MSA and their lengths
+    #[clap(long, action)]
+    info: bool,
     /// find the most probable sequence and compute its distance from each sequence of an MSA
     #[clap(short='a', long)]
     max_sequence: bool,
@@ -42,6 +46,23 @@ struct Args {
     /// be more verbose and log program actions on the screen
     #[clap(short, long, short='v')]
     verbose: bool,
+}
+
+fn print_info(msa: &MSA) {
+
+    let n_seq = msa.n_seq();
+    println!("n_sequences: {:4}", n_seq);
+    if n_seq == 0 { return; }
+    let mut lengths: Vec<usize> = vec![];
+    lengths.reserve(n_seq);
+    for seq in msa.sequences() {
+        lengths.push(len_ungapped(seq));
+    }
+    lengths.sort();
+    println!("n_columns:   {:4}", msa.sequences()[0].len());
+    println!("shortest:    {:4}", lengths[0]);
+    println!("longest:     {:4}", lengths[n_seq-1]);
+    println!("median:      {:4}", lengths[n_seq/2]);
 }
 
 pub fn main() -> Result<(), SequenceError> {
@@ -69,6 +90,12 @@ pub fn main() -> Result<(), SequenceError> {
             Err(error) => panic!("Incorrect sequence(s) found in MSA: {:?}", error),
         };
     }
+
+    // ---------- Print basic information about the given MSA
+    if args.info {
+        print_info(&msa);
+    }
+
     // ---------- Create the most probable sequence and print sequence identity between that sequence and any in the input set
     if args.max_sequence {
         let profile = SequenceProfile::new(ProfileColumnOrder::aa_standard_gapped(), &msa);
