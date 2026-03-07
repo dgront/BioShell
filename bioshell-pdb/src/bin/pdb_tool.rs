@@ -19,7 +19,7 @@ fn create_cookbook() -> String { format!("{}{}", "\x1B[4mCookbook:\x1B[0m\n", ma
 #[command(group(
     ArgGroup::new("input")
     .required(true)
-    .args(&["infile", "pdb_id"])
+    .args(&["infile", "pdb_id", "examples"])
 ))]
 #[clap(author, version, about, long_about = None, arg_required_else_help = true, after_long_help = create_cookbook())]
 /// Command line tool to operate on PDB files
@@ -112,7 +112,10 @@ struct Args {
     select_entity: Option<String>,
     /// be more verbose and log program actions on the screen
     #[clap(short, long, short='v')]
-    verbose: bool
+    verbose: bool,
+    /// print a cookbook of example command lines
+    #[clap(long, action)]
+    examples: bool,
 }
 
 fn filter<F: PdbAtomPredicate>(strctr: &Structure, filter: &F) -> Structure {
@@ -219,6 +222,11 @@ fn main() -> Result<(), PDBError> {
 
     info!("Build time: {}", build_time);
     info!("Git commit MD5 sum: {}", git_commit_md5);
+
+    if args.examples {
+        println!("{}", create_cookbook());
+        return Ok(());
+    }
 
     // ---------- INPUT section
     let deposit = load_deposit(&args)?;
