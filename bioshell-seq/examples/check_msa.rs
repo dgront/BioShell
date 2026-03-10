@@ -3,11 +3,11 @@ use clap::{Parser};
 #[allow(unused_imports)]
 use log::{debug, info};
 
-use bioshell_seq::sequence::filters::{AlwaysTrue, DescriptionContains, SequenceFilter};
-use bioshell_seq::sequence::{clone_ungapped, count_identical, FastaIterator, len_ungapped, ProfileColumnOrder, Sequence, SequenceProfile, StockholmIterator};
+use bioshell_seq::sequence::filters::{DescriptionContains, SequenceFilter};
+use bioshell_seq::sequence::{count_identical, FastaIterator, len_ungapped, ProfileColumnOrder, Sequence, SequenceProfile};
 
 use bioshell_io::{open_file, out_writer};
-use bioshell_seq::msa::MSA;
+use bioshell_seq::msa::{MSA, StockholmMSA};
 use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
@@ -17,9 +17,9 @@ struct Args {
     /// input MSA file in the FASTA format
     #[clap(short='f', long)]
     in_fasta: Option<String>,
-    /// input MSA file in the ClustalW / the Stockholm format
-    #[clap(short='w', long)]
-    in_clw: Option<String>,
+    /// input MSA file in the Stockholm format
+    #[clap(short='s', long)]
+    in_sto: Option<String>,
     /// prints info about number of sequences in a given MSA and their lengths
     #[clap(long, action)]
     info: bool,
@@ -32,15 +32,15 @@ struct Args {
     /// compute sequence profile
     #[clap(short='p', long)]
     profile: bool,
-    /// remove gaps from all sequences
-    #[clap(long)]
-    remove_gaps: bool,
     /// select sequences which descriptions contain a given substring
-    #[clap(short='s', long)]
-    select: Option<String>,
-    /// output MSA file in the FASTA format; use the --select option to save a part of the MSA
+    #[clap(short='d', long)]
+    desc_has: Option<String>,
+    /// output MSA file in the FASTA format; use the --desc-has option to save a part of the MSA
     #[clap(short='o', long)]
     out_fasta: Option<String>,
+    /// output MSA file in the Stockholm format
+    #[clap(short='o', long)]
+    out_sto: Option<String>,
     /// be more verbose and log program actions on the screen
     #[clap(short, long, short='v')]
     verbose: bool,
@@ -78,22 +78,21 @@ pub fn main() -> Result<(), SequenceError> {
     info!("Build time: {}", build_time);
     info!("Git commit MD5 sum: {}", git_commit_md5);
 
-    let mut msa: MSA = MSA::default();
-    // ---------- Read input MSA in the CLW (clustal-w) format
-    if let Some(fname) = args.in_clw {
+
+    // ---------- Create an empty MSA
+    let mut msa: StockholmMSA = MSA::default().into();
+
+    // ---------- Read input MSA in the Stockholm (.sto) format
+    if let Some(fname) = args.in_sto {
         let mut reader = open_file(&fname)?;
-        let seq = StockholmIterator::from_stockholm_reader(&mut reader);
-        msa = match MSA::from_sequences(seq) {
-            Ok(msa) => msa,
-            Err(error) => panic!("Incorrect sequence(s) found in MSA: {:?}", error),
-        };
+        msa = StockholmMSA::from_stockholm_reader(&mut reader)?;
     }
     // ---------- Read input MSA in the .fasta format
     if let Some(fname) = args.in_fasta {
-        let mut reader = open_file(&fname)?;
+        let reader = open_file(&fname)?;
         let seq: Vec<Sequence> = FastaIterator::new(reader).collect();
         msa = match MSA::from_sequences(seq) {
-            Ok(msa) => msa,
+            Ok(msa) => msa.into(),
             Err(error) => panic!("Incorrect sequence(s) found in MSA: {:?}", error),
         };
     }
@@ -145,22 +144,16 @@ pub fn main() -> Result<(), SequenceError> {
         println!("# min, max: {} {}", min_id, max_id);
     }
 
+    if let Some(substr) = args.desc_has {
+        let filter = Box::new(DescriptionContains{ substring: substr });
+        let seq: Vec<Sequence> = msa.sequences().iter().filter(|s| filter.filter(s)).cloned().collect();
+        msa = MSA::from_sequences(seq)?.into();
+    }
+
     // ---------- Convert the input MSA to FASTA format
     if let Some(fname) = args.out_fasta {
         let mut writer = out_writer(&fname, false);
-        // ---------- Filter to print only selected sequences from the MSA
-        let mut filter: Box<dyn SequenceFilter> = Box::new(AlwaysTrue);
-        if let Some(substr) = args.select {
-            filter = Box::new(DescriptionContains{ substring: substr });
-        }
-
-        for si in msa.sequences().iter().filter(|s| filter.filter(&s)) {
-            if args.remove_gaps {
-                writer.write(format!("{}", clone_ungapped(si)).as_bytes()).ok();
-            } else {
-                writer.write(format!("{}", si).as_bytes()).ok();
-            }
-        }
+        write!(writer, "{}", msa)?;
     }
     Ok(())
 }

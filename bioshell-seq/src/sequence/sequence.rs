@@ -1,8 +1,5 @@
 
-use std::collections::HashMap;
-use std::fmt;
 use std::io::{BufRead, BufReader};
-use std::marker::PhantomData;
 use std::hash::{Hash, Hasher};
 use crate::errors::SequenceError;
 use crate::msa::MSA;
@@ -105,11 +102,14 @@ impl Sequence {
         self.description[0..len].as_ref()
     }
 
-    /// Return a string slice holding the ID of this sequence
+    /// Return a string containing all the IDs known for this sequence
     ///
     /// According to the NCBI standard, the FASTA header line should provide the unique identifier.
     /// The ID should be no longer than 25 characters and cannot contain any spaces; its fields should
-    /// be separated by vertical bar (`|`) characters
+    /// be separated by vertical bar (`|`) characters.
+    ///
+    /// This method extracts all identifiers found in the description
+    /// of this sequence and concatenates them into a single string.
     ///
     /// # Example
     /// ```rust
@@ -121,7 +121,6 @@ impl Sequence {
     /// assert_eq!("gb|AAD44166.1", seq.id());
     /// ```
     pub fn id(&self) -> String {
-        eprintln!("{:?}", parse_sequence_id(&self.description));
         parse_sequence_id(&self.description)[0].to_string()
     }
 
@@ -173,34 +172,6 @@ impl Sequence {
 
     fn filter_to_u8(seq: &str) -> Vec<u8> {
         seq.chars().filter(|c| c != &' ' && c != &'*').map(|c| c as u8).collect()
-    }
-}
-
-impl fmt::Display for Sequence {
-    /// Creates a `String` representation of a `Sequence` - FASTA format
-    /// # Examples
-    ///
-    /// Create a `Sequence` and turn it into a string
-    ///
-    /// ```rust
-    /// use bioshell_seq::sequence::Sequence;
-    /// use std::fmt::Write;
-    /// // create a Sequence object
-    /// let seq_id = String::from("2gb1");
-    /// let sequence = b"MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
-    /// let seq = Sequence::from_attrs(seq_id, sequence.to_vec());
-    ///
-    /// let mut actual = String::new();
-    /// // populate `actual` with a string representation of the sequence
-    /// write!(actual, "{}", seq).unwrap();
-    ///
-    /// let expected = "> 2gb1\nMTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE\n";
-    ///
-    /// assert_eq!(actual, expected)
-    /// ```
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        let line_width = f.width().unwrap_or(0);
-        write!(f, "> {}\n{}\n", self.description(), self.to_string(line_width))
     }
 }
 
@@ -291,94 +262,6 @@ impl<R: BufRead> Iterator for FastaIterator<R> {
     }
 }
 
-
-/// Iterator that reads sequences from a Stockholm-formatted buffer.
-///
-/// The Stockholm format is typically used to store a multiple alignment, e.g. used by HMMER, Pfam, and Rfam.
-/// The first line of a Stockholm file (``.sto``, or ``.stk``) states the format and version identifier,
-/// currently ``# STOCKHOLM 1.0``. The header is followed by mark-up lines beginning with ``#``.
-/// These mark-up lines can annotate features of the alignment file (``#=GF``, generic per-file annotation),
-/// or features of the aligned sequences (``#=GS``, generic per-sequence annotation).
-/// The sequence alignment itself is a series of lines with sequence names (typically in the form name/start-end)
-/// followed by a space and the aligned sequence. A line with two forward slashes (``//``) indicates the end of the alignment.
-///
-/// For the detailed description and a list of allowed annotations, see [Stockholm specification](https://sonnhammer.sbc.su.se/Stockholm.html)
-///
-pub struct StockholmIterator<R> {
-    data: Vec<Sequence>,
-    idx: usize,
-    phantom: PhantomData<R>,
-}
-
-impl<R: BufRead> StockholmIterator<R> {
-    pub fn new(stream: &mut R) -> Self {
-        let data = StockholmIterator::from_stockholm_reader(stream);
-        StockholmIterator { data: data, idx: 0, phantom: PhantomData, }
-    }
-
-    /// Read sequences in Stockholm format.
-    ///
-    /// Currently, the function reads only the sequences; their annotations are not loaded
-    ///
-    /// For the detailed description of the format, see: `<https://sonnhammer.sbc.su.se/Stockholm.html>`
-    pub fn from_stockholm_reader(reader: &mut R) -> Vec<Sequence> {
-
-        let mut out:Vec<Sequence> = Vec::new();
-        let mut lines:Vec<String> = Vec::new();
-        let mut buffer = String::new();
-        let mut data: HashMap<String, String> = HashMap::new();
-        let mut keys: Vec<String> = vec![];
-
-        loop {
-            buffer.clear();
-            let cnt = reader.read_line(&mut buffer);
-            match cnt {
-                Ok(cnt) => { if cnt == 0 { break; } },
-                Err(e) => panic!("Cannot read from a Stockholm buffer, error occurred:  {:?}", e),
-            };
-            // --- Remove header produced by the muscle program
-            if buffer.starts_with("MUSCLE (") { continue }
-            // --- first 8 spaces meand there is no seq-id => no sequence entry here, just markup
-            if buffer.starts_with("        ") { continue }
-            if ! buffer.starts_with('#') {      // --- the reader doesn't parse sequence annotations yet
-                let tokens: Vec<&str> = buffer.split_ascii_whitespace().collect::<Vec<&str>>();
-                if tokens.len() != 2 { continue;}
-                else {
-                    let seq_id: String = tokens[0].to_owned();
-                    let seq: String = tokens[1].to_owned();
-                    match data.get_mut(&seq_id) {
-                        None => {
-                            data.insert(seq_id.clone(), seq);
-                            keys.push(seq_id);
-                        }
-                        Some(subseq) => {
-                            subseq.push_str(&seq);
-                        }
-                    };
-                }
-                lines.push(buffer.to_owned());
-            }
-        }
-        for key in keys {
-            let seq: &String = data.get(&key).unwrap();
-            out.push(Sequence::new(&key, seq));
-        }
-
-        return out;
-    }
-}
-
-impl<S> Iterator for StockholmIterator<S> where S: BufRead {
-
-    type Item = Sequence;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.idx < self.data.len() {
-            self.idx += 1;
-            return Some(self.data[self.idx-1].clone());
-        } else { return None; }
-    }
-}
 
 /// Defines how A3M data will be processed
 pub enum A3mConversionMode {

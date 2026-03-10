@@ -21,12 +21,23 @@ pub enum SequenceError {
         /// Found length
         length_found: usize,
     },
+
     #[error("The following description: '{description}' has been found in more than one sequence")]
     /// The following description: "{description}" has been found in more than one sequence
     IdenticalSequenceDescriptions {
         /// multiplied description
         description: String,
     },
+
+    #[error("Invalid Stockholm file format")]
+    /// Invalid Stockholm file format
+    InvalidStockholmFormat {
+        /// the line causing the error
+        line: String,
+        /// error description
+        description: String,
+    },
+
     #[error("General I/O error occurred while reading or writing a sequence file")]
     /// I/O error occurred while reading a sequence file
     Io(#[from] std::io::Error),

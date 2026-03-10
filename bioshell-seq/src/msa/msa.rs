@@ -2,7 +2,7 @@ use std::io::BufRead;
 use std::collections::{HashMap, HashSet};
 
 use crate::errors::SequenceError;
-use crate::sequence::{FastaIterator, Sequence, StockholmIterator};
+use crate::sequence::{FastaIterator, Sequence};
 
 #[derive(Default, Clone, Debug)]
 /// Multiple Sequence Alignment is a `Vec` of  [`Sequence`](Sequence) objects of the same length.
@@ -30,19 +30,15 @@ impl MSA {
         return Ok(MSA { msa });
     }
 
-    pub fn from_stockholm_reader<R: BufRead>(reader: &mut R) -> Result<Self, SequenceError> {
-        let msa = StockholmIterator::new( reader).into_iter().collect();
-        Self::check_msa(&msa)?;
-        return Ok(MSA { msa });
-    }
-
     pub fn from_fasta_reader<R: BufRead>(reader: &mut R) -> Result<Self, SequenceError> {
         let msa = FastaIterator::new( reader).into_iter().collect();
         Self::check_msa(&msa)?;
         return Ok(MSA { msa });
     }
 
-    /// Returns the length of each sequence of this alignment
+    /// Returns the length of each sequence of this alignment.
+    ///
+    /// It is assumed all the aligned sequences of this MSA have the same length, if we include gaps.
     ///
     /// # Example
     /// ```rust
@@ -65,6 +61,25 @@ impl MSA {
     /// assert_eq!(msa.n_seq(), 2);
     /// ```
     pub fn n_seq(&self) ->usize { self.msa.len() }
+
+    /// Looks for a sequence for a given ID.
+    /// # Example
+    /// ```rust
+    /// # use bioshell_seq::sequence::Sequence;
+    /// # use bioshell_seq::msa::MSA;
+    /// let msa = MSA::from_sequences(vec![Sequence::from_str("seq-1", "PERF"),
+    ///                                    Sequence::from_str("seq-2", "PERV")]).unwrap();
+    /// let seq1 = msa.by_id("seq-1");
+    /// assert!(seq1.is_some());
+    /// ```
+    pub fn by_id(&self, id_str: &str) -> Option<&Sequence> {
+        for seq in &self.msa {
+            if seq.description().contains(id_str) {
+                return Some(seq);
+            }
+        }
+        None
+    }
 
     /// Provide immutable access to the sequences of this alignment
     pub fn sequences(&self) -> &Vec<Sequence> { &self.msa }
@@ -109,7 +124,7 @@ impl MSA {
 
     /// Computes the sequence identity fraction between two sequences of this MSA.
     ///
-    /// This methods merely returns the `identical_count()` divided by the length of the sequences
+    /// This method merely returns the `identical_count()` divided by the length of the sequences
     pub fn identical_fraction(&self, i_seq: usize, j_seq: usize) -> f64 {
 
         return self.identical_count(i_seq, j_seq) as f64 / self.len() as f64;
