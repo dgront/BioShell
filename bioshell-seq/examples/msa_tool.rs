@@ -48,7 +48,7 @@ struct Args {
     #[clap(short='o', long)]
     out_fasta: Option<String>,
     /// output MSA file in the Stockholm format
-    #[clap(short='o', long)]
+    #[clap(long)]
     out_sto: Option<String>,
     /// be more verbose and log program actions on the screen
     #[clap(short, long, short='v')]
@@ -182,10 +182,16 @@ pub fn main() -> Result<(), SequenceError> {
         msa = MSA::from_sequences(seq)?.into();
     }
 
+    // ---------- Convert the input MSA to Stockholm format
+    if let Some(fname) = args.out_sto {
+        let mut writer = out_writer(&fname, false);
+        write!(writer, "{}", msa)?;
+    }
+
     // ---------- Convert the input MSA to FASTA format
     if let Some(fname) = args.out_fasta {
         let mut writer = out_writer(&fname, false);
-        write!(writer, "{}", msa)?;
+        write!(writer, "{}", msa.msa())?;
     }
     Ok(())
 }

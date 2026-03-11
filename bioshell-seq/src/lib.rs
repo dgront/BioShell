@@ -1,5 +1,8 @@
 //! Efficiently process biological sequences and their annotations.
 //!
+//! A brief summary of the `bioshell-seq` library features are provided below. Documentation
+//! of command line executables may be found in [cookbook](documentation)
+//!
 //! This crate is designed to facilitate common tasks related to protein and nucleic sequences
 //! as well as sequence profiles. It provides:
 //!  - [`Sequence`](crate::sequence::Sequence) struct to store an amino acid or a nucleic sequence, which can be loaded from the following file formats:
@@ -15,6 +18,7 @@
 //!     object may be created from an [`MSA`](crate::msa::MSA) instance
 //!
 //!
+pub mod documentation;
 
 mod errors;
 pub mod chemical;
