@@ -81,6 +81,47 @@ impl MSA {
         None
     }
 
+    /// Clears this `MSA` by removing all the sequences from it.
+    ///
+    /// # Example
+    /// ```rust
+    /// use bioshell_seq::sequence::Sequence;
+    /// use bioshell_seq::msa::MSA;
+    /// let mut msa = MSA::from_sequences(vec![Sequence::from_str("seq-1", "PERF"),
+    ///                                    Sequence::from_str("seq-2", "PERV")]).unwrap();
+    /// msa.clear();
+    /// assert_eq!(msa.n_seq(), 0);
+    /// ```
+    pub fn clear(&mut self) {
+        self.msa.clear();
+    }
+
+    /// Add a new sequence to this `MSA`
+    ///
+    /// The newly added sequence must be of the same length as all the other sequences (including gaps)
+    ///
+    /// # Example
+    /// ```
+    /// use bioshell_seq::msa::MSA;
+    /// use bioshell_seq::sequence::Sequence;
+    /// # use bioshell_seq::SequenceError;
+    /// # fn main() -> Result<(), SequenceError> {
+    /// let mut msa = MSA::default();
+    /// msa.add_sequence(Sequence::from_str("motif 1","-PERF-"));
+    /// msa.add_sequence(Sequence::from_str("motif 3","-P-RV-"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn add_sequence(&mut self, sequence: Sequence) -> Result<(), SequenceError> {
+        if self.msa.len() > 0 {
+            if sequence.len() != self.msa[0].len() {
+                return Err(SequenceError::NewSequenceOfDifferentLength { length_expected: self.msa[0].len(), length_found: sequence.len() })
+            }
+        }
+        self.msa.push(sequence);
+        return Ok(());
+    }
+
     /// Provide immutable access to the sequences of this alignment
     pub fn sequences(&self) -> &Vec<Sequence> { &self.msa }
 

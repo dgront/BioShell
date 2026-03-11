@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 use std::fmt;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use crate::msa::MSA;
 use crate::sequence::Sequence;
 
@@ -107,6 +107,12 @@ impl Deref for StockholmMSA {
     type Target = MSA;
 
     fn deref(&self) -> &Self::Target { &self.msa }
+}
+
+impl DerefMut for StockholmMSA {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.msa
+    }
 }
 
 impl From<MSA> for StockholmMSA {

@@ -4,7 +4,7 @@ use clap::{Parser};
 use log::{debug, info};
 
 use bioshell_seq::sequence::filters::{DescriptionContains, SequenceFilter};
-use bioshell_seq::sequence::{count_identical, FastaIterator, len_ungapped, ProfileColumnOrder, Sequence, SequenceProfile};
+use bioshell_seq::sequence::{count_identical, FastaIterator, len_ungapped, ProfileColumnOrder, remove_gaps_by_sequence, Sequence, SequenceProfile, trim_by_sequence};
 
 use bioshell_io::{open_file, out_writer};
 use bioshell_seq::msa::{MSA, StockholmMSA};
@@ -35,7 +35,16 @@ struct Args {
     /// select sequences which descriptions contain a given substring
     #[clap(short='d', long)]
     desc_has: Option<String>,
-    /// output MSA file in the FASTA format; use the --desc-has option to save a part of the MSA
+    /// remove all the letters from all sequences that are aligned to a gap in the reference sequence
+    ///
+    /// This option creates an alignment where the reference sequence (pointed out by its ID) will
+    /// have no gaps and all other sequences may be shortened
+    #[clap(long)]
+    trim_by_gaps: Option<String>,
+    /// remove all the letters from both ends of all sequences that are aligned to an N-terminal or C-terminal gap in the reference sequence
+    #[clap(long)]
+    trim_by_ends: Option<String>,
+    /// output MSA file in the FASTA format
     #[clap(short='o', long)]
     out_fasta: Option<String>,
     /// output MSA file in the Stockholm format
@@ -62,6 +71,7 @@ fn print_info(msa: &MSA) {
     println!("longest:     {:4}", lengths[n_seq-1]);
     println!("median:      {:4}", lengths[n_seq/2]);
 }
+
 
 pub fn main() -> Result<(), SequenceError> {
 
@@ -110,6 +120,28 @@ pub fn main() -> Result<(), SequenceError> {
             let idnt = count_identical(&s, si).unwrap();
             let lenu =  len_ungapped(si);
             println!("{} {:4} / {:4} = {:.2}%", si.id(), idnt, lenu, idnt as f64 / lenu as f64 * 100.0);
+        }
+    }
+
+    // ---------- Trim the alignment by the reference sequence
+    if let Some(seq_id) = args.trim_by_gaps {
+        let ref_seq = msa.by_id(&seq_id).ok_or(SequenceError::InvalidSequenceID{ seq_id: seq_id.to_string() })?;
+        info!("removing gapped columns according to {}",seq_id);
+        let mut filtered_seq = remove_gaps_by_sequence(ref_seq, msa.sequences());
+        msa.clear();
+        for seq in filtered_seq.into_iter() {
+            msa.add_sequence(seq)?;
+        }
+    }
+
+    // ---------- Trim the alignment by the reference sequence
+    if let Some(seq_id) = args.trim_by_ends {
+        let ref_seq = msa.by_id(&seq_id).ok_or(SequenceError::InvalidSequenceID{ seq_id: seq_id.to_string() })?;
+        info!("trimming the MSA according to {}",seq_id);
+        let mut filtered_seq = trim_by_sequence(ref_seq, msa.sequences())?;
+        msa.clear();
+        for seq in filtered_seq.into_iter() {
+            msa.add_sequence(seq)?;
         }
     }
 
