@@ -19,8 +19,8 @@
    ```ignore
    msa_tool -s test_files/4Fe-4S-example.sto -o out.fasta
    ```
-   - Convert the MSA in fasta format to Stockholm
+   - Convert the MSA in fasta format to Stockholm, print on the screen
    ```ignore
-   msa_tool -f alignment.fasta --out-sto output.sto
+   msa_tool -f alignment.fasta --out-sto 
    ```
 

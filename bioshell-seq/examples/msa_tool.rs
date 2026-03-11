@@ -45,11 +45,11 @@ struct Args {
     #[clap(long)]
     trim_by_ends: Option<String>,
     /// output MSA file in the FASTA format
-    #[clap(short='o', long)]
-    out_fasta: Option<String>,
+    #[clap(short='o', long, num_args=0..=1)]
+    out_fasta: Option<Option<String>>,
     /// output MSA file in the Stockholm format
-    #[clap(long)]
-    out_sto: Option<String>,
+    #[clap(long, num_args=0..=1)]
+    out_sto: Option<Option<String>>,
     /// be more verbose and log program actions on the screen
     #[clap(short, long, short='v')]
     verbose: bool,
@@ -183,14 +183,22 @@ pub fn main() -> Result<(), SequenceError> {
     }
 
     // ---------- Convert the input MSA to Stockholm format
-    if let Some(fname) = args.out_sto {
-        let mut writer = out_writer(&fname, false);
+    if let Some(value) = args.out_sto {
+        let mut writer = if let Some(fname) = value {
+            out_writer(&fname, false)
+        } else {
+            out_writer("", false)
+        };
         write!(writer, "{}", msa)?;
     }
 
     // ---------- Convert the input MSA to FASTA format
-    if let Some(fname) = args.out_fasta {
-        let mut writer = out_writer(&fname, false);
+    if let Some(value) = args.out_fasta {
+        let mut writer = if let Some(fname) = value {
+            out_writer(&fname, false)
+        } else {
+            out_writer("", false)
+        };
         write!(writer, "{}", msa.msa())?;
     }
     Ok(())
