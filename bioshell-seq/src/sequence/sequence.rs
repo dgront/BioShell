@@ -326,17 +326,23 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 /// Removes gaps from a sequence alignment
 ///
 /// Given a gapped sequence and a (multiple) sequence alignment, this function removes
-/// the columns from the alignment where the reference sequence has a gap.
+/// the columns from the alignment where the reference sequence has a gap. Note, that
+/// this may remove amino acid residues from other sequences and make them shorter. The reference
+/// sequence will have only all its gaps removed.
+///
 /// # Arguments
 /// * `reference` - a reference sequence
-/// * `sequences` - aligned sequences, e.g. a multiple sequence alignment
+/// * `sequences` - sequences of a multiple sequence alignment
 ///
 /// # Example
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, StockholmIterator, remove_gaps_by_sequence};
-/// use std::io::{BufReader};
-///
-/// let alignment = "A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
+/// use bioshell_seq::sequence::{Sequence, remove_gaps_by_sequence};
+/// # use std::io::{BufReader};
+/// use bioshell_seq::msa::StockholmMSA;
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
+/// let alignment = "# STOCKHOLM 1.0
+/// A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
 /// A0A6G1KYC8/54-83                -------TK----AT---AW-EM--PK-QM---
 /// A0A2Z6MTB8/60-86                -------TR----QS---SW-EK--P-------
 /// A0A2Z6MTB8/102-129              -------TQ----QS---TW-TI--PEE-----
@@ -346,13 +352,15 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 /// UPI00057AF938/507-540           -------TR----TT---TW-KH--PC------
 /// UPI00138FB958/985-1021          -------TQ----QT---SW-LH--PVSQ----";
 /// let mut reader = BufReader::new(alignment.as_bytes());
-/// let mut sequences = StockholmIterator::from_stockholm_reader(&mut reader);
-/// let ref_seq = sequences[8].clone();
-/// remove_gaps_by_sequence(&ref_seq, &mut sequences);
-/// assert_eq!("TKQTTWEKPA--", sequences[0].to_string(0));
-/// assert_eq!("TQQTSWLHPVSQ", sequences[8].to_string(0));
+/// let mut msa = StockholmMSA::from_stockholm_reader(&mut reader)?;
+/// let ref_seq = msa.sequences()[8].clone();
+/// let trimmed_seq = remove_gaps_by_sequence(&ref_seq, msa.sequences());
+/// assert_eq!("TKQTTWEKPA--", trimmed_seq[0].to_string(0));
+/// assert_eq!("TQQTSWLHPVSQ", trimmed_seq[8].to_string(0));
+/// # Ok(())
+/// # }
 /// ```
-pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequence>) {
+pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) -> Vec<Sequence> {
 
     let n_seq: usize = sequences.len();
     // --- check if all the sequences are of the same length
@@ -367,7 +375,8 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
         let c = reference.seq[i] as char;
         if c != '-' && c != '_' { pos.push(i); }
     }
-    // --- copy
+    // --- create new sequences
+    let mut out_seq: Vec<Sequence> = vec![];
     for j in 0..n_seq {
         let id = &sequences[j].description;
         let old_aa: &Vec<u8> = sequences[j].seq();
@@ -375,8 +384,76 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
         for pi in &pos {
             new_aa.push(old_aa[*pi]);
         }
-        sequences[j] = Sequence::from_attrs(id.clone(), new_aa);
+        out_seq.push(Sequence::from_attrs(id.clone(), new_aa));
     }
+
+    return out_seq;
+}
+
+/// Trims a sequence alignment by a reference sequence
+///
+/// Given a gapped sequence and a (multiple) sequence alignment, this function removes
+/// characters from both end of each sequence in `sequences` that correspond to a gap
+/// in the `reference` sequence
+///
+/// # Arguments
+/// * `reference` - a reference sequence
+/// * `sequences` - sequences of a multiple sequence alignment
+///
+/// # Example
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, trim_by_sequence};
+/// # use std::io::{BufReader};
+/// use bioshell_seq::msa::StockholmMSA;
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
+/// let alignment = "# STOCKHOLM 1.0
+/// A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
+/// A0A6G1KYC8/54-83                -------TK----AT---AW-EM--PK-QM---
+/// A0A2Z6MTB8/60-86                -------TR----QS---SW-EK--P-------
+/// A0A2Z6MTB8/102-129              -------TQ----QS---TW-TI--PEE-----
+/// H2XMA8/16-49                    -------TQ----RT---TW-QD--PR------
+/// UPI000A31515F/122-163           -------TR----ES---AW-TK--PD------
+/// UPI000A31515F/383-441           -------TL----ES---TW-EK--PQE-----
+/// UPI00057AF938/507-540           -------TR----TT---TW-KH--PC------
+/// UPI00138FB958/985-1021          -------TQ----QT---SW-LH--PVSQ----";
+/// let mut reader = BufReader::new(alignment.as_bytes());
+/// let mut msa = StockholmMSA::from_stockholm_reader(&mut reader)?;
+/// let ref_seq = msa.sequences()[8].clone();
+/// let trimmed_seq = trim_by_sequence(&ref_seq, msa.sequences())?;
+/// assert_eq!("TK----QT---TW-EK--PA--", trimmed_seq[0].to_string(0));
+/// assert_eq!("TQ----QT---SW-LH--PVSQ", trimmed_seq[8].to_string(0));
+/// # Ok(())
+/// # }
+/// ```
+pub fn trim_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) -> Result<Vec<Sequence>, SequenceError> {
+
+    // --- count how many gaps to trim on each end
+    let leading = reference.seq().iter().take_while(|&c| *c == b'-' || *c == b'_').count();
+    let trailing = reference.seq().iter().rev().take_while(|&c| *c == b'-' || *c == b'_').count();
+
+    let from = reference.seq().iter()
+        .take_while(|&&b| b == b'-' || b == b'_')
+        .count();
+
+    let to = reference.len() - reference.seq().iter()
+        .rev()
+        .take_while(|&&b| b == b'-' || b == b'_')
+        .count();
+    // --- create new sequences
+    let mut out_seq: Vec<Sequence> = vec![];
+
+    let ref_len = reference.len();
+    for s in sequences {
+        if ref_len != s.len() {
+            return Err(SequenceError::AlignedSequencesOfDifferentLengths { length_expected: ref_len, length_found: s.len() });
+        }
+
+        let new_seq: Vec<u8> = s.seq()[from..to].iter().cloned().collect();
+        out_seq.push(Sequence::from_attrs(s.description.clone(), new_seq));
+    }
+
+    return Ok(out_seq);
 }
 
 /// Counts residues of a given type in a [`Sequence`](Sequence)
