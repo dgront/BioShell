@@ -36,8 +36,8 @@ struct Args {
     #[clap( long)]
     medoid: bool,
     /// select sequences which descriptions contain a given substring
-    #[clap(short='d', long)]
-    desc_has: Option<String>,
+    #[clap(long)]
+    in_description: Option<String>,
     /// remove all the letters from all sequences that are aligned to a gap in the reference sequence
     ///
     /// This option creates an alignment where the reference sequence (pointed out by its ID) will
