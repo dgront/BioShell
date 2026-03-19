@@ -31,7 +31,7 @@ impl MSA {
     }
 
     pub fn from_fasta_reader<R: BufRead>(reader: &mut R) -> Result<Self, SequenceError> {
-        let msa = FastaIterator::new( reader).into_iter().collect();
+        let msa = FastaIterator::new( reader).into_iter().collect::<Result<Vec<_>, _>>()?;
         Self::check_msa(&msa)?;
         return Ok(MSA { msa });
     }

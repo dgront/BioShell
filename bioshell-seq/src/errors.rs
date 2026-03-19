@@ -45,6 +45,15 @@ pub enum SequenceError {
         description: String,
     },
 
+    #[error("Invalid Fasta file format")]
+    /// Invalid Stockholm file format
+    InvalidFastaFormat {
+        /// the line causing the error
+        line: String,
+        /// error description
+        description: String,
+    },
+
     #[error("General I/O error occurred while reading or writing a sequence file")]
     /// I/O error occurred while reading a sequence file
     Io(#[from] std::io::Error),
@@ -52,6 +61,11 @@ pub enum SequenceError {
     #[error("The provided string is not a valid sequence pattern: {pattern}")]
     /// The provided string is not a valid sequence pattern
     IncorrectSequencePattern{ pattern: String },
+
+
+    #[error("The provided set of sequences or a multiple sequence alignment is empty")]
+    /// The provided set of sequences or a multiple sequence alignment is empty
+    NoInputSequences,
 }
 
 #[derive(Debug, Error, Display, PartialEq)]

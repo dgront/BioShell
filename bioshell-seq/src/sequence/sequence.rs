@@ -8,7 +8,7 @@ use crate::sequence::parse_sequence_id;
 #[derive(Default, Clone, Debug, PartialEq)]
 /// Amino acid / nucleic sequence.
 ///
-/// In `Rust` a char data type takes four bytes, which is not needed for biological alphabets. Therefore
+/// In `Rust` a char data type takes four bytes, which is not needed for biological alphabets. Therefore,
 /// the [`Sequence`](Sequence) struct stores an amino acid or a nucleic sequence as `Vec<u8>`.
 ///
 pub struct Sequence {
@@ -20,6 +20,7 @@ pub struct Sequence {
 
 impl Sequence {
     /// Create a new instance of a Sequence from Strings.
+    ///
     /// # Example
     /// ```rust
     /// use bioshell_seq::sequence::Sequence;
@@ -227,7 +228,7 @@ impl<R: BufRead> FastaIterator<R> {
 
 impl<R: BufRead> Iterator for FastaIterator<R> {
 
-    type Item = Sequence;
+    type Item = Result<Sequence, SequenceError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -235,20 +236,26 @@ impl<R: BufRead> Iterator for FastaIterator<R> {
             match self.reader.read_line(&mut self.buffer) {
                 Ok(0) => {
                     if self.seq.len() > 0 {
-                        let ret = Some(Sequence::new(&self.header, &self.seq));
+                        let ret = Sequence::new(&self.header, &self.seq);
                         self.seq.clear();
-                        return ret;
+                        return Some(Ok(ret));
                     }
                     return None;
                 },
                 Ok(_) => {
                     let line = self.buffer.trim();
+                    if line.starts_with('#') {
+                        return Some(Err(SequenceError::InvalidFastaFormat{
+                            line: line.to_string(),
+                            description: "Fasta line must not start with '#' character".to_string()
+                        }));
+                    }
                     if line.starts_with('>') {                  // --- It's a header!
                         if self.seq.len() > 0 {                      // --- we already have a sequence to return
-                            let ret = Some(Sequence::new(&self.header, &self.seq));
+                            let ret = Sequence::new(&self.header, &self.seq);
                             self.header = self.buffer[1..].trim().to_owned();
                             self.seq.clear();
-                            return ret;
+                            return Some(Ok(ret));
                         } else {
                             self.header = self.buffer[1..].trim().to_owned();
                         }
@@ -256,7 +263,7 @@ impl<R: BufRead> Iterator for FastaIterator<R> {
                         if line.len() > 0 { self.seq.push_str(line); }
                     }
                 }
-                Err(_) => return None,
+                Err(err) => return Some(Err(SequenceError::Io(err))),
             }
         }
     }
