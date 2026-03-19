@@ -7,7 +7,7 @@ use bioshell_seq::sequence::filters::{DescriptionContains, SequenceFilter};
 use bioshell_seq::sequence::{count_identical, FastaIterator, len_ungapped, ProfileColumnOrder, remove_gaps_by_sequence, Sequence, SequenceProfile, trim_by_sequence};
 
 use bioshell_io::{open_file, out_writer};
-use bioshell_seq::msa::{MSA, StockholmMSA};
+use bioshell_seq::msa::{medoid_sequence, MSA, StockholmMSA};
 use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
@@ -32,6 +32,9 @@ struct Args {
     /// compute sequence profile
     #[clap(short='p', long)]
     profile: bool,
+    /// print the medoid - the sequence that represents a given MSA
+    #[clap( long)]
+    medoid: bool,
     /// select sequences which descriptions contain a given substring
     #[clap(short='d', long)]
     desc_has: Option<String>,
@@ -148,6 +151,11 @@ pub fn main() -> Result<(), SequenceError> {
     // ---------- Compute and print a sequence profile
     if args.profile {
         println!("{}",SequenceProfile::new(ProfileColumnOrder::aa_standard_gapped(), &msa));
+    }
+
+    // ---------- Print the medoid sequence
+    if args.medoid {
+        println!("{}", &medoid_sequence(&msa)?)
     }
 
     if args.pairwise_identity {

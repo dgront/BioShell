@@ -98,13 +98,13 @@ pub fn longest_sequence(msa: &MSA) -> Result<Sequence, SequenceError> {
 pub fn medoid_sequence(msa: &MSA) -> Result<Sequence, SequenceError> {
 
     if msa.n_seq()==0 { return Err(SequenceError::NoInputSequences) }
-
+    let mut seq_len = vec![0; msa.n_seq()];
     let mut row_mins = vec![usize::MAX; msa.n_seq()];
     for (i,si) in msa.sequences().iter().enumerate() {
+        seq_len[i] = len_ungapped(si);
         for (j,sj) in msa.sequences().iter().enumerate() {
             if i == j { break; }
             let ids= count_identical(&sj, si).unwrap();
-            eprintln!("{} {} {}", i, j, ids);
             row_mins[i] = row_mins[i].min(ids);
             row_mins[j] = row_mins[j].min(ids);
         }
@@ -114,7 +114,8 @@ pub fn medoid_sequence(msa: &MSA) -> Result<Sequence, SequenceError> {
     let mut best_val = row_mins[0];
 
     for i in 1..msa.n_seq() {
-        if row_mins[i] > best_val {
+        if row_mins[i] > best_val ||
+            (row_mins[i] == best_val && seq_len[i] > seq_len[best_seq]) {
             best_val = row_mins[i];
             best_seq = i;
         }
