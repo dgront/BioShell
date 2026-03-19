@@ -34,6 +34,21 @@ impl fmt::Display for StockholmMSA {
 
 impl StockholmMSA {
     /// Reads a Stockholm alignment, processing also annotations such as `#=GF` or `#=GS`
+    ///
+    /// # Example
+    /// ```
+    /// # use std::fs::File;
+    /// # use std::io::BufReader;
+    /// # use bioshell_seq::msa::StockholmMSA;
+    /// # use bioshell_seq::SequenceError;
+    /// # fn main() -> Result<(), SequenceError> {
+    /// let file = File::open("tests/test_files/4Fe-4S-example.sto")?;
+    /// let mut sto_reader = BufReader::new(file);
+    /// let msa = StockholmMSA::from_stockholm_reader(&mut sto_reader)?;
+    /// assert_eq!(msa.n_seq(), 6);
+    /// Ok(())
+    /// # }
+    /// ```
     pub fn from_stockholm_reader<R: BufRead>(reader: &mut R) -> Result<Self, SequenceError> {
         let mut gf: HashMap<GfEntryType, Vec<String>> = HashMap::new();
         let mut gs: HashMap<String, HashMap<GsEntryType, Vec<String>>> = HashMap::new();

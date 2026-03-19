@@ -5,8 +5,10 @@ pub use msa::*;
 mod display_msa;
 
 mod stockholm_io;
-mod stockholm_msa;
-mod msa_calculations;
+// pub use stockholm_io::*;
 
+mod stockholm_msa;
 pub use stockholm_msa::*;
 
+mod msa_calculations;
+pub use msa_calculations::*;
