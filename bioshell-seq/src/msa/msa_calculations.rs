@@ -17,13 +17,40 @@ pub fn most_probable_sequence(msa: &MSA) -> Result<Sequence, SequenceError> {
 /// Returns the longest sequence in the given [`MSA`].
 ///
 /// The newly returned object is a copy of the longest sequence with gaps removed. Results in
-/// [`SequenceError`] when the [`MSA`] contains no sequences
+/// [`SequenceError`] when the [`MSA`] contains no sequences.
+///
+/// # Example
+/// ```
+/// # use bioshell_seq::sequence::FastaIterator;
+/// # use bioshell_seq::SequenceError;
+/// # use std::io::BufReader;
+/// # fn main() -> Result<(), SequenceError> {
+/// use bioshell_seq::msa::{longest_sequence, MSA};
+/// let fasta_input="
+/// > syb:TZ53_18285
+/// --MSQKLKVVIDKAACCGYGVCAEICPQVYKLDANGIVYVDDEIV-----
+/// > 646611275
+/// ------MPAKVDENLCTGCGLCEEICPEVFKLDENGISRVVGDCE-----
+/// > EGCR1_03845
+/// ------MKCEIIPERCIACGLCQTIAPEIFDYTDDGLVLFVGEPEATHEF
+/// > SPSE_0307
+/// ---MMSYYAYVDRDMCIACSACGAAAPRLFRYDAQGIAYMCLDCNSGTAQ
+/// > BBR47_24240
+/// MGGETTMTTWVDKDTCIACGACGATAPDVFDYDDEGLAFNKLDDNANSVE
+/// ";
+/// let mut reader = BufReader::new(fasta_input.as_bytes());
+/// let msa = MSA::from_fasta_reader(&mut reader)?;
+/// let longest = longest_sequence(&msa)?;
+/// assert_eq!(longest.seq(), b"MGGETTMTTWVDKDTCIACGACGATAPDVFDYDDEGLAFNKLDDNANSVE");
+/// # Ok(())
+/// # }
+/// ```
 pub fn longest_sequence(msa: &MSA) -> Result<Sequence, SequenceError> {
 
     if msa.n_seq()==0 { return Err(SequenceError::NoInputSequences) }
 
     let mut longest_seq = &msa.sequences()[0];
-    let mut longest_len = longest_seq.len();
+    let mut longest_len = len_ungapped(longest_seq);
     for s in msa.sequences() {
         let l = len_ungapped(s);
         if l> longest_len {
@@ -37,6 +64,37 @@ pub fn longest_sequence(msa: &MSA) -> Result<Sequence, SequenceError> {
     return Ok(seq);
 }
 
+/// Returns the longest sequence in the given [`MSA`].
+///
+/// The newly returned object is a copy of the longest sequence with gaps removed. Results in
+/// [`SequenceError`] when the [`MSA`] contains no sequences.
+///
+/// # Example
+/// ```
+/// # use bioshell_seq::sequence::FastaIterator;
+/// # use bioshell_seq::SequenceError;
+/// # use std::io::BufReader;
+/// # fn main() -> Result<(), SequenceError> {
+/// use bioshell_seq::msa::{medoid_sequence, MSA};
+/// let fasta_input="
+/// > syb:TZ53_18285
+/// --MSQKLKVVIDKAACCGYGVCAEICPQVYKLDANGIVYVDDEIV-----
+/// > 646611275
+/// ------MPAKVDENLCTGCGLCEEICPEVFKLDENGISRVVGDCE-----
+/// > EGCR1_03845
+/// ------MKCEIIPERCIACGLCQTIAPEIFDYTDDGLVLFVGEPEATHEF
+/// > SPSE_0307
+/// ---MMSYYAYVDRDMCIACSACGAAAPRLFRYDAQGIAYMCLDCNSGTAQ
+/// > BBR47_24240
+/// MGGETTMTTWVDKDTCIACGACGATAPDVFDYDDEGLAFNKLDDNANSVE
+/// ";
+/// let mut reader = BufReader::new(fasta_input.as_bytes());
+/// let msa = MSA::from_fasta_reader(&mut reader)?;
+/// let longest = medoid_sequence(&msa)?;
+/// assert_eq!(longest.seq(), b"MGGETTMTTWVDKDTCIACGACGATAPDVFDYDDEGLAFNKLDDNANSVE");
+/// # Ok(())
+/// # }
+/// ```
 pub fn medoid_sequence(msa: &MSA) -> Result<Sequence, SequenceError> {
 
     if msa.n_seq()==0 { return Err(SequenceError::NoInputSequences) }

@@ -64,7 +64,6 @@ PERV
 
 #[test]
 fn read_stockholm_msa() -> Result<(), SequenceError>{
-    // let mut sto_reader = BufReader::new(msa_stockholm.as_bytes());
     let file = File::open("tests/test_files/4Fe-4S-example.sto")?;
     let mut sto_reader = BufReader::new(file);
     let msa = StockholmMSA::from_stockholm_reader(&mut sto_reader).unwrap();
