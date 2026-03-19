@@ -100,7 +100,7 @@ pub fn main() -> Result<(), SequenceError> {
     // ---------- Read input MSA in the .fasta format
     if let Some(fname) = args.in_fasta {
         let reader = open_file(&fname)?;
-        let seq: Vec<Sequence> = FastaIterator::new(reader).collect();
+        let seq: Vec<Sequence> = FastaIterator::new(reader).collect::<Result<Vec<_>,_>>()?;
         msa = match MSA::from_sequences(seq) {
             Ok(msa) => msa.into(),
             Err(error) => panic!("Incorrect sequence(s) found in MSA: {:?}", error),

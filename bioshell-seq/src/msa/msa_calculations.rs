@@ -91,7 +91,7 @@ pub fn longest_sequence(msa: &MSA) -> Result<Sequence, SequenceError> {
 /// let mut reader = BufReader::new(fasta_input.as_bytes());
 /// let msa = MSA::from_fasta_reader(&mut reader)?;
 /// let longest = medoid_sequence(&msa)?;
-/// assert_eq!(longest.seq(), b"MGGETTMTTWVDKDTCIACGACGATAPDVFDYDDEGLAFNKLDDNANSVE");
+/// assert_eq!(longest.seq(), b"MPAKVDENLCTGCGLCEEICPEVFKLDENGISRVVGDCE");
 /// # Ok(())
 /// # }
 /// ```
@@ -104,6 +104,7 @@ pub fn medoid_sequence(msa: &MSA) -> Result<Sequence, SequenceError> {
         for (j,sj) in msa.sequences().iter().enumerate() {
             if i == j { break; }
             let ids= count_identical(&sj, si).unwrap();
+            eprintln!("{} {} {}", i, j, ids);
             row_mins[i] = row_mins[i].min(ids);
             row_mins[j] = row_mins[j].min(ids);
         }

@@ -2,6 +2,7 @@
 #[cfg(test)]
 mod tests {
     use bioshell_seq::sequence::{bucket_clustering, FastaIterator, Sequence};
+    use bioshell_seq::SequenceError;
 
     const FDX_FASTA: &str = ">2Fe-2SST1(rhl:LPU83_2264)Rhizobium favelukesii
 MPKLTIVAFDGTRFDLDVDQGSTVMENAVRNSVPGIEAECGGACACATCHVYVDDEWTER
@@ -32,8 +33,8 @@ MPRLKFIAFDGTEFDIQADNGSTLMQNAVRNGVPGIEAECGGACACATCHVYVDEAWAEI
 VGPPEPMEEDMLDFAYDVRPTSRLSCQVRVREELDGLTVRIPERQG";
 
     #[test]
-    fn test_fdx_buckets() {
-        let fdx_sequences = FastaIterator::new(FDX_FASTA.as_bytes()).collect::<Vec<Sequence>>();
+    fn test_fdx_buckets() -> Result<(), SequenceError> {
+        let fdx_sequences = FastaIterator::new(FDX_FASTA.as_bytes()).collect::<Result<Vec<Sequence>, _>>()?;
         let fdx_clusters = bucket_clustering(&fdx_sequences, 0.8);
 
         for (i, cluster) in fdx_clusters.iter().enumerate() {
@@ -42,5 +43,6 @@ VGPPEPMEEDMLDFAYDVRPTSRLSCQVRVREELDGLTVRIPERQG";
                 println!("  - {}", seq.id());
             }
         }
+        Ok(())
     }
 }

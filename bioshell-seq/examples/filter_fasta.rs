@@ -115,7 +115,8 @@ pub fn main() -> Result<(), SequenceError> {
         if_fasta_retrieve = true;
         let reader = open_file(&qfile)?;
         let seq_iter = FastaIterator::new(reader);
-        for sequence in seq_iter {
+        for seq_result in seq_iter {
+            let sequence = seq_result?;
             let id = String::from(sequence.id());
             query_fasta.push((sequence.to_string(out_width), id));
         }
@@ -187,7 +188,8 @@ pub fn main() -> Result<(), SequenceError> {
 
     let start = Instant::now();
 
-    for sequence in seq_iter {
+    for seq_result in seq_iter {
+        let sequence= seq_result?;
         cnt_all += 1;
         // ---------- check basic filters first
         let mut filters_ok = true;

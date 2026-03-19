@@ -227,9 +227,6 @@ trait InsertRow<T: FromStr> {
 
 impl<T: FromStr+Clone> Table<T> {
     pub fn new_empty() -> Self { Table { data: vec![] } }
-    pub fn new_allocated(n_rows: usize, n_columns: usize, val: T) -> Self {
-        Table { data:  vec![vec![val; n_rows]; n_columns]}
-    }
 }
 
 struct TableOfRows<T:FromStr> { table: Table<T>, }

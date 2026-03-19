@@ -196,6 +196,8 @@ impl Hash for Sequence {
 /// # Examples
 /// ```rust
 /// use bioshell_seq::sequence::FastaIterator;
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
 /// let sequences: &str = "> 1clf:A
 /// AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
 ///
@@ -205,8 +207,10 @@ impl Hash for Sequence {
 /// > 1fca:A
 /// AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
 /// let seqs = FastaIterator::new(sequences.as_bytes());
-/// let seq_ids: Vec<String> = seqs.map(|s| s.id().to_string()).collect();
+/// let seq_ids: Vec<String> = seqs.map(|r| r.map(|s| s.id().to_string())).collect::<Result<Vec<_>,_>>()?;
 /// assert_eq!(seq_ids, vec!["1clf:A", "1dur:A", "1fca:A"]);
+/// # Ok(())
+/// # }
 /// ```
 pub struct FastaIterator<R> {
     reader: BufReader<R>,
@@ -436,9 +440,6 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) 
 pub fn trim_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) -> Result<Vec<Sequence>, SequenceError> {
 
     // --- count how many gaps to trim on each end
-    let leading = reference.seq().iter().take_while(|&c| *c == b'-' || *c == b'_').count();
-    let trailing = reference.seq().iter().rev().take_while(|&c| *c == b'-' || *c == b'_').count();
-
     let from = reference.seq().iter()
         .take_while(|&&b| b == b'-' || b == b'_')
         .count();

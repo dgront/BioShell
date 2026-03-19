@@ -232,7 +232,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("Reading sequences in fasta fromat from {fasta}");
         let mut reporter = WriteFasta::new(None, 0, false);
         let sequences = FastaIterator::new(open_file(fasta)?);
-        for seq in sequences {
+        for res_seq in sequences {
+            let seq = res_seq?;
             let desc = seq.description();
             if let Some(taxid) = matcher.find(&desc) {
                 let node = taxonomy.node(taxid).unwrap();

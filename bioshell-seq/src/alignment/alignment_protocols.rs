@@ -15,6 +15,8 @@ use crate::sequence::Sequence;
 /// To align sequences, first load them into a ``Vec``, e.g. using the [`FastaIterator`](`crate::sequence::FastaIterator``):
 /// ```
 /// use bioshell_seq::sequence::{Sequence, FastaIterator};
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
 /// let sequences_str: &str =
 /// "> 1clf:A
 /// AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
@@ -24,8 +26,10 @@ use crate::sequence::Sequence;
 /// AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
 ///
 /// let fasta_iter = FastaIterator::new(sequences_str.as_bytes());
-/// let sequences: Vec<Sequence> = fasta_iter.collect();
+/// let sequences: Vec<Sequence> = fasta_iter.collect::<Result<Vec<_>, _>>()?;
 /// # assert_eq!(sequences.len(), 3);
+/// Ok(())
+/// }
 /// ```
 /// ## to align all pairs of sequences from the ``sequences`` vector:
 ///
@@ -34,6 +38,8 @@ use crate::sequence::Sequence;
 /// use bioshell_seq::alignment::{align_all_pairs, SimilarityReport};
 /// use bioshell_seq::scoring::SubstitutionMatrixList;
 /// # use bioshell_seq::sequence::{Sequence, FastaIterator};
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
 /// # let sequences_str: &str = "> 1clf:A
 /// # AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
 /// # > 1dur:A
@@ -41,10 +47,12 @@ use crate::sequence::Sequence;
 /// # > 1fca:A
 /// # AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
 /// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes());
-/// # let sequences: Vec<Sequence> = fasta_iter.collect();
+/// # let sequences: Vec<Sequence> = fasta_iter.collect::<Result<Vec<_>, _>>()?;
 ///
 /// let mut reporter = SimilarityReport::new(0, false);
 /// align_all_pairs(&sequences, &sequences, SubstitutionMatrixList::BLOSUM62, -10, -1, true, &mut reporter);
+/// Ok(())
+/// }
 /// ```
 ///
 /// ## to align every sequence from the ``queries`` vector with each sequence from the ``templates`` vector:
@@ -54,6 +62,8 @@ use crate::sequence::Sequence;
 /// use bioshell_seq::alignment::{align_all_pairs, SimilarityReport};
 /// use bioshell_seq::scoring::SubstitutionMatrixList;
 /// # use bioshell_seq::sequence::{Sequence, FastaIterator};
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
 /// # let sequences_str: &str = "> 1clf:A
 /// # AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
 /// # > 1dur:A
@@ -61,12 +71,14 @@ use crate::sequence::Sequence;
 /// # > 1fca:A
 /// # AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
 /// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes());
-/// # let queries: Vec<Sequence> = fasta_iter.collect();
+/// # let queries: Vec<Sequence> = fasta_iter.collect::<Result<Vec<_>, _>>()?;
 /// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes());
-/// # let templates: Vec<Sequence> = fasta_iter.collect();
+/// # let templates: Vec<Sequence> = fasta_iter.collect::<Result<Vec<_>, _>>()?;
 ///
 /// let mut reporter = SimilarityReport::new(0, false);
 /// align_all_pairs(&queries, &templates, SubstitutionMatrixList::BLOSUM62, -10, -1, false, &mut reporter);
+/// Ok(())
+/// }
 /// ```
 pub fn align_all_pairs<R: AlignmentReporter>(queries: &Vec<Sequence>, templates: &Vec<Sequence>,
         matrix: SubstitutionMatrixList, gap_open: i32, gap_extend: i32, if_triangle_only: bool, reporter: &mut R) {
