@@ -130,7 +130,7 @@ pub fn main() -> Result<(), SequenceError> {
     if let Some(seq_id) = args.trim_by_gaps {
         let ref_seq = msa.by_id(&seq_id).ok_or(SequenceError::InvalidSequenceID{ seq_id: seq_id.to_string() })?;
         info!("removing gapped columns according to {}",seq_id);
-        let mut filtered_seq = remove_gaps_by_sequence(ref_seq, msa.sequences());
+        let filtered_seq = remove_gaps_by_sequence(ref_seq, msa.sequences());
         msa.clear();
         for seq in filtered_seq.into_iter() {
             msa.add_sequence(seq)?;
@@ -141,7 +141,7 @@ pub fn main() -> Result<(), SequenceError> {
     if let Some(seq_id) = args.trim_by_ends {
         let ref_seq = msa.by_id(&seq_id).ok_or(SequenceError::InvalidSequenceID{ seq_id: seq_id.to_string() })?;
         info!("trimming the MSA according to {}",seq_id);
-        let mut filtered_seq = trim_by_sequence(ref_seq, msa.sequences())?;
+        let filtered_seq = trim_by_sequence(ref_seq, msa.sequences())?;
         msa.clear();
         for seq in filtered_seq.into_iter() {
             msa.add_sequence(seq)?;

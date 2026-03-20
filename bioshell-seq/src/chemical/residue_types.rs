@@ -377,6 +377,7 @@ macro_rules! define_res_types {
             }
         }
 
+        #[allow(unreachable_patterns)]
         impl TryFrom<char> for StandardResidueType {
             type Error = String;
 

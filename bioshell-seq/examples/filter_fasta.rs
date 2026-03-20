@@ -7,7 +7,6 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
-use clap::builder::TypedValueParser;
 use bioshell_seq::sequence::{FastaIterator, parse_sequence_id, Sequence, SequenceReporter, SplitFasta, WriteFasta};
 use bioshell_seq::sequence::filters::{HasSequenceMotif, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan,
                              ContainsAA, ContainsX, LogicalNot, DescriptionContains};
