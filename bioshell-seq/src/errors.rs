@@ -6,27 +6,54 @@ use thiserror::Error;
 /// Errors that may be thrown while processing sequences or multiple sequence alignments
 pub enum SequenceError {
     #[error("Expected aligned sequences of length {length_expected}, found sequences of lengths: {length_found}")]
-    /// Expected aligned sequences of length {length_expected}, found sequences of lengths: {length_found}
+    /// A sequence has been found that doesn't match by length to the alignment
     AlignedSequencesOfDifferentLengths {
         /// Expected length
         length_expected: usize,
         /// Found length
         length_found: usize,
     },
-    #[error("Expected new aligned sequence of length {length_expected}, found sequence of length {length_found}")]
-    /// Expected new aligned sequence of length {length_expected}, found sequence of length {length_found}
+    #[error("Expected the new aligned sequence of length {length_expected}, found sequence of length {length_found}")]
+    /// Attempted to add a sequence that doesn't match by length to the alignment
     NewSequenceOfDifferentLength {
         /// Expected length
         length_expected: usize,
         /// Found length
         length_found: usize,
     },
+
     #[error("The following description: '{description}' has been found in more than one sequence")]
-    /// The following description: "{description}" has been found in more than one sequence
+    /// The given `description` has been found in more than one sequence
     IdenticalSequenceDescriptions {
         /// multiplied description
         description: String,
     },
+
+    #[error("Can't locate a sequence for the given ID: '{seq_id}'")]
+    /// Can't locate a sequence for the given `seq_id`
+    InvalidSequenceID {
+        /// the ID of the missing sequence
+        seq_id: String,
+    },
+
+    #[error("Invalid Stockholm file format")]
+    /// Invalid Stockholm file format
+    InvalidStockholmFormat {
+        /// the line causing the error
+        line: String,
+        /// error description
+        description: String,
+    },
+
+    #[error("Invalid Fasta file format")]
+    /// Invalid Stockholm file format
+    InvalidFastaFormat {
+        /// the line causing the error
+        line: String,
+        /// error description
+        description: String,
+    },
+
     #[error("General I/O error occurred while reading or writing a sequence file")]
     /// I/O error occurred while reading a sequence file
     Io(#[from] std::io::Error),
@@ -34,6 +61,11 @@ pub enum SequenceError {
     #[error("The provided string is not a valid sequence pattern: {pattern}")]
     /// The provided string is not a valid sequence pattern
     IncorrectSequencePattern{ pattern: String },
+
+
+    #[error("The provided set of sequences or a multiple sequence alignment is empty")]
+    /// The provided set of sequences or a multiple sequence alignment is empty
+    NoInputSequences,
 }
 
 #[derive(Debug, Error, Display, PartialEq)]

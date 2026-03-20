@@ -4,7 +4,7 @@ use std::io::{BufRead, BufReader};
 use clap::Parser;
 use bioshell_taxonomy::{Node, Rank, Taxonomy, TaxonomyMatcher}; // Assuming your module is named `bioshell_taxonomy`
 use std::path::PathBuf;
-use log::info;
+use log::{info, warn};
 use env_logger;
 
 use bioshell_io::{markdown_to_text, open_file};
@@ -27,6 +27,10 @@ struct Cli {
     /// detect species in a sequence description
     #[arg(short = 'd', long)]
     detect: Option<String>,
+
+    /// detect species in sequence description loaded from a file
+    #[arg(long)]
+    detect_file: Option<String>,
 
     /// detect species in every sequence description in a given .fasta file
     #[arg(short = 'f', long)]
@@ -51,6 +55,10 @@ struct Cli {
     /// download the most recent taxdump.tar.gz file from the NCBI website
     #[clap(long)]
     download: bool,
+
+    /// string used as a separator for the text fields in the output; the default is ' : ' (space colon space)
+    #[arg(long = "separator")]
+    separator: Option<String>,
 
     /// print also the selected nodes of the lineage for each species
     #[clap(short, long, short='l')]
@@ -107,12 +115,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dump_file = format!("{}/taxdump.tar.gz", args.path.display());
     let taxonomy = Taxonomy::load_from_tar_gz(&dump_file)?;
 
+    let separator: &str = if let Some(ref sep) = args.separator { sep } else { " : " };
+
     let mut nodes: Vec<&Node> = vec![];
     if let Some(name) = args.name {
-        if let Some(taxid) = taxonomy.taxid(&name) {
+        if let Some(taxid) = taxonomy.taxid(&name.replace('_', " ")) {
             nodes.push(taxonomy.node(taxid).unwrap());
         } else {
-            println!("Name '{}' not found in taxonomy.", name);
+            warn!("Name '{}' not found in taxonomy.", name);
         }
     }
 
@@ -120,18 +130,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(node) = taxonomy.node(taxid) {
             nodes.push(node);
         } else {
-            println!("TaxID '{}' not found in taxonomy.", taxid);
+            warn!("TaxID '{}' not found in taxonomy.", taxid);
         }
     }
 
     if let Some(fname) = args.names_file {
+        info!("Reading species names from {fname}");
         let file = File::open(fname)?;
         let reader = BufReader::new(file);
         reader.lines().map(|line| line.unwrap()).for_each(|line| {
+            let line = line.trim().replace('_', " ");
             if let Some(taxid) = taxonomy.taxid(&line) {
                 if let Some(node) = taxonomy.node(taxid) {
                     nodes.push(node);
                 }
+            } else {
+                warn!("Can't find taxonomy information for >{line}<")
             }
         });
     }
@@ -141,6 +155,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for taxid in reader.lines().map(|line| line.unwrap().parse::<u32>().unwrap()) {
             if let Some(node) = taxonomy.node(taxid) {
                 nodes.push(node);
+            } else {
+                warn!("TaxID '{}' not found in taxonomy.", taxid);
             }
         }
     }
@@ -148,23 +164,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for n in &nodes {
         if args.json {
             if !args.lineage {
-                println!("{}", serde_json::to_string_pretty(&n).expect("Can't serialize a Node struct!"));
+                warn!("{}", serde_json::to_string_pretty(&n).expect("Can't serialize a Node struct!"));
             }
         } else {
-            print!("{} {} ", n.tax_id, n.name);
+            print!("{}{}{}{} ", n.tax_id, separator, n.name, separator);
         }
-        if args.rank { print!("{:?} ", n.rank); }
+        if args.rank { print!("{:?}{}", n.rank, separator); }
         if args.kingdom {
-            if let Some(kingdom) = taxonomy.rank(n.tax_id, Rank::Kingdom) { print!("{} ", kingdom.name); }
+            if let Some(kingdom) = taxonomy.rank(n.tax_id, Rank::Kingdom) { print!("{}{}", kingdom.name, separator); }
         }
         if args.domain {
-            if let Some(domain) = taxonomy.rank(n.tax_id, Rank::Superkingdom) { print!("{} ", domain.name); }
+            if let Some(domain) = taxonomy.rank(n.tax_id, Rank::Superkingdom) { print!("{}{}", domain.name, separator); }
         }
         if !args.json {
-            print!(": ");
+//            print!("{}", separator);
 
             for synonym in taxonomy.names(n.tax_id) {
-                if synonym != &n.name { print!("{}; ", synonym); }
+                if synonym != &n.name { print!("{}{} ", synonym, separator); }
             }
             println!();
         }
@@ -197,7 +213,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if args.detect.is_none() && args.detect_fasta.is_none() {
+    if args.detect.is_none() && args.detect_fasta.is_none() && args.detect_file.is_none() {
         return Ok(());
     }
 
@@ -213,9 +229,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if let Some(fasta) = args.detect_fasta {
+        info!("Reading sequences in fasta fromat from {fasta}");
         let mut reporter = WriteFasta::new(None, 0, false);
         let sequences = FastaIterator::new(open_file(fasta)?);
-        for seq in sequences {
+        for res_seq in sequences {
+            let seq = res_seq?;
             let desc = seq.description();
             if let Some(taxid) = matcher.find(&desc) {
                 let node = taxonomy.node(taxid).unwrap();
@@ -226,6 +244,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 reporter.report(&seq)?;
             }
         }
+    }
+
+    if let Some(fname) = args.detect_file {
+        info!("Reading sequence descriptions from {fname}");
+        let file = File::open(fname)?;
+        let reader = BufReader::new(file);
+        reader.lines().map(|line| line.unwrap()).for_each(|line| {
+            let line = line.trim().replace('_', " ");
+            let taxid = matcher.find(&line);
+            if let Some(taxid) = taxid {
+                let node = taxonomy.node(taxid).unwrap();
+                println!("{} : {}", node.tax_id, node.name);
+            } else {
+                warn!("Can't find taxonomy information for >{line}<")
+            }
+        });
     }
 
     Ok(())

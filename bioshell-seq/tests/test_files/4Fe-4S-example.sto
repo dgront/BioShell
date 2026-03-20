@@ -1,0 +1,31 @@
+# STOCKHOLM 1.0
+#=GF ID   Ferredoxin_4Fe4S
+#=GF AC   FERREDOXIN_4FE4S
+#=GF DE   Ferredoxin family protein containing a putative 4Fe-4S cluster-binding motif
+#=GF TP   Family
+#=GF AU   BioShell v.4 example
+#=GF SQ   6
+
+#=GS syb:TZ53_18285   DE Ferredoxin family protein, 4Fe-4S subfamily
+#=GS 646611275        DE Ferredoxin family protein, 4Fe-4S subfamily
+#=GS EGCR1_03845      DE Ferredoxin family protein, 4Fe-4S subfamily
+#=GS SPSE_0307        DE Ferredoxin family protein, 4Fe-4S subfamily
+#=GS BBR47_24240      DE Ferredoxin family protein, 4Fe-4S subfamily
+#=GS SporoP37_10355   DE Ferredoxin family protein, 4Fe-4S subfamily
+
+syb:TZ53_18285       --MSQKLKVVIDKAACCGYGVCAEICPQVYKLDANGIVYVDDEIV-----
+646611275            ------MPAKVDENLCTGCGLCEEICPEVFKLDENGISRVVGDCE-----
+EGCR1_03845          ------MKCEIIPERCIACGLCQTIAPEIFDYTDDGLVLFVGEPEATHEF
+SPSE_0307            ---MMSYYAYVDRDMCIACSACGAAAPRLFRYDAQGIAYMCLDCNSGTAQ
+BBR47_24240          MGGETTMTTWVDKDTCIACGACGATAPDVFDYDDEGLAFNKLDDNANSVE
+SporoP37_10355       ----MAQYTMVERSTCIACGACNPVAPELFDYTADGFAFALLDDNEGITE
+#=GC seq_cons        ..M...M....V.D.CIACG.C.....P..F.YD.DG.A....D......
+
+syb:TZ53_18285       -PEGLEEQAREGAEACPQSALAVGAA--------
+646611275            -A--NIDCCQEAAESCPAGAITIE----------
+EGCR1_03845          IPESQQDAVIQSAKRCPSHAILYQNS--------
+SPSE_0307            IPECDLGNLDDAVENCPTSAITVGQQPFSLSSI-
+BBR47_24240          IPDILHDDVRDAAEGCPTDSIKVE----------
+SporoP37_10355       VPEDLIEDLEDAFEGCPTNSIKMADAPFSCQGIE
+#=GC seq_cons        .P....D....A..GC.P..AI............
+//

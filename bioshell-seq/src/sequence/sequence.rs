@@ -1,22 +1,14 @@
 
-use std::collections::HashMap;
-use std::fmt;
 use std::io::{BufRead, BufReader};
-use std::marker::PhantomData;
 use std::hash::{Hash, Hasher};
-use once_cell::sync::Lazy;
-use regex::Regex;
 use crate::errors::SequenceError;
 use crate::msa::MSA;
-
-static SPECIES_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"OS=(.+?)(?:\s[A-Z]{2,}=|$)").expect("Invalid regex for species name extraction!")
-});
+use crate::sequence::parse_sequence_id;
 
 #[derive(Default, Clone, Debug, PartialEq)]
 /// Amino acid / nucleic sequence.
 ///
-/// In `Rust` a char data type takes four bytes, which is not needed for biological alphabets. Therefore
+/// In `Rust` a char data type takes four bytes, which is not needed for biological alphabets. Therefore,
 /// the [`Sequence`](Sequence) struct stores an amino acid or a nucleic sequence as `Vec<u8>`.
 ///
 pub struct Sequence {
@@ -28,6 +20,7 @@ pub struct Sequence {
 
 impl Sequence {
     /// Create a new instance of a Sequence from Strings.
+    ///
     /// # Example
     /// ```rust
     /// use bioshell_seq::sequence::Sequence;
@@ -110,13 +103,14 @@ impl Sequence {
         self.description[0..len].as_ref()
     }
 
-    /// Return a String slice holding the ID of this sequence
+    /// Return a string containing all the IDs known for this sequence
     ///
     /// According to the NCBI standard, the FASTA header line should provide the unique identifier.
     /// The ID should be no longer than 25 characters and cannot contain any spaces; its fields should
     /// be separated by vertical bar (`|`) characters.
     ///
-    /// Such an ID string as ``gi|5524211|gb|AAD44166.1|`` can be parsed by [`parse_sequence_id()`](crate::parse_sequence_id) function.
+    /// This method extracts all identifiers found in the description
+    /// of this sequence and concatenates them into a single string.
     ///
     /// # Example
     /// ```rust
@@ -125,52 +119,10 @@ impl Sequence {
     /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     /// let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
     /// let seq = Sequence::from_attrs(header, sequence.to_vec());
-    /// assert_eq!("gi|5524211|gb|AAD44166.1|", seq.id());
+    /// assert_eq!("gb|AAD44166.1", seq.id());
     /// ```
-    pub fn id(&self) -> &str {
-        self.description.split_whitespace().next().unwrap()
-    }
-
-    /// Attempts to extract a species name from the sequence's description.
-    ///
-    /// First looks for ``OS=Species name`` (UniProt format), then for ``[Species name]`` (NCBI format).
-    /// When parting the NCBI entry, this method extracts the content of the last outer square bracket, e.g.:
-    ///```
-    /// use bioshell_seq::sequence::Sequence;
-    /// let seq = Sequence::from_str("NP_569145.1 unnamed protein product [Miscanthus streak virus - [91]]", "ACDEF");
-    /// assert_eq!(seq.species(), Some("Miscanthus streak virus - [91]"));
-    /// let seq = Sequence::from_str("YP_874065.1 UDP-3-O-[3-hydroxy-myristory] glucosamine N-acyltransferase [Thermus phage phiYS40]", "ACDEF");
-    /// assert_eq!(seq.species(), Some("Thermus phage phiYS40"));
-    ///
-    ///```
-    pub fn species(&self) -> Option<&str> {
-        // Step 1: Try OS=... pattern
-        if let Some(cap) = SPECIES_REGEX.captures(&self.description) {
-            return cap.get(1).map(|m| m.as_str().trim());
-        }
-
-        // Step 2: Try [ ... ] pattern
-        let mut result = None;
-        let mut depth = 0;
-        let mut start_pos = 0;
-
-        for (i, c) in self.description.char_indices() {
-            match c {
-                '[' => {
-                    if depth == 0 { start_pos = i; }
-                    depth += 1;
-                }
-                ']' => {
-                    if depth > 0 {
-                        depth -= 1;
-                        if depth == 0 { result = Some((start_pos, i)); }
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        result.map(|(start, end)| &self.description[start+1..end])
+    pub fn id(&self) -> String {
+        parse_sequence_id(&self.description)[0].to_string()
     }
 
     /// Return the reference of the sequence itself
@@ -224,34 +176,6 @@ impl Sequence {
     }
 }
 
-impl fmt::Display for Sequence {
-    /// Creates a `String` representation of a `Sequence` - FASTA format
-    /// # Examples
-    ///
-    /// Create a `Sequence` and turn it into a string
-    ///
-    /// ```rust
-    /// use bioshell_seq::sequence::Sequence;
-    /// use std::fmt::Write;
-    /// // create a Sequence object
-    /// let seq_id = String::from("2gb1");
-    /// let sequence = b"MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE";
-    /// let seq = Sequence::from_attrs(seq_id, sequence.to_vec());
-    ///
-    /// let mut actual = String::new();
-    /// // populate `actual` with a string representation of the sequence
-    /// write!(actual, "{}", seq).unwrap();
-    ///
-    /// let expected = "> 2gb1\nMTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE\n";
-    ///
-    /// assert_eq!(actual, expected)
-    /// ```
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        let line_width = f.width().unwrap_or(0);
-        write!(f, "> {}\n{}\n", self.description(), self.to_string(line_width))
-    }
-}
-
 
 impl Hash for Sequence {
     /// Computes a hash for a given sequence
@@ -272,6 +196,8 @@ impl Hash for Sequence {
 /// # Examples
 /// ```rust
 /// use bioshell_seq::sequence::FastaIterator;
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
 /// let sequences: &str = "> 1clf:A
 /// AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
 ///
@@ -281,8 +207,10 @@ impl Hash for Sequence {
 /// > 1fca:A
 /// AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
 /// let seqs = FastaIterator::new(sequences.as_bytes());
-/// let seq_ids: Vec<String> = seqs.map(|s| s.id().to_string()).collect();
+/// let seq_ids: Vec<String> = seqs.map(|r| r.map(|s| s.id().to_string())).collect::<Result<Vec<_>,_>>()?;
 /// assert_eq!(seq_ids, vec!["1clf:A", "1dur:A", "1fca:A"]);
+/// # Ok(())
+/// # }
 /// ```
 pub struct FastaIterator<R> {
     reader: BufReader<R>,
@@ -304,7 +232,7 @@ impl<R: BufRead> FastaIterator<R> {
 
 impl<R: BufRead> Iterator for FastaIterator<R> {
 
-    type Item = Sequence;
+    type Item = Result<Sequence, SequenceError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -312,20 +240,26 @@ impl<R: BufRead> Iterator for FastaIterator<R> {
             match self.reader.read_line(&mut self.buffer) {
                 Ok(0) => {
                     if self.seq.len() > 0 {
-                        let ret = Some(Sequence::new(&self.header, &self.seq));
+                        let ret = Sequence::new(&self.header, &self.seq);
                         self.seq.clear();
-                        return ret;
+                        return Some(Ok(ret));
                     }
                     return None;
                 },
                 Ok(_) => {
                     let line = self.buffer.trim();
+                    if line.starts_with('#') {
+                        return Some(Err(SequenceError::InvalidFastaFormat{
+                            line: line.to_string(),
+                            description: "Fasta line must not start with '#' character".to_string()
+                        }));
+                    }
                     if line.starts_with('>') {                  // --- It's a header!
                         if self.seq.len() > 0 {                      // --- we already have a sequence to return
-                            let ret = Some(Sequence::new(&self.header, &self.seq));
+                            let ret = Sequence::new(&self.header, &self.seq);
                             self.header = self.buffer[1..].trim().to_owned();
                             self.seq.clear();
-                            return ret;
+                            return Some(Ok(ret));
                         } else {
                             self.header = self.buffer[1..].trim().to_owned();
                         }
@@ -333,100 +267,12 @@ impl<R: BufRead> Iterator for FastaIterator<R> {
                         if line.len() > 0 { self.seq.push_str(line); }
                     }
                 }
-                Err(_) => return None,
+                Err(err) => return Some(Err(SequenceError::Io(err))),
             }
         }
     }
 }
 
-
-/// Iterator that reads sequences from a Stockholm-formatted buffer.
-///
-/// The Stockholm format is typically used to store a multiple alignment, e.g. used by HMMER, Pfam, and Rfam.
-/// The first line of a Stockholm file (``.sto``, or ``.stk``) states the format and version identifier,
-/// currently ``# STOCKHOLM 1.0``. The header is followed by mark-up lines beginning with ``#``.
-/// These mark-up lines can annotate features of the alignment file (``#=GF``, generic per-file annotation),
-/// or features of the aligned sequences (``#=GS``, generic per-sequence annotation).
-/// The sequence alignment itself is a series of lines with sequence names (typically in the form name/start-end)
-/// followed by a space and the aligned sequence. A line with two forward slashes (``//``) indicates the end of the alignment.
-///
-/// For the detailed description and a list of allowed annotations, see [Stockholm specification](https://sonnhammer.sbc.su.se/Stockholm.html)
-///
-pub struct StockholmIterator<R> {
-    data: Vec<Sequence>,
-    idx: usize,
-    phantom: PhantomData<R>,
-}
-
-impl<R: BufRead> StockholmIterator<R> {
-    pub fn new(stream: &mut R) -> Self {
-        let data = StockholmIterator::from_stockholm_reader(stream);
-        StockholmIterator { data: data, idx: 0, phantom: PhantomData, }
-    }
-
-    /// Read sequences in Stockholm format.
-    ///
-    /// Currently the function reads only the sequences; their annotations are not loaded
-    ///
-    /// For the detailed description of the format, see: `<https://sonnhammer.sbc.su.se/Stockholm.html>`
-    pub fn from_stockholm_reader(reader: &mut R) -> Vec<Sequence> {
-
-        let mut out:Vec<Sequence> = Vec::new();
-        let mut lines:Vec<String> = Vec::new();
-        let mut buffer = String::new();
-        let mut data: HashMap<String, String> = HashMap::new();
-        let mut keys: Vec<String> = vec![];
-
-        loop {
-            buffer.clear();
-            let cnt = reader.read_line(&mut buffer);
-            match cnt {
-                Ok(cnt) => { if cnt == 0 { break; } },
-                Err(e) => panic!("Cannot read from a Stockholm buffer, error occurred:  {:?}", e),
-            };
-            // --- Remove header produced by the muscle program
-            if buffer.starts_with("MUSCLE (") { continue }
-            // --- first 8 spaces meand there is no seq-id => no sequence entry here, just markup
-            if buffer.starts_with("        ") { continue }
-            if ! buffer.starts_with('#') {      // --- the reader doesn't parse sequence annotations yet
-                let tokens: Vec<&str> = buffer.split_ascii_whitespace().collect::<Vec<&str>>();
-                if tokens.len() != 2 { continue;}
-                else {
-                    let seq_id: String = tokens[0].to_owned();
-                    let seq: String = tokens[1].to_owned();
-                    match data.get_mut(&seq_id) {
-                        None => {
-                            data.insert(seq_id.clone(), seq);
-                            keys.push(seq_id);
-                        }
-                        Some(subseq) => {
-                            subseq.push_str(&seq);
-                        }
-                    };
-                }
-                lines.push(buffer.to_owned());
-            }
-        }
-        for key in keys {
-            let seq: &String = data.get(&key).unwrap();
-            out.push(Sequence::new(&key, seq));
-        }
-
-        return out;
-    }
-}
-
-impl<S> Iterator for StockholmIterator<S> where S: BufRead {
-
-    type Item = Sequence;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.idx < self.data.len() {
-            self.idx += 1;
-            return Some(self.data[self.idx-1].clone());
-        } else { return None; }
-    }
-}
 
 /// Defines how A3M data will be processed
 pub enum A3mConversionMode {
@@ -491,17 +337,23 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 /// Removes gaps from a sequence alignment
 ///
 /// Given a gapped sequence and a (multiple) sequence alignment, this function removes
-/// the columns from the alignment where the reference sequence has a gap.
+/// the columns from the alignment where the reference sequence has a gap. Note, that
+/// this may remove amino acid residues from other sequences and make them shorter. The reference
+/// sequence will have only all its gaps removed.
+///
 /// # Arguments
 /// * `reference` - a reference sequence
-/// * `sequences` - aligned sequences, e.g. a multiple sequence alignment
+/// * `sequences` - sequences of a multiple sequence alignment
 ///
 /// # Example
 /// ```rust
-/// use bioshell_seq::sequence::{Sequence, StockholmIterator, remove_gaps_by_sequence};
-/// use std::io::{BufReader};
-///
-/// let alignment = "A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
+/// use bioshell_seq::sequence::{Sequence, remove_gaps_by_sequence};
+/// # use std::io::{BufReader};
+/// use bioshell_seq::msa::StockholmMSA;
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
+/// let alignment = "# STOCKHOLM 1.0
+/// A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
 /// A0A6G1KYC8/54-83                -------TK----AT---AW-EM--PK-QM---
 /// A0A2Z6MTB8/60-86                -------TR----QS---SW-EK--P-------
 /// A0A2Z6MTB8/102-129              -------TQ----QS---TW-TI--PEE-----
@@ -511,13 +363,15 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 /// UPI00057AF938/507-540           -------TR----TT---TW-KH--PC------
 /// UPI00138FB958/985-1021          -------TQ----QT---SW-LH--PVSQ----";
 /// let mut reader = BufReader::new(alignment.as_bytes());
-/// let mut sequences = StockholmIterator::from_stockholm_reader(&mut reader);
-/// let ref_seq = sequences[8].clone();
-/// remove_gaps_by_sequence(&ref_seq, &mut sequences);
-/// assert_eq!("TKQTTWEKPA--", sequences[0].to_string(0));
-/// assert_eq!("TQQTSWLHPVSQ", sequences[8].to_string(0));
+/// let mut msa = StockholmMSA::from_stockholm_reader(&mut reader)?;
+/// let ref_seq = msa.sequences()[8].clone();
+/// let trimmed_seq = remove_gaps_by_sequence(&ref_seq, msa.sequences());
+/// assert_eq!("TKQTTWEKPA--", trimmed_seq[0].to_string(0));
+/// assert_eq!("TQQTSWLHPVSQ", trimmed_seq[8].to_string(0));
+/// # Ok(())
+/// # }
 /// ```
-pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequence>) {
+pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) -> Vec<Sequence> {
 
     let n_seq: usize = sequences.len();
     // --- check if all the sequences are of the same length
@@ -532,7 +386,8 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
         let c = reference.seq[i] as char;
         if c != '-' && c != '_' { pos.push(i); }
     }
-    // --- copy
+    // --- create new sequences
+    let mut out_seq: Vec<Sequence> = vec![];
     for j in 0..n_seq {
         let id = &sequences[j].description;
         let old_aa: &Vec<u8> = sequences[j].seq();
@@ -540,8 +395,73 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &mut Vec<Sequenc
         for pi in &pos {
             new_aa.push(old_aa[*pi]);
         }
-        sequences[j] = Sequence::from_attrs(id.clone(), new_aa);
+        out_seq.push(Sequence::from_attrs(id.clone(), new_aa));
     }
+
+    return out_seq;
+}
+
+/// Trims a sequence alignment by a reference sequence
+///
+/// Given a gapped sequence and a (multiple) sequence alignment, this function removes
+/// characters from both end of each sequence in `sequences` that correspond to a gap
+/// in the `reference` sequence
+///
+/// # Arguments
+/// * `reference` - a reference sequence
+/// * `sequences` - sequences of a multiple sequence alignment
+///
+/// # Example
+/// ```rust
+/// use bioshell_seq::sequence::{Sequence, trim_by_sequence};
+/// # use std::io::{BufReader};
+/// use bioshell_seq::msa::StockholmMSA;
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
+/// let alignment = "# STOCKHOLM 1.0
+/// A0A6G1KYC8/4-30                 -------TK----QT---TW-EK--PA------
+/// A0A6G1KYC8/54-83                -------TK----AT---AW-EM--PK-QM---
+/// A0A2Z6MTB8/60-86                -------TR----QS---SW-EK--P-------
+/// A0A2Z6MTB8/102-129              -------TQ----QS---TW-TI--PEE-----
+/// H2XMA8/16-49                    -------TQ----RT---TW-QD--PR------
+/// UPI000A31515F/122-163           -------TR----ES---AW-TK--PD------
+/// UPI000A31515F/383-441           -------TL----ES---TW-EK--PQE-----
+/// UPI00057AF938/507-540           -------TR----TT---TW-KH--PC------
+/// UPI00138FB958/985-1021          -------TQ----QT---SW-LH--PVSQ----";
+/// let mut reader = BufReader::new(alignment.as_bytes());
+/// let mut msa = StockholmMSA::from_stockholm_reader(&mut reader)?;
+/// let ref_seq = msa.sequences()[8].clone();
+/// let trimmed_seq = trim_by_sequence(&ref_seq, msa.sequences())?;
+/// assert_eq!("TK----QT---TW-EK--PA--", trimmed_seq[0].to_string(0));
+/// assert_eq!("TQ----QT---SW-LH--PVSQ", trimmed_seq[8].to_string(0));
+/// # Ok(())
+/// # }
+/// ```
+pub fn trim_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) -> Result<Vec<Sequence>, SequenceError> {
+
+    // --- count how many gaps to trim on each end
+    let from = reference.seq().iter()
+        .take_while(|&&b| b == b'-' || b == b'_')
+        .count();
+
+    let to = reference.len() - reference.seq().iter()
+        .rev()
+        .take_while(|&&b| b == b'-' || b == b'_')
+        .count();
+    // --- create new sequences
+    let mut out_seq: Vec<Sequence> = vec![];
+
+    let ref_len = reference.len();
+    for s in sequences {
+        if ref_len != s.len() {
+            return Err(SequenceError::AlignedSequencesOfDifferentLengths { length_expected: ref_len, length_found: s.len() });
+        }
+
+        let new_seq: Vec<u8> = s.seq()[from..to].iter().cloned().collect();
+        out_seq.push(Sequence::from_attrs(s.description.clone(), new_seq));
+    }
+
+    return Ok(out_seq);
 }
 
 /// Counts residues of a given type in a [`Sequence`](Sequence)

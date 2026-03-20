@@ -22,11 +22,14 @@ mod sequence_id;
 pub use sequence_id::*;
 
 mod bucket_clustering;
-mod sequence_record;
+pub use bucket_clustering::{bucket_clustering};
 
+mod sequence_record;
 pub use sequence_record::*;
 
-pub use bucket_clustering::{bucket_clustering};
+mod display_sequence;
+
+
 
 /// Returns a list of Sequences for a given input string.
 ///
@@ -38,7 +41,7 @@ pub fn load_sequences(seq_or_fname: &String, seq_name: &str) -> Result<Vec<Seque
     if seq_or_fname.contains(".") {
         let reader = open_file(&seq_or_fname)?;
         let seq_iter = FastaIterator::new(reader);
-        let out: Vec<Sequence> = seq_iter.collect::<Vec<Sequence>>();
+        let out: Vec<Sequence> = seq_iter.collect::<Result<Vec<_>, _>>()?;
         info!("{}",format!("{} sequences loaded from {}", out.len(), &seq_or_fname));
         return Ok(out);
     }

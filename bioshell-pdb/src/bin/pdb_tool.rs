@@ -1,11 +1,12 @@
 #![doc(hidden)]
 
+use std::collections::HashMap;
 use std::env;
-use clap::Parser;
+use clap::{Parser, ArgGroup};
 use log::info;
 use bioshell_io::{out_writer, markdown_to_text};
-use bioshell_pdb::{Deposit, EntityType, PDBError, Structure};
-use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, IsCA, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
+use bioshell_pdb::{Deposit, downlad_deposit_from_rcsb, EntityType, find_cif_file_name, find_pdb_file_name, make_pdb_compatible, PDBError, Structure};
+use bioshell_pdb::pdb_atom_filters::{ByChain, ByEntity, InvertPredicate, IsBackbone, IsCA, IsHydrogen, IsNotWater, KeepNucleicAcid, KeepProtein, MatchAll, PdbAtomPredicate};
 use bioshell_seq::chemical::ResidueTypeProperties;
 
 mod deposit_info;
@@ -15,13 +16,27 @@ const PDB_TOOL_EXAMPLES: &str = include_str!("../documentation/pdb_tool.md");
 fn create_cookbook() -> String { format!("{}{}", "\x1B[4mCookbook:\x1B[0m\n", markdown_to_text(PDB_TOOL_EXAMPLES)) }
 
 #[derive(Parser, Debug)]
+#[command(group(
+    ArgGroup::new("input")
+    .required(true)
+    .args(&["infile", "pdb_id", "examples"])
+))]
 #[clap(author, version, about, long_about = None, arg_required_else_help = true, after_long_help = create_cookbook())]
 /// Command line tool to operate on PDB files
 /// say pdb_tool -h to see options
 struct Args {
     /// input PDB file name
-    #[clap(short, long, short='i', required=true)]
-    infile: String,
+    #[clap(short, long, short='i')]
+    infile: Option<String>,
+    /// pdb_id of the input deposit
+    #[clap(long)]
+    pdb_id: Option<String>,
+    /// path to a folder where a PDB / mmCIF file may be found
+    #[clap(long, default_value="")]
+    path: String,
+    /// download the requested PDB deposit from the rcsb.org website
+    #[clap(long)]
+    online: bool,
     /// print FASTA sequence for every chain in each input file
     #[clap(short, long, short='f')]
     out_fasta: bool,
@@ -51,6 +66,11 @@ struct Args {
     /// The option accepts the same keys as the 'info' option
     #[clap(long, value_parser, value_delimiter = ' ', num_args = 0..)]
     info_table: Option<Vec<String>>,
+    /// print basic information about a given structure in the JSON format.
+    ///
+    /// The option accepts the same keys as the 'info' option
+    #[clap(long, value_parser, value_delimiter = ' ', num_args = 0..)]
+    info_json: Option<Vec<String>>,
     /// break FASTA lines when longer that given cutoff
     #[clap(long, default_value="80")]
     out_fasta_width: usize,
@@ -64,26 +84,38 @@ struct Args {
     #[clap(long, action)]
     entity_sequence: bool,
     /// keep only amino acid residues; all ligands and cofactors will be removed
-    #[clap(long)]
+    #[clap(long, action)]
     select_protein: bool,
     /// keep only nucleic acid residues; all proteins and ligands will be removed
-    #[clap(long)]
+    #[clap(long, action)]
     select_nucleic: bool,
-    /// keep only selected chains
+    /// keep only selected chain
     #[clap(long)]
     select_chain: Option<String>,
+    /// keep the longest chain from a deposit; this filter is applied to the already selected part
+    #[clap(long, action)]
+    select_chain_longest: bool,
     /// keep only alpha-carbon atoms
     #[clap(long, action)]
     select_ca: bool,
+    /// keep only protein backbone atoms
+    #[clap(long, action)]
+    select_bb: bool,
     /// neglect water molecules while parsing the deposit
     #[clap(long, action)]
     skip_water: bool,
+    /// neglect hydrogen atoms while parsing the deposit
+    #[clap(long, action)]
+    skip_hydrogens: bool,
     /// keep only selected entities
     #[clap(long, group = "select")]
     select_entity: Option<String>,
     /// be more verbose and log program actions on the screen
     #[clap(short, long, short='v')]
-    verbose: bool
+    verbose: bool,
+    /// print a cookbook of example command lines
+    #[clap(long, action)]
+    examples: bool,
 }
 
 fn filter<F: PdbAtomPredicate>(strctr: &Structure, filter: &F) -> Structure {
@@ -109,6 +141,13 @@ fn print_info_row(deposit: &Deposit, tokens: &Vec<String>) {
         print!("{}\t", val.trim());
     }
     println!();
+}
+
+fn print_info_json(deposit: &Deposit, tokens: &Vec<String>) {
+
+    let map: HashMap<&str, String> = deposit_info::get_deposit_info(deposit, tokens).into_iter().collect();
+    let j = serde_json::to_string(&map).unwrap();
+    println!("{j}");
 }
 
 fn write_pdb(strctr: &Structure, fname: &str) {
@@ -149,6 +188,26 @@ fn print_entities(substructure: &Structure, deposit: &Deposit, print_sequences: 
     }
 }
 
+fn load_deposit(args: &Args) -> Result<Deposit, PDBError> {
+
+    // ---------- if a file name was given, load it
+    if let Some(infile) = &args.infile {
+        return Deposit::from_file(infile);
+    }
+
+    // ---------- if a PDB code was given, look for it online
+    let pdb_id = args.pdb_id.as_ref().unwrap();
+    if args.online {
+        return downlad_deposit_from_rcsb(pdb_id);
+    }
+
+    // ---------- ... or look for a local file given the path
+    let fname = find_cif_file_name(&pdb_id, &args.path)
+        .or_else(|_| find_pdb_file_name(&pdb_id, &args.path))?;
+    Deposit::from_file(fname)
+}
+
+
 fn main() -> Result<(), PDBError> {
 
     let args = Args::parse();
@@ -164,8 +223,13 @@ fn main() -> Result<(), PDBError> {
     info!("Build time: {}", build_time);
     info!("Git commit MD5 sum: {}", git_commit_md5);
 
+    if args.examples {
+        println!("{}", create_cookbook());
+        return Ok(());
+    }
+
     // ---------- INPUT section
-    let deposit = Deposit::from_file(&args.infile).unwrap();
+    let deposit = load_deposit(&args)?;
     let mut strctr= deposit.structure()?;
 
     // ---------- FILTER section
@@ -186,17 +250,42 @@ fn main() -> Result<(), PDBError> {
         info!("Selecting only alpha-carbon atoms");
         multi_filter.add_predicate(Box::new(IsCA));
     }
+    if args.select_bb {
+        info!("Selecting only proteins backbone atoms");
+        multi_filter.add_predicate(Box::new(IsBackbone));
+    }
     if args.skip_water {
         info!("Removing water molecules");
         multi_filter.add_predicate(Box::new(IsNotWater));
+    }
+    if args.skip_hydrogens {
+        info!("Removing hydrogen atoms");
+        multi_filter.add_predicate(Box::new(InvertPredicate::new(IsHydrogen)));
     }
     if let Some(entity_id) = args.select_entity {
         info!("Selecting entity: {}", entity_id);
         multi_filter.add_predicate(Box::new(ByEntity::new(&entity_id)));
     }
+    // ----------- Filter the structure
     if multi_filter.count_filters() > 0 {
-        strctr = filter(&strctr, &multi_filter);
+            strctr = filter(&strctr, &multi_filter);
     }
+    if args.select_chain_longest {
+        let chain_ids = strctr.chain_ids();
+        let mut longest_id = &chain_ids[0];
+        let mut longest_ln = strctr.residue_in_chain(longest_id);
+        for chain_id in chain_ids.iter().skip(1) {
+            let len = strctr.residue_in_chain(chain_id);
+            if len > longest_ln {
+                longest_ln = len;
+                longest_id = &chain_id;
+            }
+        }
+        info!("Selecting the longest chain: {longest_id}");
+        let filter = ByChain::new(longest_id);
+        strctr = crate::filter(&strctr, &filter);
+    }
+    // ---------- perform actions (e.g. renumber)
     if args.renumber {
         strctr = strctr.renumbered_structure();
     }
@@ -222,9 +311,13 @@ fn main() -> Result<(), PDBError> {
     if let Some(tokens) = args.info_table {
         print_info_row(&deposit, &tokens);
     }
+    if let Some(tokens) = args.info_json {
+        print_info_json(&deposit, &tokens);
+    }
 
     if let Some(out_fname) = args.out_pdb {
-        write_pdb(&strctr, &out_fname);
+        let pdb_strctr = make_pdb_compatible(&strctr)?;
+        write_pdb(&pdb_strctr, &out_fname);
     }
 
     Ok(())

@@ -2,8 +2,9 @@ use std::env;
 use clap::{Parser};
 use log::{info};
 
-use bioshell_seq::sequence::{Sequence, remove_gaps_by_sequence, StockholmIterator};
+use bioshell_seq::sequence::{Sequence, remove_gaps_by_sequence};
 use bioshell_io::open_file;
+use bioshell_seq::msa::StockholmMSA;
 use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
@@ -18,22 +19,19 @@ struct Args {
 }
 
 pub fn main() -> Result<(), SequenceError> {
-
-    if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
-    env_logger::init();
+    unsafe {
+        if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+        env_logger::init();
+    }
     let args = Args::parse();
     let fname= args.infile;
 
     let mut reader = open_file(&fname)?;
-
-    let mut seq = StockholmIterator::from_stockholm_reader(&mut reader);
-
+    let msa = StockholmMSA::from_stockholm_reader(&mut reader)?;
+    let mut seq= vec![];
     if let Some(seq_id) = args.if_remove {
         info!("removing gapped column according to {}",seq_id);
-        let mut ref_seq: Option<Sequence> = None;
-        for seq in &seq {
-            if seq.description()==seq_id { ref_seq = Option::from(seq.clone()); }
-        }
+        let ref_seq: Option<&Sequence> = msa.by_id(&seq_id);
         match ref_seq {
             None => { panic!("Can't find the reference sequence: {} in the input MSA",seq_id); }
             Some(the_ref_seq) => {
@@ -42,7 +40,7 @@ pub fn main() -> Result<(), SequenceError> {
         }
     }
     for s in &seq { println!("{}", s); }
-    info!("{} sequences printed in FASTA format",seq.len());
+    info!("{} sequences printed in FASTA format", &seq.len());
 
     Ok(())
 }

@@ -7,7 +7,6 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
-use clap::builder::TypedValueParser;
 use bioshell_seq::sequence::{FastaIterator, parse_sequence_id, Sequence, SequenceReporter, SplitFasta, WriteFasta};
 use bioshell_seq::sequence::filters::{HasSequenceMotif, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan,
                              ContainsAA, ContainsX, LogicalNot, DescriptionContains};
@@ -115,7 +114,8 @@ pub fn main() -> Result<(), SequenceError> {
         if_fasta_retrieve = true;
         let reader = open_file(&qfile)?;
         let seq_iter = FastaIterator::new(reader);
-        for sequence in seq_iter {
+        for seq_result in seq_iter {
+            let sequence = seq_result?;
             let id = String::from(sequence.id());
             query_fasta.push((sequence.to_string(out_width), id));
         }
@@ -187,7 +187,8 @@ pub fn main() -> Result<(), SequenceError> {
 
     let start = Instant::now();
 
-    for sequence in seq_iter {
+    for seq_result in seq_iter {
+        let sequence= seq_result?;
         cnt_all += 1;
         // ---------- check basic filters first
         let mut filters_ok = true;
@@ -201,7 +202,7 @@ pub fn main() -> Result<(), SequenceError> {
 
         // ---------- keep only requested sequences
         if if_retrieve {
-            if !requested_ids.contains(sequence.id()) { continue }
+            if !requested_ids.contains(&sequence.id()) { continue }
         }
         // ---------- keep only sequences found in the input query fasta
         if if_fasta_retrieve {

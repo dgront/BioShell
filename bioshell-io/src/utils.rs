@@ -175,7 +175,7 @@ pub fn read_delimited_columns<T: FromStr+Clone, R: BufRead>(reader: R, delimiter
 }
 
 
-/// Reads whitespace-separated data from a `BufReader` and stores it in a `Vec<Vec<T>>`.
+/// Reads whitespace-separated data from a `BufReader` and stores row-wise it in a `Vec<Vec<T>>`.
 ///
 /// The function assumes that the number of columns is constant across all rows.
 pub fn read_whitespace_delimited_values<T, R>(reader: R) -> Result<Vec<Vec<T>>, Error>
@@ -227,9 +227,6 @@ trait InsertRow<T: FromStr> {
 
 impl<T: FromStr+Clone> Table<T> {
     pub fn new_empty() -> Self { Table { data: vec![] } }
-    pub fn new_allocated(n_rows: usize, n_columns: usize, val: T) -> Self {
-        Table { data:  vec![vec![val; n_rows]; n_columns]}
-    }
 }
 
 struct TableOfRows<T:FromStr> { table: Table<T>, }

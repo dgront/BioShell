@@ -277,14 +277,14 @@ macro_rules! finalize_record {
     ($self:ident) => {
         if let (Some(id), Some(ac)) = (&$self.current_id, &$self.current_ac) {
             let sequence = std::mem::take(&mut $self.current_sequence);
-            if let expected_len = $self.expected_sequence_length {
-                if sequence.len() != expected_len {
-                    eprintln!(
-                        "Warning: sequence length mismatch for entry {}: expected {}, got {}",
-                        id, expected_len, sequence.len()
-                    );
-                }
+            let expected_len = $self.expected_sequence_length;
+            if sequence.len() != expected_len {
+                eprintln!(
+                    "Warning: sequence length mismatch for entry {}: expected {}, got {}",
+                    id, expected_len, sequence.len()
+                );
             }
+
             let record = SequenceRecord {
                 id: id.clone(),
                 is_reviewed: $self.current_is_reviewed,

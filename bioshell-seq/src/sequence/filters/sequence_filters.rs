@@ -12,6 +12,15 @@ pub trait SequenceFilter {
 }
 
 /// Returns `true` if a description of a given [`Sequence`](Sequence) contains a given substring
+/// 
+/// # Example
+/// ```
+/// use bioshell_seq::sequence::filters::{SequenceFilter, DescriptionContains};
+/// use bioshell_seq::sequence::Sequence;
+/// let filter = DescriptionContains{substring: "EGCR1_03845".to_string()};
+/// let seq = Sequence::from_str("EGCR1_03845", "MKCEIIPERCIACGLCQTIAPEIFDYTDDGLVLFVGEPEATHEF");
+/// assert!(filter.filter(&seq));
+/// ```
 pub struct DescriptionContains { pub substring: String}
 
 impl SequenceFilter for DescriptionContains {
