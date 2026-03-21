@@ -42,7 +42,9 @@ impl PyFastaIterator {
     ///     StopIteration: When there are no more sequences.
     fn __next__(&mut self) -> PyResult<PySequence> {
         match self.inner.next() {
-            Some(seq) => Ok(PySequence { inner: seq }),
+            Some(result) => result
+                .map(|seq| PySequence { inner: seq })
+                .map_err(|err| pyo3::exceptions::PyValueError::new_err(err.to_string())),
             None => Err(PyStopIteration::new_err("End of FASTA file")),
         }
     }

@@ -43,7 +43,6 @@ impl PyNode {
 
 impl From<&Node> for PyNode {
     fn from(n: &Node) -> Self {
-        let nn = n.clone();
         PyNode(n.clone())
     }
 }
