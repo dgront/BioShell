@@ -115,7 +115,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dump_file = format!("{}/taxdump.tar.gz", args.path.display());
     let taxonomy = Taxonomy::load_from_tar_gz(&dump_file)?;
 
-    let separator: &str = if let Some(ref sep) = args.separator { sep } else { " : " };
+    let separator: &str = if let Some(ref sep) = args.separator {
+        sep
+    } else {
+        if args.lineage_table { "\t" } else { " : " }
+    };
 
     let mut nodes: Vec<&Node> = vec![];
     if let Some(name) = args.name {
@@ -176,9 +180,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if args.domain {
             if let Some(domain) = taxonomy.rank(n.tax_id, Rank::Superkingdom) { print!("{}{}", domain.name, separator); }
         }
-        if !args.json {
-//            print!("{}", separator);
-
+        if !args.json  && !args.lineage_table {
             for synonym in taxonomy.names(n.tax_id) {
                 if synonym != &n.name { print!("{}{} ", synonym, separator); }
             }
