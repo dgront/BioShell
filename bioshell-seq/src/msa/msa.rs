@@ -7,6 +7,77 @@ use crate::sequence::{FastaIterator, Sequence};
 #[derive(Default, Clone, Debug)]
 /// Multiple Sequence Alignment is a `Vec` of  [`Sequence`](Sequence) objects of the same length.
 ///
+/// # Loading and creating an MSA
+///
+/// An MSA instance can be created by consuming a `Vec<Sequence>` or by reading from a FASTA file:
+/// ```
+/// # use std::fs::File;
+/// # use std::io::BufReader;
+/// # use bioshell_seq::msa::MSA;
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
+/// let file = File::open("tests/test_files/4Fe-4S-example.fasta")?;
+/// let mut reader = BufReader::new(file);
+/// let msa = MSA::from_fasta_reader(&mut reader)?;
+/// assert_eq!(msa.n_seq(), 6);
+/// Ok(())
+/// # }
+/// ```
+/// Once created, sequences can be added one by one, but they must all be of the same length (including gaps).
+/// File in the Stockholm format can be loaded into a [`StockholmMSA`] struct, which can be dereferenced to an `MSA`.
+///
+/// # Accessing sequences and columns
+/// Sequences of an MSA can be accessed by their description:
+///
+/// ```rust
+/// # use bioshell_seq::msa::MSA;
+/// # use bioshell_seq::sequence::Sequence;
+/// let msa = MSA::from_sequences(vec![Sequence::from_str("seq-1", "PERF"),
+///                                    Sequence::from_str("seq-2", "P-RV"),
+///                                    Sequence::from_str("seq-3", "PDRV")]).unwrap();
+/// let seq1 = msa.by_id("seq-1");
+/// assert!(seq1.is_some());
+/// ```
+/// or by their index:
+///
+/// ```rust
+/// # use bioshell_seq::msa::MSA;
+/// # use bioshell_seq::sequence::Sequence;
+/// # let msa = MSA::from_sequences(vec![Sequence::from_str("seq-1", "PERF"),
+/// #                                    Sequence::from_str("seq-2", "P-RV"),
+/// #                                    Sequence::from_str("seq-3", "PDRV")]).unwrap();
+/// let seq1 = &msa.sequences()[0];
+/// assert_eq!(seq1.description(), "seq-1");
+/// ```
+/// and columns can be iterated over:
+/// ```rust
+/// # use bioshell_seq::msa::MSA;
+/// # use bioshell_seq::sequence::Sequence;
+/// # let msa = MSA::from_sequences(vec![Sequence::from_str("seq-1", "PERF"),
+/// #                                    Sequence::from_str("seq-2", "P-RV"),
+/// #                                    Sequence::from_str("seq-3", "PDRV")]).unwrap();
+/// let column1: Vec<u8> = msa.nth_column_iter(1).collect();
+/// assert_eq!(column1, [b'E', b'-', b'D']);
+/// ```
+///
+/// # Basic statistics
+/// MSA provides methods to compute basic statistics such as the number of identical residues between
+/// two sequences, or the sequence identity fraction, given indexes of the two sequences in the MSA:
+/// ```rust
+/// # use bioshell_seq::msa::MSA;
+/// # use bioshell_seq::sequence::Sequence;
+/// # let msa = MSA::from_sequences(vec![Sequence::from_str("seq-1", "PERF"),
+/// #                                    Sequence::from_str("seq-2", "P-RV"),
+/// #                                    Sequence::from_str("seq-3", "P_RV")]).unwrap();
+/// assert_eq!(msa.identical_count(1,2), 3);
+/// assert_eq!(msa.identical_fraction(0,1), 0.5);
+/// ```
+///
+/// # Advanced usage
+/// For more advanced usage, see the [`msa_calculations`] module, which provides methods to:
+/// - find the medoid sequence of an MSA with [`medoid_sequence()`](msa_calculations::medoid_sequence)
+/// - find the longest sequence of an MSA with [`longest_sequence()`](msa_calculations::longest_sequence)
+/// - find the most probable sequence of an MSA [`most_probable_sequence()`](msa_calculations::most_probable_sequence)
 pub struct MSA {
     /// holds all sequences aligned
     msa: Vec<Sequence>,
@@ -30,6 +101,22 @@ impl MSA {
         return Ok(MSA { msa });
     }
 
+    /// Create an MSA by reading sequences from a FASTA file.
+    ///
+    /// # Example
+    /// ```
+    /// # use std::fs::File;
+    /// # use std::io::BufReader;
+    /// # use bioshell_seq::msa::MSA;
+    /// # use bioshell_seq::SequenceError;
+    /// # fn main() -> Result<(), SequenceError> {
+    /// let file = File::open("tests/test_files/4Fe-4S-example.fasta")?;
+    /// let mut reader = BufReader::new(file);
+    /// let msa = MSA::from_fasta_reader(&mut reader)?;
+    /// assert_eq!(msa.n_seq(), 6);
+    /// Ok(())
+    /// # }
+    /// ```
     pub fn from_fasta_reader<R: BufRead>(reader: &mut R) -> Result<Self, SequenceError> {
         let msa = FastaIterator::new( reader).into_iter().collect::<Result<Vec<_>, _>>()?;
         Self::check_msa(&msa)?;
@@ -220,6 +307,20 @@ impl MSA {
     }
 }
 
+/// An iterator over a given column of an MSA.
+///
+/// The iterator returns the value of letters in the given column for each sequence in the MSA,
+/// starting from the first sequence. It can be obtained by calling the [`nth_column_iter()`](MSA::nth_column_iter) method of an `MSA` object.
+/// # Example
+/// ```
+/// # use bioshell_seq::sequence::Sequence;
+/// # use bioshell_seq::msa::MSA;
+/// let msa = MSA::from_sequences(vec![Sequence::from_str("seq-1", "PERF"),
+///                                    Sequence::from_str("seq-2", "P-RV"),
+///                                    Sequence::from_str("seq-3", "PDRV")]).unwrap();
+/// let column1: Vec<u8> = msa.nth_column_iter(1).collect();
+/// assert_eq!(column1, [b'E', b'-', b'D']);
+/// ```
 pub struct IteratorOverColumn<'a> {
     msa: &'a Vec<Sequence>,
     index: usize,
