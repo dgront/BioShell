@@ -45,6 +45,15 @@ pub enum SequenceError {
         description: String,
     },
 
+    #[error("Invalid ClustalW file format")]
+    /// Invalid ClustalW file format
+    InvalidClustalWFormat {
+        /// the line causing the error
+        line: String,
+        /// error description
+        description: String,
+    },
+
     #[error("Invalid Fasta file format")]
     /// Invalid Stockholm file format
     InvalidFastaFormat {
