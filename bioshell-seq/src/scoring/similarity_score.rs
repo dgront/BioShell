@@ -5,6 +5,7 @@ pub trait SimilarityScore {
     fn score(&self, i_pos: usize, j_pos: usize) -> i32;
     fn template_length(&self) -> usize;
     fn query_length(&self) -> usize;
+    fn is_identity(&self, _i: usize, _j: usize) -> bool;
 }
 
 pub struct SequenceSimilarityScore {
@@ -62,4 +63,9 @@ impl SimilarityScore for SequenceSimilarityScore {
 
     #[inline(always)]
     fn query_length(&self) -> usize { self.query.len() }
+
+    #[inline(always)]
+    fn is_identity(&self, i: usize, j: usize) -> bool {
+        self.query[i] == self.template[j]
+    }
 }
