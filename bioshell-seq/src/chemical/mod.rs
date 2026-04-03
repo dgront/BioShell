@@ -1,4 +1,4 @@
-//! Defines sequence components such as proteins and nucleotide acids
+//! Defines sequence components such as proteins and nucleic acids
 //!
 //! # Residue typing
 //!

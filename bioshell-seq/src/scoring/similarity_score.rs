@@ -52,12 +52,14 @@ impl SequenceSimilarityScore {
 }
 
 impl SimilarityScore for SequenceSimilarityScore {
+    #[inline(always)]
     fn score(&self, q_pos: usize, t_pos: usize) -> i32 {
         self.matrix.score_by_index(self.query[q_pos], self.template[t_pos])
     }
 
+    #[inline(always)]
     fn template_length(&self) -> usize { self.template.len() }
 
+    #[inline(always)]
     fn query_length(&self) -> usize { self.query.len() }
-
 }

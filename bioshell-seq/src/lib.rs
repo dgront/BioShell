@@ -13,9 +13,10 @@
 //!     can be loaded from the following file formats:
 //!     - [FASTA](https://en.wikipedia.org/wiki/FASTA_format), including the ``a3m`` variant
 //!     - [Stockholm](https://sonnhammer.sbc.su.se/Stockholm.html)
+//!     - [ClustalW](https://www.ebi.ac.uk/Tools/msa/clustalw/)
 //!   - [`SequenceRecord`](crate::sequence::SequenceRecord) struct to store the full entry of a sequence and its annotations.
 //!     It can be loaded from a:
-//!     - [GeneBank](https://www.ncbi.nlm.nih.gov/genbank/samplerecord/) file
+//!     - [GeneBank/NCBI](https://www.ncbi.nlm.nih.gov/genbank/samplerecord/) file
 //!     - [UniProt](https://web.expasy.org/docs/userman.html) file
 //!   - [`SequenceProfile`](crate::sequence::SequenceProfile) struct to store a sequence profile
 //!     with a given [`ProfileColumnOrder`](crate::sequence::ProfileColumnOrder). A [`SequenceProfile`](crate::sequence::SequenceProfile)
