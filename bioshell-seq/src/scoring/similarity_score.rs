@@ -1,13 +1,23 @@
 use crate::scoring::{SubstitutionMatrix, SubstitutionMatrixList};
 use crate::sequence::Sequence;
 
+/// Trait for scoring the similarity of two sequences.
+///
+/// This is used by the sequence alignment algorithms to calculate the score of a particular alignment.
+/// The score is calculated by the `score` method, which takes the positions of the two sequences
+/// and returns the respective score.
 pub trait SimilarityScore {
+    /// Calculates the score of the similarity of two sequences at the given positions.
     fn score(&self, i_pos: usize, j_pos: usize) -> i32;
+    /// Returns the length of the template sequence.
     fn template_length(&self) -> usize;
+    /// Returns the length of the query sequence.
     fn query_length(&self) -> usize;
+    /// Returns `true` if the characters at the given positions are identical, `false` otherwise.
     fn is_identity(&self, _i: usize, _j: usize) -> bool;
 }
 
+/// Calculates the [`SimilarityScore`] of two sequences using a [`SubstitutionMatrix`].
 pub struct SequenceSimilarityScore {
     query: Vec<u8>,
     template: Vec<u8>,
