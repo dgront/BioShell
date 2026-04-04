@@ -39,6 +39,8 @@ pub struct LocalAlignment<T: SimilarityScore> {
 }
 
 impl<T: SimilarityScore> LocalAlignment<T> {
+
+    /// Creates a new [`LocalAlignment`] instance with the specified maximum sequence length.
     #[allow(non_snake_case)]
     pub fn new(max_seq_length: usize) -> LocalAlignment<T> {
         let max_seq_length = max_seq_length + 1;
@@ -66,6 +68,7 @@ impl<T: SimilarityScore> LocalAlignment<T> {
         }
     }
 
+    /// Aligns two sequences using the Smith-Waterman local alignment algorithm with Gotoh matrices.
     #[allow(non_snake_case)]
     pub fn align(&mut self, scoring: &T, gap_open: i32, gap_extend: i32) -> i32 {
 
