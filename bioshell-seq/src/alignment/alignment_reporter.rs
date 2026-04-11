@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use bioshell_io::out_writer;
 use crate::alignment::AlignmentStatistics;
-use crate::sequence::{parse_sequence_id, len_ungapped, len_ungapped_str, Sequence};
+use crate::sequence::{parse_sequence_id, len_ungapped, len_ungapped_str, Sequence, count_identical};
 
 /// Reports a sequence alignment calculated by a sequence alignment algorithm.
 pub trait AlignmentReporter {
@@ -25,6 +25,40 @@ impl AlignmentReporter for MultiReporter {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
         for reporter in &mut self.reporters {
             reporter.report(aligned_query, aligned_template);
+        }
+    }
+}
+
+pub struct ReportWithSequenceIdentity<R: AlignmentReporter> {
+    pub min_seq_id: f64,
+    pub max_seq_id: f64,
+    reporter: R,
+}
+
+impl<R: AlignmentReporter> ReportWithSequenceIdentity<R> {
+    pub fn new(min_seq_id: f64, max_seq_id: f64, reporter: R) -> Self {
+        Self { min_seq_id, max_seq_id, reporter}
+    }
+
+    pub fn higher_than(min_seq_id: f64, reporter: R) -> Self {
+        Self { min_seq_id, max_seq_id: 100.0, reporter }
+    }
+
+    pub fn lower_than(max_seq_id: f64, reporter: R) -> Self {
+        Self { min_seq_id: 0.0, max_seq_id, reporter }
+    }
+}
+
+impl<R: AlignmentReporter> AlignmentReporter for ReportWithSequenceIdentity<R> {
+    fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
+        let n_identical = count_identical(aligned_query, aligned_template).unwrap();
+        let query_length = len_ungapped(aligned_query);
+        let template_length = len_ungapped(aligned_template);
+
+        let seq_id = n_identical as f64 / query_length.min(template_length) as f64 * 100.0;
+
+        if seq_id >= self.min_seq_id && seq_id <= self.max_seq_id {
+            self.reporter.report(aligned_query, aligned_template);
         }
     }
 }

@@ -100,7 +100,7 @@ pub fn align_all_pairs<R: AlignmentReporter>(queries: &Vec<Sequence>, templates:
             let path = aligner.backtrace();
             let (ali_q, ali_t) = aligned_sequences(&path, &query, &template, '-');
             reporter.report(&ali_q, &ali_t);
-            if if_triangle_only { reporter.report(&ali_t, &ali_q); }
+//            if if_triangle_only { reporter.report(&ali_t, &ali_q); }
             gcups += (query.len() * template.len()) as f64;
             n_pairs += 1;
             if n_pairs % 100 == 0 {

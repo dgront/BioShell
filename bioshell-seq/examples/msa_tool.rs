@@ -91,7 +91,6 @@ pub fn main() -> Result<(), SequenceError> {
     info!("Build time: {}", build_time);
     info!("Git commit MD5 sum: {}", git_commit_md5);
 
-
     // ---------- Create an empty MSA
     let mut msa: StockholmMSA = MSA::default().into();
 
