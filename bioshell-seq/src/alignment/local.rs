@@ -69,6 +69,16 @@ impl<T: SimilarityScore> LocalAlignment<T> {
     }
 
     /// Aligns two sequences using the Smith-Waterman local alignment algorithm with Gotoh matrices.
+    /// # Example
+    /// ```
+    /// use bioshell_seq::alignment::LocalAlignment;
+    /// use bioshell_seq::scoring::{SequenceSimilarityScore, SubstitutionMatrix, SubstitutionMatrixList};
+    /// let blosum62 = SubstitutionMatrix::load(SubstitutionMatrixList::BLOSUM62);
+    /// let scoring = SequenceSimilarityScore::for_strings("TSAILDSLGAEEIRAYLP", "MQRPILDSLGNPTAEEVKAFHW", blosum62);
+    /// let mut aligner = LocalAlignment::new(22);
+    /// aligner.align(&scoring, -10, -2);
+    /// assert_eq!(aligner.recent_score(), 40);
+    /// ```
     #[allow(non_snake_case)]
     pub fn align(&mut self, scoring: &T, gap_open: i32, gap_extend: i32) -> i32 {
 

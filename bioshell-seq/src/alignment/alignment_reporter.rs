@@ -12,6 +12,7 @@ pub trait AlignmentReporter {
 pub struct MultiReporter {
     reporters: Vec<Box<dyn AlignmentReporter>>,
 }
+
 impl MultiReporter {
     pub fn new() -> Self { MultiReporter { reporters: vec![] } }
     pub fn add_reporter(&mut self, reporter: Box<dyn AlignmentReporter>) {
@@ -89,7 +90,18 @@ impl AlignmentReporter for PrintAsPairwise {
     }
 }
 
-/// Prints staple statistics for a given alignment
+/// Prints staple statistics for a given alignment.
+///
+/// The reporter prints the following statistics for each sequence alignment:
+///    - query header (truncated to `header_width` characters)
+///    - template header (truncated to `header_width` characters)
+///    - sequence identity: the number of identical residues in the alignment divided by the (ungapped) length of the shorter sequence, multiplied by 100
+///    - number of identical residues in the alignment
+///    - length of the query sequence without gaps
+///    - length of the template sequence without gaps
+///
+/// All statistics are printed in a tabular format, with one line per alignment. The sequence headers are truncated to `header_width` characters to ensure a neat output.
+/// If the `infer_seq_id` flag is set to `true`, the reporter attemps to infer a sequence identifier for both the query and the template description.
 pub struct SimilarityReport {
     pub header_width: usize,
     pub infer_seq_id: bool
@@ -102,6 +114,7 @@ impl SimilarityReport {
 }
 
 impl Default for SimilarityReport {
+    /// Creates a new [`SimilarityReport`] instance with default settings: `header_width` of 32 characters and `infer_seq_id` set to `false`.
     fn default() -> Self { SimilarityReport::new(32, false) }
 }
 

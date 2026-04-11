@@ -5,7 +5,11 @@ use crate::sequence::{count_identical, len_ungapped, Sequence};
 ///
 /// The struct is created based on two [`Sequence`]s that are assumed to be aligned. It provides
 /// description line for both sequences (trimmed to desired length) and numerical statistics computed from
-/// the alignment such as the number of identical residues, the length of the alignment, etc.
+/// the alignment:
+///    - sequence identity: the number of identical residues in the alignment divided by the (ungapped) length of the shorter sequence, multiplied by 100
+///    - number of identical residues in the alignment
+///    - length of the query sequence without gaps
+///    - length of the template sequence without gaps
 ///
 /// # Example
 /// ```
