@@ -121,6 +121,7 @@ impl AlignmentReporter for PrintAsPairwise {
             q_from += q_add - 1;
             t_from += t_add - 1;
         }
+        println!("\n");
     }
 }
 
