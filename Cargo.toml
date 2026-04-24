@@ -15,6 +15,7 @@ members = [
     "bioshell-clustering",
     "bioshell-datastructures",
     "bioshell-io",
+    "bioshell-molgeom",
     "bioshell-pdb",
     "bioshell-seq",
     "bioshell-statistics",
