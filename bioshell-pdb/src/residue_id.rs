@@ -12,6 +12,7 @@ use crate::PDBError;
 /// Such an ID may be used to access atom of a residue from a [`Structure`](crate::Structure)
 /// # Example
 /// ```
+/// use itertools::assert_equal;
 /// use bioshell_pdb::ResidueId;
 /// # use bioshell_pdb::{PdbAtom, Structure};
 /// # use bioshell_pdb::pdb_atom_filters::{ByResidue, PdbAtomPredicate};
@@ -22,6 +23,7 @@ use crate::PDBError;
 /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
 /// # let strctr = Structure::from_atoms("1xyz", atoms);
 /// let res_id = ResidueId::new("A", 68, ' ');
+/// assert_eq!(format!("{:7}", res_id), "A:68   ");
 /// let get_res = ByResidue::new(res_id);
 /// # let mut cnt = 0;
 /// for atom in strctr.atoms().iter().filter(|a| get_res.check(&a)) {
@@ -48,9 +50,16 @@ impl ResidueId {
     }
 }
 
-impl fmt::Display for ResidueId {
 
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}:{}{}", self.chain_id,self.res_seq,self.i_code) }
+impl fmt::Display for ResidueId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = format!("{}:{}{}", self.chain_id, self.res_seq, self.i_code);
+
+        match f.width() {
+            Some(width) if width > s.len() => write!(f, "{s:<width$}"),
+            _ => f.write_str(&s),
+        }
+    }
 }
 
 impl TryFrom<&PdbAtom> for ResidueId {

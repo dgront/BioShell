@@ -114,6 +114,7 @@ impl FromStr for EntitySource {
 /// # let deposit_4esa = Deposit::from_cif_reader(reader)?;
 /// let entity_2 = deposit_4esa.entity("2").ok_or_else(||NoSuchEntity{ entity_id: "1".to_string() })?;
 /// assert_eq!(entity_2.entity_monomers().len(), 146);
+/// assert_eq!(entity_2.chain_monomers("B")?.len(), 146);
 /// assert_eq!(entity_2.chain_monomers("B")?.iter().filter(|m| m.parent_type==GAP).count(), 2);
 /// # Ok(())
 /// # }
@@ -214,8 +215,9 @@ impl Entity {
 
     /// Provides monomers (or ligands) comprising this entity as observed in a particular chain.
     ///
-    /// The returned vector may contain [`GAP`](GAP) monomers when a residue present in the respective
-    /// entity can't be observed in a given chain
+    /// The returned vector contains the same number of residues as [`entity_monomers()`](Entity::entity_monomers()) method,
+    /// but in this case the returned vector may contain [`GAP`](GAP) monomers when a residue present in the respective
+    /// entity can't be observed in a given chain.
     pub fn chain_monomers(&self, chain_id: &str) -> Result<&Vec<ResidueType>, PDBError> {
 
         if let Some(chain_seq) = self.chain_sequences.get(chain_id) {
