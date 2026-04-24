@@ -34,6 +34,10 @@ struct Args {
     verbose: bool
 }
 
+/// Returns atom hash used to pair identical atoms from two structures. The hash is based on the atom name, residue number and chain ID.
+fn atom_hash(atom: &PdbAtom) -> String {
+    return format!("{}{}{}", atom.name, atom.serial, atom.chain_id);
+}
 
 fn main() -> Result<(), PDBError> {
     let args = Args::parse();
@@ -80,12 +84,14 @@ fn main() -> Result<(), PDBError> {
     if args.match_names {
         info!("Matching atoms by their names");
         let mut name_map_a = std::collections::HashMap::new();
-        for a in &atoms_a {
-            name_map_a.insert(a.name.clone(), a.pos.clone());
+        for a in atoms_a {
+            let hash = atom_hash(a);
+            name_map_a.insert(hash, a.pos.clone());
         }
 
         for atom_b in atoms_b {
-            if let Some(pos_a_i) = name_map_a.get(&atom_b.name) {
+            let hash = atom_hash(atom_b);
+            if let Some(pos_a_i) = name_map_a.get(&hash) {
                 pos_a.push(*pos_a_i);
                 pos_b.push(atom_b.pos);
             }
@@ -93,13 +99,6 @@ fn main() -> Result<(), PDBError> {
     } else {
         pos_a = atoms_a.iter().map(|a| a.pos.clone()).collect::<Vec<_>>();
         pos_b = atoms_b.iter().map(|a| a.pos.clone()).collect::<Vec<_>>();
-        for ai in atoms_a {
-            println!("{} {} {}", ai.serial, ai.name, ai.chain_id);
-        }
-        for ai in atoms_b {
-            println!("{} {} {} ", ai.serial, ai.name, ai.chain_id);
-        }
-
     }
 
     let rms = crmsd(&pos_a, &pos_b);
