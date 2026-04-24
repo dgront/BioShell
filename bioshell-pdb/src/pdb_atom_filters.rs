@@ -53,7 +53,7 @@
 //! ```
 
 use bioshell_seq::chemical::ResidueTypeManager;
-use crate::{PdbAtom, ResidueId};
+use crate::{is_hydrogen, PdbAtom, ResidueId};
 
 /// A handy filter to process atoms of a [`Structure`](crate::Structure) with iterators.
 ///
@@ -446,10 +446,7 @@ pub struct IsHydrogen;
 
 impl PdbAtomPredicate for IsHydrogen {
     fn check(&self, a: &PdbAtom) -> bool {
-        if let Some(element) = &a.element {
-            if element == "H" { return true }
-        }
-        return false;
+        return is_hydrogen(a);
     }
 }
 
