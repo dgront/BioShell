@@ -254,6 +254,26 @@ impl Structure {
     /// Counts models i.e. distinct conformations of this [`Structure`](Structure)
     pub fn count_models(&self) -> usize { self.model_coordinates.len() }
 
+    /// Sets the coordinates of this [`Structure`](Structure) to those of the i-th model.
+    ///
+    /// Each model is a vector of coordinates for all atoms in this [`Structure`](Structure).
+    /// The number of atoms in every model must be the same.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use bioshell_pdb::{Deposit, PDBError};
+    /// # fn main() -> Result<(), PDBError> {
+    ///     let deposit = Deposit::from_file("tests/test_files/2jqb.cif")?;
+    ///     let mut strctr = deposit.structure()?;
+    ///     assert_eq!(strctr.count_models(), 20);
+    ///     for imodel in 0..strctr.count_models() {
+    ///         strctr.set_model(imodel)?;
+    ///         assert_eq!(strctr.count_chains(), 1);
+    ///         assert_eq!(strctr.count_atoms(), 255);
+    ///     }
+    ///#      Ok(())
+    ///#  }
+    /// ```
     pub fn set_model(&mut self, i_model: usize) -> Result<(), PDBError> {
         if self.model_coordinates[i_model].len() != self.atoms.len() {
             return Err(WrongAtomsNumberInModel { model_index: i_model });
