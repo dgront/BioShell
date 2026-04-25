@@ -36,7 +36,7 @@ struct Args {
 
 /// Returns atom hash used to pair identical atoms from two structures. The hash is based on the atom name, residue number and chain ID.
 fn atom_hash(atom: &PdbAtom) -> String {
-    return format!("{}{}{}", atom.name, atom.serial, atom.chain_id);
+    return format!("{}{}{}{}", atom.name, atom.res_seq, atom.i_code, atom.chain_id);
 }
 
 fn main() -> Result<(), PDBError> {
