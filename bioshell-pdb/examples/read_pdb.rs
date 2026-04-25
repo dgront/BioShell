@@ -1,7 +1,8 @@
 use std::env;
 use bioshell_pdb::{Deposit};
 
-fn main(){
+fn main() {
+
     unsafe {
         if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
     }
