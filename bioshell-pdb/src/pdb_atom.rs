@@ -328,3 +328,37 @@ pub fn format_atom_name(atom_name: &str, element: Option<&str>) -> String {
 
     result.iter().collect()
 }
+
+/// Returns `true` if the given atom is a hydrogen atom.
+///
+/// An atom is considered a hydrogen if:
+///  - its element is explicitly specified as "H", or
+/// - its name starts with "H" (e.g., " H  ", "HA", "1HA"), or
+/// - its name starts with a digit followed by "H" (e.g., "1HA", "2HB").
+///
+/// # Examples
+/// ```
+/// use bioshell_pdb::{PdbAtom, is_hydrogen};
+/// let pdb_line = "ATOM    320  CA  PHE A  43      16.101   9.057  19.587  1.00 18.18           C  ";
+/// let mut atom = PdbAtom::from_atom_line(pdb_line);
+/// assert!(!is_hydrogen(&atom));
+/// # atom.element = Some("H".to_string());
+/// # assert!(is_hydrogen(&atom));
+/// # atom.element = None;
+/// # atom.name = "1HA".to_string();
+/// # assert!(is_hydrogen(&atom));
+/// ```
+pub fn is_hydrogen(atom: &PdbAtom) -> bool {
+    return match atom.element {
+        Some(ref el) if el == "H" => true,
+        _ => {
+            let b = atom.name.as_bytes();
+
+            match b.first() {
+                Some(b'H') => true,
+                Some(c) if c.is_ascii_digit() || c.is_ascii_whitespace() => b.get(1) == Some(&b'H'),
+                _ => false,
+            }
+        }
+    }
+}

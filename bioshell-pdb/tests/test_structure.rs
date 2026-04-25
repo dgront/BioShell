@@ -140,12 +140,27 @@ fn test_atom_by_residue_id() -> Result<(), PDBError> {
 }
 
 #[test]
-fn test_atoms_by_residue() {
+fn test_atoms_by_residue() -> Result<(), PDBError> {
 
     let lines_2gb1: Vec<_> = pdb_2gb1.split("\n").filter(|&l|l.starts_with("ATOM")).collect();
     let atoms: Vec<PdbAtom> = lines_2gb1.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
     let strctr = Structure::from_iterator("1xyz", atoms.iter().cloned());
 
-    assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 1, ' ')).unwrap().count(), 19);
-    assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 56, ' ')).unwrap().count(), 16);
+    assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 1, ' '))?.count(), 19);
+    assert_eq!(strctr.atoms_in_residue(&ResidueId::new("A", 56, ' '))?.count(), 16);
+
+    return Ok(());
+}
+
+#[test]
+fn load_multimodel_structure() -> Result<(), PDBError> {
+    let deposit = Deposit::from_file("tests/test_files/2jqb.cif")?;
+    let mut strctr = deposit.structure()?;
+    assert_eq!(strctr.count_models(), 20);
+    for imodel in 0..strctr.count_models() {
+        strctr.set_model(imodel)?;
+        assert_eq!(strctr.count_chains(), 1);
+        assert_eq!(strctr.count_atoms(), 255);
+    }
+    Ok(())
 }

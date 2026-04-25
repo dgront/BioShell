@@ -68,6 +68,42 @@ impl MonomerType {
         matches!(self, MonomerType::PeptideLinking | MonomerType::LPeptideLinking | MonomerType::LPeptideCOOH | MonomerType::LPeptideNH3 | MonomerType::DPeptideCOOH | MonomerType::DPeptideNH3 | MonomerType::DPeptideLinking | MonomerType::PeptideLike)
     }
 
+    /// Returns `true` if the monomer can form a peptide bond and is in L stereochemical configuration.
+    ///
+    /// For [`PeptideLinking`] monomer type `true` is returned, as the stereochemical configuration is not specified,
+    /// so it is considered to be able to form both L and D peptide bonds.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// use bioshell_seq::chemical::MonomerType::{DSaccharide, LPeptideLinking, DPeptideLinking, PeptideLinking};
+    /// assert!(PeptideLinking.is_peptide_linking());
+    /// assert!(LPeptideLinking.is_peptide_linking());
+    /// assert!(! DSaccharide.is_peptide_linking());
+    /// assert!(! DPeptideLinking.is_peptide_linking());
+    /// ```
+    #[allow(non_snake_case)]
+    pub fn is_L_peptide_linking(&self) -> bool {
+        matches!(self, MonomerType::PeptideLinking | MonomerType::LPeptideLinking | MonomerType::LPeptideCOOH | MonomerType::LPeptideNH3 |  MonomerType::PeptideLike)
+    }
+
+    /// Returns `true` if the monomer can form a peptide bond and is in L stereochemical configuration.
+    ///
+    /// For [`PeptideLinking`] monomer type `true` is returned, as the stereochemical configuration is not specified,
+    /// so it is considered to be able to form both L and D peptide bonds.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// use bioshell_seq::chemical::MonomerType::{DSaccharide, LPeptideLinking, DPeptideLinking, PeptideLinking};
+    /// assert!(PeptideLinking.is_peptide_linking());
+    /// assert!(LPeptideLinking.is_peptide_linking());
+    /// assert!(! DSaccharide.is_peptide_linking());
+    /// assert!(! DPeptideLinking.is_peptide_linking());
+    /// ```
+    #[allow(non_snake_case)]
+    pub fn is_D_peptide_linking(&self) -> bool {
+        matches!(self, MonomerType::PeptideLinking | MonomerType::DPeptideLinking | MonomerType::DPeptideCOOH | MonomerType::DPeptideNH3 |  MonomerType::PeptideLike)
+    }
+
     /// Returns `true` if the monomer can form a nucleic acid
     ///
     /// # Examples
@@ -266,6 +302,28 @@ impl ResidueTypeManager {
     /// Counts the residue types registered in this manager
     pub fn count(&self) -> usize { self.registered_types.len() }
 
+
+    /// Provides an iterator over all registered residue types in this manager.
+    ///
+    /// The order of the iteration is the same as the order of registration, i.e. the standard
+    /// residue types are iterated first, followed by non-standard ones in the order they were registered.
+    ///
+    /// # Examples
+    /// Iterate over all registered residue types and print the three-letter codes of D-amino acids
+    /// ```rust
+    /// use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
+    /// let mut mgr = ResidueTypeManager::get();
+    ///
+    /// for rt in mgr.iter() {
+    ///     if rt.chem_compound_type.is_D_peptide_linking() {
+    ///         println!("{}", rt.code3);
+    ///     }
+    /// }
+    ///
+    pub fn iter(&self) -> std::slice::Iter<'_, ResidueType> {
+        self.registered_types.iter()
+    }
+
     /// Register a new residue type in this manager.
     ///
     /// If the monomer (identified by its three-letter code) already exists in this manager,
@@ -432,26 +490,26 @@ impl StandardResidueType {
 }
 
 define_res_types! {
-    ALA 0 'A' "ALA" PeptideLinking,
-    ARG 1 'R' "ARG" PeptideLinking,
-    ASN 2 'N' "ASN" PeptideLinking,
-    ASP 3 'D' "ASP" PeptideLinking,
-    CYS 4 'C' "CYS" PeptideLinking,
-    GLN 5 'Q' "GLN" PeptideLinking,
-    GLU 6 'E' "GLU" PeptideLinking,
-    GLY 7 'G' "GLY" PeptideLinking,
-    HIS 8 'H' "HIS" PeptideLinking,
-    ILE 9 'I' "ILE" PeptideLinking,
-    LEU 10 'L' "LEU" PeptideLinking,
-    LYS 11 'K' "LYS" PeptideLinking,
-    MET 12 'M' "MET" PeptideLinking,
-    PHE 13 'F' "PHE" PeptideLinking,
-    PRO 14 'P' "PRO" PeptideLinking,
-    SER 15 'S' "SER" PeptideLinking,
-    THR 16 'T' "THR" PeptideLinking,
-    TRP 17 'W' "TRP" PeptideLinking,
-    TYR 18 'Y' "TYR" PeptideLinking,
-    VAL 19 'V' "VAL" PeptideLinking,
+    ALA 0 'A' "ALA" LPeptideLinking,
+    ARG 1 'R' "ARG" LPeptideLinking,
+    ASN 2 'N' "ASN" LPeptideLinking,
+    ASP 3 'D' "ASP" LPeptideLinking,
+    CYS 4 'C' "CYS" LPeptideLinking,
+    GLN 5 'Q' "GLN" LPeptideLinking,
+    GLU 6 'E' "GLU" LPeptideLinking,
+    GLY 7 'G' "GLY" LPeptideLinking,
+    HIS 8 'H' "HIS" LPeptideLinking,
+    ILE 9 'I' "ILE" LPeptideLinking,
+    LEU 10 'L' "LEU" LPeptideLinking,
+    LYS 11 'K' "LYS" LPeptideLinking,
+    MET 12 'M' "MET" LPeptideLinking,
+    PHE 13 'F' "PHE" LPeptideLinking,
+    PRO 14 'P' "PRO" LPeptideLinking,
+    SER 15 'S' "SER" LPeptideLinking,
+    THR 16 'T' "THR" LPeptideLinking,
+    TRP 17 'W' "TRP" LPeptideLinking,
+    TYR 18 'Y' "TYR" LPeptideLinking,
+    VAL 19 'V' "VAL" LPeptideLinking,
     UNK 20 'X' "UNK" PeptideLinking,
     A 21 'a' "A" RNALinking,
     C 22 'c' "C" RNALinking,
