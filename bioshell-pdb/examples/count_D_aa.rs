@@ -18,7 +18,7 @@ fn main() -> Result<(), PDBError> {
     let mut d_aa_counts: HashMap<String, usize> = HashMap::default();
     strctr.residues().iter()
         .map(|res_id| strctr.residue_type(res_id).unwrap())
-        .filter(|rtype| rtype.chem_compound_type().is_D_peptide_linking())
+        .filter(|rtype| rtype.chem_compound_type.is_D_peptide_linking())
         .fold(&mut d_aa_counts, |acc, rtype| {
             *acc.entry(rtype.code3()).or_insert(0) += 1;
             acc
