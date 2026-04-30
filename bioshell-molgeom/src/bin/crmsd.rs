@@ -55,7 +55,10 @@ fn main() -> Result<(), PDBError> {
 
     // ---------- FILTER section
     let mut multi_filter = MatchAll::new();
-    if args.bb_only { multi_filter.add_predicate(Box::new(IsBackbone)); }
+    if args.bb_only {
+        multi_filter.add_predicate(Box::new(IsBackbone));
+        multi_filter.add_predicate(Box::new(InvertPredicate::new(IsHydrogen)));
+    }
     if args.ca_only { multi_filter.add_predicate(Box::new(IsCA)); }
     // --- if no filters were added, add default ones to keep only protein heavy atoms
     if multi_filter.count_filters() == 0 {
