@@ -68,7 +68,7 @@ mod rototranslation_test {
 
         let expected = [0.00, 0.00, 1.00, 1.00, 0.00, 0.00, 0.00, 1.00, 0.00];
         for i in 0..9 {
-            assert_delta!(rot.rotation_matrix()[i], expected[i], 0.000001);
+            assert_delta!(rot.rotation()[i], expected[i], 0.000001);
         }
 
         // println!("{:?}", rot.rotation_matrix());
@@ -103,15 +103,37 @@ mod rototranslation_test {
         let next_p = Vec3::new(3.0, -1.0, 0.0);
         let rot = Rototranslation::by_three_atoms(&prev_p, &the_p, &next_p);
         let result = format!("{}", rot);
-        let expected = r#"[  1.000   0.000   0.000 ]     | vx -  0.000 |
-[  0.000   0.000   1.000 ]  *  | vy -  0.000 |
-[  0.000  -1.000   0.000 ]     | vz -  0.000 |
+        let expected_str = r#"[  1.000   0.000   0.000 ]     | vx -  0.000 |
+[  0.000   0.000  -1.000 ]  *  | vy -  0.000 |
+[  0.000   1.000   0.000 ]     | vz -  0.000 |
 "#;
-        assert_eq!(result, expected);
-        // println!("{}", rot);
-        let mut p = Vec3::new(0.0, 0.0, -3.0);
-        rot.apply_mut(&mut p);
-        let expected = Vec3::new(0.0, -3.0, 0.0);
-        assert_vec3_eq!(p, expected, 0.000001, "incorrect vector");
+        assert_eq!(result, expected_str);
+
+        let cases = vec![
+            // origin
+            (Vec3::new(0.0,  0.0,  0.0), Vec3::new(0.0,  0.0,  0.0)),
+
+            // points on global axes
+            (Vec3::new(1.0,  0.0,  0.0), Vec3::new(1.0,  0.0,  0.0)),
+            (Vec3::new(0.0, -1.0,  0.0), Vec3::new(0.0,  0.0, -1.0)),
+            (Vec3::new(0.0,  0.0, -1.0), Vec3::new(0.0,  1.0,  0.0)),
+
+            // visual check
+            (Vec3::new(0.0,  0.0, -3.0), Vec3::new(0.0,  3.0,  0.0)),
+
+            // 45 degrees to the global XY plane
+            (Vec3::new(1.0,  0.0,  1.0), Vec3::new(1.0, -1.0,  0.0)),
+            (Vec3::new(1.0,  0.0, -1.0), Vec3::new(1.0,  1.0,  0.0)),
+
+            // general point
+            (Vec3::new(2.0,  3.0,  4.0), Vec3::new(2.0, -4.0, 3.0)),
+        ];
+        for (mut p, expected) in cases {
+            let mut pp = p.clone();
+            rot.apply_mut(&mut pp);
+            assert_vec3_eq!(&pp, &expected, 1e-12, format!("bad result for point {}", p));
+            rot.apply_inverse_mut(&mut pp);
+            assert_vec3_eq!(&pp, &p, 1e-12, format!("bad result for point {}", p));
+        }
     }
 }

@@ -3,9 +3,9 @@ use crate::calc::{Matrix3x3, Vec3};
 
 /// Rotation-translation operation in 3D
 pub struct Rototranslation {
-    _origin: Vec3,
-    translate_back: bool,
+    _translation: Vec3,
     _rotation_matrix: Matrix3x3,
+    _inverse_translation: Vec3,
     _inverse_rotation_matrix: Matrix3x3,
 }
 
@@ -18,6 +18,24 @@ impl fmt::Debug for Rototranslation {
 }
 
 impl Rototranslation {
+
+    pub fn new(rot: Matrix3x3, t: Vec3) -> Rototranslation {
+
+        // inverse affine translation:
+        // x = R^{-1}(x' - t) = R^{-1}x' + (-R^{-1}t)
+        let mut inv = rot.clone();
+        inv.inverse();
+        let mut inv_t = Matrix3x3::mul_vec_s(&inv, &t);
+        inv_t *= -1.0;
+
+        return Rototranslation {
+            _rotation_matrix: rot,
+            _translation: t,
+            _inverse_rotation_matrix: inv,
+            _inverse_translation: inv_t,
+        };
+    }
+
     /// Creates a transformation that rotates 3D points around a given axis
     ///
     /// The rotation matrix is computed using the [Rodrigues' rotation formula](https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula):
@@ -25,41 +43,46 @@ impl Rototranslation {
     ///             + sin_theta * u_cross
     ///             + (1.0 - cos_theta) * u_dot;
     pub fn around_axis(start: &Vec3, end: &Vec3, angle_rad: f64) -> Rototranslation {
-
         let mut axis = end.clone();
         axis -= start;
         axis.normalize();
+
         let cos_theta = angle_rad.cos();
         let sin_theta = angle_rad.sin();
 
         let mut u_dot = Vec3::outer(&axis, &axis);
-        let mut u_cross = Matrix3x3::from_array(
-            [0.0, -axis.z, axis.y,
-            axis.z, 0.0, -axis.x,
-            -axis.y, axis.x, 0.0]
-        );
+
+        let mut u_cross = Matrix3x3::from_array([
+            0.0,     -axis.z,  axis.y,
+            axis.z,   0.0,    -axis.x,
+            -axis.y,   axis.x,  0.0,
+        ]);
 
         let mut u_rot = Matrix3x3::identity();
         u_rot *= cos_theta;
+
         u_cross *= sin_theta;
         u_dot *= 1.0 - cos_theta;
+
         u_rot += &u_cross;
         u_rot += &u_dot;
 
-        let mut inv = u_rot.clone();
-        inv.inverse();
-        return Rototranslation {
-            _origin: start.clone(),
-            translate_back: true,
-            _rotation_matrix: u_rot,
-            _inverse_rotation_matrix: inv,
-        };
+        // t = p - R p
+        let rotated_start =  Matrix3x3::mul_vec_s(&u_rot, start);
+        let mut t = start.clone();
+        t -= &rotated_start;
+
+        return Rototranslation::new(u_rot, t);
     }
 
     /// Rototranslation transforming to a local coordinate system of three atoms.
     ///
-    /// The axes of the local coordinate system are defined by three points ``a``, ``b`` and ``c``,
-    /// two versors are defined:
+    /// The axes of the local coordinate system are defined by three points ``a``, ``b`` and ``c``.
+    /// The point ``b`` is the origin of the local coordinate system,
+    /// the first axis points along the ``v_ac`` vector,
+    /// the third axis is the bisector of the angle formed by the ``a``, ``b`` and ``c`` points,
+    ///and the second axis is defined as a cross product of the first and the third axes.
+    /// The axes are computed as below:
     ///
     /// ```math
     /// \begin{matrix}
@@ -84,12 +107,12 @@ impl Rototranslation {
     /// let b = Vec3::new(2.0, 0.0, 2.0);
     /// let c = Vec3::new(4.0, 0.0, 0.0);
     /// let rot = Rototranslation::by_three_atoms(&a, &b, &c);
-    /// let rot_m = rot.rotation_matrix();
+    /// let rot_m = rot.rotation();
     /// assert_delta!(rot_m.elem(0,0), 1.0, 0.000001);
     /// # assert_delta!(rot_m.elem(1,1), 1.0, 0.000001);
     /// # assert_delta!(rot_m.elem(2,2), 1.0, 0.000001);
     /// # println!("{}", rot);
-    /// # let expected = r#"[  1.000  -0.000   0.000 ]     | vx -  2.000 |
+    /// # let expected = r#"[  1.000   0.000   0.000 ]     | vx -  2.000 |
     /// # [  0.000   1.000   0.000 ]  *  | vy -  0.000 |
     /// # [  0.000   0.000   1.000 ]     | vz -  2.000 |
     /// # "#;
@@ -105,11 +128,11 @@ impl Rototranslation {
     /// ```
     pub fn by_three_atoms(a: &Vec3, b: &Vec3, c: &Vec3) -> Rototranslation {
 
-        let mut n_to_ca = b.clone();  // --- a1 -> b vector
+        let mut n_to_ca = b.clone();  // --- a -> b vector
         n_to_ca -= a;
         n_to_ca.normalize();
 
-        let mut ca_to_c = c.clone();  // --- a1 -> b vector
+        let mut ca_to_c = c.clone();  // --- b -> c vector
         ca_to_c -= b;
         ca_to_c.normalize();
 
@@ -124,68 +147,61 @@ impl Rototranslation {
         let mut ty = Vec3::cross(&n_to_ca, &ca_to_c);
         ty.normalize();
 
-        let u_rot = Matrix3x3::from_column_vectors(&tx, &ty, &tz);
-        let mut inv = u_rot.clone();
+        let u_rot = Matrix3x3::from_row_vectors(&tx, &ty, &tz);
 
-        inv.inverse();
-        return Rototranslation {
-            _origin: b.clone(),
-            translate_back: false,
-            _rotation_matrix: u_rot,
-            _inverse_rotation_matrix: inv,
-        };
+        return Rototranslation::new(u_rot, b.clone());
     }
 
     /// Provides read-only access to the rotation matrix of this [`Rototranslation`](Rototranslation)
-    pub fn rotation_matrix(&self) -> &Matrix3x3 { &self._rotation_matrix }
+    pub fn rotation(&self) -> &Matrix3x3 { &self._rotation_matrix }
 
     /// Provides read-only access to translation vector of this [`Rototranslation`](Rototranslation)
-    pub fn center(&self) -> &Vec3 { &self._origin }
+    pub fn translation(&self) -> &Vec3 { &self._translation }
 
-    /// Sets the translation vector of this [`Rototranslation`](Rototranslation)
-    pub fn set_center(&mut self, center: &Vec3) {
-        self._origin.set(center);
+    /// Sets the new translation vector of this [`Rototranslation`](Rototranslation)
+    pub fn set_translation(&mut self, t: &Vec3) {
+
+        self._translation.set(t);
+        // inverse affine translation: x = R^-1 x' - R^-1 t
+        self._inverse_translation = Matrix3x3::mul_vec_s(&self._inverse_rotation_matrix, &self._translation);
+        self._inverse_translation *= -1.0;
     }
 
-    /// Defines whether this [`Rototranslation`](Rototranslation) moves points back to the original center.
-    ///
-    /// By default, this [`Rototranslation`](Rototranslation) moves points to the center of the coordinate system,
-    /// applies the rotation matrix and then moves points back to the original center.
-    /// Use ```if_translate_back(false)`` to leave transformed points at the center of the coordinate system.
-    pub fn if_translate_back(&mut self, flag: bool) {
-        self.translate_back = flag
-    }
-
-    /// Transpose the rotation matrix of this [`Rototranslation`](Rototranslation)
-    ///
-    /// This effects the inverse rotation.
-    pub fn transpose(&mut self) {
-        self._rotation_matrix.transpose();
-    }
-
+    /// Applies the inverse of this transformation to the given vector, modifying it in place.
     pub fn apply_mut(&self, vector: &mut Vec3) {
-        *vector -= &self._origin;
         self._rotation_matrix.mul_vec_mut(vector);
-        if self.translate_back { *vector += &self._origin; }
+        *vector += &self._translation;
     }
 
+    /// Applies this transformation to the given vector, modifying it in place.
     pub fn apply_inverse_mut(&self, vector: &mut Vec3) {
-        if self.translate_back { *vector += &self._origin; }
         self._inverse_rotation_matrix.mul_vec_mut(vector);
-        *vector += &self._origin;
+        *vector += &self._inverse_translation;
     }
 
+    /// Applies the inverse of this transformation to the given vector and returns the result as a new vector.
+    ///
+    /// The original vector is not modified.
     pub fn apply_inverse(&self, v: &Vec3) -> Vec3 {
         let mut v = v.clone();
         self.apply_inverse_mut(&mut v);
         return v;
     }
 
+    /// Applies this transformation to the given vector and returns the result as a new vector.
+    ///
+    /// The original vector is not modified.
     pub fn apply(&self, v: &Vec3) -> Vec3 {
         let mut v = v.clone();
         self.apply_mut(&mut v);
         return v;
     }
+    //
+    // pub fn batch_apply(&self, v: &[Vec3]) -> Vec3 {
+    //     let mut v = v.clone();
+    //     self.apply_mut(&mut v);
+    //     return v;
+    // }
 }
 
 
@@ -203,19 +219,13 @@ macro_rules! print_row {
 /// Implement the Display trait for Rototranslation
 impl fmt::Display for Rototranslation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let cx = self._origin.x;
-        let cy = self._origin.y;
-        let cz = self._origin.z;
+        let cx = self._translation.x;
+        let cy = self._translation.y;
+        let cz = self._translation.z;
 
-        if self.translate_back {
-            print_row!(f, self._rotation_matrix, 0, " ", "vx", cx, format!("   | {:>6.3} |", cx))?;
-            print_row!(f, self._rotation_matrix, 1, "*", "vy", cy, format!(" + | {:>6.3} |", cy))?;
-            print_row!(f, self._rotation_matrix, 2, " ", "vz", cz, format!("   | {:>6.3} |", cz))?;
-        } else {
-            print_row!(f, self._rotation_matrix, 0, " ", "vx", cx, "")?;
-            print_row!(f, self._rotation_matrix, 1, "*", "vy", cy, "")?;
-            print_row!(f, self._rotation_matrix, 2, " ", "vz", cz, "")?;
-        }
+        print_row!(f, self._rotation_matrix, 0, " ", "vx", cx, "")?;
+        print_row!(f, self._rotation_matrix, 1, "*", "vy", cy, "")?;
+        print_row!(f, self._rotation_matrix, 2, " ", "vz", cz, "")?;
 
         Ok(())
     }
