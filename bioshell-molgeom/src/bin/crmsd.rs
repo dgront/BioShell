@@ -3,7 +3,7 @@ use clap::Parser;
 use bioshell_pdb::{Deposit, PdbAtom, Structure, PDBError};
 use bioshell_pdb::pdb_atom_filters::{ByChain, InvertPredicate, IsBackbone, IsCA, IsHydrogen, KeepProtein, MatchAll, PdbAtomPredicate};
 use log::info;
-use bioshell_molgeom::align::crmsd;
+use bioshell_molgeom::align::crmsd_transform;
 use bioshell_pdb::calc::Vec3;
 
 #[derive(Parser, Debug)]
@@ -104,7 +104,7 @@ fn main() -> Result<(), PDBError> {
         pos_b = atoms_b.iter().map(|a| a.pos.clone()).collect::<Vec<_>>();
     }
 
-    let rms = crmsd(&pos_a, &pos_b);
+    let (rms, rt) = crmsd_transform(&pos_a, &pos_b);
     println!("{:6.3} on {} atoms", rms, pos_a.len());
 
     return Ok(());
