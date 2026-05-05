@@ -1,6 +1,10 @@
 use std::env;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use clap::Parser;
-use bioshell_pdb::{Deposit, PdbAtom, Structure, PDBError};
+use anyhow::{Context, Result};
+
+use bioshell_pdb::{Deposit, PdbAtom};
 use bioshell_pdb::pdb_atom_filters::{ByChain, InvertPredicate, IsBackbone, IsCA, IsHydrogen, KeepProtein, MatchAll, PdbAtomPredicate};
 use log::info;
 use bioshell_molgeom::align::crmsd_transform;
@@ -29,8 +33,11 @@ struct Args {
     /// keep only selected chain; the same chain will be selected from both structures
     #[clap(long)]
     select_chain: Option<String>,
+    #[clap(long, short='o')]
+    /// save transformed structure A in the PDB format
+    output: Option<String>,
     /// be more verbose and log program actions on the screen
-    #[clap(short, long, short='v')]
+    #[clap(long, short='v')]
     verbose: bool
 }
 
@@ -39,7 +46,7 @@ fn atom_hash(atom: &PdbAtom) -> String {
     return format!("{}{}{}{}", atom.name, atom.res_seq, atom.i_code, atom.chain_id);
 }
 
-fn main() -> Result<(), PDBError> {
+fn main() -> Result<()> {
     let args = Args::parse();
     unsafe {
         if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
@@ -87,12 +94,12 @@ fn main() -> Result<(), PDBError> {
     if args.match_names {
         info!("Matching atoms by their names");
         let mut name_map_a = std::collections::HashMap::new();
-        for a in atoms_a {
+        for a in &atoms_a {
             let hash = atom_hash(a);
             name_map_a.insert(hash, a.pos.clone());
         }
 
-        for atom_b in atoms_b {
+        for atom_b in &atoms_b {
             let hash = atom_hash(atom_b);
             if let Some(pos_a_i) = name_map_a.get(&hash) {
                 pos_a.push(*pos_a_i);
@@ -106,6 +113,19 @@ fn main() -> Result<(), PDBError> {
 
     let (rms, rt) = crmsd_transform(&pos_a, &pos_b);
     println!("{:6.3} on {} atoms", rms, pos_a.len());
+
+    if let Some(output_file) = args.output {
+        info!("Saving transformed structure A to {}", &output_file);
+        let file = File::create(&output_file)
+            .with_context(|| format!("failed to create output file: {}", &output_file))?;
+        let mut writer = BufWriter::new(file);
+        for atom_a in &atoms_a {
+            let pos = rt.apply(&atom_a.pos);
+            writeln!(writer, "ATOM  {:5} {:>4} {:>3} {}{:4}    {:8.3}{:8.3}{:8.3}",
+                atom_a.serial, atom_a.name, atom_a.res_name, atom_a.chain_id, atom_a.res_seq, pos.x, pos.y, pos.z)
+                .with_context(|| format!("failed to write to output file: {}", &output_file))?;
+        }
+    }
 
     return Ok(());
 }
