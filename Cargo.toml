@@ -12,6 +12,7 @@ build = "build.rs"
 members = [
     "bioshell-builder",
     "bioshell-cif",
+    "bioshell-chem",
     "bioshell-clustering",
     "bioshell-datastructures",
     "bioshell-io",
@@ -32,6 +33,7 @@ bioshell-clustering = { path = "./bioshell-clustering" }
 bioshell-statistics = { path = "./bioshell-statistics" }
 bioshell-datastructures = { path = "./bioshell-datastructures"}
 bioshell-cif = { path = "./bioshell-cif" }
+bioshell-chem = { path = "./bioshell-chem" }
 bioshell-interactions = { path = "./bioshell-interactions" }
 bioshell-taxonomy = { path = "./bioshell-taxonomy" }
 
