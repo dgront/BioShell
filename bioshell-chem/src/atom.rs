@@ -8,7 +8,7 @@
 /// ```
 /// # use bioshell_chem::Atom;
 /// let carbon = Atom::neutral(0, 6);
-/// let charged_oxygen = Atom::new(1, 8, -1);
+/// let charged_oxygen = Atom::charged(1, 8, -1);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Atom {
@@ -29,10 +29,10 @@ impl Atom {
     ///
     /// ```
     /// # use bioshell_chem::Atom;
-    /// let carbon = Atom::new(0, 6, 0);
-    /// let charged_oxygen = Atom::new(1, 8, -1);
+    /// let carbon = Atom::charged(0, 6, 0);
+    /// let charged_oxygen = Atom::charged(1, 8, -1);
     /// ```
-    pub fn new(index: usize, atomic_number: u8, formal_charge: i8) -> Self {
+    pub fn charged(index: usize, atomic_number: u8, formal_charge: i8) -> Self {
         Self { index, atomic_number, formal_charge}
     }
 

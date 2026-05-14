@@ -11,7 +11,9 @@ use crate::{Atom, BondType, ChemErrors};
 /// Internally, atoms are stored as graph vertices and bonds are stored as
 /// graph edges with `BondType` as edge data.
 ///
-/// # Examples
+/// # Creating a molecule
+///
+/// A molecule can be created by adding atoms and connecting them with bonds:
 /// ```
 /// # use bioshell_chem::{Atom, BondType, ChemErrors, Molecule};
 ///
@@ -19,7 +21,7 @@ use crate::{Atom, BondType, ChemErrors};
 /// fn benzene() -> Result<Molecule, ChemErrors> {
 ///     let mut mol = Molecule::new("benzene"); // Empty molecule
 ///     for i in 0..6 {                         // Add 6 carbon atoms with indices from 0 to 5
-///         mol.add_atom(Atom::new(i, 6, 0))?;
+///         mol.add_atom(Atom::neutral(i, 6))?;
 ///     }
 ///
 ///     for i in 0..6 {
@@ -36,6 +38,43 @@ use crate::{Atom, BondType, ChemErrors};
 /// # Ok(())
 /// # }
 /// ```
+///
+/// Such a molecule can be modified further of course:
+/// ```
+/// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom};
+/// # fn benzene() -> Result<Molecule, ChemErrors> {
+/// # let mut mol = Molecule::new("benzene");
+/// # for i in 0..6 { mol.add_atom(Atom::neutral(i, 6))?; }
+/// # for i in 0..6 { mol.bind_atoms(i, (i + 1) % 6, BondType::Aromatic)?; }
+/// # Ok(mol)
+/// # }
+/// # fn main() -> Result<(), ChemErrors> {
+/// # use bioshell_chem::ChemErrors;
+/// let mut toluen = benzene()?;
+/// toluen.add_atom(Atom::neutral(6, 6))?;
+/// toluen.bind_atoms(0, 6, BondType::Single)?;
+/// # assert_eq!(toluen.count_atoms(), 7);
+/// # assert_eq!(toluen.count_bonds(), 7);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// # Iterating over atoms and bonds
+/// Atoms can be accessed by their internal indices:
+///
+/// ```
+/// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom};
+/// # fn main() -> Result<(), ChemErrors> {
+/// # let mut benzene = Molecule::new("benzene");
+/// # for i in 0..6 { benzene.add_atom(Atom::neutral(i, 6))?; }
+/// for i in 0..benzene.count_atoms() {
+///     let atom = benzene.get_atom(i).unwrap();
+///     assert_eq!(atom.atomic_number(), 6);
+/// }
+/// # Ok(())
+/// # }
+/// ```
+///
 pub struct Molecule {
     /// The name of this molecule.
     ///
@@ -99,20 +138,16 @@ impl Molecule {
     /// Returns an atom referred by an index.
     pub fn get_atom(&self, atom_idx: usize) -> Option<&Atom> {
         if let idx = self.atom_id_to_node[&atom_idx] {
-            self.graph.node_weight(idx)
-        } else {
-            None
+            return self.graph.node_weight(idx);
         }
+        return None;
     }
 
-    /// Returns a mutable atom referred by an index.
-    // pub fn get_atom_mut(&mut self, atom_idx: usize) -> Option<&mut Atom> {
-    //     if let idx = self.atom_id_to_node[&atom_idx] {
-    //         self.graph.node_weights_mut(idx)
-    //     } else {
-    //         None
-    //     }
-    // }
+    /// Returns a mutable atom referred by an atom ID.
+    pub fn get_atom_mut(&mut self, atom_id: usize) -> Option<&mut Atom> {
+        let node = *self.atom_id_to_node.get(&atom_id)?;
+        self.graph.node_weight_mut(node)
+    }
 
     /// Returns an iterator over atoms in this molecule.
     pub fn atoms(&self) -> impl Iterator<Item = &Atom> {
@@ -231,11 +266,4 @@ impl Molecule {
         Ok(())
     }
 
-    // fn check_atom_index(&self, atom: AtomIndex) -> Result<(), ChemErrors> {
-    //     if self.graph.node_weight(atom).is_some() {
-    //         Ok(())
-    //     } else {
-    //         Err(ChemErrors::AtomIndexOutOfBounds(atom.index()))
-    //     }
-    // }
 }

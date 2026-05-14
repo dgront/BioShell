@@ -3,13 +3,13 @@ mod tests {
     use bioshell_chem::{Atom, BondType, ChemErrors, Molecule};
     use super::*;
 
-    fn atom(name: &str) -> Atom { Atom::new(0, 6, 0) }
+    fn atom(name: &str) -> Atom { Atom::neutral(0, 6) }
 
     fn benzene() -> Result<Molecule, ChemErrors> {
         let mut mol = Molecule::new("benzene");
 
         for i in 0..6 {
-            mol.add_atom(Atom::new(i, 6, 0))?;
+            mol.add_atom(Atom::neutral(i, 6))?;
         }
 
         for i in 0..6 {
@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn bond_can_be_replaced_and_removed() -> Result<(), ChemErrors> {
         let mut mol = benzene()?;
-        mol.add_atom(Atom::new(6, 6, 0))?;
+        mol.add_atom(Atom::neutral(6, 6))?;
         mol.bind_atoms(6, 0, BondType::Single)?;
         assert_eq!(mol.get_bond(6, 0)?, &BondType::Single);
 
