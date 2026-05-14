@@ -53,7 +53,7 @@ pub enum PDBError {
     /// Can't find an atom defined for a given residue
     DefinedAtomNotFound {residue_index: usize, atom_name: String},
 
-    #[error("Not enough atoms left in structure {code} chain {chain}")]
+    #[error("Not enough atoms left in structure {code} chain {chain_id}")]
     /// Not enough atoms left
     NotEnoughAtoms {code: String, chain_id: String},
 
