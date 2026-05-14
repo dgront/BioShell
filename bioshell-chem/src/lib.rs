@@ -4,3 +4,12 @@
 
 mod molecule;
 pub use molecule::{Molecule};
+
+mod bond_types;
+pub use bond_types::*;
+
+mod atom;
+pub use atom::Atom;
+
+mod errors;
+pub use errors::ChemErrors;
