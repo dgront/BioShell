@@ -137,10 +137,7 @@ impl Molecule {
 
     /// Returns an atom referred by an index.
     pub fn get_atom(&self, atom_idx: usize) -> Option<&Atom> {
-        if let idx = self.atom_id_to_node[&atom_idx] {
-            return self.graph.node_weight(idx);
-        }
-        return None;
+        return self.graph.node_weight(self.atom_id_to_node[&atom_idx]);
     }
 
     /// Returns a mutable atom referred by an atom ID.

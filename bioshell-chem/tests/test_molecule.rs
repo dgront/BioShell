@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use bioshell_chem::{Atom, BondType, ChemErrors, Molecule};
+    use bioshell_io::open_file;
     use super::*;
 
     fn atom(name: &str) -> Atom { Atom::neutral(0, 6) }
@@ -67,6 +68,17 @@ mod tests {
         assert!(mol.remove_bond(6, 0)?);
         assert!(!mol.are_bonded(6, 0)?);
         assert_eq!(mol.count_bonds(), 6);
+        Ok(())
+    }
+
+    #[test]
+    fn molecule_from_cif() -> Result<(), ChemErrors> {
+
+        let reader = open_file("tests/test_files/CLR.cif")?;
+        let mol = bioshell_chem::molecule_from_cif(reader)?;
+        assert_eq!(mol.molecule_name, "CHOLESTEROL");
+        assert_eq!(mol.count_atoms(), 74);
+        assert_eq!(mol.count_bonds(), 77);
         Ok(())
     }
 }
