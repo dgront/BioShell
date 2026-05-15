@@ -12,6 +12,7 @@ pub fn molecule_from_cif<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> 
     let mol_name: String = mol_data.get_item("_chem_comp.name")
         .ok_or_else(|| ChemErrors::MissingCifField("_chem_comp.name".to_string()))?;
     let mut molecule = Molecule::new(&mol_name);
+    molecule.code = mol_data.get_item("_chem_comp.id");
 
     let atoms_table = CifTable::new(&mol_data, "_chem_comp_atom",
                     ["pdbx_ordinal", "atom_id", "type_symbol","charge"])?;

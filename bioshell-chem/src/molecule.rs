@@ -78,8 +78,10 @@ use crate::{Atom, BondType, ChemErrors, Element};
 pub struct Molecule {
     /// The name of this molecule.
     ///
-    /// Molecule name is required by MOL2 file format from TRIPOS.
+    /// Molecule name is required by most of the file formats
     pub molecule_name: String,
+    /// A short code for this molecule, ALA for alanine
+    pub code: Option<String>,
 
     graph: Graph<Atom, BondType, Undirected>,
     vertex_flags: Vec<u8>,
@@ -102,6 +104,7 @@ impl Molecule {
     pub fn new(name: &str) -> Self {
         Self {
             molecule_name: name.to_string(),
+            code: None,
             graph: Graph::new_undirected(),
             vertex_flags: Vec::new(),
             atom_id_to_node: HashMap::default(),

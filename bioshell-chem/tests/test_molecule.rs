@@ -74,6 +74,7 @@ mod tests {
         let reader = open_file("tests/test_files/CLR.cif")?;
         let mol = bioshell_chem::molecule_from_cif(reader)?;
         assert_eq!(mol.molecule_name, "CHOLESTEROL");
+        assert_eq!(mol.code, Some("CLR".to_string()));
         assert_eq!(mol.count_atoms(), 74);
         assert_eq!(mol.count_bonds(), 77);
         Ok(())
