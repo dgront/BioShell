@@ -190,7 +190,7 @@ impl Molecule {
         Ok(self.graph.find_edge(first_atom, second_atom).is_some())
     }
 
-    /// Returns the number of bonds in this molecule.
+    /// Returns the total number of bonds in this molecule.
     pub fn count_bonds(&self) -> usize {
         self.graph.edge_count()
     }
@@ -199,6 +199,16 @@ impl Molecule {
     pub fn count_bonds_for_atom(&self, atom_idx: usize) -> usize {
         let atom = self.atom_id_to_node[&atom_idx];
         self.graph.neighbors(atom).count()
+    }
+
+    /// Returns the sum of bond orders for all the bonds connected to the given atom.
+    pub fn bond_order_sum(&self, atom_idx: usize) -> Result<f32, ChemErrors> {
+        let mut sum = 0.0f32;
+        for (_ai, btype) in self.bonded_to(atom_idx)? {
+            sum += btype.order();
+        }
+
+        return Ok(sum);
     }
 
     /// Returns a bond between two atoms.
@@ -248,13 +258,179 @@ impl Molecule {
             .map(|neighbor| self.graph[neighbor].index())
     }
 
+
+    /// Returns all atoms bonded to the given atom, along with the corresponding bond types.
+    pub fn bonded_to(&self, atom_idx: usize) -> Result<Vec<(usize, &BondType)>, ChemErrors> {
+
+        let node_idx = self.atom_id_to_node[&atom_idx];
+
+        let bonds = self
+            .graph
+            .edges(node_idx)
+            .map(|edge_ref| {
+                let other_node = if edge_ref.source() == node_idx {
+                    edge_ref.target()
+                } else {
+                    edge_ref.source()
+                };
+
+                let other_atom_idx = self.graph[other_node].index();
+
+                (other_atom_idx, edge_ref.weight())
+            }).collect();
+
+        Ok(bonds)
+    }
+
+    /// Returns all distinct planar angles `a-b-c`, where `a` and `c`
+    /// are both bonded to the central atom `b`.
+    ///
+    /// The reverse angle `c-b-a` is omitted.
+    ///
+    /// # Example
+    /// ```
+    /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom};
+    /// # fn benzene() -> Result<Molecule, ChemErrors> {
+    /// # let mut mol = Molecule::new("benzene");
+    /// # for i in 0..6 { mol.add_atom(Atom::neutral(i, 6))?; }
+    /// # for i in 0..6 { mol.bind_atoms(i, (i + 1) % 6, BondType::Aromatic)?; }
+    /// # Ok(mol)
+    /// # }
+    /// # fn main() -> Result<(), ChemErrors> {
+    /// # use bioshell_chem::ChemErrors;
+    /// let mut mol = benzene()?;
+    /// let planar_angles = mol.planar_angles();
+    /// assert_eq!(planar_angles.len(), 6);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn planar_angles(&self) -> Vec<[usize; 3]> {
+        let mut angles = Vec::new();
+
+        for atom in self.atoms() {
+            let b = atom.index();
+
+            let neighbors: Vec<usize> = self.neighbor_indices(b).collect();
+
+            for i in 0..neighbors.len() {
+                for j in (i + 1)..neighbors.len() {
+                    let a = neighbors[i];
+                    let c = neighbors[j];
+                    angles.push([a, b, c]);
+                }
+            }
+        }
+
+        angles
+    }
+
+    /// Returns all distinct dihedral angles `a-b-c-d`
+    ///
+    /// Atom `a` is bonded to `b` and so on.
+    ///
+    /// # Example
+    /// ```
+    /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom};
+    /// # fn benzene() -> Result<Molecule, ChemErrors> {
+    /// # let mut mol = Molecule::new("benzene");
+    /// # for i in 0..6 { mol.add_atom(Atom::neutral(i, 6))?; }
+    /// # for i in 0..6 { mol.bind_atoms(i, (i + 1) % 6, BondType::Aromatic)?; }
+    /// # Ok(mol)
+    /// # }
+    /// # fn main() -> Result<(), ChemErrors> {
+    /// # use bioshell_chem::ChemErrors;
+    /// let mut mol = benzene()?;
+    /// let planar_angles = mol.dihedral_angles();
+    /// assert_eq!(planar_angles.len(), 6);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn dihedral_angles(&self) -> Vec<[usize; 4]> {
+        let mut dihedrals = Vec::new();
+
+        for b_atom in self.atoms() {
+            let b = b_atom.index();
+
+            for c in self.neighbor_indices(b) {
+                // Avoid generating both a-b-c-d and d-c-b-a
+                if b > c { continue; }
+
+                let b_neighbors: Vec<usize> = self
+                    .neighbor_indices(b)
+                    .filter(|&a| a != c)
+                    .collect();
+
+                let c_neighbors: Vec<usize> = self
+                    .neighbor_indices(c)
+                    .filter(|&d| d != b)
+                    .collect();
+
+                for a in &b_neighbors {
+                    for d in &c_neighbors {
+                        dihedrals.push([*a, b, c, *d]);
+                    }
+                }
+            }
+        }
+
+        return dihedrals;
+    }
+
+    /// Returns all distinct improper dihedral angles.
+    ///
+    ///
+    /// # Example
+    /// ```
+    /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom};
+    /// # fn benzene() -> Result<Molecule, ChemErrors> {
+    /// # let mut mol = Molecule::new("benzene");
+    /// # for i in 0..6 { mol.add_atom(Atom::neutral(i, 6))?; }
+    /// # for i in 0..6 { mol.bind_atoms(i, (i + 1) % 6, BondType::Aromatic)?; }
+    /// # Ok(mol)
+    /// # }
+    /// # fn main() -> Result<(), ChemErrors> {
+    /// # use bioshell_chem::ChemErrors;
+    /// let mut mol = benzene()?;
+    /// let planar_angles = mol.improper_dihedrals();
+    /// assert_eq!(planar_angles.len(), 0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn improper_dihedrals(&self) -> Vec<[usize; 4]> {
+        let mut impropers = Vec::new();
+
+        for atom in self.atoms() {
+            let center = atom.index();
+            let neighbors: Vec<usize> = self.neighbor_indices(center).collect();
+
+            if neighbors.len() < 3 { continue; }
+
+            for i in 0..neighbors.len() {
+                for j in (i + 1)..neighbors.len() {
+                    for k in (j + 1)..neighbors.len() {
+                        impropers.push([
+                            neighbors[i],
+                            center,
+                            neighbors[j],
+                            neighbors[k],
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return impropers;
+    }
+
     /// Returns a flag assigned to a vertex identified by its internal index.
     ///
-    /// By default, all flags are 0.
+    /// Flags have been implemented to support graph-based operations on a [`Molecule`],
+    /// such as detecting cycles. By default, all flags are 0.
     pub fn vertex_flag(&self, atom_idx: usize) -> Result<u8, ChemErrors> {
         let atom = self.atom_id_to_node[&atom_idx];
         Ok(self.vertex_flags[atom.index()])
     }
+
 
     /// Assigns a flag to a vertex identified by its internal index.
     pub fn set_vertex_flag(&mut self, atom_idx: usize, flag: u8) -> Result<(), ChemErrors> {
