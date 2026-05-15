@@ -15,13 +15,13 @@ use crate::{Atom, BondType, ChemErrors};
 ///
 /// A molecule can be created by adding atoms and connecting them with bonds:
 /// ```
-/// # use bioshell_chem::{Atom, BondType, ChemErrors, Molecule};
+/// # use bioshell_chem::{Atom, BondType, ChemErrors, Molecule, Element};
 ///
 /// // Creates a benzene molecule with 6 carbon atoms and aromatic bonds.
 /// fn benzene() -> Result<Molecule, ChemErrors> {
-///     let mut mol = Molecule::new("benzene"); // Empty molecule
+/// let mut mol = Molecule::new("benzene"); // Empty molecule
 ///     for i in 0..6 {                         // Add 6 carbon atoms with indices from 0 to 5
-///         mol.add_atom(Atom::neutral(i, 6))?;
+///         mol.add_atom(Atom::neutral(i, Element::C))?;
 ///     }
 ///
 ///     for i in 0..6 {
@@ -41,17 +41,17 @@ use crate::{Atom, BondType, ChemErrors};
 ///
 /// Such a molecule can be modified further of course:
 /// ```
-/// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom};
+/// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom, Element};
 /// # fn benzene() -> Result<Molecule, ChemErrors> {
 /// # let mut mol = Molecule::new("benzene");
-/// # for i in 0..6 { mol.add_atom(Atom::neutral(i, 6))?; }
+/// # for i in 0..6 { mol.add_atom(Atom::neutral(i, Element::C))?; }
 /// # for i in 0..6 { mol.bind_atoms(i, (i + 1) % 6, BondType::Aromatic)?; }
 /// # Ok(mol)
 /// # }
 /// # fn main() -> Result<(), ChemErrors> {
 /// # use bioshell_chem::ChemErrors;
 /// let mut toluen = benzene()?;
-/// toluen.add_atom(Atom::neutral(6, 6))?;
+/// toluen.add_atom(Atom::neutral(6, Element::C))?;
 /// toluen.bind_atoms(0, 6, BondType::Single)?;
 /// # assert_eq!(toluen.count_atoms(), 7);
 /// # assert_eq!(toluen.count_bonds(), 7);
@@ -63,10 +63,10 @@ use crate::{Atom, BondType, ChemErrors};
 /// Atoms can be accessed by their internal indices:
 ///
 /// ```
-/// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom};
+/// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom, Element};
 /// # fn main() -> Result<(), ChemErrors> {
 /// # let mut benzene = Molecule::new("benzene");
-/// # for i in 0..6 { benzene.add_atom(Atom::neutral(i, 6))?; }
+/// # for i in 0..6 { benzene.add_atom(Atom::neutral(i, Element::C))?; }
 /// for i in 0..benzene.count_atoms() {
 ///     let atom = benzene.get_atom(i).unwrap();
 ///     assert_eq!(atom.atomic_number(), 6);
@@ -289,10 +289,10 @@ impl Molecule {
     ///
     /// # Example
     /// ```
-    /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom};
+    /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom, Element};
     /// # fn benzene() -> Result<Molecule, ChemErrors> {
     /// # let mut mol = Molecule::new("benzene");
-    /// # for i in 0..6 { mol.add_atom(Atom::neutral(i, 6))?; }
+    /// # for i in 0..6 { mol.add_atom(Atom::neutral(i, Element::C))?; }
     /// # for i in 0..6 { mol.bind_atoms(i, (i + 1) % 6, BondType::Aromatic)?; }
     /// # Ok(mol)
     /// # }
@@ -330,10 +330,10 @@ impl Molecule {
     ///
     /// # Example
     /// ```
-    /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom};
+    /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom, Element};
     /// # fn benzene() -> Result<Molecule, ChemErrors> {
     /// # let mut mol = Molecule::new("benzene");
-    /// # for i in 0..6 { mol.add_atom(Atom::neutral(i, 6))?; }
+    /// # for i in 0..6 { mol.add_atom(Atom::neutral(i, Element::C))?; }
     /// # for i in 0..6 { mol.bind_atoms(i, (i + 1) % 6, BondType::Aromatic)?; }
     /// # Ok(mol)
     /// # }
@@ -381,10 +381,10 @@ impl Molecule {
     ///
     /// # Example
     /// ```
-    /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom};
+    /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom, Element};
     /// # fn benzene() -> Result<Molecule, ChemErrors> {
     /// # let mut mol = Molecule::new("benzene");
-    /// # for i in 0..6 { mol.add_atom(Atom::neutral(i, 6))?; }
+    /// # for i in 0..6 { mol.add_atom(Atom::neutral(i, Element::C))?; }
     /// # for i in 0..6 { mol.bind_atoms(i, (i + 1) % 6, BondType::Aromatic)?; }
     /// # Ok(mol)
     /// # }

@@ -1,3 +1,5 @@
+use crate::Element;
+
 /// A lightweight representation of a chemical atom.
 ///
 /// The struct stores an internal atom index, atomic number, and formal charge.
@@ -6,9 +8,9 @@
 /// # Examples
 ///
 /// ```
-/// # use bioshell_chem::Atom;
-/// let carbon = Atom::neutral(0, 6);
-/// let charged_oxygen = Atom::charged(1, 8, -1);
+/// # use bioshell_chem::{Atom, Element};
+/// let carbon = Atom::neutral(0, Element::C);
+/// let charged_oxygen = Atom::charged(1, Element::O, -1);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Atom {
@@ -17,7 +19,7 @@ pub struct Atom {
     /// This index can be used to preserve the original atom numbering
     /// from an input file or to identify the atom inside a molecule.
     index: usize,
-    atomic_number: u8,
+    element: Element,
     formal_charge: i8,
 }
 
@@ -28,34 +30,30 @@ impl Atom {
     /// # Examples
     ///
     /// ```
-    /// # use bioshell_chem::Atom;
-    /// let carbon = Atom::charged(0, 6, 0);
-    /// let charged_oxygen = Atom::charged(1, 8, -1);
+    /// # use bioshell_chem::{Atom, Element};
+    /// let carbon = Atom::charged(0, Element::C, 0);
+    /// let charged_oxygen = Atom::charged(1, Element::O, -1);
     /// ```
-    pub fn charged(index: usize, atomic_number: u8, formal_charge: i8) -> Self {
-        Self { index, atomic_number, formal_charge}
+    pub fn charged(index: usize, element: Element, formal_charge: i8) -> Self {
+        Self { index, element, formal_charge}
     }
 
     /// Creates a neutral atom.
     ///
-    /// This is a convenience constructor equivalent to calling
-    /// `Atom::new(index, atomic_number, 0)`.
-    ///
     /// # Examples
-    ///
     /// ```
-    /// # use bioshell_chem::Atom;
-    /// let carbon = Atom::neutral(0, 6);
+    /// use bioshell_chem::{Atom, Element};
+    /// let carbon = Atom::neutral(0, Element::C);
     /// ```
-    pub fn neutral(index: usize, atomic_number: u8) -> Self {
-        Self { index, atomic_number, formal_charge: 0}
+    pub fn neutral(index: usize, element: Element) -> Self {
+        Self { index, element, formal_charge: 0}
     }
 
     /// Returns the internal atom index.
     pub fn index(&self) -> usize { self.index }
 
     /// Returns the atomic number.
-    pub fn atomic_number(&self) -> u8 { self.atomic_number }
+    pub fn atomic_number(&self) -> u8 { self.element.atomic_number() }
 
     /// Returns the formal charge.
     pub fn formal_charge(&self) -> i8 {

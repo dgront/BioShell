@@ -22,7 +22,7 @@ pub fn molecule_from_cif<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> 
             .map_err(|_| ChemErrors::CifParsingError("_chem_comp_atom.pdbx_ordinal".to_string(), pdbx_ordinal.to_string()))?;
         let q: i8 = charge.parse()
             .map_err(|_| ChemErrors::CifParsingError("_chem_comp_atom.charge".to_string(), charge.to_string()))?;
-        molecule.add_atom(Atom::charged(idx-1, e.atomic_number(), q))?;
+        molecule.add_atom(Atom::charged(idx-1, e, q))?;
         name_to_idx.insert(atom_id.to_string(), idx-1);
     }
 
