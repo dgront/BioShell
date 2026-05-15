@@ -7,12 +7,29 @@ use crate::pdb_atom::PdbAtom;
 use crate::pdb_atom_filters::{PdbAtomPredicate};
 use crate::PDBError;
 
-/// Unique identifier for a residue
+/// Unique identifier for a residue.
+///
+/// ```
+/// # use bioshell_pdb::ResidueId;
+/// let res_id = ResidueId::new("A", 68, ' ');
+/// assert_eq!(format!("{:7}", res_id), "A:68   ");
+/// ```
+///
+/// A [`ResidueId`] can be created from a [`PdbAtom`] or from a string definition:
+/// ```
+/// # use bioshell_pdb::ResidueId;
+/// # fn main() -> Result<(), bioshell_pdb::PDBError> {
+/// use bioshell_pdb::{format_atom_name, PdbAtom};
+/// use bioshell_pdb::PDBError::PdbConversionNotPossible;
+/// let res_id = ResidueId::try_from("A:68C")?;
+/// let atom = PdbAtom::from_atom_line("ATOM    391  CA  LEU A  51      12.088   9.803  13.653  1.00  9.53           C  ");
+/// let res_id = ResidueId::try_from(&atom);
+/// # Ok(())
+/// # }
+/// ```
 ///
 /// Such an ID may be used to access atom of a residue from a [`Structure`](crate::Structure)
-/// # Example
 /// ```
-/// use itertools::assert_equal;
 /// use bioshell_pdb::ResidueId;
 /// # use bioshell_pdb::{PdbAtom, Structure};
 /// # use bioshell_pdb::pdb_atom_filters::{ByResidue, PdbAtomPredicate};
@@ -23,7 +40,7 @@ use crate::PDBError;
 /// # let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
 /// # let strctr = Structure::from_atoms("1xyz", atoms);
 /// let res_id = ResidueId::new("A", 68, ' ');
-/// assert_eq!(format!("{:7}", res_id), "A:68   ");
+/// # assert_eq!(format!("{:7}", res_id), "A:68   ");
 /// let get_res = ByResidue::new(res_id);
 /// # let mut cnt = 0;
 /// for atom in strctr.atoms().iter().filter(|a| get_res.check(&a)) {
@@ -62,8 +79,7 @@ impl fmt::Display for ResidueId {
     }
 }
 
-impl TryFrom<&PdbAtom> for ResidueId {
-    type Error = ();
+impl From<&PdbAtom> for ResidueId {
 
     /// Creates a new [`ResidueId`](ResidueId) from a [`PdbAtom`](PdbAtom)
     ///
@@ -77,8 +93,8 @@ impl TryFrom<&PdbAtom> for ResidueId {
     /// # Ok(())
     /// # }
     /// ```
-    fn try_from(a: &PdbAtom) -> Result<Self, Self::Error> {
-        Ok(ResidueId { chain_id: a.chain_id.clone(), res_seq: a.res_seq, i_code: a.i_code })
+    fn from(a: &PdbAtom) -> Self {
+        ResidueId { chain_id: a.chain_id.clone(), res_seq: a.res_seq, i_code: a.i_code }
     }
 }
 
