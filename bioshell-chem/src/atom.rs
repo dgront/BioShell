@@ -52,6 +52,9 @@ impl Atom {
     /// Returns the internal atom index.
     pub fn index(&self) -> usize { self.index }
 
+    /// Returns the element type of this atom.
+    pub fn element(&self) -> Element { self.element }
+
     /// Returns the atomic number.
     pub fn atomic_number(&self) -> u8 { self.element.atomic_number() }
 

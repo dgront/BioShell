@@ -3,7 +3,7 @@ use petgraph::graph::{Graph, NodeIndex};
 use petgraph::prelude::Undirected;
 use petgraph::visit::EdgeRef;
 
-use crate::{Atom, BondType, ChemErrors};
+use crate::{Atom, BondType, ChemErrors, Element};
 
 
 /// A molecule is a graph of atoms connected with bonds.
@@ -282,6 +282,63 @@ impl Molecule {
         Ok(bonds)
     }
 
+    /// Adds implicit hydrogens to this molecule.
+    ///
+    /// # Example
+    /// ```
+    /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom, Element};
+    /// # fn benzene() -> Result<Molecule, ChemErrors> {
+    /// # let mut mol = Molecule::new("benzene");
+    /// # for i in 0..6 { mol.add_atom(Atom::neutral(i, Element::C))?; }
+    /// # for i in 0..6 { mol.bind_atoms(i, (i + 1) % 6, BondType::Aromatic)?; }
+    /// # Ok(mol)
+    /// # }
+    /// # fn main() -> Result<(), ChemErrors> {
+    /// # use bioshell_chem::ChemErrors;
+    /// let mut mol = benzene()?;
+    /// assert_eq!(mol.count_atoms(), 6);
+    /// assert_eq!(mol.count_bonds(), 6);
+    ///
+    /// mol.add_hydrogens()?;
+    /// assert_eq!(mol.count_atoms(), 12);
+    /// assert_eq!(mol.count_bonds(), 12);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn add_hydrogens(&mut self) -> Result<(), ChemErrors> {
+
+        let heavy_atoms: Vec<usize> = self
+            .atoms()
+            .filter(|atom| atom.element() != Element::H)
+            .map(|atom| atom.index())
+            .collect();
+
+        let mut h_idx = self.count_atoms();
+        for atom_idx in heavy_atoms {
+            let atom = self.get_atom(atom_idx)
+                .ok_or(ChemErrors::AtomIndexOutOfBounds(atom_idx))?;
+
+
+            let mut target_valence = match atom.element().default_valence() {
+                Some(v) => v,
+                None => 1, // for now, the default valence of unknown elements is set to 1
+            };
+            target_valence = target_valence + atom.formal_charge() as u8; // --- add the formal charge to the default valence
+
+            let current_valence = self.bond_order_sum(atom_idx)?;
+
+            let n_h = (target_valence as f32 - current_valence).round() as isize;
+            if n_h <= 0 { continue; }
+            for _ in 0..n_h {
+                self.add_atom(Atom::neutral(h_idx, Element::H))?;
+                self.bind_atoms(atom_idx, h_idx, BondType::Single)?;
+                h_idx += 1;
+            }
+        }
+
+        Ok(())
+    }
+
     /// Returns all distinct planar angles `a-b-c`, where `a` and `c`
     /// are both bonded to the central atom `b`.
     ///
@@ -438,5 +495,4 @@ impl Molecule {
         self.vertex_flags[atom.index()] = flag;
         Ok(())
     }
-
 }
