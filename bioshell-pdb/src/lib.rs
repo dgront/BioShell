@@ -140,6 +140,9 @@ pub use secondary_view::*;
 mod cif_to_pdb;
 pub use cif_to_pdb::*;
 
+mod read_cif_monomer;
+pub use read_cif_monomer::read_cif_monomers;
+
 /// Returns a tuple of (pdb_id, chain_id) extracted from a given string.
 ///
 /// The function attempts to parse a string and extract the PDB ID and chain ID:
