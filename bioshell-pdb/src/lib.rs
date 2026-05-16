@@ -3,7 +3,7 @@
 //! A brief summary of the `bioshell-pdb` library features are provided below. Documentation
 //! of command line executables may be found in [cookbook](documentation)
 //!
-//! # Loading CIF and PDB deposits
+//! # Loading mmCIF and PDB deposits
 //! Biomacromolecular deposits (either in mmCIF or PDB file format) can be directly loaded into a [`Deposit`](Deposit) struct:
 //!
 //!```no_run
@@ -139,6 +139,9 @@ mod secondary_view;
 pub use secondary_view::*;
 mod cif_to_pdb;
 pub use cif_to_pdb::*;
+
+mod read_cif_monomer;
+pub use read_cif_monomer::read_cif_monomers;
 
 /// Returns a tuple of (pdb_id, chain_id) extracted from a given string.
 ///

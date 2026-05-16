@@ -7,7 +7,7 @@ use crate::PDBError::{CantParseEnumVariant, InconsistentEntity, NoSuchChain, Unk
 use bioshell_seq::chemical::{ResidueType, ResidueTypeManager};
 use bioshell_seq::sequence::{parse_sequence_id, SeqId};
 
-/// Represents the different sources an entity in CIF data may be obtained from.
+/// Represents the different sources an entity in mmCIF data may be obtained from.
 ///
 /// For more information, see the [definition of `_entity.src_method`](https://mmcif.wwpdb.org/dictionaries/mmcif_std.dic/Items/_entity.src_method.html).
 ///
