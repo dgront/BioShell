@@ -9,7 +9,7 @@ use rand::Rng;
 use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers};
 use bioshell_clustering::hierarchical::strategies::{average_link, complete_link, single_link};
 use bioshell_seq::sequence::{bucket_clustering, load_sequences, Sequence};
-use bioshell_io::{can_create_file, out_writer};
+use bioshell_core::io::{can_create_file, out_writer};
 use bioshell_seq::alignment::{align_all_pairs, AlignmentReporter, AlignmentStatistics};
 use bioshell_seq::scoring::SubstitutionMatrixList;
 use bioshell_seq::SequenceError;

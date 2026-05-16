@@ -91,7 +91,7 @@ use std::str::FromStr;
 use std::time::Instant;
 use log::{debug, info};
 
-use bioshell_io::io::{open_file, split_into_strings};
+use bioshell_core::io::{open_file, split_into_strings};
 use crate::CifError::{DanglingDataItem, DataValuesOutsideLoop, MisplacedDataNameInLoop, MultilineStringOutsideDataItem};
 
 /// Returns true if a given file is in CIF format.

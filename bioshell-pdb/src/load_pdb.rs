@@ -4,7 +4,7 @@ use std::io::{BufRead};
 use std::path::Path;
 use std::time::Instant;
 use log::{debug, info};
-use bioshell_io::io::open_file;
+use bioshell_core::io::open_file;
 use bioshell_seq::chemical::{ResidueTypeManager, ResidueTypeProperties};
 use bioshell_seq::sequence::Sequence;
 use crate::pdb_title::PdbTitle;

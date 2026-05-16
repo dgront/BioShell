@@ -4,7 +4,7 @@ use std::sync::{Mutex, MutexGuard};
 use once_cell::sync::Lazy;
 use log::{debug, info};
 use bioshell_cif::{CifError, CifTable, parse_bool, read_cif_file};
-use bioshell_io::io::find_bioshell_path;
+use bioshell_core::io::find_bioshell_path;
 use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties, StandardResidueType};
 use bioshell_seq::chemical::StandardResidueType::{UNK, UNL, GAP, GPE};
 

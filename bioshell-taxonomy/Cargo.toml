@@ -26,7 +26,7 @@ flate2 = "1.0"
 reqwest = { version = "0.12.15", features = ["blocking"] }
 futures-util = "0.3.31"
 
-bioshell-io  = { path = "../bioshell-io" } 	# for markdown_to_text()
+bioshell-core  = { path = "../bioshell-core" } 	# for markdown_to_text()
 bioshell-seq  = { path = "../bioshell-seq" }
 
 # ---------- Serialization to JSON

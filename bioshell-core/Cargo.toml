@@ -1,9 +1,9 @@
 
 [package]
-name = "bioshell-io"
+name = "bioshell-core"
 version = "4.0.0-dev"
 edition = "2021"
-description = "Provides I/O utility functions commonly used by other BioShell v.4 crates"
+description = "Provides sticts and utility functions commonly used by other BioShell v.4 crates"
 homepage = "https://bioshell.pl"
 license = "Apache-2.0"
 keywords = ["bioshell"]

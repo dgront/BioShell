@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 use std::path::Path;
-use bioshell_io::io::out_writer;
+use bioshell_core::io::out_writer;
 use crate::sequence::{parse_sequence_id, SeqIdList, Sequence};
 
 /// A trait for types that can report on a `Sequence`, e.g. write it to a file.

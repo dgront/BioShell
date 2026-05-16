@@ -14,7 +14,7 @@ members = [
     "bioshell-cif",
     "bioshell-clustering",
     "bioshell-datastructures",
-    "bioshell-io",
+    "bioshell-core",
     "bioshell-pdb",
     "bioshell-seq",
     "bioshell-statistics",
@@ -24,7 +24,7 @@ members = [
 
 [dependencies]
 # ---------- BioShell
-bioshell-io = { path = "./bioshell-io" }
+bioshell-core = { path = "bioshell-core" }
 bioshell-seq = { path = "./bioshell-seq" }
 bioshell-builder = { path = "./bioshell-builder" }
 bioshell-pdb = { path = "./bioshell-pdb" }

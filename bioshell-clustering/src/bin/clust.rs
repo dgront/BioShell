@@ -5,7 +5,7 @@ use std::time::Instant;
 use bioshell_clustering::errors::ClusteringError;
 use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers, DistanceMatrix};
 use bioshell_clustering::hierarchical::strategies::{average_link, centroid_link, complete_link, median_link, single_link, wards_method};
-use bioshell_io::{out_writer};
+use bioshell_core::io::{out_writer};
 
 #[derive(Parser, Debug)]
 #[clap(name = "clust")]
