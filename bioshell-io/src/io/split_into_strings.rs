@@ -7,7 +7,7 @@
 /// # Examples
 ///
 /// ```
-/// use bioshell_io::split_preserving_whitespace;
+/// use bioshell_io::io::split_preserving_whitespace;
 /// let input = "A B  C\tD";
 /// let tokens = split_preserving_whitespace(input);
 /// assert_eq!(tokens, vec!["A", " ", "B", "  ", "C", "\t", "D"]);
@@ -46,7 +46,7 @@ pub fn split_preserving_whitespace(input: &str) -> Vec<&str> {
 /// # Examples
 ///
 /// ```rust
-/// use bioshell_io::split_into_strings;
+/// use bioshell_io::io::split_into_strings;
 /// let tokens_easy = split_into_strings("The quick brown fox jumps over the lazy dog", false);
 /// assert_eq!(tokens_easy.len(), 9);
 ///
@@ -145,7 +145,7 @@ fn remove_paired_quotes(strings: &mut [String]) {
 
 #[cfg(test)]
 mod tests {
-    use crate::split_into_strings::{quote_style, QuoteStyle, remove_paired_quotes};
+    use crate::io::split_into_strings::{quote_style, QuoteStyle, remove_paired_quotes};
 
     #[test]
     fn test_quote_style() {

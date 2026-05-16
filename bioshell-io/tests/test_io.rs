@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests_io {
     use std::io::BufReader;
-    use bioshell_io::{open_file, read_delimited_columns, read_delimited_values, read_whitespace_delimited_columns, read_whitespace_delimited_values, split_into_strings};
+    use bioshell_io::io::{open_file, read_delimited_columns, read_delimited_values, read_whitespace_delimited_columns, read_whitespace_delimited_values, split_into_strings};
 
     #[test]
     fn test_tsv_loading() {

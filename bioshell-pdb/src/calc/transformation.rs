@@ -113,7 +113,7 @@ impl Rototranslation {
     /// # assert_delta!(rot_m.elem(2,2), 1.0, 0.000001);
     /// # println!("{}", rot);
     /// # let expected = r#"[  1.000   0.000   0.000 ]     | vx -  2.000 |
-    /// # [  0.000   1.000   0.000 ]  *  | vy -  0.000 |
+    /// # [ -0.000   1.000   0.000 ]  *  | vy -  0.000 |
     /// # [  0.000   0.000   1.000 ]     | vz -  2.000 |
     /// # "#;
     /// # assert_eq!(format!("{}", rot), expected);
