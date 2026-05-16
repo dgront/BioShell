@@ -62,6 +62,10 @@ path = "./bin/bioshell.rs"
 name = "cluster_sequences"
 path = "./bin/cluster_sequences.rs"
 
+[[bin]]
+name = "z_matrix"
+path = "./bin/z_matrix.rs"
+
 [package.metadata.docs.rs]
 # To build locally use
 #   RUSTDOCFLAGS="--html-in-header katex-header.html" cargo doc --no-deps --document-private-items --open
