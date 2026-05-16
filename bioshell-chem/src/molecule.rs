@@ -123,7 +123,7 @@ impl Molecule {
         let id = atom.index();
 
         if self.atom_id_to_node.contains_key(&id) {
-            return Err(ChemErrors::DuplicateAtomId(id));
+            return Err(ChemErrors::DuplicatedAtomIndex(id));
         }
 
         let node_index = self.graph.add_node(atom);

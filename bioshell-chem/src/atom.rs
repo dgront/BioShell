@@ -49,6 +49,13 @@ impl Atom {
         Self { index, element, formal_charge: 0}
     }
 
+    /// Returns `true` if this atom is a hydrogen.
+    ///
+    /// Note that we consider an atom to be *heavy* if it's not a hydrogen.
+    pub fn if_hydrogen(self) -> bool {
+        self.element == Element::H
+    }
+
     /// Returns the internal atom index.
     pub fn index(&self) -> usize { self.index }
 

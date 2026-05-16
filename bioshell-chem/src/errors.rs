@@ -19,7 +19,15 @@ pub enum ChemErrors {
 
     /// Can't add an atom with the given index to the molecule, because it already exists.
     #[error("atom index {0} already exists in this molecule")]
-    DuplicateAtomId(usize),
+    DuplicatedAtomIndex(usize),
+
+    /// Can't find any atom with the given index.
+    #[error("Can't find any atom by the: index {0}")]
+    InvalidAtomIndex(usize),
+
+    /// Invalid reference atoms; the three reference atoms must be different, but the given indexes are not.
+    #[error("Invalid reference atoms: {0}, {1}, {2}. All the three indexes must be different.")]
+    InvalidReferenceAtoms(usize, usize, usize),
 
     /// Can't find a bond between the given atom indices.
     #[error("bond not found between atom indices {0} and {1}")]
