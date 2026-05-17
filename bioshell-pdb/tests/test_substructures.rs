@@ -1,7 +1,8 @@
 #[cfg(test)]
 mod test_substructures {
     use std::io::BufReader;
-    use bioshell_pdb::{assert_delta, Deposit, PDBError};
+    use bioshell_pdb::{Deposit, PDBError};
+    use bioshell_core::assert_delta;
     use bioshell_pdb::calc::SubstructureAxis;
 
     #[allow(non_upper_case_globals)]

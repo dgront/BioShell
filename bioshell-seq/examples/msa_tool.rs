@@ -6,7 +6,7 @@ use log::{debug, info};
 use bioshell_seq::sequence::filters::{DescriptionContains, SequenceFilter};
 use bioshell_seq::sequence::{count_identical, FastaIterator, len_ungapped, ProfileColumnOrder, remove_gaps_by_sequence, Sequence, SequenceProfile, trim_by_sequence};
 
-use bioshell_io::{open_file, out_writer};
+use bioshell_core::io::{open_file, out_writer};
 use bioshell_seq::msa::{medoid_sequence, MSA, StockholmMSA};
 use bioshell_seq::SequenceError;
 

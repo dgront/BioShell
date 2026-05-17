@@ -159,7 +159,7 @@ impl InternalAtomDefinition {
     ///
     /// ```rust
     /// use bioshell_builder::InternalAtomDefinition;
-    /// use bioshell_io::split_into_strings;
+    /// use bioshell_core::io::split_into_strings;
     /// let tokens = split_into_strings("'ALA' this ' N  ' this ' CA ' this ' C  ' next ' N  ' N  1.328685 114.0  180.0 psi", false);
     /// let tokens_str: Vec<&str> = tokens.iter().map(AsRef::as_ref).collect();
     /// let def = InternalAtomDefinition::from_strings(&tokens_str);

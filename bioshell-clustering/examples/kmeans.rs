@@ -6,7 +6,7 @@ use log::{info};
 
 use bioshell_clustering::kmeans::KMeans;
 use bioshell_datastructures::euclidean_distance_squared;
-use bioshell_io::{open_file, read_delimited_values};
+use bioshell_core::io::{open_file, read_delimited_values};
 
 
 #[derive(Parser, Debug)]

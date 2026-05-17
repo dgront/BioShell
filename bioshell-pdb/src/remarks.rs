@@ -47,7 +47,7 @@ impl PDBRemarks {
 
 #[cfg(test)]
 mod tests {
-    use crate::assert_delta;
+    use bioshell_core::assert_delta;
     use crate::remarks::PDBRemarks;
 
     #[test]

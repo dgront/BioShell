@@ -55,7 +55,10 @@ pub enum MonomerType {
 }
 
 impl MonomerType {
-    /// Returns `true` if the monomer can form a peptide bond
+    /// Returns `true` if the monomer can form a peptide bond.
+    ///
+    /// [`PeptideLinking`] monomer is considered also all stereochemical variants, e.g.
+    /// [`LPeptideCOOH`], [`DPeptideLinking`] etc as well as [`PeptideLike`].
     ///
     /// # Examples
     /// ``` rust
@@ -79,14 +82,14 @@ impl MonomerType {
     /// assert!(PeptideLinking.is_peptide_linking());
     /// assert!(LPeptideLinking.is_peptide_linking());
     /// assert!(! DSaccharide.is_peptide_linking());
-    /// assert!(! DPeptideLinking.is_peptide_linking());
+    /// assert!(DPeptideLinking.is_peptide_linking());
     /// ```
     #[allow(non_snake_case)]
     pub fn is_L_peptide_linking(&self) -> bool {
         matches!(self, MonomerType::PeptideLinking | MonomerType::LPeptideLinking | MonomerType::LPeptideCOOH | MonomerType::LPeptideNH3 |  MonomerType::PeptideLike)
     }
 
-    /// Returns `true` if the monomer can form a peptide bond and is in L stereochemical configuration.
+    /// Returns `true` if the monomer can form a peptide bond and is in D stereochemical configuration.
     ///
     /// For [`PeptideLinking`] monomer type `true` is returned, as the stereochemical configuration is not specified,
     /// so it is considered to be able to form both L and D peptide bonds.
@@ -97,7 +100,7 @@ impl MonomerType {
     /// assert!(PeptideLinking.is_peptide_linking());
     /// assert!(LPeptideLinking.is_peptide_linking());
     /// assert!(! DSaccharide.is_peptide_linking());
-    /// assert!(! DPeptideLinking.is_peptide_linking());
+    /// assert!(DPeptideLinking.is_peptide_linking());
     /// ```
     #[allow(non_snake_case)]
     pub fn is_D_peptide_linking(&self) -> bool {
@@ -460,7 +463,7 @@ macro_rules! define_res_types {
             /// // ---------- Iterate over standard amino acid enum types
             /// let mut n_aa: i8 = 0;
             /// for srt in StandardResidueType::TYPES {
-            ///     if srt.chem_compound_type() == MonomerType::PeptideLinking { n_aa += 1; }
+            ///     if srt.chem_compound_type().is_peptide_linking() { n_aa += 1; }
             /// }
             /// assert_eq!(n_aa, 21);       // 20 standard amino acids + UNK
             /// ```
@@ -485,7 +488,7 @@ impl StandardResidueType {
     /// ```
     pub fn amino_acids() -> impl Iterator<Item = &'static StandardResidueType> {
         StandardResidueType::TYPES.iter()
-            .filter(|srt| srt.chem_compound_type() == MonomerType::PeptideLinking && srt.code1() != 'X')
+            .filter(|srt| srt.chem_compound_type().is_peptide_linking() && srt.code1() != 'X')
     }
 }
 

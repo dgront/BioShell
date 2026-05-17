@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use bioshell_pdb::{ResidueId, Structure};
-use bioshell_pdb::calc::{planar_angle3, Vec3};
+use bioshell_core::{planar_angle3, Vec3};
 use crate::{MAX_AD_DISTANCE, MAX_AH_DISTANCE, MIN_AHD_ANGLE, MIN_PAH_ANGLE, N_H_BOND_LENGTH};
 
 const DSSP_CONST: f64  = 0.42 * 0.2 * 332.0;

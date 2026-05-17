@@ -1,7 +1,7 @@
 
 #[cfg(test)]
 mod matrix_test {
-    use bioshell_pdb::calc::{Vec3, Matrix3x3};
+    use bioshell_core::{Vec3, Matrix3x3};
 
     #[test]
     fn matrix_unit_matrix() {

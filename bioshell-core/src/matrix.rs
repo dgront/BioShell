@@ -1,6 +1,6 @@
 use std::fmt;
 use std::ops::{Index, IndexMut, AddAssign, SubAssign, MulAssign, DivAssign};
-use crate::calc::Vec3;
+use crate::Vec3;
 
 /// Represents a 3x3 matrix, e.g. for linear 3D transformations.
 ///
@@ -13,8 +13,8 @@ use crate::calc::Vec3;
 ///
 /// # Example
 /// ```rust
-/// use bioshell_pdb::calc::Matrix3x3;
-/// use bioshell_pdb::calc::Vec3;
+/// use bioshell_core::Matrix3x3;
+/// use bioshell_core::Vec3;
 ///
 /// let vx = Vec3::new(0.0, 3.0, 6.0);
 /// let vy = Vec3::new(1.0, 4.0, 7.0);
@@ -55,7 +55,7 @@ impl AddAssign<&Matrix3x3> for Matrix3x3 {
     /// Provides `+=` operator that adds another matrix to this matrix.
     ///
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     ///
     /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
@@ -74,7 +74,7 @@ impl SubAssign<&Matrix3x3> for Matrix3x3 {
     /// Provides `-=` operator that subtracts another matrix from this matrix.
     ///
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     ///
     /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
@@ -92,7 +92,7 @@ impl DivAssign<f64> for Matrix3x3 {
     /// Provides `/=` operator that divides this matrix by a scalar value
     ///
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     ///
     /// let mut lhs: Matrix3x3 = Matrix3x3::identity();
     /// lhs /= 10.0;
@@ -107,7 +107,7 @@ impl MulAssign<f64> for Matrix3x3 {
     /// Provides `*=` operator that multiplies this matrix by a scalar value
     ///
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     ///
     /// let mut lhs: Matrix3x3 = Matrix3x3::identity();
     /// lhs *= 10.0;
@@ -135,7 +135,7 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     /// let mat = Matrix3x3::new();
     /// assert_eq!(Matrix3x3::from_array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,]), mat)
     /// ```
@@ -151,7 +151,7 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     ///
     /// let m = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
     /// let mtx = Matrix3x3::from_array(m);
@@ -184,7 +184,7 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
+    /// use bioshell_core::{Vec3, Matrix3x3};
     ///
     /// let a: Vec3 = Vec3::new(1.0, 4.0, 7.0);
     /// let b: Vec3 = Vec3::new(2.0, 5.0, 8.0);
@@ -220,7 +220,7 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
+    /// use bioshell_core::{Vec3, Matrix3x3};
     ///
     /// let a: Vec3 = Vec3::new(1.0, 2.0, 3.0);
     /// let b: Vec3 = Vec3::new(4.0, 5.0, 6.0);
@@ -240,8 +240,8 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```
-    /// use bioshell_pdb::assert_delta;
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::assert_delta;
+    /// use bioshell_core::Matrix3x3;
     /// let m = Matrix3x3::from_array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]);
     /// assert_delta!(m.elem(0, 1), 1.0, 0.0000001);
     /// assert_delta!(m.elem(0, 1), 1.0, 0.0000001);
@@ -263,8 +263,8 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::assert_vec3_eq;
-    /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
+    /// use bioshell_core::assert_vec3_eq;
+    /// use bioshell_core::{Vec3, Matrix3x3};
     ///
     /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let mut rhs = Vec3::new(2.0, 2.0, 2.0);
@@ -296,7 +296,7 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::calc::{Matrix3x3};
+    /// use bioshell_core::{Matrix3x3};
     ///
     /// let mut lhs: Matrix3x3 =
     ///     Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
@@ -330,7 +330,7 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::calc::{Matrix3x3};
+    /// use bioshell_core::{Matrix3x3};
     ///
     /// let mat: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let _det: f64 = mat.det();
@@ -352,7 +352,7 @@ impl Matrix3x3 {
     ///
     /// # Examples
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     ///
     /// let mut lhs: Matrix3x3 = Matrix3x3::from_array([0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0]);
     /// lhs.inverse();
@@ -402,7 +402,7 @@ impl Matrix3x3 {
     /// # Example
     ///
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     ///
     /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
@@ -432,7 +432,7 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     ///
     /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let rhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
@@ -454,7 +454,7 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     ///
     /// let lhs = Matrix3x3::identity();
     /// let rhs = Matrix3x3::from_array([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
@@ -479,7 +479,7 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::calc::{Vec3, Matrix3x3};
+    /// use bioshell_core::{Vec3, Matrix3x3};
     ///
     /// let mat = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let vec = Vec3::new(1.0, 2.0, 3.0);
@@ -508,7 +508,7 @@ impl Matrix3x3 {
     ///
     /// # Example
     /// ```rust
-    /// use bioshell_pdb::calc::Matrix3x3;
+    /// use bioshell_core::Matrix3x3;
     ///
     /// let lhs: Matrix3x3 = Matrix3x3::from_array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
     /// let rhs: Matrix3x3 = Matrix3x3::from_array([9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0]);

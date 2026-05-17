@@ -1,7 +1,7 @@
 use std::io::BufRead;
 use bioshell_cif::{CifError, CifTable, read_cif_buffer};
 use crate::{format_atom_name, PdbAtom, PDBError, Structure};
-use crate::calc::Vec3;
+use bioshell_core::Vec3;
 
 /// Reads a library of small molecules (e.g. ligands) into a  ([`Structure`](Structure)
 ///
