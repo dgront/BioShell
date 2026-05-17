@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::ops::Range;
-use bioshell_pdb::calc::Vec3;
+use bioshell_core::Vec3;
 use bioshell_pdb::PdbAtom;
 use crate::{BuilderError, InternalAtomDefinition, RelativeResidueLocator};
 use crate::nerf::{restore_branched_chain_in_order};

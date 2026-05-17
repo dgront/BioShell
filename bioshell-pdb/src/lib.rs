@@ -99,7 +99,6 @@ mod pdb_parsing_error;
 mod pdb_helix;
 mod pdb_sheet;
 mod pdb_atom;
-mod assertions;
 
 pub mod monomers;
 pub mod pdb_atom_filters;
@@ -118,22 +117,21 @@ mod deposit;
 mod ligands;
 
 pub mod documentation;
-mod has_cartesians;
-pub use has_cartesians::*;
+
 
 use std::path::Path;
 pub use structure::{Structure, write_pdb};
 pub use deposit::*;
 pub use ligands::*;
-pub use secondary_structure::{SecondaryStructureTypes, SecondaryStructure, SecondaryRange};
-pub use load_pdb::{is_pdb_file, find_pdb_file_name};
+pub use secondary_structure::{SecondaryRange, SecondaryStructure, SecondaryStructureTypes};
+pub use load_pdb::{find_pdb_file_name, is_pdb_file};
 pub use pdb_parsing_error::PDBError;
-pub use pdb_atom::{PdbAtom, same_residue_atoms, format_atom_name, is_hydrogen};
-pub use residue_id::{ResidueId};
-pub use exp_data::{ExperimentalMethod};
-pub use unit_cell::{UnitCell};
-pub use load_cif::{is_cif_file, find_cif_file_name, downlad_deposit_from_rcsb};
-pub use entity::{EntitySource, EntityType, Entity, PolymerEntityType};
+pub use pdb_atom::{format_atom_name, is_hydrogen, PdbAtom, same_residue_atoms};
+pub use residue_id::ResidueId;
+pub use exp_data::ExperimentalMethod;
+pub use unit_cell::UnitCell;
+pub use load_cif::{downlad_deposit_from_rcsb, find_cif_file_name, is_cif_file};
+pub use entity::{Entity, EntitySource, EntityType, PolymerEntityType};
 
 mod secondary_view;
 pub use secondary_view::*;

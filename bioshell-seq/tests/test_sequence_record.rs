@@ -3,7 +3,7 @@ mod tests {
     use std::fs::File;
     use std::io::BufReader;
     use std::path::Path;
-    use bioshell_io::open_file;
+    use bioshell_core::io::open_file;
     use bioshell_seq::sequence::{NCBIIterator, SwissProtFolderIterator, SwissProtIterator};
 
     #[test]

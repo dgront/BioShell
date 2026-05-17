@@ -12,7 +12,7 @@ mod sequence_reporter;
 pub use sequence_reporter::*;
 
 use log::info;
-use bioshell_io::open_file;
+use bioshell_core::io::open_file;
 pub use sequence::*;
 pub use sequence_profile::*;
 pub use residue_type_mapping::*;

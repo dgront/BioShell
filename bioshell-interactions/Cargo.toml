@@ -12,6 +12,7 @@ crate-type = ["rlib", "cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
+bioshell-core = { path = "../bioshell-core" }
 bioshell-pdb = { path = "../bioshell-pdb" }
 bioshell-seq = { path = "../bioshell-seq" }
 

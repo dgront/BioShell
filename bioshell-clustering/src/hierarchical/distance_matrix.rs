@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::Display;
-use bioshell_io::open_file;
+use bioshell_core::io::open_file;
 
 use csv::{ReaderBuilder, StringRecord};
 use crate::errors::ClusteringError;

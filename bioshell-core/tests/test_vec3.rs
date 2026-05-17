@@ -1,8 +1,8 @@
 
 #[cfg(test)]
 mod test_vec3 {
-    use bioshell_pdb::assert_delta;
-    use bioshell_pdb::calc::{Vec3, dihedral_angle4};
+    use bioshell_core::assert_delta;
+    use bioshell_core::{Vec3, dihedral_angle4};
 
     #[test]
     fn test_dihedrals() {

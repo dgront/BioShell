@@ -1,7 +1,7 @@
 //! Utility functions to facilitate I/O operations for bioshell crates
 //!
 //! A few functions that have been frequently used by bioshell crates were refactored
-//! and gathered within ``bioshell-io`` crate. While the set of these functions will
+//! and gathered within ``bioshell-core`` crate. While the set of these functions will
 //! be most likely growing, currently the crate allows for:
 //!
 //! # Opening an input stream, which might be gzip'ed
@@ -10,7 +10,7 @@
 //! has ``.gz`` suffix, the returned ``BufRead`` is automatically uncompressed:
 //!
 //! ```
-//! use bioshell_io::open_file;
+//! use bioshell_core::io::open_file;
 //! # use std::io;
 //! # fn main() -> Result<(), io::Error> {
 //! let reader = open_file("tests/test_files/f64.csv")?;
@@ -26,7 +26,7 @@
 //!
 //! ```
 //! use std::fs;
-//! use bioshell_io::out_writer;
+//! use bioshell_core::io::out_writer;
 //! // This will print on stdout
 //! let mut to_stream = out_writer("", true);
 //! // This will also print on stdout
@@ -48,7 +48,7 @@
 //! ```
 //! # use std::io;
 //! # fn main() -> Result<(), io::Error> {
-//! use bioshell_io::{open_file, read_delimited_columns, read_delimited_values};
+//! use bioshell_core::io::{open_file, read_delimited_columns, read_delimited_values};
 //! let reader = open_file("tests/test_files/f64.csv")?;
 //! let data_f64: Vec<Vec<f64>> = read_delimited_values(reader, b',')?;
 //! # assert_eq!(data_f64.len(), 2);
@@ -69,7 +69,7 @@
 //! ```
 //! # use std::io;
 //! # fn main() -> Result<(), io::Error> {
-//! use bioshell_io::{open_file, read_whitespace_delimited_columns, read_whitespace_delimited_values};
+//! use bioshell_core::io::{open_file, read_whitespace_delimited_columns, read_whitespace_delimited_values};
 //! let reader = open_file("tests/test_files/numbers.txt")?;
 //! let data_f64: Vec<Vec<f64>> = read_whitespace_delimited_values(reader)?;
 //! # assert_eq!(data_f64.len(), 2);
@@ -89,7 +89,7 @@
 //! split in complex scenarios, such as: ``"first second 'third token'"``. Even more complex example
 //! is given below:
 //! ```
-//! use bioshell_io::split_into_strings;
+//! use bioshell_core::io::split_into_strings;
 //! let tokens = split_into_strings("A   'RNA linking'       y \"ADENOSINE-5'-MONOPHOSPHATE\" ? 'C10 H14 N5 O7 P' 347.221", false);
 //! assert_eq!(tokens.len(), 7);
 //! assert_eq!(tokens[3], "\"ADENOSINE-5'-MONOPHOSPHATE\"".to_string());

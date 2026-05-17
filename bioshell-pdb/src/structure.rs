@@ -6,13 +6,13 @@ use std::ops::Range;
 use itertools::{Itertools};
 use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties, KNOWN_RESIDUE_TYPES};
 use bioshell_seq::sequence::Sequence;
+use bioshell_core::Vec3;
 
 use crate::pdb_atom::{PdbAtom, same_residue_atoms};
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, ByResidueRange};
 use crate::pdb_parsing_error::PDBError;
 use crate::pdb_parsing_error::PDBError::{NoSuchAtom, NoSuchResidue};
 use crate::{ResidueId, SecondaryStructureTypes};
-use crate::calc::Vec3;
 use crate::PDBError::WrongAtomsNumberInModel;
 use crate::secondary_structure::SecondaryStructure;
 

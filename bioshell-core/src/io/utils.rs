@@ -24,7 +24,7 @@ use log::{debug, info};
 ///
 /// ```
 /// use std::fs;
-/// use bioshell_io::out_writer;
+/// use bioshell_core::io::out_writer;
 /// let mut to_stream = out_writer("", true);
 /// to_stream = out_writer("stdout", true);
 /// assert!(fs::metadata("stdout").is_err());
@@ -81,7 +81,7 @@ fn is_record_ok(rec: &StringRecord) -> bool {
 /// ```
 /// use std::io::BufReader;
 /// # use std::io;
-/// use bioshell_io::{open_file, read_delimited_values};
+/// use bioshell_core::io::{open_file, read_delimited_values};
 /// # fn main() -> Result<(), io::Error> {
 /// let txt_f64 = "1.0\t2.0\t3.0\t4.0
 /// 5.0\t6.0\t7.0\t8.0
@@ -102,7 +102,7 @@ fn is_record_ok(rec: &StringRecord) -> bool {
 /// ```
 /// # use std::io;
 /// # fn main() -> Result<(), io::Error> {
-/// use bioshell_io::{open_file, read_delimited_values};
+/// use bioshell_core::io::{open_file, read_delimited_values};
 /// let reader = open_file("tests/test_files/f64.csv")?;
 /// let data_f64: Vec<Vec<f64>> = read_delimited_values(reader, b',')?;
 /// # assert_eq!(data_f64.len(), 2);
@@ -139,7 +139,7 @@ pub fn read_delimited_values<T: FromStr+Clone, R: BufRead>(reader: R, delimiter:
 /// ```
 /// use std::io::BufReader;
 /// # use std::io;
-/// use bioshell_io::{open_file, read_delimited_columns};
+/// use bioshell_core::io::{open_file, read_delimited_columns};
 /// # fn main() -> Result<(), io::Error> {
 /// let txt_f64 = "1.0\t2.0\t3.0\t4.0
 /// 5.0\t6.0\t7.0\t8.0
@@ -301,7 +301,7 @@ pub fn can_create_file<P: AsRef<Path>>(path: P) -> bool {
 ///
 /// # Examples
 /// ```
-/// use bioshell_io::open_file;
+/// use bioshell_core::io::open_file;
 /// # use std::io;
 /// # fn main() -> Result<(), io::Error> {
 /// let reader = open_file("tests/test_files/f64.csv")?;
@@ -335,7 +335,7 @@ pub fn open_file<P: AsRef<Path>>(file_path: P) -> Result<Box<dyn BufRead>, Error
 ///
 /// ```
 /// use std::path::PathBuf;
-/// use bioshell_io::full_extension;
+/// use bioshell_core::io::full_extension;
 /// assert_eq!(&full_extension(&PathBuf::from("test.txt")).unwrap(), "txt");
 /// assert_eq!(&full_extension(&PathBuf::from("file.tar.gz")).unwrap(), "tar.gz");
 /// ```
@@ -369,7 +369,7 @@ pub fn count_rows(file_path: &str) -> Result<usize, Error> {
 /// or `.cif` files with monomer definitions
 ///
 /// ```
-/// let bioshell_main_dir = bioshell_io::find_bioshell_path();
+/// let bioshell_main_dir = bioshell_core::io::find_bioshell_path();
 /// assert!(bioshell_main_dir.is_some());
 /// let bioshell_main_dir = bioshell_main_dir.unwrap();
 /// ```
@@ -416,7 +416,7 @@ pub fn find_bioshell_path() -> Option<PathBuf> {
 /// # Example
 /// ```
 /// use std::path::Path;
-/// use bioshell_io::glob;
+/// use bioshell_core::io::glob;
 /// let toml_files = glob(Path::new("./"), "toml").unwrap();
 /// assert_eq!(toml_files.len(), 1);
 /// let csv_gz_files = glob(Path::new("./"), r"csv\.gz").unwrap();
@@ -464,7 +464,7 @@ pub fn glob(dir: &Path, extension_regex: &str) -> Result<Vec<PathBuf>, Error> {
 /// - List item 1
 /// - List item 2
 /// ";
-/// let text = bioshell_io::markdown_to_text(markdown);
+/// let text = bioshell_core::io::markdown_to_text(markdown);
 /// assert_eq!(text, "Heading\n- List item 1\n- List item 2\n");
 /// ```
 pub fn markdown_to_text(md: &str) -> String {
@@ -537,7 +537,7 @@ pub fn markdown_to_text(md: &str) -> String {
 ///
 /// # Example
 /// ```
-/// use bioshell_io::sanitize_filename;
+/// use bioshell_core::io::sanitize_filename;
 /// let name = "RefSeq|XP_123456.1/SwissProt:Q9NQX5.fasta";
 /// assert_eq!(sanitize_filename(name), "RefSeq_XP_123456.1_SwissProt_Q9NQX5.fasta");
 /// ```

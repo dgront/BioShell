@@ -2,8 +2,8 @@
 
 #[cfg(test)]
 mod rototranslation_test {
-    use bioshell_pdb::{assert_delta, assert_vec3_eq};
-    use bioshell_pdb::calc::{Vec3, Rototranslation};
+    use bioshell_pdb::calc::{Rototranslation};
+    use bioshell_core::{Vec3, assert_delta, assert_vec3_eq};
 
     #[test]
     fn rototranslation_apply_mut() {

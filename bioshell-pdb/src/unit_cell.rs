@@ -45,7 +45,8 @@ impl UnitCell {
     ///
     /// # Example
     /// ```
-    /// use bioshell_pdb::{assert_delta, UnitCell};
+    /// use bioshell_core::assert_delta;
+    /// use bioshell_pdb::{UnitCell};
     /// let line1 = "CRYST1   52.000   58.600   61.900  90.00  90.00  90.00 P 21 21 21    8";
     /// let uc = UnitCell::from_cryst1_line(line1);
     /// assert_delta!(uc.a, 52.0, 0.00001, "Incorrect unit cell dimension along a axis")
@@ -73,7 +74,8 @@ impl UnitCell {
     /// ```
     /// use std::io::BufReader;
     /// use bioshell_cif::read_cif_buffer;
-    /// use bioshell_pdb::{assert_delta, PDBError, UnitCell};
+    /// use bioshell_core::assert_delta;
+    /// use bioshell_pdb::{PDBError, UnitCell};
     /// let cell_data = "data_cryst_cell
     ///     _cell.length_a                         58.39
     ///     _cell.length_b                         86.70

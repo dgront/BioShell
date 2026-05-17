@@ -2,7 +2,7 @@ use std::io::Error;
 use clap::{Parser};
 
 use bioshell_statistics::{Estimable, MultiNormalDistribution};
-use bioshell_io::{open_file, read_delimited_values};
+use bioshell_core::io::{open_file, read_delimited_values};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

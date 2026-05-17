@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use bioshell_io::out_writer;
+use bioshell_core::io::out_writer;
 use crate::alignment::AlignmentStatistics;
 use crate::sequence::{parse_sequence_id, len_ungapped, len_ungapped_str, Sequence, count_identical};
 

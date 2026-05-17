@@ -1,6 +1,6 @@
 //! Implementation of the Natural Reference Frame (NeRF) algorithm that is used to reconstruct Cartesian positions from internal coordinates
 //!
-use bioshell_pdb::calc::{Matrix3x3, Vec3};
+use bioshell_core::{Matrix3x3, Vec3};
 
 /// Creates a three-atom stub where a fourth atom may be placed into.
 pub fn create_stub(a: &Vec3, r_ab: f64, r_bc: f64, a_abc: f64, b: &mut Vec3, c: &mut Vec3) {
@@ -63,7 +63,7 @@ pub fn restore_linear_chain(r: &[f64], planar: &[f64], dihedral: &[f64], output_
 ///
 /// ```
 /// # use bioshell_builder::nerf::restore_branched_chain;
-/// use bioshell_pdb::calc::Vec3;
+/// use bioshell_core::Vec3;
 /// let r_CH: f64 = 1.05;
 /// let a_HCH: f64 = 109.471_f64.to_radians();
 /// let r = vec![0.0, r_CH, r_CH, r_CH, r_CH];

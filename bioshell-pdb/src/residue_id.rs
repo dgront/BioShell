@@ -88,7 +88,7 @@ impl From<&PdbAtom> for ResidueId {
     /// # use bioshell_pdb::{PdbAtom, ResidueId};
     /// # fn main() -> Result<(), ()> {
     /// let atom = PdbAtom::from_atom_line("ATOM    391  CA  LEU A  51      12.088   9.803  13.653  1.00  9.53           C  ");
-    /// let res_id = ResidueId::try_from(&atom)?;
+    /// let res_id = ResidueId::from(&atom);
     /// assert_eq!(res_id, ResidueId::new("A", 51, ' '));
     /// # Ok(())
     /// # }

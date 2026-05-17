@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use log::{info, warn};
 use env_logger;
 
-use bioshell_io::{markdown_to_text, open_file};
+use bioshell_core::io::{markdown_to_text, open_file};
 use bioshell_seq::sequence::{FastaIterator, Sequence, SequenceReporter, WriteFasta};
 
 const TAXONOMY_EXAMPLES: &str = include_str!("../documentation/taxonomy_app.md");
