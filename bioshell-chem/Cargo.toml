@@ -12,7 +12,7 @@ keywords = ["bioshell"]
 crate-type =["rlib", "cdylib"]
 
 [dependencies]
-bioshell-io = { path = "../bioshell-io" }   	# --- for file and string utilities
+bioshell-core = { path = "../bioshell-core" }   # --- for file, string utilities and Vec3
 bioshell-cif = { path = "../bioshell-cif" }   	# --- for loading molecules from CIF files
 
 clap = { version = "3.1.18", features = ["derive"] }

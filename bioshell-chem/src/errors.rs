@@ -25,6 +25,10 @@ pub enum ChemErrors {
     #[error("Can't find any atom by the: index {0}")]
     InvalidAtomIndex(usize),
 
+    /// THe number of atoms in the molecule is different from the expected one.
+    #[error("Expected {0} atoms but found: {1}")]
+    IncorrectNumberOfAtoms(usize, usize),
+
     /// Invalid reference atoms; the three reference atoms must be different, but the given indexes are not.
     #[error("Invalid reference atoms: {0}, {1}, {2}. All the three indexes must be different.")]
     InvalidReferenceAtoms(usize, usize, usize),

@@ -1,5 +1,9 @@
 use std::collections::{HashSet, VecDeque};
+use std::ops::Index;
+
+use bioshell_core::{dihedral_angle4, planar_angle3, Vec3};
 use crate::{ChemErrors, Molecule};
+use crate::ChemErrors::IncorrectNumberOfAtoms;
 
 /// Numerical internal coordinates for a single atom.
 ///
@@ -13,6 +17,15 @@ pub struct InternalCoordinate {
     pub phi: f64,
 }
 
+impl Default for InternalCoordinate {
+    fn default() -> Self {
+        Self {
+            d: 1.65,
+            alpha: 108.0_f64.to_radians(),
+            phi: 180.0_f64.to_radians(),
+        }
+    }
+}
 
 /// A single atom definition in a molecular internal-coordinate tree.
 ///
@@ -26,6 +39,7 @@ pub struct KinematicAtom {
     pub j: usize,
     pub k: usize,
 }
+
 
 /// A molecular internal-coordinate tree.
 ///
@@ -96,7 +110,7 @@ impl KinematicAtomChain {
 
         atoms.push(KinematicAtom { atom: i, i, j: i, k: i });
         atoms.push(KinematicAtom { atom: j, i, j: i, k: i });
-        atoms.push(KinematicAtom { atom: k, i: j, j: i, k: i });
+        atoms.push(KinematicAtom { atom: k, i: i, j: i, k: j });
 
         placed.insert(i);
         placed.insert(j);
@@ -116,7 +130,7 @@ impl KinematicAtomChain {
                 let angle_ref = KinematicAtomChain::choose_angle_reference(mol, atom, bond_ref, &placed)?;
                 let dihedral_ref = KinematicAtomChain::choose_dihedral_reference(mol, atom, bond_ref, angle_ref, &placed)?;
 
-                atoms.push(KinematicAtom { atom, i: bond_ref, j: angle_ref, k: dihedral_ref });
+                atoms.push(KinematicAtom { atom, i: dihedral_ref, j: angle_ref, k: bond_ref});
                 placed.insert(atom);
                 queue.push_back(atom);
             }
@@ -127,6 +141,40 @@ impl KinematicAtomChain {
         }
 
         Ok(KinematicAtomChain { atoms })
+    }
+
+    pub fn get_icoords(&self, pos: &[Vec3]) -> Vec<InternalCoordinate> {
+        let mut out = vec![InternalCoordinate::default(); self.len()];
+        self.get_icoords_into(pos, &mut out);
+        out
+    }
+
+    pub fn get_icoords_into(&self, pos: &[Vec3], out: &mut [InternalCoordinate]) -> Result<(), ChemErrors> {
+        if out.len() != self.len() {
+            return Err(IncorrectNumberOfAtoms(self.len(), out.len()));
+        }
+        if pos.len() != self.len() {
+            return Err(IncorrectNumberOfAtoms(self.len(), pos.len()));
+        }
+
+        out[0] = InternalCoordinate { d: 0.0, alpha: 0.0, phi: 0.0 };
+        let ka = &self.atoms[1];
+        out[1] = InternalCoordinate { d: pos[ka.atom].distance_to(&pos[ka.k]), alpha: 0.0, phi: 0.0};
+        let ka = &self.atoms[2];
+        out[2] = InternalCoordinate {
+            d: pos[ka.atom].distance_to(&pos[ka.i]),
+            alpha: planar_angle3(&pos[ka.j], &pos[ka.k], &pos[ka.atom]),
+            phi: 0.0,
+        };
+        for row in 3..self.len() {
+            let ka = &self.atoms[row];
+            out[row] = InternalCoordinate {
+                d: pos[ka.atom].distance_to(&pos[ka.k]),
+                alpha: planar_angle3(&pos[ka.j], &pos[ka.k], &pos[ka.atom]),
+                phi: dihedral_angle4(&pos[ka.i], &pos[ka.j], &pos[ka.k], &pos[ka.atom]),
+            };
+        }
+        return Ok(());
     }
 
     fn atom_priority(mol: &Molecule, atom_idx: usize) -> Result<(usize, usize, usize), ChemErrors> {
@@ -177,5 +225,14 @@ impl KinematicAtomChain {
         )?;
 
         Ok(candidates.first().copied().unwrap_or(angle_ref))
+    }
+}
+
+
+impl Index<usize> for KinematicAtomChain {
+    type Output = KinematicAtom;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.atoms[index]
     }
 }
