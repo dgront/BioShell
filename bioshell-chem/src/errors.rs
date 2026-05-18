@@ -44,7 +44,7 @@ pub enum ChemErrors {
     CifError(#[from] CifError),
 
     #[error("Error while parsing CIF value {0} for field {1}")]
-    CifParsingError(String, String),
+    NumericParsingError(String, String),
 
     #[error("Received unexpected atom name: {0}")]
     UnknownAtomName(String),
@@ -56,4 +56,12 @@ pub enum ChemErrors {
     #[error("Incorrect SDF format: {0}")]
     IncorrectSdfFormat(String),
 
+    #[error("invalid MOL2 atom line: {0}")]
+    InvalidMol2AtomLine(String),
+
+    #[error("invalid MOL2 bond line: {0}")]
+    InvalidMol2BondLine(String),
+
+    #[error("invalid MOL2 atom id: {0}")]
+    InvalidMol2AtomId(String),
 }

@@ -1,10 +1,41 @@
 use std::env;
 use log::{info};
-use bioshell_chem::{Molecule, molecule_from_cif};
+use bioshell_chem::{ChemErrors, Molecule, molecule_from_cif};
 use bioshell_chem::ChemErrors::InvalidAtomIndex;
-use bioshell_chem::icoords::KinematicAtomChain;
+use bioshell_chem::icoords::{InternalCoordinate, KinematicAtomChain};
 use bioshell_core::io::open_file;
 use bioshell_pdb::read_cif_monomers;
+
+use std::io::Write;
+
+fn write_z_matrix<W: Write>(mut out: W, molecule: &Molecule, kac: &KinematicAtomChain, icoords: &[InternalCoordinate], ) -> Result<(), ChemErrors> {
+
+    if icoords.len() != kac.len() {
+        return Err(ChemErrors::IncorrectNumberOfAtoms(icoords.len(), kac.len()));
+    }
+
+    for i in 0..icoords.len() {
+        let ipos = &icoords[i];
+        let ka = &kac[i];
+        let atom = molecule.get_atom(ka.atom)
+            .ok_or(InvalidAtomIndex(ka.atom))?;
+
+        writeln!(
+            out,
+            "{:3} {:2} {:3} {:3} {:3} : {:5.3} {:6.2} {:7.2}",
+            ka.atom,
+            atom.element(),
+            ka.i,
+            ka.j,
+            ka.k,
+            ipos.d,
+            ipos.alpha.to_degrees(),
+            ipos.phi.to_degrees()
+        )?;
+    }
+
+    Ok(())
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
@@ -26,11 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ---------- Compute the internal coordinates and print the z-matrix
     let icoords = kac.get_icoords(&cartesian);
 
-    for i in 0..icoords.len() {
-        let ipos = &icoords[i];
-        let a = molcle.get_atom(i).ok_or_else(||InvalidAtomIndex(i))?;
-        println!("{:3} {:2} {:3} {:3} {:3} : {:5.3} {:6.2} {:7.2}",
-                 i, a.element(), kac[i].i, kac[i].j, kac[i].k, ipos.d, ipos.alpha.to_degrees(), ipos.phi.to_degrees());
-    }
+    write_z_matrix(std::io::stdout(), &molcle, &kac, &icoords?)?;
+
     Ok(())
 }

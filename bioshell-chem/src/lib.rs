@@ -14,8 +14,8 @@ pub use atom::Atom;
 mod errors;
 pub use errors::ChemErrors;
 
-mod molecule_loaders;
-pub use molecule_loaders::*;
+mod io;
+pub use io::*;
 
 mod elements;
 pub use elements::Element;
