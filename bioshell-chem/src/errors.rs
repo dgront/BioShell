@@ -51,4 +51,9 @@ pub enum ChemErrors {
 
     #[error("missing required CIF field or column: {0}")]
     MissingCifField(String),
+
+    /// Something has been wrong in the input SDF data
+    #[error("Incorrect SDF format: {0}")]
+    IncorrectSdfFormat(String),
+
 }

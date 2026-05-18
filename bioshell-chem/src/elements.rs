@@ -8,6 +8,7 @@ macro_rules! define_elements {
             $variant:ident = $z:literal, $symbol:literal, $name:literal, $mass:literal, $valence:expr;
         )+
     ) => {
+        /// Defines atomic elements and their basic properties
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
         #[repr(u8)]
         pub enum Element {
@@ -23,10 +24,12 @@ macro_rules! define_elements {
                 )+
             ];
 
+            /// Atomic number of this element
             pub fn atomic_number(self) -> u8 {
                 self as u8
             }
 
+            /// Chemical symbol of this element
             pub fn symbol(self) -> &'static str {
                 match self {
                     $(
@@ -35,6 +38,7 @@ macro_rules! define_elements {
                 }
             }
 
+            /// THe name of this element in plain English
             pub fn name(self) -> &'static str {
                 match self {
                     $(
@@ -43,6 +47,7 @@ macro_rules! define_elements {
                 }
             }
 
+            /// Atomic (molar) mass of this element
             pub fn mass(self) -> f64 {
                 match self {
                     $(

@@ -143,10 +143,11 @@ impl KinematicAtomChain {
         Ok(KinematicAtomChain { atoms })
     }
 
-    pub fn get_icoords(&self, pos: &[Vec3]) -> Vec<InternalCoordinate> {
+    pub fn get_icoords(&self, pos: &[Vec3]) -> Result<Vec<InternalCoordinate>, ChemErrors> {
         let mut out = vec![InternalCoordinate::default(); self.len()];
-        self.get_icoords_into(pos, &mut out);
-        out
+        self.get_icoords_into(pos, &mut out)?;
+
+        return Ok(out);
     }
 
     pub fn get_icoords_into(&self, pos: &[Vec3], out: &mut [InternalCoordinate]) -> Result<(), ChemErrors> {
