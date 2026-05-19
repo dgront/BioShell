@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use std::io::BufRead;
+use std::str::FromStr;
+
 use bioshell_cif::{read_cif_buffer};
 use bioshell_cif::CifTable;
+use crate::parse;
 use crate::{Atom, BondType, ChemErrors, Element, Molecule};
 
 pub fn molecule_from_cif<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> {
@@ -15,15 +18,20 @@ pub fn molecule_from_cif<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> 
     molecule.code = mol_data.get_item("_chem_comp.id");
 
     let atoms_table = CifTable::new(&mol_data, "_chem_comp_atom",
-                                    ["pdbx_ordinal", "atom_id", "type_symbol","charge"])?;
+        ["pdbx_ordinal", "atom_id", "model_Cartn_x", "model_Cartn_y", "model_Cartn_z", "type_symbol","charge"])?;
     let mut name_to_idx: HashMap<String, usize> = HashMap::new();
-    for [pdbx_ordinal, atom_id, atom_type, charge] in atoms_table.iter() {
+    for [pdbx_ordinal, atom_id, x, y, z, atom_type, charge] in atoms_table.iter() {
+        let vx = parse(x, "model_Cartn_x")?;
+        let vy = parse(y, "model_Cartn_x")?;
+        let vz = parse(z, "model_Cartn_x")?;
         let e: Element = atom_type.parse()?;
         let idx: usize = pdbx_ordinal.parse()
             .map_err(|_| ChemErrors::NumericParsingError("_chem_comp_atom.pdbx_ordinal".to_string(), pdbx_ordinal.to_string()))?;
         let q: i8 = charge.parse()
             .map_err(|_| ChemErrors::NumericParsingError("_chem_comp_atom.charge".to_string(), charge.to_string()))?;
-        molecule.add_atom(Atom::charged(idx-1, e, q))?;
+        let mut a = Atom::charged(idx-1, e, q);
+        a.set_pos3(vx, vy, vz);
+        molecule.add_atom(a)?;
         name_to_idx.insert(atom_id.to_string(), idx-1);
     }
 
@@ -43,3 +51,4 @@ pub fn molecule_from_cif<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> 
     }
     return Ok(molecule);
 }
+

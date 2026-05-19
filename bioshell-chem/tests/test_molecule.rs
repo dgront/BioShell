@@ -1,7 +1,10 @@
 #[cfg(test)]
 mod tests {
+    use std::io::Read;
     use bioshell_chem::{Atom, BondType, ChemErrors, Element, Molecule};
-    use bioshell_io::open_file;
+    use bioshell_chem::icoords::KinematicAtomChain;
+    use bioshell_core::io::open_file;
+    use bioshell_core::Vec3;
 
     fn benzene() -> Result<Molecule, ChemErrors> {
         let mut mol = Molecule::new("benzene");
@@ -71,12 +74,72 @@ mod tests {
     #[test]
     fn molecule_from_cif() -> Result<(), ChemErrors> {
 
-        let reader = open_file("tests/test_files/CLR.cif")?;
+        let reader = open_file("tests/test_files/MBN.cif")?;
         let mol = bioshell_chem::molecule_from_cif(reader)?;
-        assert_eq!(mol.molecule_name, "CHOLESTEROL");
-        assert_eq!(mol.code, Some("CLR".to_string()));
-        assert_eq!(mol.count_atoms(), 74);
-        assert_eq!(mol.count_bonds(), 77);
+        assert_eq!(mol.molecule_name, "TOLUENE");
+        assert_eq!(mol.code, Some("MBN".to_string()));
+        assert_eq!(mol.count_atoms(), 15);
+        assert_eq!(mol.count_bonds(), 15);
+        Ok(())
+    }
+
+    #[test]
+    fn molecule_from_sdf() -> Result<(), ChemErrors> {
+
+        let reader = open_file("tests/test_files/toluene.sdf")?;
+        let mol = bioshell_chem::molecule_from_sdf(reader)?;
+        assert_eq!(mol.count_atoms(), 15);
+        assert_eq!(mol.count_bonds(), 15);
+        Ok(())
+    }
+
+    /// The TOL.gro file content
+    const TOL_GRO: &str = r#"LIGPARGEN GENERATED GRO FILE
+   15
+    1TOL    C00    1  -0.208   0.000  -0.000
+    1TOL    H01    2  -0.316   0.000  -0.000
+    1TOL    C02    3  -0.139   0.121  -0.000
+    1TOL    H03    4  -0.193   0.215  -0.000
+    1TOL    C04    5  -0.139  -0.121  -0.000
+    1TOL    H05    6  -0.193  -0.215  -0.000
+    1TOL    C06    7   0.002   0.121  -0.000
+    1TOL    H07    8   0.055   0.215   0.000
+    1TOL    C08    9   0.002  -0.121  -0.000
+    1TOL    H09   10   0.055  -0.215   0.000
+    1TOL    C0A   11   0.072  -0.000  -0.000
+    1TOL    C0B   12   0.222  -0.000  -0.001
+    1TOL    H0C   13   0.258   0.001   0.105
+    1TOL    H0D   14   0.260   0.090  -0.054
+    1TOL    H0E   15   0.260  -0.091  -0.052
+   1.00000   1.00000   1.00000
+"#;
+    #[test]
+    fn molecule_from_itp() -> Result<(), ChemErrors> {
+
+        let reader = open_file("tests/test_files/TOL.itp")?;
+        let mut mol = bioshell_chem::molecule_from_itp(reader)?;
+        assert_eq!(mol.count_atoms(), 15);
+        assert_eq!(mol.count_bonds(), 15);
+
+        let mut lines: Vec<&str> =  TOL_GRO.lines().collect();
+        for (i,line) in lines[2..17].iter().enumerate() {
+            let f: Vec<&str> = line.split_whitespace().collect();
+            let x = f[3].parse::<f64>().unwrap() * 10.0; // convert from nm to A
+            let y = f[4].parse::<f64>().unwrap() * 10.0;
+            let z = f[5].parse::<f64>().unwrap() * 10.0;
+            let mut a = mol.get_atom_mut(i).unwrap();
+            a.set_pos3(x, y, z);
+
+            eprintln!("{}: {:?}", i, a.pos());
+        }
+
+        let kac = KinematicAtomChain::from_molecule(&mol, 0, 2, 4)?;
+        let cartesian = mol.atoms().map(|a| a.pos().clone()).collect::<Vec<_>>();
+        println!("{:?}", cartesian);
+        let zmatrix = kac.get_icoords(&cartesian)?;
+        for ic in zmatrix {
+            println!("{:?}", ic);
+        }
         Ok(())
     }
 }

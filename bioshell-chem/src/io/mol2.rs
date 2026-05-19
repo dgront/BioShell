@@ -39,15 +39,15 @@ pub fn molecule_from_mol2<R: Read>(reader: R) -> Result<Molecule, ChemErrors> {
                     .parse()
                     .map_err(|_| InvalidMol2AtomId(fields[0].to_string()))?;
 
-                // let atom_name = fields[1];
-                // let x: f64 = fields[2].parse().map_err(|_| NumericParsingError("x".into(), fields[2].to_string()))?;
-                // let y: f64 = fields[3].parse().map_err(|_| NumericParsingError("y".into(), fields[3].to_string()))?;
-                // let z: f64 = fields[4].parse().map_err(|_| NumericParsingError("z".into(), fields[4].to_string()))?;
-
                 let mol2_atom_type = fields[5];
                 let element = element_from_mol2_type(mol2_atom_type)?;
-
-                molecule.add_atom(Atom::neutral(atom_id - 1, element))?;
+                let mut a = Atom::neutral(atom_id - 1, element);
+                // let atom_name = fields[1];
+                let x: f64 = fields[2].parse().map_err(|_| NumericParsingError("x".into(), fields[2].to_string()))?;
+                let y: f64 = fields[3].parse().map_err(|_| NumericParsingError("y".into(), fields[3].to_string()))?;
+                let z: f64 = fields[4].parse().map_err(|_| NumericParsingError("z".into(), fields[4].to_string()))?;
+                a.set_pos3(x, y, z);
+                molecule.add_atom(a)?;
             }
 
             Some("BOND") => {

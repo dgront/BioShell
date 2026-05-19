@@ -8,8 +8,8 @@ use crate::ChemErrors::IncorrectNumberOfAtoms;
 /// Numerical internal coordinates for a single atom.
 ///
 /// The fields correspond to distance `d`, planar angle `alpha`, and dihedral
-/// angle `phi`. Values are determined by the caller; typically distance follows
-/// the Cartesian coordinate units, while angles are stored in radians.
+/// angle `phi`. Values are determined by the caller; distance follows
+/// the Cartesian coordinate units in Angstroms, while angles are stored in radians.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InternalCoordinate {
     pub d: f64,
@@ -27,17 +27,26 @@ impl Default for InternalCoordinate {
     }
 }
 
-/// A single atom definition in a molecular internal-coordinate tree.
+/// A reference frame to locate an atom by three other reference atoms.
 ///
-/// The `atom` field stores the atom index being defined. The `i`, `j`, and `k`
-/// fields store reference atom indices used to define distance, bond angle,
-/// and dihedral angle, respectively.
+/// The three atom, indexed by `a`, `b` and `c` will be used as a reference frame for a given `atom`.
+/// The position of the `atom` will be defined by three internal coordinates:
+///    * `r` - distance between `c` and the `atom`
+///    * `planar` - planar angle between `b`, `c` and `atom`
+///    * `dihedral` - dihedral angle between `a`, `b`, `c` and `atom`
+/// ```text
+///         c----atom
+///        /
+///       /
+/// a----b
+/// ```
+///
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KinematicAtom {
     pub atom: usize,
-    pub i: usize,
-    pub j: usize,
-    pub k: usize,
+    pub a: usize,
+    pub b: usize,
+    pub c: usize,
 }
 
 
@@ -108,9 +117,9 @@ impl KinematicAtomChain {
         let mut placed = HashSet::new();
         let mut queue = VecDeque::new();
 
-        atoms.push(KinematicAtom { atom: i, i, j: i, k: i });
-        atoms.push(KinematicAtom { atom: j, i, j: i, k: i });
-        atoms.push(KinematicAtom { atom: k, i: i, j: i, k: j });
+        atoms.push(KinematicAtom { atom: i, a: i, b: i, c: i });
+        atoms.push(KinematicAtom { atom: j, a: i, b: i, c: i });
+        atoms.push(KinematicAtom { atom: k, a: i, b: i, c: j });
 
         placed.insert(i);
         placed.insert(j);
@@ -130,7 +139,7 @@ impl KinematicAtomChain {
                 let angle_ref = KinematicAtomChain::choose_angle_reference(mol, atom, bond_ref, &placed)?;
                 let dihedral_ref = KinematicAtomChain::choose_dihedral_reference(mol, atom, bond_ref, angle_ref, &placed)?;
 
-                atoms.push(KinematicAtom { atom, i: dihedral_ref, j: angle_ref, k: bond_ref});
+                atoms.push(KinematicAtom { atom, a: dihedral_ref, b: angle_ref, c: bond_ref});
                 placed.insert(atom);
                 queue.push_back(atom);
             }
@@ -160,19 +169,19 @@ impl KinematicAtomChain {
 
         out[0] = InternalCoordinate { d: 0.0, alpha: 0.0, phi: 0.0 };
         let ka = &self.atoms[1];
-        out[1] = InternalCoordinate { d: pos[ka.atom].distance_to(&pos[ka.k]), alpha: 0.0, phi: 0.0};
+        out[1] = InternalCoordinate { d: pos[ka.atom].distance_to(&pos[ka.c]), alpha: 0.0, phi: 0.0};
         let ka = &self.atoms[2];
         out[2] = InternalCoordinate {
-            d: pos[ka.atom].distance_to(&pos[ka.i]),
-            alpha: planar_angle3(&pos[ka.j], &pos[ka.k], &pos[ka.atom]),
+            d: pos[ka.atom].distance_to(&pos[ka.c]),
+            alpha: planar_angle3(&pos[ka.b], &pos[ka.c], &pos[ka.atom]),
             phi: 0.0,
         };
         for row in 3..self.len() {
             let ka = &self.atoms[row];
             out[row] = InternalCoordinate {
-                d: pos[ka.atom].distance_to(&pos[ka.k]),
-                alpha: planar_angle3(&pos[ka.j], &pos[ka.k], &pos[ka.atom]),
-                phi: dihedral_angle4(&pos[ka.i], &pos[ka.j], &pos[ka.k], &pos[ka.atom]),
+                d: pos[ka.atom].distance_to(&pos[ka.c]),
+                alpha: planar_angle3(&pos[ka.b], &pos[ka.c], &pos[ka.atom]),
+                phi: dihedral_angle4(&pos[ka.a], &pos[ka.b], &pos[ka.c], &pos[ka.atom]),
             };
         }
         return Ok(());

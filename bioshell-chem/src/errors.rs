@@ -40,6 +40,9 @@ pub enum ChemErrors {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
+    #[error("Can't recognize file format based on the extension: {0}")]
+    UnknownFileFormat(String),
+
     #[error("Cif error: {0}")]
     CifError(#[from] CifError),
 
@@ -52,9 +55,17 @@ pub enum ChemErrors {
     #[error("missing required CIF field or column: {0}")]
     MissingCifField(String),
 
-    /// Something has been wrong in the input SDF data
-    #[error("Incorrect SDF format: {0}")]
+    /// Input line is too short
+    #[error("Line too short, expected {1} characters: {0}")]
+    LineTooShort(String, usize),
+
+    /// Incorrect SDF format
+    #[error("Incorrect SDF line: {0}")]
     IncorrectSdfFormat(String),
+
+    /// Incorrect Gromacs topology ITP format
+    #[error("Incorrect Gromacs topology ITP format: {0}")]
+    IncorrectItpFormat(String),
 
     #[error("invalid MOL2 atom line: {0}")]
     InvalidMol2AtomLine(String),

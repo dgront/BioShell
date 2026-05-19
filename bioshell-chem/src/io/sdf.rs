@@ -1,6 +1,6 @@
 use std::io::{BufRead, Lines};
 use crate::{Atom, BondType, ChemErrors, Element, Molecule};
-
+use crate::io::{parse, parse_substr};
 
 /// Reads a molecule from an SDF file.
 ///
@@ -34,9 +34,8 @@ pub fn molecule_from_sdf<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> 
 
     for atom_idx in 0..n_atoms {
         let line = lines.next_sdf_line("Missing SDF atom line")?;
-        let element = parse_atom_element(&line)?;
-        let charge = parse_atom_charge(&line)?;
-        mol.add_atom(Atom::charged(atom_idx, element, charge))?;
+        let a = parse_atom_line(atom_idx, &line)?;
+        mol.add_atom(a)?;
     }
 
     for _ in 0..n_bonds {
@@ -64,27 +63,34 @@ impl<R: BufRead> SdfLineExt for Lines<R> {
 
 /// Extracts the number of atoms and the number of bonds from a line
 fn parse_counts_line(line: &str) -> Result<(usize, usize), ChemErrors> {
-    let n_atoms = line.get(0..3)
-        .ok_or_else(|| ChemErrors::IncorrectSdfFormat("Invalid SDF counts line".into()))?
-        .trim()
-        .parse()
-        .map_err(|_| ChemErrors::IncorrectSdfFormat("Invalid atom count".into()))?;
-
-    let n_bonds = line.get(3..6)
-        .ok_or_else(|| ChemErrors::IncorrectSdfFormat("Invalid SDF counts line".into()))?
-        .trim()
-        .parse()
-        .map_err(|_| ChemErrors::IncorrectSdfFormat("Invalid bond count".into()))?;
+    let n_atoms: usize = parse_substr(line, 0, 3, "SDF atom count")?;
+    let n_bonds: usize = parse_substr(line, 3, 6, "SDF bond count")?;
 
     Ok((n_atoms, n_bonds))
 }
 
+fn parse_atom_line(idx: usize, line: &str) -> Result<Atom, ChemErrors> {
+    let fields: Vec<&str> = line.split_whitespace().collect();
+
+    if fields.len() < 4 {
+        return Err(ChemErrors::IncorrectSdfFormat(format!("Invalid SDF atom line: {line}")));
+    }
+
+    let vx: f64 = parse(fields[0], "sdf atom x")?;
+    let vy: f64 = parse(fields[1], "sdf atom y")?;
+    let vz: f64 = parse(fields[2], "sdf atom z")?;
+
+    let e = parse_atom_element(line)?;
+    let q = parse_atom_charge(line)?;
+
+    let mut a = Atom::charged(idx, e, q);
+    a.set_pos3(vx, vy, vz);
+
+    Ok(a)
+}
+
 fn parse_atom_charge(line: &str) -> Result<i8, ChemErrors> {
-    let charge_code: i8 = line.get(36..39)
-        .ok_or_else(|| ChemErrors::IncorrectSdfFormat("Invalid SDF atom charge field".into()))?
-        .trim()
-        .parse()
-        .map_err(|_| ChemErrors::IncorrectSdfFormat("Invalid SDF atom charge code".into()))?;
+    let charge_code: i8 =parse_substr(line, 36, 39, "SDF atom charge field")?;
 
     match charge_code {
         0 => Ok(0),
@@ -103,41 +109,22 @@ fn parse_atom_charge(line: &str) -> Result<i8, ChemErrors> {
 
 fn parse_atom_element(line: &str) -> Result<Element, ChemErrors> {
     line.get(31..34)
-        .ok_or_else(|| ChemErrors::IncorrectSdfFormat("Invalid SDF atom line".into()))?
+        .ok_or_else(|| ChemErrors::LineTooShort(line.into(), 34))?
         .trim()
         .parse()
 }
 
 fn parse_bond_line(line: &str) -> Result<(usize, usize, BondType), ChemErrors> {
-    let a: usize = line
-        .get(0..3)
-        .ok_or_else(|| ChemErrors::IncorrectSdfFormat("Invalid SDF bond line".into()))?
-        .trim()
-        .parse()
-        .map_err(|_| ChemErrors::IncorrectSdfFormat("Invalid first bond atom".into()))?;
-
-    let b: usize = line
-        .get(3..6)
-        .ok_or_else(|| ChemErrors::IncorrectSdfFormat("Invalid SDF bond line".into()))?
-        .trim()
-        .parse()
-        .map_err(|_| ChemErrors::IncorrectSdfFormat("Invalid second bond atom".into()))?;
-
-    let order: u8 = line
-        .get(6..9)
-        .ok_or_else(|| ChemErrors::IncorrectSdfFormat("Invalid SDF bond line".into()))?
-        .trim()
-        .parse()
-        .map_err(|_| ChemErrors::IncorrectSdfFormat("Invalid SDF bond order".into()))?;
+    let a: usize = parse_substr(line, 0, 3, "SDF bond from")?;
+    let b: usize = parse_substr(line, 3, 6, "SDF bond to")?;
+    let order: u8 = parse_substr(line, 6, 9, "SDF bond order")?;
 
     let bond_type = match order {
         1 => BondType::Single,
         2 => BondType::Double,
         3 => BondType::Triple,
         4 => BondType::Aromatic,
-        _ => {
-            return Err(ChemErrors::IncorrectSdfFormat(format!("Unsupported SDF bond order: {order}")))
-        }
+        _ => BondType::Unknown
     };
 
     Ok((a, b, bond_type))
