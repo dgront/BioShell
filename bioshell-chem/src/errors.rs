@@ -75,4 +75,10 @@ pub enum ChemErrors {
 
     #[error("invalid MOL2 atom id: {0}")]
     InvalidMol2AtomId(String),
+
+    #[error("incorrect SMILES string: {smiles}; {reason}")]
+    IncorrectSmilesString {
+        smiles: String,
+        reason: String,
+    },
 }

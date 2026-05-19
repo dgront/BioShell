@@ -21,3 +21,6 @@ mod elements;
 pub use elements::Element;
 
 pub mod icoords;
+
+mod smiles;
+pub use smiles::*;
