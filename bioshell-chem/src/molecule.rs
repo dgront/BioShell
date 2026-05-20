@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use petgraph::algo::is_isomorphic_matching;
 use petgraph::graph::{Graph, NodeIndex};
 use petgraph::prelude::Undirected;
 use petgraph::visit::EdgeRef;
@@ -326,7 +327,7 @@ impl Molecule {
                 Some(v) => v,
                 None => 1, // for now, the default valence of unknown elements is set to 1
             };
-            target_valence = target_valence + atom.formal_charge() as u8; // --- add the formal charge to the default valence
+            target_valence = target_valence + atom.charge() as u8; // --- add the formal charge to the default valence
 
             let current_valence = self.bond_order_sum(atom_idx)?;
 
@@ -340,6 +341,36 @@ impl Molecule {
         }
 
         Ok(())
+    }
+
+    /// Checks if this molecule is topologically identical to another molecule.
+    ///
+    /// This method checks if the two molecules are isomorphic as labeled graphs. It checks:
+    /// - atom connectivity
+    /// - atom element types and formal charges
+    /// - bond types
+    /// Note that this is **not full chemical identity**. It does not automatically handle resonance
+    /// equivalence, aromaticity perception, stereochemistry, tautomers, isotopes, or protonation-state normalization.
+    ///
+    /// An example below loads two toluene molecules from two different file formats and check if they match
+    /// ```
+    /// use bioshell_chem::{load_molecule, ChemErrors};
+    /// # fn main() -> Result<(), ChemErrors> {
+    /// let toluene_cif = load_molecule("./tests/test_files/MBN.cif")?;
+    /// let toluene_sdf = load_molecule("./tests/test_files/toluene.sdf")?;
+    /// assert!(toluene_cif.is_isomorphic_to(&toluene_sdf));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn is_isomorphic_to(&self, other: &Molecule) -> bool {
+        return is_isomorphic_matching(
+            &self.graph,
+            &other.graph,
+            |a, b| {
+                a.element() == b.element()
+                    && a.charge() == b.charge()
+            },
+            |bond_a, bond_b| bond_a == bond_b);
     }
 
     /// Returns all distinct planar angles `a-b-c`, where `a` and `c`

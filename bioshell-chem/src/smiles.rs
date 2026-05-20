@@ -4,6 +4,7 @@ use crate::ChemErrors::IncorrectSmilesString;
 
 
 impl Molecule {
+
     pub fn from_smiles(name: &str, s: &str) -> Result<Self, ChemErrors> {
         let tokens = Self::tokenize(s)?;
         Self::from_smiles_tokens(name, &tokens)
@@ -181,10 +182,6 @@ impl Molecule {
     fn is_ring_token(token: &str) -> bool {
         token.chars().all(|c| c.is_ascii_digit())
             || token.starts_with('%')
-    }
-
-    fn is_aromatic_token_symbol(token: &str) -> bool {
-        token.chars().next().is_some_and(|c| c.is_ascii_lowercase())
     }
 
     fn parse_smiles_atom_token(token: &str) -> Result<(Element, i8, bool), ChemErrors> {

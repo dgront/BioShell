@@ -88,12 +88,12 @@ impl Atom {
     pub fn atomic_number(&self) -> u8 { self.element.atomic_number() }
 
     /// Returns the formal charge.
-    pub fn formal_charge(&self) -> i8 {
+    pub fn charge(&self) -> i8 {
         self.formal_charge
     }
 
     /// Sets the formal charge.
-    pub fn set_formal_charge(&mut self, formal_charge: i8) {
+    pub fn set_charge(&mut self, formal_charge: i8) {
         self.formal_charge = formal_charge;
     }
 }
