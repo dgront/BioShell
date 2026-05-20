@@ -1,12 +1,28 @@
 use std::collections::HashMap;
 use std::io::BufRead;
-use std::str::FromStr;
 
 use bioshell_cif::{read_cif_buffer};
 use bioshell_cif::CifTable;
 use crate::parse;
 use crate::{Atom, BondType, ChemErrors, Element, Molecule};
 
+/// Reads a molecule topology from a  `.cif` file.
+///
+/// Example file for ethanol molecule can be found on (the RCSB website)[https://files.rcsb.org/ligands/view/EOH.cif]
+///
+/// Such a file can be loaded as:
+/// ```
+/// use bioshell_chem::{ChemErrors};
+/// # fn main() -> Result<(), ChemErrors> {
+/// use bioshell_core::io::open_file;
+/// use bioshell_chem::molecule_from_cif;
+/// let reader = open_file("./tests/test_files/EOH.cif")?;
+/// let mol = molecule_from_cif(reader)?;
+/// assert_eq!(mol.count_atoms(), 9);
+/// assert_eq!(mol.count_bonds(), 8);
+/// # Ok(())
+/// # }
+/// ```
 pub fn molecule_from_cif<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> {
 
     let data_blocks = read_cif_buffer(reader)?;

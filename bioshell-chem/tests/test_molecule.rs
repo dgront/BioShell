@@ -1,10 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
     use bioshell_chem::{Atom, BondType, ChemErrors, Element, Molecule};
     use bioshell_chem::icoords::KinematicAtomTree;
     use bioshell_core::io::open_file;
-    use bioshell_core::Vec3;
 
     fn benzene() -> Result<Molecule, ChemErrors> {
         let mut mol = Molecule::new("benzene");
@@ -121,13 +119,13 @@ mod tests {
         assert_eq!(mol.count_atoms(), 15);
         assert_eq!(mol.count_bonds(), 15);
 
-        let mut lines: Vec<&str> =  TOL_GRO.lines().collect();
+        let lines: Vec<&str> =  TOL_GRO.lines().collect();
         for (i,line) in lines[2..17].iter().enumerate() {
             let f: Vec<&str> = line.split_whitespace().collect();
             let x = f[3].parse::<f64>().unwrap() * 10.0; // convert from nm to A
             let y = f[4].parse::<f64>().unwrap() * 10.0;
             let z = f[5].parse::<f64>().unwrap() * 10.0;
-            let mut a = mol.get_atom_mut(i).unwrap();
+            let a = mol.get_atom_mut(i).unwrap();
             a.set_pos3(x, y, z);
 
             eprintln!("{}: {:?}", i, a.pos());

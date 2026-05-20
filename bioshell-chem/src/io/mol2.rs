@@ -3,6 +3,26 @@ use crate::{Atom, ChemErrors, Molecule, BondType, Element};
 use crate::ChemErrors::{InvalidMol2AtomId, InvalidMol2AtomLine, InvalidMol2BondLine, NumericParsingError, UnknownElement};
 
 
+/// Reads a molecule from a MOL2 file.
+///
+/// A file in `.mol2` format lists atoms and bonds of  a single molecule. An example is given below:
+/// ```text
+#[doc = include_str!("../../tests/test_files/EOH.mol2")]
+///```
+///
+/// Such a file can be loaded as:
+/// ```
+/// use bioshell_chem::{ChemErrors};
+/// # fn main() -> Result<(), ChemErrors> {
+/// use bioshell_core::io::open_file;
+/// use bioshell_chem::molecule_from_sdf;
+/// let reader = open_file("./tests/test_files/toluene.sdf")?;
+/// let mol = molecule_from_sdf(reader)?;
+/// assert_eq!(mol.count_atoms(), 15);
+/// assert_eq!(mol.count_bonds(), 15);
+/// # Ok(())
+/// # }
+/// ```
 pub fn molecule_from_mol2<R: Read>(reader: R) -> Result<Molecule, ChemErrors> {
     let reader = BufReader::new(reader);
 

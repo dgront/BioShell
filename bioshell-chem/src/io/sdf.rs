@@ -4,9 +4,13 @@ use crate::io::{parse, parse_substr};
 
 /// Reads a molecule from an SDF file.
 ///
-/// The SDF format is described here: <https://en.wikipedia.org/wiki/Chemical_table_file#SDF>
+/// The SDF format is described [on Wikipedia](https://en.wikipedia.org/wiki/Chemical_table_file#SDF).
+/// A simple example (ethanol molecule) is given below:
+/// ```text
+#[doc = include_str!("../../tests/test_files/EOH_small.sdf")]
+///```
 ///
-/// # Example
+/// Such a file can be loaded as:
 /// ```
 /// use bioshell_chem::{ChemErrors};
 /// # fn main() -> Result<(), ChemErrors> {

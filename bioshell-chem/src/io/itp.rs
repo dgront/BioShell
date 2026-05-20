@@ -2,6 +2,10 @@ use std::io::BufRead;
 use crate::{Atom, BondType, ChemErrors, Element, Molecule};
 use crate::io::parse;
 
+/// Reads a molecule topology from a Gromacs' `.itp` file.
+///
+/// The file provides only the molecule name, atom types, and bonds; no coordinates are included.
+///
 pub fn molecule_from_itp<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> {
     let mut molecule = Molecule::new("");
 
