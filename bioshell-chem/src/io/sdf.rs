@@ -12,10 +12,10 @@ use crate::io::{parse, parse_substr};
 /// # fn main() -> Result<(), ChemErrors> {
 /// use bioshell_core::io::open_file;
 /// use bioshell_chem::molecule_from_sdf;
-/// let reader = open_file("./tests/test_files/dspc.sdf")?;
+/// let reader = open_file("./tests/test_files/toluene.sdf")?;
 /// let mol = molecule_from_sdf(reader)?;
-/// assert_eq!(mol.count_atoms(), 142);
-/// assert_eq!(mol.count_bonds(), 141);
+/// assert_eq!(mol.count_atoms(), 15);
+/// assert_eq!(mol.count_bonds(), 15);
 /// # Ok(())
 /// # }
 /// ```

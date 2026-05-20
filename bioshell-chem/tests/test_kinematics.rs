@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use bioshell_chem::{Atom, BondType, ChemErrors, Element, Molecule};
-    use bioshell_chem::icoords::KinematicAtomChain;
-    use bioshell_io::open_file;
+    use bioshell_chem::icoords::KinematicAtomTree;
+    use bioshell_core::io::open_file;
 
     fn benzene() -> Result<Molecule, ChemErrors> {
         let mut mol = Molecule::new("benzene");
@@ -22,10 +22,10 @@ mod tests {
     fn benzene_kinematics() -> Result<(), ChemErrors> {
         let mut mol = benzene()?;
         mol.add_hydrogens()?;
-        let benzene_tree = KinematicAtomChain::from_molecule(&mol, 0, 1, 2)?;
+        let benzene_tree = KinematicAtomTree::from_molecule(&mol, 0, 1, 2)?;
         for idef in benzene_tree.atoms() {
             let atom = mol.get_atom(idef.atom).ok_or_else(|| ChemErrors::InvalidAtomIndex(idef.atom))?;
-            eprintln!("{:3} {}: {:3} {:3} {:3}", idef.atom, atom.element(),idef.i, idef.j, idef.k);
+            eprintln!("{:3} {}: {:3} {:3} {:3}", idef.atom, atom.element(),idef.a, idef.b, idef.c);
         }
         Ok(())
     }

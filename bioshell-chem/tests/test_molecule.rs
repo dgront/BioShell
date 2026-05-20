@@ -2,7 +2,7 @@
 mod tests {
     use std::io::Read;
     use bioshell_chem::{Atom, BondType, ChemErrors, Element, Molecule};
-    use bioshell_chem::icoords::KinematicAtomChain;
+    use bioshell_chem::icoords::KinematicAtomTree;
     use bioshell_core::io::open_file;
     use bioshell_core::Vec3;
 
@@ -133,7 +133,7 @@ mod tests {
             eprintln!("{}: {:?}", i, a.pos());
         }
 
-        let kac = KinematicAtomChain::from_molecule(&mol, 0, 2, 4)?;
+        let kac = KinematicAtomTree::from_molecule(&mol, 0, 2, 4)?;
         let cartesian = mol.atoms().map(|a| a.pos().clone()).collect::<Vec<_>>();
         println!("{:?}", cartesian);
         let zmatrix = kac.get_icoords(&cartesian)?;

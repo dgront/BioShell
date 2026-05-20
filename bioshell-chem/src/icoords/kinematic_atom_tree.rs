@@ -55,11 +55,11 @@ pub struct KinematicAtom {
 /// The chain stores the topological definition of each atom of a molecule
 /// in relation to the other atoms.
 #[derive(Debug, Clone, PartialEq)]
-pub struct KinematicAtomChain {
+pub struct KinematicAtomTree {
     atoms: Vec<KinematicAtom>,
 }
 
-impl KinematicAtomChain {
+impl KinematicAtomTree {
     /// Returns the number of atoms in the chain.
     pub fn len(&self) -> usize {
         self.atoms.len()
@@ -90,13 +90,13 @@ impl KinematicAtomChain {
     ///
     /// ```
     /// # use bioshell_chem::{ChemErrors, Molecule, BondType, Atom, Element};
-    /// # use bioshell_chem::icoords::KinematicAtomChain;
+    /// # use bioshell_chem::icoords::KinematicAtomTree;
     /// # fn main() -> Result<(), ChemErrors> {
     /// # let mut benzene = Molecule::new("benzene");
     /// # for i in 0..6 { benzene.add_atom(Atom::neutral(i, Element::C))?; }
     /// # for i in 0..6 { benzene.bind_atoms(i, (i + 1) % 6, BondType::Aromatic)?; }
     ///
-    /// let chain = KinematicAtomChain::from_molecule(&benzene, 0, 1, 2)?;
+    /// let chain = KinematicAtomTree::from_molecule(&benzene, 0, 1, 2)?;
     /// assert_eq!(chain.len(), 6);
     /// assert_eq!(chain.atom(0).atom, 0);
     /// assert_eq!(chain.atom(1).atom, 1);
@@ -104,7 +104,7 @@ impl KinematicAtomChain {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn from_molecule(mol: &Molecule, i: usize, j: usize, k: usize) -> Result<KinematicAtomChain, ChemErrors> {
+    pub fn from_molecule(mol: &Molecule, i: usize, j: usize, k: usize) -> Result<KinematicAtomTree, ChemErrors> {
         mol.get_atom(i).ok_or(ChemErrors::InvalidAtomIndex(i))?;
         mol.get_atom(j).ok_or(ChemErrors::InvalidAtomIndex(j))?;
         mol.get_atom(k).ok_or(ChemErrors::InvalidAtomIndex(k))?;
@@ -130,14 +130,14 @@ impl KinematicAtomChain {
         queue.push_back(k);
 
         while let Some(center) = queue.pop_back() {
-            let neighbors = KinematicAtomChain::prioritized_atoms(mol, mol.neighbor_indices(center))?;
+            let neighbors = KinematicAtomTree::prioritized_atoms(mol, mol.neighbor_indices(center))?;
 
             for atom in neighbors {
                 if placed.contains(&atom) { continue; }
 
                 let bond_ref = center;
-                let angle_ref = KinematicAtomChain::choose_angle_reference(mol, atom, bond_ref, &placed)?;
-                let dihedral_ref = KinematicAtomChain::choose_dihedral_reference(mol, atom, bond_ref, angle_ref, &placed)?;
+                let angle_ref = KinematicAtomTree::choose_angle_reference(mol, atom, bond_ref, &placed)?;
+                let dihedral_ref = KinematicAtomTree::choose_dihedral_reference(mol, atom, bond_ref, angle_ref, &placed)?;
 
                 atoms.push(KinematicAtom { atom, a: dihedral_ref, b: angle_ref, c: bond_ref});
                 placed.insert(atom);
@@ -149,7 +149,7 @@ impl KinematicAtomChain {
             return Err(ChemErrors::InvalidAtomIndex(atoms.len()));
         }
 
-        Ok(KinematicAtomChain { atoms })
+        Ok(KinematicAtomTree { atoms })
     }
 
     pub fn get_icoords(&self, pos: &[Vec3]) -> Result<Vec<InternalCoordinate>, ChemErrors> {
@@ -198,7 +198,7 @@ impl KinematicAtomChain {
 
     fn prioritized_atoms(mol: &Molecule, atoms: impl Iterator<Item = usize>) -> Result<Vec<usize>, ChemErrors>  {
         let mut out: Vec<(usize, (usize, usize, usize))> = atoms
-            .map(|idx| Ok((idx, KinematicAtomChain::atom_priority(mol, idx)?)))
+            .map(|idx| Ok((idx, KinematicAtomTree::atom_priority(mol, idx)?)))
             .collect::<Result<_, ChemErrors>>()?;
 
         out.sort_by_key(|&(_, priority)| priority);
@@ -212,7 +212,7 @@ impl KinematicAtomChain {
         bond_ref: usize,
         placed: &HashSet<usize>,
     ) -> Result<usize, ChemErrors> {
-        let candidates = KinematicAtomChain::prioritized_atoms(
+        let candidates = KinematicAtomTree::prioritized_atoms(
             mol,
             mol.neighbor_indices(bond_ref)
                 .filter(|&idx| idx != atom && placed.contains(&idx)),
@@ -228,7 +228,7 @@ impl KinematicAtomChain {
         angle_ref: usize,
         placed: &HashSet<usize>,
     ) -> Result<usize, ChemErrors> {
-        let candidates = KinematicAtomChain::prioritized_atoms(
+        let candidates = KinematicAtomTree::prioritized_atoms(
             mol,
             mol.neighbor_indices(angle_ref)
                 .filter(|&idx| idx != atom && idx != bond_ref && placed.contains(&idx)),
@@ -239,7 +239,7 @@ impl KinematicAtomChain {
 }
 
 
-impl Index<usize> for KinematicAtomChain {
+impl Index<usize> for KinematicAtomTree {
     type Output = KinematicAtom;
 
     fn index(&self, index: usize) -> &Self::Output {
