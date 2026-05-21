@@ -34,21 +34,46 @@ impl Default for InternalCoordinate {
 ///    * `r` - distance between `c` and the `atom`
 ///    * `planar` - planar angle between `b`, `c` and `atom`
 ///    * `dihedral` - dihedral angle between `a`, `b`, `c` and `atom`
+/// which are stored in [`InternalCoordinate`] structs.
+///
 /// ```text
 ///         c----atom
 ///        /
 ///       /
 /// a----b
 /// ```
+/// ```
+/// # use bioshell_chem::icoords::KinematicAtom;
+/// # let (a, b, c, the_atom) = (0, 0, 0, 0);
+/// let def = KinematicAtom{ a, b, c, atom: the_atom};
+/// ```
 ///
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KinematicAtom {
-    pub atom: usize,
     pub a: usize,
     pub b: usize,
     pub c: usize,
+    pub atom: usize,
 }
 
+impl From<(usize, usize, usize, usize)> for KinematicAtom {
+    /// Creates a [`KinematicAtom`] from a tuple of 4 indexes.
+    ///
+    /// ```
+    /// use bioshell_chem::icoords::KinematicAtom;
+    /// let atoms = [
+    ///     (0, 0, 0, 0),
+    ///     (0, 0, 0, 1),
+    ///     (0, 0, 1, 2),
+    ///     (0, 1, 2, 3),
+    ///     (0, 1, 2, 4),
+    /// ];
+    /// let defs: Vec<KinematicAtom> = atoms.into_iter().map(KinematicAtom::from).collect();
+    /// ```
+    fn from((a, b, c, atom): (usize, usize, usize, usize)) -> Self {
+        Self { a, b, c, atom }
+    }
+}
 
 /// A molecular internal-coordinate tree.
 ///
@@ -60,6 +85,22 @@ pub struct KinematicAtomTree {
 }
 
 impl KinematicAtomTree {
+
+    /// Creates a new [`KinematicAtomTree`] from a given list of atom definitions
+    ///
+    /// # Example
+    /// Create a definiton of a glycine molecule
+    /// ```
+    /// use bioshell_chem::icoords::{InternalCoordinate, KinematicAtom, KinematicAtomTree};
+    /// // N, CA, C, O, OXT
+    /// let atoms = [(0, 0, 0, 0), (0, 0, 0, 1), (0, 0, 1, 2), (0, 1, 2, 3), (0, 1, 2, 4)];
+    /// let gly_kt = KinematicAtomTree::from_attrs(
+    ///     atoms.into_iter().map(KinematicAtom::from).collect());
+    /// ```
+    pub fn from_attrs(atoms: Vec<KinematicAtom>) -> Self {
+        KinematicAtomTree{ atoms }
+    }
+
     /// Returns the number of atoms in the chain.
     pub fn len(&self) -> usize {
         self.atoms.len()
