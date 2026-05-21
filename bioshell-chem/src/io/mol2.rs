@@ -1,4 +1,5 @@
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader, Read, Write};
+
 use crate::{Atom, ChemErrors, Molecule, BondType, Element};
 use crate::ChemErrors::{InvalidMol2AtomId, InvalidMol2AtomLine, InvalidMol2BondLine, NumericParsingError, UnknownElement};
 
@@ -89,6 +90,62 @@ pub fn molecule_from_mol2<R: Read>(reader: R) -> Result<Molecule, ChemErrors> {
     }
 
     Ok(molecule)
+}
+
+
+/// Writes a molecule in `mol2` format
+///
+/// ```
+/// # use bioshell_chem::{load_molecule, write_mol2, ChemErrors};
+/// # fn main() -> Result<(), ChemErrors> {
+/// let mut buf = Vec::new();
+/// let et_oh = load_molecule("./tests/test_files/EOH.cif")?;
+/// write_mol2(&et_oh, &mut buf)?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn write_mol2<W: Write>(mol: &Molecule, mut out: W) -> Result<(), ChemErrors> {
+    writeln!(out, "@<TRIPOS>MOLECULE")?;
+    writeln!(out, "{}", mol.molecule_name)?;
+    writeln!(out, "{:5} {:5} 0 0 0", mol.count_atoms(), mol.count_bonds())?;
+    writeln!(out, "SMALL")?;
+    writeln!(out, "NO_CHARGES")?;
+    writeln!(out)?;
+
+    writeln!(out, "@<TRIPOS>ATOM")?;
+
+    for atom_id in 0..mol.count_atoms() {
+        let atom = mol.get_atom(atom_id)?;
+        let p = mol.positions()[atom_id];
+
+        writeln!(
+            out,
+            "{:7} {:<6} {:10.4} {:10.4} {:10.4} {:<6} {:4} {:<8}",
+            atom_id + 1,
+            format!("{}{}", atom.element(), atom_id + 1),
+            p.x,
+            p.y,
+            p.z,
+            mol2_atom_type(atom),
+            1,
+            "MOL"
+        )?;
+    }
+
+    writeln!(out, "@<TRIPOS>BOND")?;
+
+    for (bond_id, (a, b, bond_type)) in mol.bonds().enumerate() {
+        writeln!(out, "{:6} {:5} {:5} {}", bond_id + 1, a + 1, b + 1, bond_type.mol2_code())?;
+    }
+
+    Ok(())
+}
+
+/// Provides a `mol2` atom type
+///
+/// For now just returns the element symbol
+fn mol2_atom_type(atom: &Atom) -> String {
+    atom.element().to_string()
 }
 
 fn element_from_mol2_type(atom_type: &str) -> Result<Element, ChemErrors> {

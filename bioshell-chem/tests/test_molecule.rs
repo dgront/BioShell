@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use bioshell_chem::{Atom, BondType, ChemErrors, Element, Molecule};
+    use bioshell_chem::{Atom, BondType, ChemErrors, Element, load_molecule, Molecule, write_mol2};
     use bioshell_chem::icoords::{ZMatrix};
     use bioshell_core::assert_delta;
     use bioshell_core::io::open_file;
@@ -133,6 +133,51 @@ mod tests {
         assert_delta!(mol.pos(13).z, -0.54, 0.001);
         let _zmat = ZMatrix::from_molecule(&mut mol, 0, 2, 4)?;
         // println!("{}", &_zmat);
+
+        Ok(())
+    }
+
+    #[test]
+    fn molecule_to_mol2() -> Result<(), ChemErrors> {
+        let expected = "@<TRIPOS>MOLECULE
+ETHANOL
+    9     8 0 0 0
+SMALL
+NO_CHARGES
+
+@<TRIPOS>ATOM
+      1 C1        15.2120    49.1980     7.4910 C         1 MOL
+      2 C2        16.0690    50.3860     7.1040 C         1 MOL
+      3 O3        15.8610    48.1850     8.2560 O         1 MOL
+      4 H4        14.3750    49.5790     8.0940 H         1 MOL
+      5 H5        14.8580    48.7310     6.5600 H         1 MOL
+      6 H6        15.4670    51.0980     6.5200 H         1 MOL
+      7 H7        16.4420    50.8800     8.0130 H         1 MOL
+      8 H8        16.9200    50.0420     6.4980 H         1 MOL
+      9 H9        15.2440    47.4880     8.4470 H         1 MOL
+@<TRIPOS>BOND
+     1     1     2 1
+     2     1     3 1
+     3     1     4 1
+     4     1     5 1
+     5     2     6 1
+     6     2     7 1
+     7     2     8 1
+     8     3     9 1";
+
+        let mut buf = Vec::new();
+        let et_oh = load_molecule("./tests/test_files/EOH.cif")?;
+        write_mol2(&et_oh, &mut buf)?;
+        let text = String::from_utf8(buf).unwrap();
+
+        for (line_no, (actual_line, expected_line)) in text.lines().zip(expected.lines()).enumerate() {
+            assert_eq!(
+                actual_line.trim(),
+                expected_line.trim(),
+                "Mismatch at line {}",
+                line_no + 1
+            );
+        }
 
         Ok(())
     }
