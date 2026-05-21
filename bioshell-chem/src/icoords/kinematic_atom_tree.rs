@@ -105,9 +105,9 @@ impl KinematicAtomTree {
     /// # }
     /// ```
     pub fn from_molecule(mol: &Molecule, i: usize, j: usize, k: usize) -> Result<KinematicAtomTree, ChemErrors> {
-        mol.get_atom(i).ok_or(ChemErrors::InvalidAtomIndex(i))?;
-        mol.get_atom(j).ok_or(ChemErrors::InvalidAtomIndex(j))?;
-        mol.get_atom(k).ok_or(ChemErrors::InvalidAtomIndex(k))?;
+        mol.get_atom(i)?;
+        mol.get_atom(j)?;
+        mol.get_atom(k)?;
 
         if i == j || i == k || j == k {
             return Err(ChemErrors::InvalidReferenceAtoms(i, j, k));
@@ -189,7 +189,7 @@ impl KinematicAtomTree {
 
     fn atom_priority(mol: &Molecule, atom_idx: usize) -> Result<(usize, usize, usize), ChemErrors> {
 
-        let center = mol.get_atom(atom_idx).ok_or_else(|| ChemErrors::InvalidAtomIndex(atom_idx))?;
+        let center = mol.get_atom(atom_idx)?;
         let heavy_rank = if center.if_hydrogen() { 1 } else { 0 };
         let degree_rank = usize::MAX - mol.neighbor_indices(atom_idx).count();
 

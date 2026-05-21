@@ -1,7 +1,9 @@
+use std::fmt;
+use std::fmt::Display;
+
 use bioshell_core::Vec3;
 use crate::icoords::{InternalCoordinate, KinematicAtom, KinematicAtomTree};
 use crate::{ChemErrors, Molecule};
-use crate::ChemErrors::InvalidAtomIndex;
 
 pub struct ZMatrix<'a> {
     molecule: &'a mut Molecule,
@@ -13,17 +15,16 @@ impl<'a> ZMatrix<'a> {
     pub fn from_molecule(molecule: &'a mut Molecule, i: usize, j: usize, k: usize) -> Result<Self, ChemErrors> {
         let chain = KinematicAtomTree::from_molecule(molecule, i, j, k)?;
 
-        let cartesian: Vec<Vec3> = molecule
-            .atoms()
-            .map(|atom| atom.pos().clone())
-            .collect();
+        let cartesian: &Vec<Vec3> = molecule.positions();
 
-        let icoords = chain.get_icoords(&cartesian)?;
+        let icoords = chain.get_icoords(cartesian)?;
 
         return Ok(Self { molecule, kinematic_tree: chain, icoords});
     }
 
-    // Number of atoms / rows in the Z-matrix
+    /// Number of atoms  in the Z-matrix.
+    ///
+    /// The returned value is the same as the number of atoms in the underlying Molecule.
     pub fn len(&self) -> usize {
         self.kinematic_tree.len()
     }
@@ -38,8 +39,8 @@ impl<'a> ZMatrix<'a> {
     }
 
     // Cartesian coordinates of one atom, read from the underlying Molecule
-    pub fn cartesian_coordinate(&self, atom_index: usize) -> Option<Vec3> {
-        self.molecule.get_atom(atom_index).map(|atom| atom.pos().clone())
+    pub fn cartesian_coordinate(&self, atom_idx: usize) -> &Vec3 {
+        self.molecule.pos(atom_idx)
     }
 
     pub fn internal_coordinates(&self) -> &[InternalCoordinate] {
@@ -50,13 +51,17 @@ impl<'a> ZMatrix<'a> {
         &self.kinematic_tree
     }
 
-    pub fn write<W: std::io::Write>(&self, mut writer: W) -> Result<(), ChemErrors> {
+    /// Cartesian coordinates of all the atoms from the underlying Molecule
+    pub fn cartesian_coordinates(&self, ) -> &Vec<Vec3> {
+        self.molecule.positions()
+    }
+
+    pub fn write<W: fmt::Write>(&self, mut writer: W) -> Result<(), fmt::Error> {
 
         for i in 0..self.icoords.len() {
             let ipos = &self.icoords[i];
             let ka = &self.kinematic_tree[i];
-            let atom = &self.molecule.get_atom(ka.atom)
-                .ok_or(InvalidAtomIndex(ka.atom))?;
+            let atom = self.molecule.get_atom(ka.atom).ok().expect("Inconsistent Z-matrix: atom index out of bounds");
 
             writeln!(
                 writer,
@@ -73,5 +78,11 @@ impl<'a> ZMatrix<'a> {
         }
 
         Ok(())
+    }
+}
+
+impl Display for ZMatrix<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.write(f).map_err(|_| fmt::Error)
     }
 }

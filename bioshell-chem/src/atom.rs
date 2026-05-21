@@ -1,4 +1,3 @@
-use bioshell_core::Vec3;
 use crate::Element;
 
 /// A lightweight representation of a chemical atom.
@@ -17,8 +16,6 @@ use crate::Element;
 pub struct Atom {
     /// Internal atom index.
     index: usize,
-    /// coordinates of this atom
-    pos: Vec3,
     element: Element,
     formal_charge: i8,
 }
@@ -35,7 +32,7 @@ impl Atom {
     /// let charged_oxygen = Atom::charged(1, Element::O, -1);
     /// ```
     pub fn charged(index: usize, element: Element, formal_charge: i8) -> Self {
-        Self { index, pos: Default::default(), element, formal_charge}
+        Self { index, element, formal_charge}
     }
 
     /// Creates a neutral atom.
@@ -46,29 +43,7 @@ impl Atom {
     /// let carbon = Atom::neutral(0, Element::C);
     /// ```
     pub fn neutral(index: usize, element: Element) -> Self {
-        Self { index, pos: Default::default(), element, formal_charge: 0}
-    }
-
-    pub fn x(&self) -> f64 { self.pos.x }
-    pub fn y(&self) -> f64 { self.pos.y }
-    pub fn z(&self) -> f64 { self.pos.z }
-
-    /// Provides read-only access to the coordinates of this atom
-    pub fn pos(&self) -> &Vec3 { &self.pos }
-
-    /// Provides mutable access to the coordinates of this atom
-    pub fn pos_mut(&mut self) -> &mut Vec3 { &mut self.pos }
-
-    /// Set the new vector of coordinates for this atom
-    pub fn set_pos(mut self, new_pos: &Vec3)  {
-        self.pos.set(new_pos);
-    }
-
-    /// Set new coordinates for this atom
-    pub fn set_pos3(&mut self, x:f64, y:f64, z:f64)  {
-        self.pos.x = x;
-        self.pos.y = y;
-        self.pos.z = z;
+        Self { index, element, formal_charge: 0}
     }
 
     /// Returns `true` if this atom is a hydrogen.

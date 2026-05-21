@@ -1,7 +1,8 @@
 #[cfg(test)]
 mod tests {
     use bioshell_chem::{Atom, BondType, ChemErrors, Element, Molecule};
-    use bioshell_chem::icoords::KinematicAtomTree;
+    use bioshell_chem::icoords::{ZMatrix};
+    use bioshell_core::assert_delta;
     use bioshell_core::io::open_file;
 
     fn benzene() -> Result<Molecule, ChemErrors> {
@@ -125,19 +126,14 @@ mod tests {
             let x = f[3].parse::<f64>().unwrap() * 10.0; // convert from nm to A
             let y = f[4].parse::<f64>().unwrap() * 10.0;
             let z = f[5].parse::<f64>().unwrap() * 10.0;
-            let a = mol.get_atom_mut(i).unwrap();
-            a.set_pos3(x, y, z);
-
-            eprintln!("{}: {:?}", i, a.pos());
+            mol.set_pos3(i, x, y, z);
         }
+        assert_delta!(mol.pos(13).x, 2.60, 0.001);
+        assert_delta!(mol.pos(13).y, 0.90, 0.001);
+        assert_delta!(mol.pos(13).z, -0.54, 0.001);
+        let _zmat = ZMatrix::from_molecule(&mut mol, 0, 2, 4)?;
+        // println!("{}", &_zmat);
 
-        let kac = KinematicAtomTree::from_molecule(&mol, 0, 2, 4)?;
-        let cartesian = mol.atoms().map(|a| a.pos().clone()).collect::<Vec<_>>();
-        println!("{:?}", cartesian);
-        let zmatrix = kac.get_icoords(&cartesian)?;
-        for ic in zmatrix {
-            println!("{:?}", ic);
-        }
         Ok(())
     }
 }

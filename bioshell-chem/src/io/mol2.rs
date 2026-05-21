@@ -28,6 +28,7 @@ pub fn molecule_from_mol2<R: Read>(reader: R) -> Result<Molecule, ChemErrors> {
 
     let mut molecule = Molecule::new("");
     let mut section: Option<&str> = None;
+    let mut atom_idx = 0;
 
     for line_result in reader.lines() {
         let line = line_result?;
@@ -61,13 +62,14 @@ pub fn molecule_from_mol2<R: Read>(reader: R) -> Result<Molecule, ChemErrors> {
 
                 let mol2_atom_type = fields[5];
                 let element = element_from_mol2_type(mol2_atom_type)?;
-                let mut a = Atom::neutral(atom_id - 1, element);
                 // let atom_name = fields[1];
+                molecule.add_atom(Atom::neutral(atom_id - 1, element))?;
                 let x: f64 = fields[2].parse().map_err(|_| NumericParsingError("x".into(), fields[2].to_string()))?;
                 let y: f64 = fields[3].parse().map_err(|_| NumericParsingError("y".into(), fields[3].to_string()))?;
                 let z: f64 = fields[4].parse().map_err(|_| NumericParsingError("z".into(), fields[4].to_string()))?;
-                a.set_pos3(x, y, z);
-                molecule.add_atom(a)?;
+
+                molecule.set_pos3(atom_idx, x, y, z);
+                atom_idx += 1;
             }
 
             Some("BOND") => {

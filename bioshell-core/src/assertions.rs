@@ -1,4 +1,4 @@
-/// Compares two [`Vec3`](crate::calc::Vec3) structs and fails when they differs
+/// Compares two [`Vec3`](crate::Vec3) structs and fails when they differs
 ///
 /// This macro fails an assertion when any of `va` coordinates differs from the corresponding
 /// coordinate of `vb` vector by more than `delta`

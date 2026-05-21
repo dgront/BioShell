@@ -3,9 +3,8 @@ use petgraph::algo::is_isomorphic_matching;
 use petgraph::graph::{Graph, NodeIndex};
 use petgraph::prelude::Undirected;
 use petgraph::visit::EdgeRef;
-
+use bioshell_core::Vec3;
 use crate::{Atom, BondType, ChemErrors, Element};
-
 
 /// A molecule is a graph of atoms connected with bonds.
 ///
@@ -87,6 +86,7 @@ pub struct Molecule {
     graph: Graph<Atom, BondType, Undirected>,
     vertex_flags: Vec<u8>,
     atom_id_to_node: HashMap<usize, NodeIndex>,
+    positions: Vec<Vec3>,
 }
 
 
@@ -109,6 +109,7 @@ impl Molecule {
             graph: Graph::new_undirected(),
             vertex_flags: Vec::new(),
             atom_id_to_node: HashMap::default(),
+            positions: vec![],
         }
     }
 
@@ -130,6 +131,7 @@ impl Molecule {
         let node_index = self.graph.add_node(atom);
         self.atom_id_to_node.insert(id, node_index);
         self.vertex_flags.push(0);
+        self.positions.push(Vec3::default());
 
         Ok(())
     }
@@ -140,8 +142,11 @@ impl Molecule {
     }
 
     /// Returns an atom referred by an index.
-    pub fn get_atom(&self, atom_idx: usize) -> Option<&Atom> {
-        return self.graph.node_weight(self.atom_id_to_node[&atom_idx]);
+    ///
+    /// Results in an error if the index is out of bounds.
+    pub fn get_atom(&self, atom_idx: usize) -> Result<&Atom, ChemErrors> {
+        return Ok(self.graph.node_weight(self.atom_id_to_node[&atom_idx])
+            .ok_or(ChemErrors::InvalidAtomIndex(atom_idx))?);
     }
 
     /// Returns a mutable atom referred by an atom ID.
@@ -319,9 +324,7 @@ impl Molecule {
 
         let mut h_idx = self.count_atoms();
         for atom_idx in heavy_atoms {
-            let atom = self.get_atom(atom_idx)
-                .ok_or(ChemErrors::AtomIndexOutOfBounds(atom_idx))?;
-
+            let atom = self.get_atom(atom_idx)?;
 
             let mut target_valence = match atom.element().default_valence() {
                 Some(v) => v,
@@ -513,6 +516,23 @@ impl Molecule {
         return impropers;
     }
 
+    /// Provides read-only access to the coordinates of all atoms in this molecule.
+    pub fn positions(&self) -> &Vec<Vec3> { &self.positions }
+
+    /// Provides read-only access to the coordinates of `atom_idx` atom.
+    pub fn pos(&self, atom_idx: usize) -> &Vec3 { &self.positions[atom_idx] }
+
+    /// Provides mutable access to the coordinates of `atom_idx` atom
+    pub fn pos_mut(&mut self, atom_idx: usize) -> &mut Vec3 { &mut self.positions[atom_idx] }
+
+    /// Set new coordinates for `atom_idx` atom
+    pub fn set_pos3(&mut self, atom_idx: usize, x:f64, y:f64, z:f64)  {
+        self.positions[atom_idx].x = x;
+        self.positions[atom_idx].y = y;
+        self.positions[atom_idx].z = z;
+    }
+
+
     /// Returns a flag assigned to a vertex identified by its internal index.
     ///
     /// Flags have been implemented to support graph-based operations on a [`Molecule`],
@@ -530,3 +550,4 @@ impl Molecule {
         Ok(())
     }
 }
+

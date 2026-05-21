@@ -45,9 +45,8 @@ pub fn molecule_from_cif<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> 
             .map_err(|_| ChemErrors::NumericParsingError("_chem_comp_atom.pdbx_ordinal".to_string(), pdbx_ordinal.to_string()))?;
         let q: i8 = charge.parse()
             .map_err(|_| ChemErrors::NumericParsingError("_chem_comp_atom.charge".to_string(), charge.to_string()))?;
-        let mut a = Atom::charged(idx-1, e, q);
-        a.set_pos3(vx, vy, vz);
-        molecule.add_atom(a)?;
+        molecule.add_atom(Atom::charged(idx-1, e, q))?;
+        molecule.set_pos3(idx-1, vx, vy, vz);
         name_to_idx.insert(atom_id.to_string(), idx-1);
     }
 

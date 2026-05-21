@@ -68,8 +68,7 @@ pub fn molecule_from_itp<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> 
 
                 let element = element_by_mass(mass);
 
-                let mut atom = Atom::neutral(nr - 1, element);
-                atom.set_pos3(0.0, 0.0, 0.0);
+                let atom = Atom::neutral(nr - 1, element);
 
                 molecule.add_atom(atom)?;
             }

@@ -24,7 +24,7 @@ mod tests {
         mol.add_hydrogens()?;
         let benzene_tree = KinematicAtomTree::from_molecule(&mol, 0, 1, 2)?;
         for idef in benzene_tree.atoms() {
-            let atom = mol.get_atom(idef.atom).ok_or_else(|| ChemErrors::InvalidAtomIndex(idef.atom))?;
+            let atom = mol.get_atom(idef.atom)?;
             eprintln!("{:3} {}: {:3} {:3} {:3}", idef.atom, atom.element(),idef.a, idef.b, idef.c);
         }
         Ok(())
@@ -46,8 +46,7 @@ mod tests {
     #[test]
     fn create_z_matrix() -> Result<(), ChemErrors> {
         let mut mol = load_molecule("tests/test_files/MBN.cif")?;
-        let zmat = ZMatrix::from_molecule(&mut mol, 0, 1, 2)?;
-        zmat.write(std::io::stdout())?;
+        let _zmat = ZMatrix::from_molecule(&mut mol, 0, 1, 2)?;
         Ok(())
     }
 }

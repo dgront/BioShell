@@ -38,8 +38,7 @@ pub fn molecule_from_sdf<R: BufRead>(reader: R) -> Result<Molecule, ChemErrors> 
 
     for atom_idx in 0..n_atoms {
         let line = lines.next_sdf_line("Missing SDF atom line")?;
-        let a = parse_atom_line(atom_idx, &line)?;
-        mol.add_atom(a)?;
+        parse_atom_line(atom_idx, &mut mol, &line)?;
     }
 
     for _ in 0..n_bonds {
@@ -73,7 +72,11 @@ fn parse_counts_line(line: &str) -> Result<(usize, usize), ChemErrors> {
     Ok((n_atoms, n_bonds))
 }
 
-fn parse_atom_line(idx: usize, line: &str) -> Result<Atom, ChemErrors> {
+/// Parses an SDF atom line and adds the corresponding atom to the molecule.
+///
+/// Also sets the position of the atom according to the coordinates in the line.
+fn parse_atom_line(idx: usize, molecule: &mut Molecule, line: &str) -> Result<(), ChemErrors> {
+
     let fields: Vec<&str> = line.split_whitespace().collect();
 
     if fields.len() < 4 {
@@ -87,10 +90,10 @@ fn parse_atom_line(idx: usize, line: &str) -> Result<Atom, ChemErrors> {
     let e = parse_atom_element(line)?;
     let q = parse_atom_charge(line)?;
 
-    let mut a = Atom::charged(idx, e, q);
-    a.set_pos3(vx, vy, vz);
+    molecule.add_atom(Atom::charged(idx, e, q))?;
+    molecule.set_pos3(idx, vx, vy, vz);
 
-    Ok(a)
+    Ok(())
 }
 
 fn parse_atom_charge(line: &str) -> Result<i8, ChemErrors> {
