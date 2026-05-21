@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use bioshell_chem::{Atom, BondType, ChemErrors, Element, Molecule};
-    use bioshell_chem::icoords::KinematicAtomTree;
+    use bioshell_chem::{Atom, BondType, ChemErrors, Element, load_molecule, Molecule};
+    use bioshell_chem::icoords::{KinematicAtomTree, ZMatrix};
     use bioshell_core::io::open_file;
 
     fn benzene() -> Result<Molecule, ChemErrors> {
@@ -40,6 +40,14 @@ mod tests {
         assert_eq!(mol.code, Some("CLR".to_string()));
         assert_eq!(mol.count_atoms(), 74);
         assert_eq!(mol.count_bonds(), 77);
+        Ok(())
+    }
+
+    #[test]
+    fn create_z_matrix() -> Result<(), ChemErrors> {
+        let mut mol = load_molecule("tests/test_files/MBN.cif")?;
+        let zmat = ZMatrix::from_molecule(&mut mol, 0, 1, 2)?;
+        zmat.write(std::io::stdout())?;
         Ok(())
     }
 }
