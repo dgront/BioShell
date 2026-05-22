@@ -10,6 +10,13 @@ pub fn create_stub(a: &Vec3, r_ab: f64, r_bc: f64, a_abc: f64, b: &mut Vec3, c: 
     c.set3(r_bc*angle.cos() + b.x, r_bc*angle.sin() + b.y, b.z );
 }
 
+/// Calculates Cartesian coordinates of an atom based on positions of three reference atoms and internal coordinates.
+///
+/// The position of the `output` atom is defined by three internal coordinates:
+///   - `r` - distance between `c` and the `output` atom
+///  - `planar` - planar angle between `b`, `c` and `output` atom
+///  - `dihedral` - dihedral angle between `a`, `b`, `c` and `output` atom
+///
 pub fn restore_atom(a: &Vec3, b: &Vec3, c: &Vec3, r: f64, planar: f64, dihedral: f64, output: &mut Vec3) {
     let mut bc = Vec3::sub_s(c, b);
     bc.normalize();
@@ -62,7 +69,7 @@ pub fn restore_linear_chain(r: &[f64], planar: &[f64], dihedral: &[f64], output_
 /// Calculates Cartesian coordinates of a molecule from internal coordinates of its atoms.
 ///
 /// ```
-/// # use bioshell_builder::nerf::restore_branched_chain;
+/// # use bioshell_chem::icoords::nerf::restore_branched_chain;
 /// use bioshell_core::Vec3;
 /// let r_CH: f64 = 1.05;
 /// let a_HCH: f64 = 109.471_f64.to_radians();
