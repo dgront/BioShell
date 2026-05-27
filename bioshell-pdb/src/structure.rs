@@ -512,6 +512,8 @@ impl Structure {
     /// Returns the chemical type of residue as a [`ResidueType`] object.
     ///
     /// Results in an [`PDBError`] if the type of the residue hasn't been registered in the [`ResidueTypeManager`].
+    /// If that residue type hasn't been registered, it's still possible to get the name of `res_id`
+    /// by calling [`residue_name`].
     ///
     /// # Example
     /// ```
@@ -538,12 +540,42 @@ impl Structure {
         }
     }
 
+    /// Provide the name of a given residue.
+    ///
+    /// This method returns the name (typically the 3-letter code) of a residue identified by
+    /// the given `res_id` as defined in a PDB or mmCIF file this structure has been loaded from.
+    /// Unlike `[residue_type()]` the respective residue doesn't have to be registered within
+    /// the [`ResidueTypeManager`].
+    ///
+    /// ```
+    /// use bioshell_pdb::{PdbAtom, ResidueId, Structure};
+    /// use bioshell_pdb::PDBError;
+    /// # fn main() -> Result<(), PDBError> {
+    /// let pdb_lines = vec!["ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"];
+    /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    /// let strctr = Structure::from_atoms("1xyz", atoms);
+    /// let res_name = strctr.residue_name(&ResidueId::new("A", 68, ' '))?;
+    /// assert_eq!(res_name, "ALA");
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn residue_name(&self, res_id: &ResidueId) -> Result<&str, PDBError> {
+
+        if let Some(pos) = self.residue_ids.iter().position(|x| x == res_id) {
+            return Ok(&self.atoms[pos].res_name);
+        } else {
+            return  Err(NoSuchResidue{res_id: res_id.clone()})
+        }
+    }
+
     /// Returns the secondary structure a given residue.
     ///
     /// This method returns [`SecondaryStructureTypes`](SecondaryStructureTypes) enum variant
     /// to define the type of secondary structure element a given residue belongs to. The enum stores
     /// also the index of a secondary structure element in the structure.
     /// Use [`Structure::secondary()`] method to get the secondary structure of a full chain.
+    ///
+    /// Results in a [`PDBError`] if the residue cannot be located.
     ///
     /// # Examples
     /// Check the secondary structure of a residue in a PDB deposit:
