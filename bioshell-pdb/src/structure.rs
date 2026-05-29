@@ -562,7 +562,8 @@ impl Structure {
     pub fn residue_name(&self, res_id: &ResidueId) -> Result<&str, PDBError> {
 
         if let Some(pos) = self.residue_ids.iter().position(|x| x == res_id) {
-            return Ok(&self.atoms[pos].res_name);
+            let at_pos = &self.atoms_for_residue_id[pos].start;
+            return Ok(&self.atoms[*at_pos].res_name);
         } else {
             return  Err(NoSuchResidue{res_id: res_id.clone()})
         }

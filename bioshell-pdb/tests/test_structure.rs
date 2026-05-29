@@ -164,3 +164,29 @@ fn load_multimodel_structure() -> Result<(), PDBError> {
     }
     Ok(())
 }
+
+#[test]
+fn count_residues_ids_in_struct() -> Result<(), PDBError> {
+
+    let lines_2gb1: Vec<_> = pdb_2gb1.split("\n").filter(|&l|l.starts_with("ATOM")).collect();
+    let atoms: Vec<PdbAtom> = lines_2gb1.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    let strctr = Structure::from_iterator("1xyz", atoms.iter().cloned());
+
+    assert_eq!(strctr.residues().len(), 56);
+
+    return Ok(());
+}
+
+#[test]
+fn test_residue_name() -> Result<(), PDBError> {
+
+    let lines_2gb1: Vec<_> = pdb_2gb1.split("\n").filter(|&l|l.starts_with("ATOM")).collect();
+    let atoms: Vec<PdbAtom> = lines_2gb1.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    let strctr = Structure::from_iterator("1xyz", atoms.iter().cloned());
+
+    assert_eq!(strctr.residue_name(&ResidueId::new("A",1,' '))?, "MET");
+    assert_eq!(strctr.residue_name(&ResidueId::new("A",2,' '))?, "THR");
+    assert_eq!(strctr.residue_name(&ResidueId::new("A",56,' '))?, "GLU");
+
+    return Ok(());
+}
