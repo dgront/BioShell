@@ -30,8 +30,10 @@ fn generate_kmers(seq: &[u8], k: usize) -> Result<Vec<u32>, SequenceError> {
     let mut kmers = Vec::with_capacity(seq.len() - k + 1);
 
     for i in 0..seq.len() {
-        let x = standard_letter_to_index(seq[i])?;
-
+        let x = standard_letter_to_index(seq[i]).map_err(|_| InvalidOneLetterCode {
+            aa_code: seq[i] as char,
+            sequence: String::from_utf8_lossy(seq).into_owned(),
+        })?;
         assert!(x <= MAX_SYMBOL, "symbol value {x} exceeds maximum allowed value 31");
 
         code = ((code << BITS_PER_SYMBOL) | x as u32) & mask;
@@ -112,12 +114,8 @@ pub fn bucket_clustering<'a>(sequences: &'a Vec<Sequence>, id_level: f32) -> Vec
     for s in sequences {
         // --- here we handle the case when generate_kmers() found illegal residue code
         match generate_kmers(s.seq(), word_size) {
-            Ok(kmers) => kmer_sets.push(kmers),
-            Err(InvalidOneLetterCode { aa_code, .. }) => {
-                let new_err = InvalidOneLetterCode { aa_code, sequence: String::from_utf8_lossy(s.seq()).into_owned() };
-                error!("{}", new_err);
-            }
-            _ => {}
+            Ok(kmer) => {kmer_sets.push(kmer)}
+            Err(err) => {error!("{}", err);}
         }
     }
 
