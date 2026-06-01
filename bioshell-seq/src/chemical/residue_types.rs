@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Mutex, MutexGuard, LazyLock};
 use once_cell::sync::Lazy;
 use crate::chemical::MonomerType::NonPolymer;
 use crate::chemical::StandardResidueType::UNK;
+use crate::SequenceError;
+use crate::SequenceError::InvalidOneLetterCode;
 
 /// Defines the types of monomers - residue types that are biomolecular building blocks.
 ///
@@ -528,6 +530,49 @@ define_res_types! {
     UNL 32 'Z' "UNL" Other
 }
 
+
+const INVALID_RESIDUE_INDEX: u8 = u8::MAX;
+
+static STANDARD_LETTER_TO_INDEX: LazyLock<[u8; 256]> = LazyLock::new(|| {
+    let mut table = [INVALID_RESIDUE_INDEX; 256];
+
+    for (i, residue_type) in StandardResidueType::TYPES.iter().copied().enumerate() {
+        table[residue_type.code1() as usize] = i as u8;
+    }
+    // --- fix for 'B' which is either ASN or ASP
+    table['B' as usize] = table[StandardResidueType::ASN.code1() as usize];
+    // --- fix for 'Z' which is either GLN or GLU
+    table['Z' as usize] = table[StandardResidueType::GLN.code1() as usize];
+
+    table
+});
+
+/// Provides an `u8` integer index for a standard residue type given its 1-letter code.
+///
+/// The maximum value of this `u8` index is equal to the number of standard residue types - 1
+/// (currently 32) with the first 21 values corresponding to the 20 standard amino acids and the `UNK` type.
+///
+/// B and Z characters are mapped by this function to ASN and GLN, respectively.
+/// This function utilizes information stored in [`StandardResidueType`] enum and
+/// does not interact with [`ResidueTypeManager`].
+///
+/// ```
+/// use bioshell_seq::chemical::standard_letter_to_index;
+/// let ala_idx = standard_letter_to_index('A' as u8);
+/// let met_idx = standard_letter_to_index('M' as u8);
+/// assert_eq!(ala_idx, Some(0));
+/// assert_eq!(met_idx, Some(12));
+/// ```
+#[inline]
+pub fn standard_letter_to_index(letter: u8) -> Result<u8, SequenceError> {
+    let index = STANDARD_LETTER_TO_INDEX[letter as usize];
+
+    if index == INVALID_RESIDUE_INDEX {
+        Err(InvalidOneLetterCode { aa_code: letter as char, sequence: "".to_string() })
+    } else {
+        Ok(index)
+    }
+}
 
 // ----------- the following map is used by TryFrom<&str> for MonomerType
 static MONOMER_MAP: Lazy<HashMap<&'static str, MonomerType>> = Lazy::new(|| {
