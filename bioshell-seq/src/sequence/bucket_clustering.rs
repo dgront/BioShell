@@ -1,3 +1,9 @@
+
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+use std::collections::HashMap;
+use std::thread;
+use std::time::Instant;
 use log::{debug, error, info};
 use crate::alignment::{aligned_sequences, GlobalAligner};
 use crate::chemical::standard_letter_to_index;
@@ -95,7 +101,107 @@ fn count_intersection_sorted(a: &[u32], b: &[u32]) -> usize {
 /// from the input. Each cluster is represented by its first sequence (the longest
 /// unassigned sequence at insertion time).
 ///
-pub fn bucket_clustering<'a>(sequences: &'a Vec<Sequence>, id_level: f32) -> Vec<Vec<&'a Sequence>> {
+pub fn bucket_clustering<'a, I>(sequences: I, id_level: f32) -> Vec<Vec<&'a Sequence>>
+                    where I: IntoIterator<Item = &'a Sequence> {
+    let seq_refs: Vec<&'a Sequence> = sequences.into_iter().collect();
+    bucket_clustering_impl(&seq_refs, id_level)
+}
+
+
+pub fn bucket_clustering_n<'a, I>(sequences: I, id_level: f32, n: usize) -> Vec<Vec<&'a Sequence>>
+                    where I: IntoIterator<Item = &'a Sequence>, Sequence: Sync {
+
+    let mut seq_refs: Vec<&'a Sequence> = sequences.into_iter().collect();
+
+    // --- nothing to cluster
+    if seq_refs.is_empty() { return Vec::new(); }
+
+    // --- if n is 1 or less, just run the single-threaded version
+    if n <= 1 { return bucket_clustering_impl(&seq_refs, id_level); }
+
+    let n = n.min(seq_refs.len());
+
+    // Randomly shuffle all sequences.
+    let mut rng = thread_rng();
+    seq_refs.shuffle(&mut rng);
+
+    // Split shuffled sequences into n buckets.
+    let mut buckets: Vec<Vec<&'a Sequence>> = vec![Vec::new(); n];
+
+    for (i, seq) in seq_refs.into_iter().enumerate() {
+        buckets[i % n].push(seq);
+    }
+
+    // Cluster each bucket in a separate thread.
+    let local_clusterings: Vec<Vec<Vec<&'a Sequence>>> = thread::scope(|scope| {
+        let mut handles = Vec::new();
+
+        for bucket in buckets {
+            let handle = scope.spawn(move || { bucket_clustering_impl(&bucket, id_level) });
+            handles.push(handle);
+        }
+
+        handles
+            .into_iter()
+            .map(|handle| { handle.join().expect("bucket_clustering_n: worker thread panicked") })
+            .collect()
+    });
+
+    // Take the first sequence from every local cluster as its representative.
+    let mut representatives: Vec<&'a Sequence> = Vec::new();
+
+    for clustering in &local_clusterings {
+        for cluster in clustering {
+            if let Some(rep) = cluster.first() {
+                representatives.push(*rep);
+            }
+        }
+    }
+
+    // Cluster the representatives.
+    let representative_clusters =
+        bucket_clustering_impl(&representatives, id_level);
+
+    // Map representative pointer -> final cluster index.
+    //
+    // This works because all references point into the original input data.
+    let mut rep_to_final_cluster: HashMap<*const Sequence, usize> = HashMap::new();
+
+    for (cluster_id, rep_cluster) in representative_clusters.iter().enumerate() {
+        for rep in rep_cluster {
+            rep_to_final_cluster.insert(*rep as *const Sequence, cluster_id);
+        }
+    }
+
+    // Repack local clusters into the final clusters according to
+    // where their representatives were assigned.
+    let mut final_clusters: Vec<Vec<&'a Sequence>> =
+        vec![Vec::new(); representative_clusters.len()];
+
+    for clustering in local_clusterings {
+        for local_cluster in clustering {
+            if local_cluster.is_empty() {
+                continue;
+            }
+
+            let local_rep = local_cluster[0];
+            let key = local_rep as *const Sequence;
+
+            let final_cluster_id = rep_to_final_cluster
+                .get(&key)
+                .expect("bucket_clustering_n: missing representative in final clustering");
+
+            final_clusters[*final_cluster_id].extend(local_cluster);
+        }
+    }
+
+    final_clusters
+}
+
+fn bucket_clustering_impl<'a>(sequences: &[&'a Sequence], id_level: f32) -> Vec<Vec<&'a Sequence>> {
+
+    // --- start a timer
+    let start = Instant::now();
 
     // --- prepare for sequence alignment
     let longest_length = sequences.iter().map(|s|s.len()).max().unwrap();
@@ -174,7 +280,9 @@ pub fn bucket_clustering<'a>(sequences: &'a Vec<Sequence>, id_level: f32) -> Vec
             }
         }
     }
-    debug!("Sequence  alignment called {} times", n_aligned);
+
+    info!("{} sequences clustered into {} buckets in {:.3?},  alignment called {} times",
+        sequences.len(), clusters.len(), start.elapsed(), n_aligned);
 
     clusters
 }
