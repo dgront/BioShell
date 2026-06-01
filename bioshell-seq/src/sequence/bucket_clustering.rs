@@ -1,36 +1,75 @@
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
-use log::{debug};
+use log::{debug, error, info};
 use crate::alignment::{aligned_sequences, GlobalAligner};
+use crate::chemical::standard_letter_to_index;
 use crate::scoring::{SequenceSimilarityScore, SubstitutionMatrixList};
 use crate::sequence::{count_identical, Sequence};
+use crate::SequenceError;
+use crate::SequenceError::InvalidOneLetterCode;
 
-/// Wrapper to enable Hash and Eq on &[u8]
-#[derive(Debug, Copy, Clone)]
-struct Kmer<'a>(&'a [u8]);
+type Kmer = u32;
 
-impl<'a> PartialEq for Kmer<'a> {
-    fn eq(&self, other: &Self) -> bool { self.0 == other.0 }
-}
 
-impl<'a> Eq for Kmer<'a> {}
+/// Generate sorted, deduplicated u32-backed k-mers.
+///
+/// Requirements:
+/// - k in 1..=6
+/// - every symbol in `seq` must be in 0..=31
+/// - different k values should not be mixed unless you encode k separately
+fn generate_kmers(seq: &[u8], k: usize) -> Result<Vec<u32>, SequenceError> {
+    const BITS_PER_SYMBOL: usize = 5;
+    const MAX_SYMBOL: u8 = 31;
+    const MAX_K_U32: usize = 6;
 
-impl<'a> Hash for Kmer<'a> {
-    fn hash<H: Hasher>(&self, state: &mut H) { state.write(self.0); }
-}
-
-/// Generate k-mers as &[u8] slices wrapped in Kmer<'a>
-fn generate_kmers<'a>(seq: &'a [u8], k: usize) -> HashSet<Kmer<'a>> {
-    let mut kmers = HashSet::new();
-    if seq.len() < k {
-        return kmers;
+    if k == 0 || k > MAX_K_U32 || seq.len() < k {
+        return Ok(Vec::new());
     }
-    for i in 0..=seq.len() - k {
-        kmers.insert(Kmer(&seq[i..i + k]));
+
+    let mask: u32 = (1u32 << (BITS_PER_SYMBOL * k)) - 1;
+    let mut code = 0u32;
+
+    let mut kmers = Vec::with_capacity(seq.len() - k + 1);
+
+    for i in 0..seq.len() {
+        let x = standard_letter_to_index(seq[i])?;
+
+        assert!(x <= MAX_SYMBOL, "symbol value {x} exceeds maximum allowed value 31");
+
+        code = ((code << BITS_PER_SYMBOL) | x as u32) & mask;
+        if i + 1 >= k { kmers.push(code); }
     }
-    kmers
+
+    kmers.sort_unstable();
+    kmers.dedup();
+
+    return Ok(kmers);
 }
 
+#[inline(never)]
+fn count_intersection_sorted(a: &[u32], b: &[u32]) -> usize {
+    let mut i = 0;
+    let mut j = 0;
+    let mut count = 0;
+
+    let a_len = a.len();
+    let b_len = b.len();
+
+    while i < a_len && j < b_len {
+        let av = unsafe { *a.get_unchecked(i) };
+        let bv = unsafe { *b.get_unchecked(j) };
+
+        if av < bv {
+            i += 1;
+        } else if av > bv {
+            j += 1;
+        } else {
+            count += 1;
+            i += 1;
+            j += 1;
+        }
+    }
+
+    return count;
+}
 
 /// Groups sequences into clusters based on pairwise sequence identity using a
 /// CD-HIT-style greedy clustering algorithm with k-mer-based prefiltering.
@@ -69,25 +108,32 @@ pub fn bucket_clustering<'a>(sequences: &'a Vec<Sequence>, id_level: f32) -> Vec
     sorted_indices.sort_by_key(|&i| -(sequences[i].seq().len() as isize));
 
     // Precompute k-mer sets for all sequences
-    let kmer_sets: Vec<HashSet<Kmer<'_>>> = sequences
-        .iter()
-        .map(|s| generate_kmers(s.seq(), word_size))
-        .collect();
+    let mut kmer_sets: Vec<Vec<Kmer>> = Vec::with_capacity(sequences.len());
+    for s in sequences {
+        // --- here we handle the case when generate_kmers() found illegal residue code
+        match generate_kmers(s.seq(), word_size) {
+            Ok(kmers) => kmer_sets.push(kmers),
+            Err(InvalidOneLetterCode { aa_code, .. }) => {
+                let new_err = InvalidOneLetterCode { aa_code, sequence: String::from_utf8_lossy(s.seq()).into_owned() };
+                error!("{}", new_err);
+            }
+            _ => {}
+        }
+    }
 
     let mut clusters: Vec<Vec<&'a Sequence>> = Vec::new();
     let mut representatives: Vec<&'a Sequence> = Vec::new();
-    let mut rep_kmers: Vec<&HashSet<Kmer<'_>>> = Vec::new();
-
+    let mut rep_kmers: Vec<&Vec<Kmer>> = Vec::new();
+    let one_percent = (sorted_indices.len() as f64 * 0.01) as usize;
+    let mut cnt = 0;
     for &i in &sorted_indices {
         let candidate = &sequences[i];
         let candidate_kmers = &kmer_sets[i];
         let mut assigned = false;
 
         for (cluster_idx, (rep, rep_kmer_set)) in representatives.iter().zip(&rep_kmers).enumerate() {
-            let shared = candidate_kmers
-                .intersection(rep_kmer_set)
-                .count();
-            let different = candidate_kmers.len().saturating_sub(shared);
+            let n_shared = count_intersection_sorted(candidate_kmers, rep_kmer_set);
+            let different = candidate_kmers.len().saturating_sub(n_shared);
 
             let shorter_len = candidate.len().min(rep.len());
             let (lower, upper) = kmer_identity_bounds(different, word_size, shorter_len);
@@ -122,6 +168,12 @@ pub fn bucket_clustering<'a>(sequences: &'a Vec<Sequence>, id_level: f32) -> Vec
             clusters.push(vec![candidate]);
             representatives.push(candidate);
             rep_kmers.push(&kmer_sets[i]);
+        }
+        if one_percent > 0 {
+            cnt += 1;
+            if cnt % one_percent == 1 {
+                info!("{}% sequences split into buckets", (cnt-1) / one_percent);
+            }
         }
     }
     debug!("Sequence  alignment called {} times", n_aligned);
