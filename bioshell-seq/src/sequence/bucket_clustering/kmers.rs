@@ -80,7 +80,7 @@ pub fn count_intersection_sorted(a: &[u32], b: &[u32]) -> usize {
 /// Compute bounds on sequence identity based on shared and different k-mers.
 ///
 /// Assumes that `min_seq_len` is the length of the shorter sequence (used in denominator).
-fn kmer_identity_bounds(different_kmers: usize, kmer_len: usize, min_seq_len: usize) -> (f32, f32) {
+pub fn kmer_identity_bounds(different_kmers: usize, kmer_len: usize, min_seq_len: usize) -> (f32, f32) {
     if min_seq_len == 0 { return (0.0, 0.0); }
 
     // upper bound: best case = each mutation causes k k-mers
@@ -103,7 +103,7 @@ fn kmer_identity_bounds(different_kmers: usize, kmer_len: usize, min_seq_len: us
 ///
 /// # Returns
 /// Recommended word size (`k`)
-fn suggest_word_length(identity_level: f32) -> usize {
+pub fn suggest_word_length(identity_level: f32) -> usize {
     match identity_level {
         x if x >= 0.95 => 6,
         x if x >= 0.90 => 5,

@@ -2,18 +2,14 @@
 use rand::seq::SliceRandom;
 use rayon::prelude::*;
 use rand::thread_rng;
-use std::collections::HashMap;
-use std::thread;
 use std::time::Instant;
 use log::{debug, error, info};
 use crate::alignment::{aligned_sequences, GlobalAligner};
 
 use crate::scoring::{SequenceSimilarityScore, SubstitutionMatrixList};
 use crate::sequence::{count_identical, Sequence};
-use crate::SequenceError;
-use crate::SequenceError::InvalidOneLetterCode;
 
-use crate::sequence::bucket_clustering::kmers::{Kmer, generate_kmers, count_intersection_sorted};
+use crate::sequence::bucket_clustering::kmers::*;
 
 type Cluster = Vec<usize>;
 type Clustering = Vec<Cluster>;
