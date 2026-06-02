@@ -29,8 +29,6 @@ pub use sequence_record::*;
 
 mod display_sequence;
 
-
-
 /// Returns a list of Sequences for a given input string.
 ///
 /// If the input string contains a dot character, it's assumed to be a file name. This function
