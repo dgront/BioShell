@@ -28,6 +28,7 @@ members = [
 bioshell-core = { path = "bioshell-core" }
 bioshell-seq = { path = "./bioshell-seq" }
 bioshell-builder = { path = "./bioshell-builder" }
+bioshell-molgeom = { path = "./bioshell-molgeom" }
 bioshell-pdb = { path = "./bioshell-pdb" }
 bioshell-clustering = { path = "./bioshell-clustering" }
 bioshell-statistics = { path = "./bioshell-statistics" }

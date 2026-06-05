@@ -4,9 +4,9 @@ mod test_crmsd {
     use std::io::BufReader;
     use rand::prelude::StdRng;
     use rand::{Rng, SeedableRng};
+    use bioshell_core::Vec3;
     use bioshell_molgeom::align::{crmsd, crmsd_transform};
     use bioshell_pdb::{Deposit, PDBError};
-    use bioshell_pdb::calc::Vec3;
     use bioshell_pdb::pdb_atom_filters::{InvertPredicate, IsHydrogen, PdbAtomPredicate};
 
     #[allow(non_upper_case_globals)]

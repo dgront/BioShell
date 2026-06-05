@@ -7,8 +7,8 @@ use anyhow::{Context, Result};
 use bioshell_pdb::{Deposit, PdbAtom};
 use bioshell_pdb::pdb_atom_filters::{ByChain, InvertPredicate, IsBackbone, IsCA, IsHydrogen, KeepProtein, MatchAll, PdbAtomPredicate};
 use log::info;
+use bioshell_core::Vec3;
 use bioshell_molgeom::align::crmsd_transform;
-use bioshell_pdb::calc::Vec3;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None, arg_required_else_help = true)]
