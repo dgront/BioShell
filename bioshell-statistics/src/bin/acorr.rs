@@ -2,7 +2,7 @@ use std::env;
 use std::time::Instant;
 use clap::Parser;
 use log::info;
-use bioshell_io::{open_file, read_delimited_columns, read_whitespace_delimited_columns};
+use bioshell_core::io::{open_file, read_delimited_columns, read_whitespace_delimited_columns};
 use bioshell_statistics::autocorrelate_vectors;
 
 #[derive(Parser, Debug)]

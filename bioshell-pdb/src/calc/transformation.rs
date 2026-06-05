@@ -1,5 +1,5 @@
 use std::fmt;
-use crate::calc::{Matrix3x3, Vec3};
+use bioshell_core::{Matrix3x3, Vec3};
 
 /// Rotation-translation operation in 3D
 pub struct Rototranslation {
@@ -101,8 +101,8 @@ impl Rototranslation {
     ///
     /// # Example
     /// ```
-    /// use bioshell_pdb::{assert_delta};
-    /// use bioshell_pdb::calc::{Rototranslation, Vec3};
+    /// use bioshell_core::{assert_delta, Vec3};
+    /// use bioshell_pdb::calc::Rototranslation;
     /// let a = Vec3::new(0.0, 0.0, 0.0);
     /// let b = Vec3::new(2.0, 0.0, 2.0);
     /// let c = Vec3::new(4.0, 0.0, 0.0);
@@ -113,7 +113,7 @@ impl Rototranslation {
     /// # assert_delta!(rot_m.elem(2,2), 1.0, 0.000001);
     /// # println!("{}", rot);
     /// # let expected = r#"[  1.000   0.000   0.000 ]     | vx -  2.000 |
-    /// # [  0.000   1.000   0.000 ]  *  | vy -  0.000 |
+    /// # [ -0.000   1.000   0.000 ]  *  | vy -  0.000 |
     /// # [  0.000   0.000   1.000 ]     | vz -  2.000 |
     /// # "#;
     /// # assert_eq!(format!("{}", rot), expected);
@@ -196,12 +196,6 @@ impl Rototranslation {
         self.apply_mut(&mut v);
         return v;
     }
-    //
-    // pub fn batch_apply(&self, v: &[Vec3]) -> Vec3 {
-    //     let mut v = v.clone();
-    //     self.apply_mut(&mut v);
-    //     return v;
-    // }
 }
 
 

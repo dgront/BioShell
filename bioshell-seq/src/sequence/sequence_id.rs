@@ -3,7 +3,7 @@ use std::fmt;
 use std::ops::{Deref, DerefMut};
 use regex::Regex;
 
-use bioshell_io::sanitize_filename;
+use bioshell_core::io::sanitize_filename;
 
 /// Represents biological sequence identifiers from major databases.
 ///

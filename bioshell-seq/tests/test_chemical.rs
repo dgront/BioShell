@@ -6,7 +6,7 @@ fn test_residue_types() {
     // ---------- Iterate over standard amino acid enum types
     let mut n_aa: i8 = 0;
     for srt in StandardResidueType::TYPES {
-        if srt.chem_compound_type() == MonomerType::PeptideLinking { n_aa += 1; }
+        if srt.chem_compound_type().is_peptide_linking() { n_aa += 1; }
     }
     assert_eq!(n_aa, 21);       // 20 standard amino acids + UNK
 
@@ -19,7 +19,7 @@ fn test_residue_types() {
     assert_eq!(cys.code1(),'C');
     assert_eq!(cys.code3(),"CYS");
     assert_eq!(trp.code3(),"TRP");
-    assert_eq!(cys.chem_compound_type(),MonomerType::PeptideLinking);
+    assert_eq!(cys.chem_compound_type(),MonomerType::LPeptideLinking);
     assert_eq!(trp.chem_compound_type(),cys.chem_compound_type());
 
     // ---------- Check conversion 'C' -> StandardResidueType::CYS

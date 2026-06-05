@@ -29,6 +29,14 @@ pub enum SequenceError {
         description: String,
     },
 
+    #[error("Invalid character found as a residue one-letter code '{aa_code}' in the sequence:\n{sequence}")]
+    /// Invalid character found as a residue one-letter code
+    InvalidOneLetterCode {
+        /// the incorrect character
+        aa_code: char,
+        sequence: String
+    },
+
     #[error("Can't locate a sequence for the given ID: '{seq_id}'")]
     /// Can't locate a sequence for the given `seq_id`
     InvalidSequenceID {

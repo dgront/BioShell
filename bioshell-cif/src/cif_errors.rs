@@ -40,6 +40,14 @@ pub enum CifError {
     /// Can't process a data item name
     DanglingDataItem {data_name: String},
 
+    #[error("Can't parse an integer value: {value}")]
+    /// Can't parse an integer value
+    CantParseIntValue {value: String},
+
+    #[error("Can't parse a floating point value: {value}")]
+    /// Can't parse a floating point value:
+    CantParseFloatValue {value: String},
+
     #[error("Data values found outside of a loop block:\n {breaking_line}")]
     /// Data values found outside a loop block
     DataValuesOutsideLoop { breaking_line: String },

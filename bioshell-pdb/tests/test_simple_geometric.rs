@@ -2,7 +2,8 @@
 #[cfg(test)]
 mod test_geometric_calculations {
     use bioshell_pdb::{PdbAtom, ResidueId, Structure};
-    use bioshell_pdb::calc::{dihedral_angle4, distance, planar_angle2, planar_angle3, Vec3};
+    use bioshell_core::{dihedral_angle4, planar_angle2, planar_angle3, Vec3};
+    use bioshell_pdb::calc::distance;
 
     #[allow(non_upper_case_globals)]
     const pdb_2gb1:  &str = include_str!("./test_files/2gb1.pdb");

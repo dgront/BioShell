@@ -3,8 +3,8 @@ mod internal_atom_definitions_tests {
     use std::io::BufReader;
     use bioshell_builder::{BuilderError, InternalAtomDefinition, InternalCoordinatesDatabase};
     use bioshell_cif::read_cif_buffer;
-    use bioshell_io::split_into_strings;
-    use bioshell_pdb::assert_delta;
+    use bioshell_core::io::split_into_strings;
+    use bioshell_core::assert_delta;
 
     const BB_: &str = "data_bb_
 loop_

@@ -6,7 +6,7 @@ use clap::{Parser};
 use log::{info};
 
 use bioshell_seq::sequence::{Sequence, load_sequences};
-use bioshell_io::{out_writer};
+use bioshell_core::io::{out_writer};
 use bioshell_seq::alignment::{AlignmentReporter, AlignmentStatistics, align_all_pairs, PrintAsPairwise, SimilarityReport, MultiReporter};
 use bioshell_seq::scoring::{SubstitutionMatrixList};
 use bioshell_seq::SequenceError;

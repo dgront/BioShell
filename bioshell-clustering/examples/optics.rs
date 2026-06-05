@@ -3,7 +3,7 @@ use std::io::Error;
 use clap::{Parser};
 use bioshell_clustering::{CartesianPoints};
 use bioshell_clustering::optics::{Optics};
-use bioshell_io::{read_delimited_values, out_writer, open_file};
+use bioshell_core::io::{read_delimited_values, out_writer, open_file};
 
 use log::{error, info};
 use bioshell_datastructures::euclidean_distance_squared;

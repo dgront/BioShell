@@ -54,12 +54,7 @@ impl<T, D> KMeans<T, D> where T: IndexMut<usize, Output = f64> + Clone, D: Fn(&T
     /// Run the clustering procedure
     ///
     /// # Arguments
-    /// * `epsilon` - convergence criterion: a clustering stops when the relative change in error function
-    ///     is smaller that `epsilon`. The error function is defined as the sum of distances from each
-    ///     point to its respective cluster center.
-    ///
-    /// # Returns
-    ///     error value reached in the last iteration
+    /// * `epsilon` - convergence criterion
     pub fn cluster(&mut self, epsilon: f64) -> f64 {
         // --- initialize by assigning k initial clusters
         // self.init_random();

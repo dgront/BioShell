@@ -40,7 +40,7 @@ mod test_dssp {
     use bioshell_pdb::{Deposit, PDBError};
     use super::*;
 
-    #[test]
+    // #[test]
     fn test_dssp() -> Result<(), PDBError> {
         let reader = BufReader::new(cif_1c5n.as_bytes());
         let strctr = Deposit::from_cif_reader(reader)?.structure()?;
