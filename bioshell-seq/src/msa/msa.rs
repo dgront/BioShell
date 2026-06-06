@@ -224,7 +224,7 @@ impl MSA {
     /// let column1: Vec<u8> = msa.nth_column_iter(1).collect();
     /// assert_eq!(column1, [b'E', b'-', b'D']);
     /// ```
-    pub fn nth_column_iter(&self, n: usize) -> IteratorOverColumn {
+    pub fn nth_column_iter(&self, n: usize) -> IteratorOverColumn<'_> {
 
         IteratorOverColumn{
             msa: &self.msa,

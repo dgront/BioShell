@@ -1,7 +1,7 @@
 use std::fmt;
 use rayon::prelude::*;
 use std::time::Instant;
-use log::{debug, error, info};
+use log::{debug, info};
 use crate::alignment::{aligned_sequences, GlobalAligner};
 
 use crate::scoring::{SequenceSimilarityScore, SubstitutionMatrixList};
@@ -88,9 +88,6 @@ impl Cluster {
     pub fn extend(&mut self, other: &Cluster) {
         self.members.extend_from_slice(&other.members);
     }
-     pub fn push(&mut self, member: usize) {
-        self.members.push(member);
-    }
 }
 
 type Clustering = Vec<Cluster>;
@@ -123,6 +120,7 @@ impl SequenceIdentityStats {
         }
     }
 
+    #[allow(unused)]
     pub fn merge(&mut self, other: SequenceIdentityStats) {
         self.above_threshold += other.above_threshold;
         self.below_threshold += other.below_threshold;
