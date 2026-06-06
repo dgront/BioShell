@@ -22,7 +22,7 @@ mod sequence_id;
 pub use sequence_id::*;
 
 mod bucket_clustering;
-pub use bucket_clustering::{bucket_clustering, bucket_clustering_n};
+pub use bucket_clustering::{bucket_clustering};
 
 mod sequence_record;
 pub use sequence_record::*;
