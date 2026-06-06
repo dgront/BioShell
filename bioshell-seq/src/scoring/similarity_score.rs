@@ -106,21 +106,29 @@ impl SequenceSimilarityScore {
     }
 
     /// Replaces the query sequence with a new one given as a string.
+    ///
+    /// This method allows re-use the scoring object for multiple pairs of sequences, which saves time for memory allocation
     pub fn query_from_str(&mut self, query: &str) {
         self.query = query.as_bytes().iter().map(|a| self.matrix.aa_index(*a)).collect();
     }
 
     /// Replaces the template sequence with a new one given as a string.
+    ///
+    /// This method allows re-use the scoring object for multiple pairs of sequences, which saves time for memory allocation
     pub fn template_from_str(&mut self, template: &str) {
         self.template = template.as_bytes().iter().map(|a| self.matrix.aa_index(*a)).collect();
     }
 
     /// Replaces the query sequence with a new one given as a [`Sequence`].
+    ///
+    /// This method allows re-use the scoring object for multiple pairs of sequences, which saves time for memory allocation
     pub fn query_from_sequence(&mut self, query: &Sequence) {
         self.query = query.as_u8().iter().map(|a| self.matrix.aa_index(*a)).collect();
     }
 
     /// Replaces the template sequence with a new one given as a [`Sequence`].
+    ///
+    /// This method allows re-use the scoring object for multiple pairs of sequences, which saves time for memory allocation
     pub fn template_from_sequence(&mut self, template: &Sequence) {
         self.template = template.as_u8().iter().map(|a| self.matrix.aa_index(*a)).collect();
     }

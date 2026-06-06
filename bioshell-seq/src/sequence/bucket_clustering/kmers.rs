@@ -79,7 +79,11 @@ pub fn count_intersection_sorted(a: &[u32], b: &[u32]) -> usize {
 
 /// Compute bounds on sequence identity based on shared and different k-mers.
 ///
-/// Assumes that `min_seq_len` is the length of the shorter sequence (used in denominator).
+/// Given two amino acid sequences, we can compute the number of ``different_kmers``
+/// that are present in one sequence but not the other. Given the k-mer length and `min_seq_len`
+/// - the length of the shorter sequence (used in denominator), we can estimate bounds on the sequence identity.
+///
+/// The function returns a tuple of (`lower_bound`, `upper_bound`) on the sequence identity fraction.
 pub fn kmer_identity_bounds(different_kmers: usize, kmer_len: usize, min_seq_len: usize) -> (f32, f32) {
     if min_seq_len == 0 { return (0.0, 0.0); }
 
