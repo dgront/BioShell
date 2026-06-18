@@ -46,8 +46,8 @@ impl AlignmentStatistics {
 
         return AlignmentStatistics::from_sequences(&q, &t, name_width);
     }
-    /// Creates the [AlignmentStatistics] for a given pair of aligned sequences
 
+    /// Creates the [AlignmentStatistics] for a given pair of aligned sequences
     pub fn from_sequences(aligned_query: &Sequence, aligned_template: &Sequence, header_length: usize) -> AlignmentStatistics {
         let query_header = aligned_query.description_n(header_length);
         let template_header = aligned_template.description_n(header_length);

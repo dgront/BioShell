@@ -8,7 +8,7 @@ use std::time::Instant;
 use rand::Rng;
 use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers};
 use bioshell_clustering::hierarchical::strategies::{average_link, complete_link, single_link};
-use bioshell_seq::sequence::{bucket_clustering_n, load_sequences, Sequence};
+use bioshell_seq::sequence::{bucket_clustering_n, load_sequences, Sequence, sequence_name};
 use bioshell_core::io::{can_create_file, out_writer};
 use bioshell_seq::alignment::{align_all_pairs, AlignmentReporter, AlignmentStatistics};
 use bioshell_seq::scoring::SubstitutionMatrixList;
@@ -232,11 +232,14 @@ pub fn main() -> Result<(), SequenceError> {
     if let Some(fname) = args.distance_matrix {
         let mut out_file = out_writer(&fname, false);
         let mut k = 0;
-        for i in &seq_order{
+        for i in &seq_order {
             let mut l = 0;
+            let q_name = sequence_name(&matrix_reporter.sequence_description(*i), args.name_width, true);
             for j in &seq_order {
-                writeln!(out_file, "{:4} {:4} {:6.3} {} {}", k, l, matrix_reporter.percent_identity(*i, *j),
-                         matrix_reporter.sequence_description(*i), matrix_reporter.sequence_description(*j))?;
+                let t_name = sequence_name(&matrix_reporter.sequence_description(*j), args.name_width, true);
+                writeln!(out_file, "{}\t{}\t{:6.3}\t{}\t{}", q_name, t_name, matrix_reporter.percent_identity(*i, *j), k, l)?;
+                // writeln!(out_file, "{}\t{}\t{:6.3}\t{}\t{}", i, j, matrix_reporter.percent_identity(*i, *j), k, l)?;
+                // writeln!(out_file, "{}\t{}\t{:6.3}\t{}\t{}", k, l, matrix_reporter.percent_identity(*i, *j), i, j)?;
                 l += 1;
             }
             writeln!(out_file)?;

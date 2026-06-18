@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use bioshell_core::io::out_writer;
 use crate::alignment::AlignmentStatistics;
-use crate::sequence::{parse_sequence_id, len_ungapped, len_ungapped_str, Sequence, count_identical};
+use crate::sequence::{len_ungapped, len_ungapped_str, Sequence, count_identical, sequence_name};
 
 /// Reports a sequence alignment calculated by a sequence alignment algorithm.
 pub trait AlignmentReporter {
@@ -136,7 +136,7 @@ impl AlignmentReporter for PrintAsPairwise {
 ///    - length of the template sequence without gaps
 ///
 /// All statistics are printed in a tabular format, with one line per alignment. The sequence headers are truncated to `header_width` characters to ensure a neat output.
-/// If the `infer_seq_id` flag is set to `true`, the reporter attemps to infer a sequence identifier for both the query and the template description.
+/// If the `infer_seq_id` flag is set to `true`, the reporter attempts to infer a sequence identifier for both the query and the template description.
 pub struct SimilarityReport {
     pub header_width: usize,
     pub infer_seq_id: bool
@@ -156,10 +156,8 @@ impl Default for SimilarityReport {
 impl AlignmentReporter for SimilarityReport {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
         let mut stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, self.header_width);
-        if self.infer_seq_id {
-            stats.query_header = parse_sequence_id(&stats.query_header).to_string();
-            stats.template_header = parse_sequence_id(&stats.template_header).to_string();
-        }
+        stats.query_header = sequence_name(aligned_query.description(), self.header_width, self.infer_seq_id);
+        stats.template_header = sequence_name(aligned_template.description(), self.header_width, self.infer_seq_id);
         println!("{}", stats);
     }
 }
@@ -234,10 +232,7 @@ impl Drop for IdentityMatrixReporter {
 
         // Write the header and corresponding matrix values (second block)
         for (key, &idx) in &sorted_keys {
-            // if requested, extract the seq-id from a sequence header
-            let mut truncated_key = if self.infer_seq_id { parse_sequence_id(key).to_string()} else { (*key).clone() };
-            // Write the truncated key (header_width characters)
-            truncated_key = truncated_key.split_whitespace().next().unwrap().chars().take(self.header_width).collect();
+            let truncated_key = sequence_name(key, self.header_width, self.infer_seq_id);
             write!(file, "{:<width$}", truncated_key, width = self.header_width).expect(&err_msg);
 
             // Write the values from identity_matrix[idx]

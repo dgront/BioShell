@@ -194,6 +194,34 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
     SeqIdList::from(found)
 }
 
+/// Creates a string than names a sequence given its description line.
+///
+/// If `parse_ids` is true, the function will replace the input ``description``
+/// with the sequence identifiers parsed with `parse_sequence_id()`. This function returns
+/// the first word of the description or the first `n` characters, whichever is shorter.
+///
+/// # Examples
+///```
+/// use bioshell_seq::sequence::sequence_name;
+/// let desc = "sp|A0A009IHW8|ABTIR_ACIB9 2' cyclic ADP-D-ribose synthase [taxid=1310613]";
+/// assert_eq!(sequence_name(desc, 100, false), "sp|A0A009IHW8|ABTIR_ACIB9");
+/// assert_eq!(sequence_name(desc, 5, false), "sp|A0");
+/// assert_eq!(sequence_name(desc, 100, true), "UniProtID|ABTIR_ACIB9|tr|A0A009IHW8|[taxid=1310613]");
+/// ```
+pub fn sequence_name(description: &str, n:usize, parse_ids: bool) -> String {
+
+    // if requested, extract the seq-id from a sequence header
+    let mut name = if parse_ids {
+        parse_sequence_id(description).to_string()
+    } else {
+        description.to_string()
+    };
+    // Write the truncated key (header_width characters)
+    name = name.split_whitespace().next().unwrap().chars().take(n).collect();
+
+    return name;
+}
+
 /// A typed wrapper around a list of sequence identifiers.
 ///
 /// This struct provides ergonomic methods and traits for handling collections of `SeqId`,
