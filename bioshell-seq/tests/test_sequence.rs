@@ -3,7 +3,7 @@
 mod tests {
     use std::fmt::Write;
 
-    use bioshell_seq::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, SequenceProfile, ProfileColumnOrder, trim_by_sequence, count_identical};
+    use bioshell_seq::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, SequenceProfile, ProfileColumnOrder, trim_by_sequence, count_identical, remove_gapped_columns, count_aligned};
     use std::io::BufReader;
     use std::iter::zip;
     use bioshell_seq::msa::{MSA, StockholmMSA};
@@ -179,10 +179,14 @@ UniRef90_UPI000F744328/389-447           -------TL----ES---TW-EK--PQE-----";
         let input = vec![&cyp2ab5, &cyp2ab24];
         let trimmed_cyps_1 = trim_by_sequence(&cyp2ab5, input)?;
         let trimmed_cyps_2 = trim_by_sequence(&trimmed_cyps_1[1], &trimmed_cyps_1)?;
+        let trimmed_cyps_3 = remove_gapped_columns(&trimmed_cyps_2)?;
+        // println!("{}\n{}\n", &trimmed_cyps_3[0], &trimmed_cyps_3[1]);
+        let n_id = count_identical(&trimmed_cyps_3[0], &trimmed_cyps_3[1])?;
+        let n_algn = count_aligned(&trimmed_cyps_3[0], &trimmed_cyps_3[1])?;
+        assert_eq!(n_id, 76);
+        assert_eq!(n_algn, 186);
+        assert_eq!(trimmed_cyps_3[1].len(), 273);
 
-        println!("{}\n{}\n", &trimmed_cyps_2[0], &trimmed_cyps_2[1]);
-        let n_id = count_identical(&trimmed_cyps_2[0], &trimmed_cyps_2[1]).unwrap();
-        println!("{} {} {}%", n_id, trimmed_cyps_2[1].len(), n_id as f64 / trimmed_cyps_2[1].len()as f64 * 100.0);
         Ok(())
     }
 }

@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 use crate::errors::SequenceError;
 use crate::msa::MSA;
 use crate::sequence::parse_sequence_id;
+use crate::SequenceError::NoInputSequences;
 
 #[derive(Default, Clone, Debug, PartialEq)]
 /// Amino acid / nucleic sequence.
@@ -482,6 +483,45 @@ fn trim_by_sequence_(reference: &Sequence, sequences: &Vec<&Sequence>) -> Result
     return Ok(out_seq);
 }
 
+pub fn remove_gapped_columns<'a>(sequences: impl IntoIterator<Item = &'a Sequence>) -> Result<Vec<Sequence>, SequenceError> {
+
+    // Collect references because the sequences must be traversed multiple times.
+    let sequences: Vec<&Sequence> = sequences.into_iter().collect();
+
+    let Some(first) = sequences.first() else { return Err(NoInputSequences); };
+
+    let expected_len = first.len();
+
+    // Check alignment lengths and determine which columns contain at least one non-gap character.
+    let mut keep_column = vec![false; expected_len];
+    for sequence in &sequences {
+        if sequence.len() != expected_len {
+            return Err(SequenceError::AlignedSequencesOfDifferentLengths { length_expected: expected_len, length_found: sequence.len()});
+        }
+
+        for (i, &residue) in sequence.seq().iter().enumerate() {
+            // set `true` if the column has at least one non-gap character
+            if residue != b'-' && residue != b'_' { keep_column[i] = true; }
+        }
+    }
+
+    // Construct sequences without all-gap columns.
+    let mut output = Vec::with_capacity(sequences.len());
+
+    for sequence in sequences {
+        let new_seq: Vec<u8> = sequence
+            .seq()
+            .iter()
+            .zip(&keep_column)
+            .filter_map(|(&residue, &keep)| keep.then_some(residue))
+            .collect();
+
+        output.push(Sequence::from_attrs(sequence.description.clone(), new_seq));
+    }
+
+    Ok(output)
+}
+
 /// Counts residues of a given type in a [`Sequence`](Sequence)
 ///
 /// # Examples
@@ -519,6 +559,35 @@ pub fn count_identical(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceEr
     return Ok(MSA::sum_identical(si, sj));
 }
 
+/// Counts residues aligned to another residue between two sequences.
+///
+/// Residues aligned to a gap symbol are not included in the count. Results in
+/// [`AlignedSequencesOfDifferentLengths`](crate::SequenceError::AlignedSequencesOfDifferentLengths)
+///  if the sequences differ by length.
+///
+/// # Example
+/// ```rust
+/// # use bioshell_seq::sequence::{Sequence, count_aligned};
+/// let si = Sequence::from_str("seq-1", "PERF-");
+/// let sj = Sequence::from_str("seq-2", "P-RV-");
+/// assert_eq!(count_aligned(&si, &sj).unwrap(), 3);
+/// ```
+pub fn count_aligned(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> {
+    if si.len() != sj.len() {
+        return Err(SequenceError::AlignedSequencesOfDifferentLengths {
+            length_expected: si.len(),
+            length_found: sj.len(),
+        });
+    }
+
+    let mut sum = 0;
+    for (ci, cj) in si.seq.iter().zip(sj.seq.iter()) {
+        if *ci != b'-' && *ci != b'_' && *cj != b'-' && *cj != b'_' {
+            sum += 1;
+        }
+    }
+    return Ok(sum);
+}
 
 /// Length of a [`Sequence`](Sequence) excluding gaps
 ///
