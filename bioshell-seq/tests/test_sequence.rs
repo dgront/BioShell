@@ -3,7 +3,7 @@
 mod tests {
     use std::fmt::Write;
 
-    use bioshell_seq::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, SequenceProfile, ProfileColumnOrder};
+    use bioshell_seq::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, SequenceProfile, ProfileColumnOrder, trim_by_sequence, count_identical};
     use std::io::BufReader;
     use std::iter::zip;
     use bioshell_seq::msa::{MSA, StockholmMSA};
@@ -136,7 +136,7 @@ UniRef90_UPI000F744328/389-447           -------TL----ES---TW-EK--PQE-----";
         assert_eq!(19, msa.n_seq());
         assert_eq!(msa.sequences()[8].seq(), b"-------TQ----QT---SW-LH--PVSQ----");
         let ref_seq = msa.sequences()[8].clone();
-        let sequences = remove_gaps_by_sequence(&ref_seq, msa.sequences());
+        let sequences = remove_gaps_by_sequence(&ref_seq, msa.sequences())?;
 
         assert_eq!(sequences[0].seq(), b"TKQTTWEKPA--");
         assert_eq!(sequences[8].seq(), b"TQQTSWLHPVSQ");
@@ -168,5 +168,21 @@ UniRef90_UPI000F744328/389-447           -------TL----ES---TW-EK--PQE-----";
         let expected_output = "MTYKLILNGK\nTLKGETTTEA\nVDAATAEKVF\nKQYANDNGVD\nGEWTYDDATK\nTFTVTE";
 
         assert_eq!(sequence.to_string(10), expected_output);
+    }
+
+    #[test]
+    fn test_terminal_gaps_trimming() -> Result<(), SequenceError> {
+        let cyp2ab5 = Sequence::from_str("2AB5:543d532cffe0bf4f0e28cb4b8060daaa CYP2AB5 Taeniopygia guttata (zebrafinch)",
+                                         "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------GRPVDPSFPLFHSISNVICAVVFGYHFSDEDKTFHELI-HATEKIFRFAGSF-VHQMYEILPWLLCYLPGPHKKVL---ACYDVLSSFARKEIRRHVERGI-P-AEPQDFIDFYLAEI--EK----G---AKPKYDEENLVYVINDLFLGGSETSSTTLYWGLLYMVVNPDIQ------VKVQEELDAVLGPSQLICYEDRRKLPYTNAVVHEIQRFSNIVFVGVPRLCVRNTTLL-GF-PVKKGTIVIPNIASVLYDPEQWETPRQFNPGHFLDKEGNFIPREAFLPFSAGHRVCLGEHLARTELFIFFASLLRAFTFRLPEGVTKINTEPIFG-G-TLQPHPYSVCAIPR--------------------------");
+        let cyp2ab24 = Sequence::from_str("2AB24:016c71a6939beee957cca6bc77869662 CYP2AB24_Pelodiscus_sinensis (Chinese softshell turtle) ENSPSIG00000012261 JH224657.1 714774 727348 -1",
+                                          "------------M--------------F---------G-------------I-S--EFLVALVAFL---LI-----------------------------VQFLKLQWAGRQLPPGPTPLPFIGNLWLL-GF-KLHPE--TLEKLAQIHGNIFTLWLGQSPVIVLHGFQAVKDGLTNNPEDVSGRPTTPFFNEKAS-D----K----GIIL-TSGHTWKQQRRFGLMTLRNLGMGKKGLEQLIQEEARYLVEYLTSERGQPLDPSVSFSQAFSNVICAVVLGHRFSTDDETLQQLL-EANDCLLKSGGSL-SERLYNTFPWLMDHLPGPHKKMV---SSHEFMYRFAKEEIRCHRERGV-P-DEPQDFIDFYLAQM--VK----CRDDPTSTFDEDSLIHTILDLFIAGTESTATTLRWALISLVLHPDVQ------GERKAKEGTHLDA--------------------------------------------------------------------------------------WHVGSDPVLPLFIRQM------------------------------------------------------------------------------------");
+        let input = vec![&cyp2ab5, &cyp2ab24];
+        let trimmed_cyps_1 = trim_by_sequence(&cyp2ab5, input)?;
+        let trimmed_cyps_2 = trim_by_sequence(&trimmed_cyps_1[1], &trimmed_cyps_1)?;
+
+        println!("{}\n{}\n", &trimmed_cyps_2[0], &trimmed_cyps_2[1]);
+        let n_id = count_identical(&trimmed_cyps_2[0], &trimmed_cyps_2[1]).unwrap();
+        println!("{} {} {}%", n_id, trimmed_cyps_2[1].len(), n_id as f64 / trimmed_cyps_2[1].len()as f64 * 100.0);
+        Ok(())
     }
 }

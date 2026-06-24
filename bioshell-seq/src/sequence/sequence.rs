@@ -338,8 +338,8 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 ///
 /// Given a gapped sequence and a (multiple) sequence alignment, this function removes
 /// the columns from the alignment where the reference sequence has a gap. Note, that
-/// this may remove amino acid residues from other sequences and make them shorter. The reference
-/// sequence will have only all its gaps removed.
+/// this may remove amino acid residues from other sequences and make them shorter. Only the reference
+/// sequence will have all its gaps removed.  Results in [`SequenceError`] when the sequences differ by length.
 ///
 /// # Arguments
 /// * `reference` - a reference sequence
@@ -365,19 +365,29 @@ pub fn a3m_to_fasta(sequences: &mut Vec<Sequence>, mode: &A3mConversionMode) {
 /// let mut reader = BufReader::new(alignment.as_bytes());
 /// let mut msa = StockholmMSA::from_stockholm_reader(&mut reader)?;
 /// let ref_seq = msa.sequences()[8].clone();
+/// // --- call the function with &Vec<Sequence>
 /// let trimmed_seq = remove_gaps_by_sequence(&ref_seq, msa.sequences());
+///
+/// // --- call the function with Vec<&Sequence>
+/// let sequence_refs: Vec<&Sequence> = msa.sequences().iter().collect();
+/// let trimmed_seq = remove_gaps_by_sequence(&ref_seq, sequence_refs)?;
 /// assert_eq!("TKQTTWEKPA--", trimmed_seq[0].to_string(0));
 /// assert_eq!("TQQTSWLHPVSQ", trimmed_seq[8].to_string(0));
 /// # Ok(())
 /// # }
 /// ```
-pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) -> Vec<Sequence> {
+pub fn remove_gaps_by_sequence<'a>(reference: &Sequence, sequences: impl IntoIterator<Item = &'a Sequence>) -> Result<Vec<Sequence>, SequenceError> {
+    let seq_refs: Vec<&Sequence> = sequences.into_iter().collect();
+    return remove_gaps_by_sequence_(reference, seq_refs);
+}
+
+fn remove_gaps_by_sequence_(reference: &Sequence, sequences: Vec<&Sequence>) -> Result<Vec<Sequence>, SequenceError> {
 
     let n_seq: usize = sequences.len();
     // --- check if all the sequences are of the same length
     for i in 0..n_seq {
         if sequences[i].len() != reference.len() {
-            panic!("The following sequence has different length that the reference: {}", sequences[i].to_string(0));
+            return Err(SequenceError::AlignedSequencesOfDifferentLengths { length_expected: reference.len(), length_found: sequences[i].len() });
         }
     }
     // --- create the list of indexes of elements to be copied
@@ -398,14 +408,15 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) 
         out_seq.push(Sequence::from_attrs(id.clone(), new_aa));
     }
 
-    return out_seq;
+    return Ok(out_seq);
 }
 
-/// Trims a sequence alignment by a reference sequence
+/// Trims a sequence alignment by a reference sequence.
 ///
 /// Given a gapped sequence and a (multiple) sequence alignment, this function removes
 /// characters from both end of each sequence in `sequences` that correspond to a gap
-/// in the `reference` sequence
+/// in the `reference` sequence. Mid-alignment gaps are preserved.
+/// Results in [`SequenceError`] when the sequences differ by length.
 ///
 /// # Arguments
 /// * `reference` - a reference sequence
@@ -430,6 +441,7 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) 
 /// UPI00138FB958/985-1021          -------TQ----QT---SW-LH--PVSQ----";
 /// let mut reader = BufReader::new(alignment.as_bytes());
 /// let mut msa = StockholmMSA::from_stockholm_reader(&mut reader)?;
+/// // --- The MSA will be trimmed by the UPI00138FB958 sequence
 /// let ref_seq = msa.sequences()[8].clone();
 /// let trimmed_seq = trim_by_sequence(&ref_seq, msa.sequences())?;
 /// assert_eq!("TK----QT---TW-EK--PA--", trimmed_seq[0].to_string(0));
@@ -437,7 +449,13 @@ pub fn remove_gaps_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) 
 /// # Ok(())
 /// # }
 /// ```
-pub fn trim_by_sequence(reference: &Sequence, sequences: &Vec<Sequence>) -> Result<Vec<Sequence>, SequenceError> {
+pub fn trim_by_sequence<'a>(reference: &Sequence, sequences: impl IntoIterator<Item = &'a Sequence>) -> Result<Vec<Sequence>, SequenceError> {
+
+    let seq_refs: Vec<&Sequence> = sequences.into_iter().collect();
+    return trim_by_sequence_(reference, &seq_refs);
+}
+
+fn trim_by_sequence_(reference: &Sequence, sequences: &Vec<&Sequence>) -> Result<Vec<Sequence>, SequenceError> {
 
     // --- count how many gaps to trim on each end
     let from = reference.seq().iter()
