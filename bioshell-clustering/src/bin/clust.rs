@@ -2,8 +2,10 @@ use std::env;
 use clap::{Parser};
 use log::{info};
 use std::time::Instant;
+use data_matrix::DataMatrixBuilder;
 use bioshell_clustering::errors::ClusteringError;
-use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers, DistanceMatrix};
+use bioshell_clustering::errors::ClusteringError::InvalidDataFormat;
+use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers, DistanceMatrix, DataMatrixDistance};
 use bioshell_clustering::hierarchical::strategies::{average_link, centroid_link, complete_link, median_link, single_link, wards_method};
 use bioshell_core::io::{out_writer};
 
@@ -39,6 +41,12 @@ struct Args {
     /// writes clusters created by stopping the clustering at a given distance cutoff
     #[clap(short='c', long)]
     cutoff: Option<f32>,
+    /// value used when no distance is available in the input file
+    #[clap(long, default_value_t = 100.0)]
+    default_distance: f64,
+    /// treat the distance matrix as symmetric: for every i,j,value create also j,i,value element
+    #[clap(long, action)]
+    symmetric: bool,
     // /// writes the clustering tree in the Newick format
     // #[clap(long)]
     // newick: Option<String>,
@@ -84,7 +92,12 @@ pub fn main() -> Result<(), ClusteringError> {
     let args = Args::parse();
 
     // ---------- read the matrix of sequence identity values from a TSV file ----------
-    let distance_matrix = DistanceMatrix::from_tsv(&args.infile)?;
+    let dm = DataMatrixBuilder::new()
+        .default_value(args.default_distance)
+        .symmetric(args.symmetric)
+        .from_file(&args.infile).map_err(|e| InvalidDataFormat { reason: e.to_string(), data: args.infile.to_string() })?;
+
+    let distance_matrix = DataMatrixDistance::from_datamatrix(dm);
     let n_data = distance_matrix.n_elements();
 
     // ---------- detect outlier sequences; do not cluster -----------
@@ -115,7 +128,7 @@ pub fn main() -> Result<(), ClusteringError> {
     if let Some(cutoff) = args.cutoff {
         let mut clusters = retrieve_clusters(&mut clustering, cutoff);
         clusters.sort_by(|a, b| a.value.cluster_size.cmp(&b.value.cluster_size));
-        info!("{} clusters rertrieved for seq_id {:?}", clusters.len(), cutoff);
+        info!("{} clusters retrieved for seq_id {:?}", clusters.len(), cutoff);
         for (i, cluster) in clusters.iter().enumerate() {
             let mut out_file = out_writer(&format!("cluster_{}-{}.dat", i, cluster.value.cluster_size), false);
             let medoid_idx = medoid_by_min_max(cluster, &distance_fn);

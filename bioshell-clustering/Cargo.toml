@@ -22,6 +22,10 @@ nalgebra = "0.31.1"
 clap = { version = "3.1.18", features = ["derive"] }
 num-traits = "0.2"      # for Float trait
 
+# --- used by hierarchical clustering to store distances
+#data-matrix = { version = "0.2.0" }
+data-matrix = { path = "../../datamatrix" }
+
 bioshell-statistics = { path = "../bioshell-statistics" }
 bioshell-core = { path = "../bioshell-core" }
 bioshell-datastructures = { path = "../bioshell-datastructures" }
