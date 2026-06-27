@@ -135,7 +135,7 @@ pub fn main() -> Result<(), ClusteringError> {
     if let Some(cutoff) = args.cutoff {
         let mut clusters = retrieve_clusters(&mut clustering, cutoff);
         clusters.sort_by(|a, b| a.value.cluster_size.cmp(&b.value.cluster_size));
-        info!("{} clusters retrieved for seq_id {:?}", clusters.len(), cutoff);
+        info!("{} clusters retrieved for distance {:?}", clusters.len(), cutoff);
         if args.clusters_list {
             let id_width = n_data.to_string().len();
             let mut out_file = out_writer("cluster_list.dat", false);

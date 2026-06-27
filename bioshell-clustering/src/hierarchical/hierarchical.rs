@@ -105,6 +105,10 @@ pub fn medoid_by_min_max<F: Fn(usize, usize) -> f32>(cluster: &ClusteringTreeNod
 
     let members: Vec<usize> = retrieve_data_id(cluster);
 
+    if members.len() == 1 {
+        info!("single element selected as medoid");
+        return members[0];
+    }
     let mut best_distance = f32::MAX;
     let mut best_index = 0;
     for i in 0..members.len() {
@@ -121,7 +125,7 @@ pub fn medoid_by_min_max<F: Fn(usize, usize) -> f32>(cluster: &ClusteringTreeNod
         }
     }
 
-    info!("medoid selected by min-max rule, it's maximum distance is {}", best_distance);
+    info!("medoid selected by min-max rule for cluster of size {}, it's maximum distance is {}", members.len(), best_distance);
     return members[best_index];
 }
 
