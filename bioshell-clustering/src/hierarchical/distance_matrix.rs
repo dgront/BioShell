@@ -13,6 +13,7 @@ impl DataMatrixDistance {
     }
 
     pub fn distance(&self, i: usize, j: usize) -> f32 {
+        if i == j { return 0.0; }
         self.datamatrix.get(i, j).unwrap_or(0.0) as f32
     }
 

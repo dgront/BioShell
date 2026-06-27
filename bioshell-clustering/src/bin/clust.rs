@@ -1,11 +1,12 @@
 use std::env;
+use std::io::Write;
 use clap::{Parser};
 use log::{info};
 use std::time::Instant;
 use data_matrix::DataMatrixBuilder;
 use bioshell_clustering::errors::ClusteringError;
 use bioshell_clustering::errors::ClusteringError::InvalidDataFormat;
-use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers, DistanceMatrix, DataMatrixDistance};
+use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers, DataMatrixDistance};
 use bioshell_clustering::hierarchical::strategies::{average_link, centroid_link, complete_link, median_link, single_link, wards_method};
 use bioshell_core::io::{out_writer};
 
@@ -47,6 +48,12 @@ struct Args {
     /// treat the distance matrix as symmetric: for every i,j,value create also j,i,value element
     #[clap(long, action)]
     symmetric: bool,
+    /// write a separate file for each cluster; each output file lists the elements of the cluster, its size, and the medoid element [default]
+    #[clap(long, action)]
+    clusters_separately: bool,
+    /// list all clusters in a single file
+    #[clap(long, action)]
+    clusters_list: bool,
     // /// writes the clustering tree in the Newick format
     // #[clap(long)]
     // newick: Option<String>,
@@ -129,17 +136,36 @@ pub fn main() -> Result<(), ClusteringError> {
         let mut clusters = retrieve_clusters(&mut clustering, cutoff);
         clusters.sort_by(|a, b| a.value.cluster_size.cmp(&b.value.cluster_size));
         info!("{} clusters retrieved for seq_id {:?}", clusters.len(), cutoff);
-        for (i, cluster) in clusters.iter().enumerate() {
-            let mut out_file = out_writer(&format!("cluster_{}-{}.dat", i, cluster.value.cluster_size), false);
-            let medoid_idx = medoid_by_min_max(cluster, &distance_fn);
-            writeln!(out_file, "# size: {}", cluster.value.cluster_size)?;
-            writeln!(out_file, "# medoid: {}", distance_matrix.element_id(medoid_idx))?;
-            writeln!(out_file, "# distance: {}", cluster.value.merging_distance)?;
-            let leaf_ids: Vec<usize> = retrieve_data_id(&cluster);
-            for id in &leaf_ids {
-                writeln!(out_file, "{}", distance_matrix.element_id(*id))?;
+        if args.clusters_list {
+            let id_width = n_data.to_string().len();
+            let mut out_file = out_writer("cluster_list.dat", false);
+
+            for (i, cluster) in clusters.iter().enumerate() {
+                let medoid_idx = medoid_by_min_max(cluster, &distance_fn);
+                let mut leaf_ids: Vec<usize> = retrieve_data_id(&cluster);
+                // --- sort the cluster members by their distance to the medoid
+                leaf_ids.sort_by(|&i, &j| {
+                    distance_fn(medoid_idx, i)
+                        .total_cmp(&distance_fn(medoid_idx, j))
+                });
+                for (j, id) in leaf_ids.iter().enumerate() {
+                    writeln!(out_file, "{i:>id_width$} {j:>id_width$} {:8.3} {}", distance_fn(medoid_idx, *id), distance_matrix.element_id(*id))?;
+                }
+                out_file.flush().unwrap();
             }
-            out_file.flush().unwrap();
+        } else {
+            for (i, cluster) in clusters.iter().enumerate() {
+                let mut out_file = out_writer(&format!("cluster_{}-{}.dat", i, cluster.value.cluster_size), false);
+                let medoid_idx = medoid_by_min_max(cluster, &distance_fn);
+                writeln!(out_file, "# size: {}", cluster.value.cluster_size)?;
+                writeln!(out_file, "# medoid: {}", distance_matrix.element_id(medoid_idx))?;
+                writeln!(out_file, "# distance: {}", cluster.value.merging_distance)?;
+                let leaf_ids: Vec<usize> = retrieve_data_id(&cluster);
+                for id in &leaf_ids {
+                    writeln!(out_file, "{}", distance_matrix.element_id(*id))?;
+                }
+                out_file.flush().unwrap();
+            }
         }
     }
 
