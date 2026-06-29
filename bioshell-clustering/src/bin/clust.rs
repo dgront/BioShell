@@ -117,7 +117,7 @@ pub fn main() -> Result<(), ClusteringError> {
         return Ok(());
     }
 
-    // ---------- cluster the sequences using the sequence identity matrix as distances ----------
+    // ---------- cluster the elements using the distance matrix ----------
     let start = Instant::now();
     let distance_fn = |i: usize, j: usize| distance_matrix.distance(i, j);
     let strategy = args.clustering_strategy();
@@ -129,7 +129,7 @@ pub fn main() -> Result<(), ClusteringError> {
         ClusteringStrategy::CentroidLink => hierarchical_clustering(n_data, &distance_fn, &centroid_link),
         ClusteringStrategy::WardsMethod => hierarchical_clustering(n_data, &distance_fn, &wards_method),
     };
-    info!("{} sequences clustered in {:?}", n_data, start.elapsed());
+    info!("{} elements clustered in {:?}", n_data, start.elapsed());
 
     // ---------- retrieve actual clusters ----------
     if let Some(cutoff) = args.cutoff {
@@ -149,7 +149,7 @@ pub fn main() -> Result<(), ClusteringError> {
                         .total_cmp(&distance_fn(medoid_idx, j))
                 });
                 for (j, id) in leaf_ids.iter().enumerate() {
-                    writeln!(out_file, "{i:>id_width$} {j:>id_width$} {:8.3} {}", distance_fn(medoid_idx, *id), distance_matrix.element_id(*id))?;
+                    writeln!(out_file, "{i:>id_width$} {j:>id_width$} {:8.3} {} {}", distance_fn(medoid_idx, *id), id, distance_matrix.element_id(*id))?;
                 }
                 out_file.flush().unwrap();
             }
