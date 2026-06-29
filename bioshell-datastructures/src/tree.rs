@@ -3,7 +3,7 @@
 //! BinaryTreeNode struct holds a value with the generic type T.
 //! Option enum is used to represent its left and right child, which indeed are both optional.
 //!
-//! The following example builds a tree like this:
+//! The following example builds a tree like drawn below:
 //! ```text
 //!             1
 //!          /    \
@@ -20,13 +20,15 @@
 //!             .set_left(BinaryTreeNode::new(4))
 //!             .set_right(BinaryTreeNode::new(5))
 //!     ).set_right(BinaryTreeNode::new(3));
+//!
+//! // --- Now check the tree structure
 //! assert!(root.left().is_some());
 //! assert!(root.left().unwrap().value == 2);
 //! let right = root.right().unwrap();
 //! assert!(right.left().is_none());
 //! assert!(right.right().is_none());
 //!
-//! // traverse the tree in-order to count its nodes
+//! // --- traverse the tree in-order to count its nodes
 //! let mut node_cnt = 0;
 //! depth_first_inorder(&root, &mut |_n| {node_cnt += 1});
 //! assert_eq!(node_cnt, 5);
@@ -116,9 +118,18 @@ impl<T> BinaryTreeNode<T> {
     }
 }
 
-/// Count all nodes of a given sub-tree, including the root node
+/// Count all nodes of a given sub-tree, including the root node.
 ///
-/// # Examples
+/// # Example
+///
+/// The three below was 5 nodes, while its subtree rooted at (2) has 3 nodes (including itself)
+/// ```text
+///             1
+///          /    \
+///         2      3
+///        / \
+///       4   5
+/// ```
 /// ```
 /// use std::iter::zip;
 /// use bioshell_datastructures::{BinaryTreeNode, collect_values, count_nodes};
@@ -128,12 +139,13 @@ impl<T> BinaryTreeNode<T> {
 ///             .set_right(BinaryTreeNode::new(5))
 ///     ).set_right(BinaryTreeNode::new(3));
 /// assert_eq!(count_nodes(&root), 5);
+/// assert_eq!(count_nodes(&root.left.unwrap()), 3);
 /// ```
 pub fn count_nodes<T>(tree_node: &BinaryTreeNode<T>) -> usize {
 
     let mut ret: usize = 0;
 
-    fn count_values_rec<'a, T>(tree_node: &'a BinaryTreeNode<T>, count: &mut usize) {
+    fn count_values_rec<T>(tree_node: &BinaryTreeNode<T>, count: &mut usize) {
         if let Some(left) = &tree_node.left { count_values_rec(left, count);}
         *count += 1;
         if let Some(right) = &tree_node.right { count_values_rec(right, count);}
@@ -144,9 +156,22 @@ pub fn count_nodes<T>(tree_node: &BinaryTreeNode<T>) -> usize {
     return ret;
 }
 
-/// Collect all data values stored in a sub-tree rooted in a given node
+/// Collect all the data values stored in a sub-tree rooted in a given node.
 ///
-/// # Examples
+/// This includes also data from all the internal nodes between the root and the leaves.
+/// The tree is traversed in the depth-first order. To collect leaf elements only, use [`collect_leaf_values()`].
+///
+/// # Example
+///
+/// The three below has 5 nodes, so [`collect_values()`] returns 5 elements in the following order:
+/// `[4, 5, 2, 1, 3]`
+/// ```text
+///             1
+///          /    \
+///         2      3
+///        / \
+///       4   5
+/// ```
 /// ```
 /// use std::iter::zip;
 /// use bioshell_datastructures::{BinaryTreeNode, collect_values};
@@ -175,10 +200,23 @@ pub fn collect_values<T>(tree_node: &BinaryTreeNode<T>) -> Vec<&T> {
     return ret;
 }
 
-/// Collect data values stored in leaves of a sub-tree rooted in a given node
+/// Collect data values stored in leaves of a sub-tree rooted in a given node.
 ///
-/// # Examples
+/// Unlike [`collect_values()`], this function returns only the values stored in the leaves of the tree, i.e. nodes that have no children.
+///
+/// # Example
+/// ```text
+///             1
+///          /    \
+///         2      3
+///        / \
+///       4   5
 /// ```
+
+///
+/// The three below has 3 leaf nodes, so [`collect_leaf_values()`] returns 3 elements in the following order:
+/// `[4, 5, 3]`
+/// ```rust
 /// use std::iter::zip;
 /// use bioshell_datastructures::{BinaryTreeNode, collect_leaf_values};
 /// let root = BinaryTreeNode::new(1)
@@ -186,7 +224,7 @@ pub fn collect_values<T>(tree_node: &BinaryTreeNode<T>) -> Vec<&T> {
 ///             .set_left(BinaryTreeNode::new(4))
 ///             .set_right(BinaryTreeNode::new(5))
 ///     ).set_right(BinaryTreeNode::new(3));
-/// let expected = vec![4, 5];
+/// let expected = vec![4, 5, 3];
 /// for (a, b) in zip(&expected, collect_leaf_values(&root)) {
 ///     assert_eq!(a, b);
 /// }

@@ -8,7 +8,7 @@
 
 use std::ops::Index;
 
-/// Calculate the squared euclidean distance between two points.
+/// Calculate the squared Euclidean distance between two points.
 ///
 /// The arguments of a generic type `T` must provide the indexing operator with returns `f64`
 /// values of a coordinate of that point.
