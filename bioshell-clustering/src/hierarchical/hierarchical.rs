@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use log::info;
-use bioshell_datastructures::{BinaryTreeNode, depth_first_preorder};
+use log::{debug, info, trace};
+use bioshell_datastructures::{BinaryTreeNode, collect_leaf_values, depth_first_preorder};
 use crate::hierarchical::{HierarchicalClusteringMatrix};
 
 /// Describes a single merging step in a hierarchical clustering process.
@@ -53,8 +53,9 @@ where
         let mut c = BinaryTreeNode::new(new_merge);
         c = c.set_left(ci).set_right(cj);
         c.id = current_cluster_id as u32;
-        info!("Merging clusters {} and {} into {} with distance {} at step {}",
+        debug!("Merging clusters {} and {} into {} with distance {} at step {}",
                 &id_i, &id_j, &c.id, merging_distance, current_cluster_id - n_data + 1);
+        trace!("cluster IDs: {:?}", retrieve_data_id(&c));
 
         // --- the newly created cluster is inserted into the hashmap at "i"
         clusters.insert(i, c);
@@ -106,7 +107,7 @@ pub fn medoid_by_min_max<F: Fn(usize, usize) -> f32>(cluster: &ClusteringTreeNod
     let members: Vec<usize> = retrieve_data_id(cluster);
 
     if members.len() == 1 {
-        info!("single element selected as medoid");
+        debug!("single element selected as medoid");
         return members[0];
     }
     let mut best_distance = f32::MAX;
@@ -125,7 +126,7 @@ pub fn medoid_by_min_max<F: Fn(usize, usize) -> f32>(cluster: &ClusteringTreeNod
         }
     }
 
-    info!("medoid selected by min-max rule for cluster of size {}, it's maximum distance is {}", members.len(), best_distance);
+    debug!("medoid selected by min-max rule for cluster of size {}, it's maximum distance is {}", members.len(), best_distance);
     return members[best_index];
 }
 
@@ -142,14 +143,14 @@ pub fn retrieve_clusters(clustering_root: &mut ClusteringTreeNode, max_distance:
         } else {
             if node.value.merging_distance > max_distance {
                 if let Some(left) = node.left() {
-                    if left.value.merging_distance < max_distance {
+                    if left.value.merging_distance <= max_distance {
                         clusters.push(left);
                     } else {
                         clusters_rec(left, max_distance, clusters);
                     }
                 }
                 if let Some(right) = node.right() {
-                    if right.value.merging_distance < max_distance {
+                    if right.value.merging_distance <= max_distance {
                         clusters.push(right);
                     } else {
                         clusters_rec(right, max_distance, clusters);
@@ -158,7 +159,7 @@ pub fn retrieve_clusters(clustering_root: &mut ClusteringTreeNode, max_distance:
             }
         }
     }
-    if clustering_root.value.merging_distance < max_distance {
+    if clustering_root.value.merging_distance <= max_distance {
         clusters.push(clustering_root);
     } else {
         clusters_rec(clustering_root, max_distance, &mut clusters);
