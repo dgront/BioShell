@@ -3,7 +3,7 @@ use std::io;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use clap::{Parser, ArgAction};
-use bioshell_io::{read_whitespace_delimited_values, read_delimited_values };
+use bioshell_core::io::{read_whitespace_delimited_values, read_delimited_values };
 use bioshell_statistics::{HistogramND, into_matrix2d};
 
 /// Command line utility for making 2D histograms

@@ -5,8 +5,8 @@
 ///
 /// # Example
 /// ```
-/// use bioshell_pdb::assert_vec3_eq;
-/// use bioshell_pdb::calc::Vec3;
+/// use bioshell_core::assert_vec3_eq;
+/// use bioshell_core::Vec3;
 /// let a = Vec3::new(1.0, 2.0, 3.0);
 /// let b = Vec3::new(1.1, 2.0, 3.0);
 /// assert_vec3_eq!(a, b, 0.11, "This should not fail");

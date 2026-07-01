@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests {
+    use data_matrix::DataMatrixBuilder;
     use bioshell_clustering::errors::ClusteringError;
-    use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, show_clustering_tree, DistanceMatrix, retrieve_clusters, medoid_by_min_max, retrieve_data_id};
+    use bioshell_clustering::errors::ClusteringError::InvalidDataFormat;
+    use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, show_clustering_tree, retrieve_clusters, medoid_by_min_max, retrieve_data_id, DataMatrixDistance};
     use bioshell_clustering::hierarchical::strategies::single_link;
 
     #[test]
@@ -42,7 +44,12 @@ mod tests {
 
     #[test]
     fn cluster_distance_matrix() -> Result<(), ClusteringError> {
-        let dmatrix = DistanceMatrix::from_tsv("tests/test_files/d5.tsv")?;
+        let dm = DataMatrixBuilder::new()
+            .symmetric(true)
+            .from_file("tests/test_files/d5.tsv").map_err(|e| InvalidDataFormat { reason: e.to_string(),  data: "tests/test_files/d5.tsv".to_string()})?;
+
+        let dmatrix = DataMatrixDistance::from_datamatrix(dm);
+
         let distance_fn = |i: usize, j: usize| dmatrix.distance(i, j);
         let mut clustering = hierarchical_clustering(dmatrix.n_elements(), distance_fn, &single_link);
         let mut clusters = retrieve_clusters(&mut clustering, 0.11);

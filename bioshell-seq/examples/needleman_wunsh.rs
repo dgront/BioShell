@@ -4,7 +4,7 @@ use clap::{Parser};
 use log::{info};
 use log::warn;
 use bioshell_seq::sequence::{load_sequences};
-use bioshell_seq::alignment::{PrintAsPairwise, SimilarityReport, align_all_pairs, MultiReporter, IdentityMatrixReporter};
+use bioshell_seq::alignment::{PrintAsPairwise, SimilarityReport, align_all_pairs, MultiReporter, IdentityMatrixReporter, ReportWithSequenceIdentity};
 use bioshell_seq::scoring::{SubstitutionMatrixList};
 use bioshell_seq::SequenceError;
 
@@ -37,20 +37,38 @@ struct Args {
     /// length of a sequence name to print; longer names will be trimmed that size
     #[clap(long, short='w', default_value = "20")]
     name_width: usize,
+
+    /// report only the alignments with sequence identity above the given threshold; this option is ignored if --identity_matrix is set, as the matrix will be printed in full
+    #[clap(long)]
+    report_more_similar: Option<f64>,
+    /// report only the alignments with sequence identity below the given threshold; this option is ignored if --identity_matrix is set, as the matrix will be printed in full
+    #[clap(long)]
+    report_less_similar: Option<f64>,
+
     /// when printing sequence identity results, attempts to print the sequence ID instead the sequence description
     #[clap(long, action)]
     infer_seq_id: bool,
+
+    /// be more verbose and log program actions on the screen
+    #[clap(short, long, short='v')]
+    verbose: bool
 }
 
 
 pub fn main() -> Result<(), SequenceError> {
 
+    let args = Args::parse();
     unsafe {
         if env::var("RUST_LOG").is_err() { env::set_var("RUST_LOG", "info") }
+        if args.verbose { env::set_var("RUST_LOG", "debug"); }
     }
-
     env_logger::init();
-    let args = Args::parse();
+
+    let build_time = env!("BUILD_TIME");
+    let git_commit_md5 = env!("GIT_COMMIT_MD5");
+
+    info!("Build time: {}", build_time);
+    info!("Git commit MD5 sum: {}", git_commit_md5);
 
     let if_seq_ids = args.infer_seq_id;
     let name_width = args.name_width;
@@ -61,6 +79,19 @@ pub fn main() -> Result<(), SequenceError> {
         multireports.add_reporter(Box::new(IdentityMatrixReporter::new(name_width, if_seq_ids, "stdout")));
     }
     if multireports.count_reporters() == 0 {  multireports.add_reporter(Box::new(SimilarityReport::new(name_width, if_seq_ids))); }
+
+    if !args.identity_matrix {
+        let mut min_threshold = if args.report_more_similar.is_some() { args.report_more_similar.unwrap() } else { -0.01 };
+        let mut max_threshold = if args.report_less_similar.is_some() { args.report_less_similar.unwrap() } else { 100.1 };
+        if min_threshold > max_threshold {
+            (min_threshold, max_threshold) = (max_threshold, min_threshold);
+        }
+        if min_threshold > -0.01 || max_threshold < 100.1 {
+            let mut m  = MultiReporter::new();
+            m.add_reporter(Box::new(ReportWithSequenceIdentity::new(min_threshold, max_threshold, multireports)));
+            multireports = m;
+        }
+    }
 
     let queries = load_sequences(&args.query, "query")?;
     if queries.len() == 0 {

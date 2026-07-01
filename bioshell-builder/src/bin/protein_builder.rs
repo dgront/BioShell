@@ -2,7 +2,7 @@ use std::env;
 use clap::{Parser};
 use bioshell_builder::{BuilderError, InternalCoordinatesDatabase, KinematicAtomTree};
 use bioshell_cif::read_cif_buffer;
-use bioshell_io::open_file;
+use bioshell_core::io::open_file;
 use bioshell_pdb::{PdbAtom};
 use bioshell_seq::sequence::{load_sequences};
 use bioshell_seq::SequenceError;

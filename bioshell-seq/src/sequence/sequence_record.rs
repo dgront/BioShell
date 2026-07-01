@@ -16,7 +16,7 @@ use crate::sequence::Sequence;
 ///
 /// # Example
 /// ```
-/// use bioshell_io::open_file;
+/// use bioshell_core::io::open_file;
 /// use bioshell_seq::sequence::SwissProtIterator;
 /// use std::io::{BufRead, BufReader, Error};
 /// # fn main() -> Result<(), Error> {
@@ -89,7 +89,7 @@ impl SequenceRecord {
     ///
     /// # Examples
     /// ```
-    /// use bioshell_io::open_file;
+    /// use bioshell_core::io::open_file;
     /// use bioshell_seq::sequence::SwissProtIterator;
     /// use std::io::{BufRead, BufReader, Error};
     /// # fn main() -> Result<(), Error> {
@@ -117,7 +117,7 @@ impl SequenceRecord {
 ///
 /// # Example
 /// ```
-/// use bioshell_io::open_file;
+/// use bioshell_core::io::open_file;
 /// use bioshell_seq::sequence::SwissProtIterator;
 /// use std::io::{BufRead, BufReader, Error};
 /// # fn main() -> Result<(), Error> {
@@ -352,7 +352,7 @@ enum DESectionType {
 ///
 /// # Example
 /// ```
-/// use bioshell_io::open_file;
+/// use bioshell_core::io::open_file;
 /// use bioshell_seq::sequence::SwissProtFolderIterator;
 /// use std::io::{Error};
 /// # fn main() -> Result<(), Error> {
@@ -408,7 +408,7 @@ impl Iterator for SwissProtFolderIterator {
 ///
 /// # Example
 /// ```
-/// use bioshell_io::open_file;
+/// use bioshell_core::io::open_file;
 /// use bioshell_seq::sequence::NCBIIterator;
 /// use std::io::{BufRead, BufReader, Error};
 /// # fn main() -> Result<(), Error> {

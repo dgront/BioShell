@@ -22,21 +22,25 @@ pub enum SubstitutionMatrixList {
     PAM30,
 }
 
-
 const N_COLUMNS: usize = 21;
 
 /// Holds an amino acid substitution matrix (aka similarity matrix)
 ///
 /// Such a matrix can be loaded from an external file in the NCBI format. See the [crate::scoring] documentation for an example.
 pub struct SubstitutionMatrix {
-    pub(crate) score: [[i32; N_COLUMNS]; N_COLUMNS],
+    pub(crate) score: [i32; N_COLUMNS * N_COLUMNS],
     pub(crate) aa_indexes:[u8; 255],
     pub(crate) aa_codes:[u8; 21]
 }
 
 impl SubstitutionMatrix {
     pub(crate) fn new() -> SubstitutionMatrix {
-        SubstitutionMatrix{ score: [[0; N_COLUMNS]; N_COLUMNS], aa_indexes: [0; 255], aa_codes: ['*' as u8; 21] }
+        SubstitutionMatrix{ score: [0; N_COLUMNS * N_COLUMNS], aa_indexes: [0; 255], aa_codes: ['*' as u8; 21] }
+    }
+
+    #[inline(always)]
+    fn flat_index(row: usize, col: usize) -> usize {
+        row * N_COLUMNS + col
     }
 
     /// Loads a [SubstitutionMatrix] that has been defined within the BioShell package
@@ -75,7 +79,7 @@ impl SubstitutionMatrix {
     ///
     /// Amino acid indexes may be obtained by a [aa_index()](SubstitutionMatrix::aa_index()) method call
     pub fn score_by_index(&self, aa_index_i: u8, aa_index_j: u8) -> i32 {
-        self.score[aa_index_i as usize][aa_index_j as usize]
+        self.score[Self::flat_index(aa_index_i as usize, aa_index_j as usize)]
     }
 
     #[inline(always)]
@@ -106,24 +110,26 @@ impl SubstitutionMatrix {
             m.aa_indexes[char_i as usize] = i as u8;
             m.aa_codes[i] = char_i;
             for j in 1..21 {
-                m.score[i][j - 1] = match values[j].parse::<i32>() {
+                let val = match values[j].parse::<i32>() {
                     Ok(val) => { val }
                     Err(_) => { return Err(CantParseNCBIEntry{ line: line.clone(), value: values[j].to_string() }) }
                 };
-                m.score[j - 1][i] = m.score[i][j - 1]
+                m.score[Self::flat_index(i, j - 1)] = val;
+                m.score[Self::flat_index(j - 1, i)] = val;
             }
             // n_values - 2 is the index of 'X' column
-            m.score[i][20] = match values[n_values - 2].parse::<i32>() {
+            let val_x = match values[n_values - 2].parse::<i32>() {
                 Ok(val) => { val }
                 Err(_) => { return Err(CantParseNCBIEntry{ line: line.clone(), value: values[n_values - 2].to_string() }) }
             };
-            m.score[20][i] = m.score[i][20];
+            m.score[Self::flat_index(i, 20)] = val_x;
+            m.score[Self::flat_index(20, i)] = val_x;
             i += 1;
             if i==20 { break }
         }
         m.aa_indexes['X' as usize] = 20u8;
         m.aa_codes[20] = 'X' as u8;
-        m.score[20][20] = -1;
+        m.score[Self::flat_index(20, 20)] = -1;
 
         return Ok(m);
     }

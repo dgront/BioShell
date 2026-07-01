@@ -11,4 +11,6 @@ mod stockholm_msa;
 pub use stockholm_msa::*;
 
 mod msa_calculations;
+mod clustalw_io;
+
 pub use msa_calculations::*;

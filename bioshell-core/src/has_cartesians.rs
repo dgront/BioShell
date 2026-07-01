@@ -1,4 +1,4 @@
-use crate::calc::Vec3;
+use crate::Vec3;
 
 /// A trait for objects that provide access to 3D Cartesian coordinates as a `Vec3`.
 ///

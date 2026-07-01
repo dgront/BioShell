@@ -7,7 +7,7 @@ use reqwest::blocking::get;
 use bioshell_cif::{read_cif_buffer, CifData, CifTable};
 use crate::{Deposit, Entity, ExperimentalMethod, PdbAtom, PDBError, SecondaryStructureTypes, Structure, UnitCell};
 use bioshell_cif::CifError::{ExtraDataBlock};
-use bioshell_io::open_file;
+use bioshell_core::io::open_file;
 use crate::pdb_sheet::PdbSheet;
 use crate::pdb_helix::PdbHelix;
 use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};

@@ -5,7 +5,6 @@ mod tests {
     use rand::SeedableRng;
     use rand_distr::Normal;
     use bioshell_statistics::{HistogramND, into_matrix2d};
-    use super::*;
 
     #[test]
     fn test_insert() {
@@ -108,7 +107,7 @@ mod tests {
 
         let mut hist2d = HistogramND::by_bin_widths([1.0, 1.0]);
         let mut v = [0.0, 0.0];
-        for i in 0..5 {
+        for _i in 0..5 {
             v[0] = normal_v.sample(&mut rng);
             v[1] = normal_v.sample(&mut rng);
             hist2d.insert(&v);

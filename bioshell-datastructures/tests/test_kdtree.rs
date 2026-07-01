@@ -8,7 +8,7 @@ mod test_kdtree {
     use rand::rngs::SmallRng;
     use rand::SeedableRng;
     use rand::Rng;
-    use bioshell_pdb::calc::Vec3;
+    use bioshell_core::Vec3;
 
     #[test]
     fn test_kd_tree() {

@@ -6,13 +6,13 @@ use std::ops::Range;
 use itertools::{Itertools};
 use bioshell_seq::chemical::{ResidueType, ResidueTypeManager, ResidueTypeProperties, KNOWN_RESIDUE_TYPES};
 use bioshell_seq::sequence::Sequence;
+use bioshell_core::Vec3;
 
 use crate::pdb_atom::{PdbAtom, same_residue_atoms};
 use crate::pdb_atom_filters::{SameResidue, PdbAtomPredicate, PdbAtomPredicate2, ByResidueRange};
 use crate::pdb_parsing_error::PDBError;
 use crate::pdb_parsing_error::PDBError::{NoSuchAtom, NoSuchResidue};
 use crate::{ResidueId, SecondaryStructureTypes};
-use crate::calc::Vec3;
 use crate::PDBError::WrongAtomsNumberInModel;
 use crate::secondary_structure::SecondaryStructure;
 
@@ -254,6 +254,26 @@ impl Structure {
     /// Counts models i.e. distinct conformations of this [`Structure`](Structure)
     pub fn count_models(&self) -> usize { self.model_coordinates.len() }
 
+    /// Sets the coordinates of this [`Structure`](Structure) to those of the i-th model.
+    ///
+    /// Each model is a vector of coordinates for all atoms in this [`Structure`](Structure).
+    /// The number of atoms in every model must be the same.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use bioshell_pdb::{Deposit, PDBError};
+    /// # fn main() -> Result<(), PDBError> {
+    ///     let deposit = Deposit::from_file("tests/test_files/2jqb.cif")?;
+    ///     let mut strctr = deposit.structure()?;
+    ///     assert_eq!(strctr.count_models(), 20);
+    ///     for imodel in 0..strctr.count_models() {
+    ///         strctr.set_model(imodel)?;
+    ///         assert_eq!(strctr.count_chains(), 1);
+    ///         assert_eq!(strctr.count_atoms(), 255);
+    ///     }
+    ///#      Ok(())
+    ///#  }
+    /// ```
     pub fn set_model(&mut self, i_model: usize) -> Result<(), PDBError> {
         if self.model_coordinates[i_model].len() != self.atoms.len() {
             return Err(WrongAtomsNumberInModel { model_index: i_model });
@@ -492,6 +512,8 @@ impl Structure {
     /// Returns the chemical type of residue as a [`ResidueType`] object.
     ///
     /// Results in an [`PDBError`] if the type of the residue hasn't been registered in the [`ResidueTypeManager`].
+    /// If that residue type hasn't been registered, it's still possible to get the name of `res_id`
+    /// by calling [`residue_name`].
     ///
     /// # Example
     /// ```
@@ -518,12 +540,42 @@ impl Structure {
         }
     }
 
+    /// Provide the name of a given residue.
+    ///
+    /// This method returns the name (typically the 3-letter code) of a residue identified by
+    /// the given `res_id` as defined in a PDB or mmCIF file this structure has been loaded from.
+    /// Unlike `[residue_type()]` the respective residue doesn't have to be registered within
+    /// the [`ResidueTypeManager`].
+    ///
+    /// ```
+    /// use bioshell_pdb::{PdbAtom, ResidueId, Structure};
+    /// use bioshell_pdb::PDBError;
+    /// # fn main() -> Result<(), PDBError> {
+    /// let pdb_lines = vec!["ATOM    515  CA  ALA A  68      25.790  28.757  29.513  1.00 16.12           C"];
+    /// let atoms: Vec<PdbAtom> = pdb_lines.iter().map(|l| PdbAtom::from_atom_line(l)).collect();
+    /// let strctr = Structure::from_atoms("1xyz", atoms);
+    /// let res_name = strctr.residue_name(&ResidueId::new("A", 68, ' '))?;
+    /// assert_eq!(res_name, "ALA");
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn residue_name(&self, res_id: &ResidueId) -> Result<&str, PDBError> {
+
+        if let Some(pos) = self.residue_ids.iter().position(|x| x == res_id) {
+            return Ok(&self.atoms[pos].res_name);
+        } else {
+            return  Err(NoSuchResidue{res_id: res_id.clone()})
+        }
+    }
+
     /// Returns the secondary structure a given residue.
     ///
     /// This method returns [`SecondaryStructureTypes`](SecondaryStructureTypes) enum variant
     /// to define the type of secondary structure element a given residue belongs to. The enum stores
     /// also the index of a secondary structure element in the structure.
     /// Use [`Structure::secondary()`] method to get the secondary structure of a full chain.
+    ///
+    /// Results in a [`PDBError`] if the residue cannot be located.
     ///
     /// # Examples
     /// Check the secondary structure of a residue in a PDB deposit:

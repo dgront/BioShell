@@ -1,6 +1,6 @@
 use nalgebra::{DMatrix, SVD, Vector3};
-use crate::calc::Vec3;
-use crate::HasCartesians;
+use bioshell_core::Vec3;
+use bioshell_core::HasCartesians;
 
 /// A 3D vector defined of a molecular fragment, e.g. a helical axis.
 ///

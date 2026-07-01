@@ -41,6 +41,6 @@ pub mod strategies;
 mod distance_matrix;
 
 pub use hierarchical::*;
-pub use distance_matrix::DistanceMatrix;
+pub use distance_matrix::DataMatrixDistance;
 use clustering_matrix::*;
 

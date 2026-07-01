@@ -4,12 +4,12 @@ use rand_distr::Normal;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::ops::{Index, IndexMut, AddAssign, SubAssign, MulAssign, DivAssign};
-use crate::calc::Matrix3x3;
-use crate::HasCartesians;
+use crate::matrix::Matrix3x3;
+use crate::has_cartesians::HasCartesians;
 
 /// 3D vector used to manipulate with atomic coordinates.
 ///
-/// [`Vec3`] struct contains 3D coordinates; it is used to store the location of a [`PdbAtom`](crate::PdbAtom).
+/// [`Vec3`] struct contains 3D coordinates; it is used to store the location of a [`PdbAtom`](bioshell_pdb::pdb_atom::PdbAtom).
 /// The [`Vec3`] struct implements also a few operators, such as `-=` or `+=` to facilitate vector arithmetics.
 ///
 /// The example below tests a few basic properties of a unit cube of with 1.0, which looks as below:
@@ -22,7 +22,7 @@ use crate::HasCartesians;
 /// a----b
 /// ```
 /// ```
-/// # use bioshell_pdb::calc::{dihedral_angle4, planar_angle3, Vec3};
+/// # use bioshell_core::{dihedral_angle4, planar_angle3, Vec3};
 /// let cube_points = [[0f64, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0],
 ///     [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0, 1.0]];
 /// let cube_vec: Vec<Vec3>  = cube_points.iter().map(|p| Vec3::new(p[0],p[1],p[2])).collect();
@@ -98,7 +98,7 @@ impl SubAssign<&Vec3> for Vec3 {
     /// # Example
     ///
     /// ```
-    /// use bioshell_pdb::calc::Vec3;
+    /// use bioshell_core::Vec3;
     /// let mut v0 = Vec3::new(1.0, 2.0, 3.0);
     /// let mut v1 = Vec3::new(1.0, 2.0, 3.0);
     /// v0 -= &v1;
@@ -115,7 +115,7 @@ impl AddAssign<&Vec3> for Vec3 {
     /// # Example
     ///
     /// ```
-    /// use bioshell_pdb::calc::Vec3;
+    /// use bioshell_core::Vec3;
     /// let mut v0 = Vec3::new(1.0, 2.0, 3.0);
     /// let mut v1 = Vec3::new(1.0, 1.0, 1.0);
     /// v0 += &v1;
@@ -130,7 +130,7 @@ impl MulAssign<f64> for Vec3 {
     /// Performs the `*=` operation that multiplies this vector by a constant.
     ///
     /// ```
-    /// use bioshell_pdb::calc::Vec3;
+    /// use bioshell_core::Vec3;
     /// let mut v0 = Vec3::new(1.0, 2.0, 3.0);
     /// v0 *= 2.0;
     /// assert!((v0.x - 2.0).abs() < 0.000001);
@@ -144,7 +144,7 @@ impl DivAssign<f64> for Vec3 {
     /// Performs the `/=` operation that divides this vector by a constant.
     ///
     /// ```
-    /// use bioshell_pdb::calc::Vec3;
+    /// use bioshell_core::Vec3;
     /// let mut v0 = Vec3::new(1.0, 2.0, 4.0);
     /// v0 /= 2.0;
     /// assert!((v0.z - 2.0).abs() < 0.000001);
@@ -157,7 +157,7 @@ impl DivAssign<f64> for Vec3 {
 impl fmt::Debug for Vec3 {
     /// Debug formatting of a Vec3 prints all its fields, e.g.
     /// ```rust
-    /// use bioshell_pdb::calc::Vec3;
+    /// use bioshell_core::Vec3;
     /// let mut v = Vec3::new(0.0, 1.0, 2.0);
     /// assert_eq!(format!("{:?}",v), "[0.000 1.000 2.000]");
     /// ```
@@ -169,7 +169,7 @@ impl fmt::Debug for Vec3 {
 impl Display for Vec3 {
     /// Prints X Y Z coordinates of a given 3D vector
     /// ```rust
-    /// use bioshell_pdb::calc::Vec3;
+    /// use bioshell_core::Vec3;
     /// let mut v = Vec3::new(0.0, 1.0, 2.0);
     /// assert_eq!(format!("{}",v), "0.000 1.000 2.000");
     /// ```
@@ -198,7 +198,7 @@ impl Vec3 {
     /// Creates a new vector from given coordinates.
     ///
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// # use bioshell_core::Vec3;
     /// let v1 = Vec3::new(1.0, 2.0, 2.0);
     /// # assert_eq!(v1.length(), 3.0);
     /// ```
@@ -209,7 +209,7 @@ impl Vec3 {
     /// Creates a new vector with all coordinates equal to a given value.
     ///
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// # use bioshell_core::Vec3;
     /// let zero_vec = Vec3::from_float(0.0);
     /// assert_eq!(zero_vec.length(), 0.0);
     /// ```
@@ -221,7 +221,7 @@ impl Vec3 {
     ///
     /// # Example
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// # use bioshell_core::Vec3;
     /// let zero_vec = Vec3::from_array(&[2.0, 1.0, 2.0]);
     /// assert_eq!(zero_vec.length(), 3.0);
     /// ```
@@ -235,7 +235,7 @@ impl Vec3 {
     ///
     /// # Example
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// # use bioshell_core::Vec3;
     /// let v = Vec3::from_pdb_line("ATOM    210  N   LYS A  13      10.887  -3.910   4.872  1.00  0.20           N");
     /// assert!((v.x-10.887).abs() < 0.00001);
     pub fn from_pdb_line(atom_line: &str) -> Vec3 {
@@ -248,7 +248,7 @@ impl Vec3 {
     /// Assigns new content to this vector.
     ///
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// # use bioshell_core::Vec3;
     /// let mut v1 = Vec3::new(1.0, 2.0, 2.0);
     /// v1.set(&Vec3::from_float(0.0));
     /// assert_eq!(v1.length(), 0.0);
@@ -270,8 +270,8 @@ impl Vec3 {
     /// Assigns new content to this vector.
     ///
     /// ```
-    /// use bioshell_pdb::assert_delta;
-    /// use bioshell_pdb::calc::Vec3;
+    /// use bioshell_core::assert_delta;
+    /// use bioshell_core::Vec3;
     /// let mut v1 = Vec3::new(1.0, 2.0, 2.0);
     /// v1.set3(3.0, 0.0, 1.0);
     /// assert_delta!(v1.length(), 3.162278, 0.0001);
@@ -286,7 +286,7 @@ impl Vec3 {
     ///
     /// Sum of a vector and its opposite should be zero:
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// # use bioshell_core::Vec3;
     /// let v1 = Vec3::new(1.0, 2.0, 3.0);
     /// let mut v2 = v1.clone();
     /// v2.opposite();
@@ -311,7 +311,7 @@ impl Vec3 {
 
     /// Returns a normalized copy of this vector
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// # use bioshell_core::Vec3;
     ///
     /// let v = Vec3::new(3.0, 2.0, 1.0).normalized();
     /// assert!((v.length() - 1.0).abs() < 0.00001);
@@ -328,7 +328,7 @@ impl Vec3 {
     /// Calculate a dot product of two vectors
     ///
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// # use bioshell_core::Vec3;
     /// // let's try two ortogonal vectors
     /// let v1 = Vec3::new(3.0, 2.0, 1.0);
     /// let v2 = Vec3::new(-2.0, 3.0, 0.0);
@@ -340,7 +340,7 @@ impl Vec3 {
 
     /// Calculate the squared distance to another point
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// # use bioshell_core::Vec3;
     /// // Classic Pytagoras triangle with edges 3, 4 and 5
     /// let d = Vec3::new(3.0, 0.0, 0.0).distance_square_to(&Vec3::new(0.0, 4.0, 0.0));
     /// assert!((d-25.0).abs() < 0.00001);
@@ -361,7 +361,7 @@ impl Vec3 {
 
     /// Calculate vector product
     /// ```
-    /// # use bioshell_pdb::calc::Vec3;
+    /// # use bioshell_core::Vec3;
     /// // multiply X and Y versors to get Z
     /// let x = Vec3::new(1.0, 0.0, 0.0);
     /// let y = Vec3::new(0.0, 1.0, 0.0);
@@ -404,7 +404,7 @@ pub fn planar_angle2(a: &Vec3, b: &Vec3) -> f64 {
 
 /// Calculates a planar angle of the a-b-c triangle in 3D
 /// ```
-/// use bioshell_pdb::calc::{planar_angle3, Vec3};
+/// use bioshell_core::{planar_angle3, Vec3};
 /// let va = Vec3::new(1.0, 0.0, 0.0);
 /// let vb = Vec3::from_float(0.0);
 /// let vc = Vec3::new(0.0, 1.0, 0.0);

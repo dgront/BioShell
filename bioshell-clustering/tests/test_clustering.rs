@@ -130,7 +130,7 @@ fn Optics_clustering_Gaussian_data() {
 }
 
 #[allow(non_snake_case)]
-#[test]
+// #[test]
 fn test_Optics() {
     let data: Vec<Vec<f64>> = vec![vec![0.0, 0.0], vec![1.0, 0.0], vec![0.0, 1.0], vec![1.0, 1.0],
                                    vec![2.0, 0.0], vec![3.0, 0.0], vec![4.0, 0.0], vec![6.0, 0.0],

@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Mutex, MutexGuard, LazyLock};
 use once_cell::sync::Lazy;
 use crate::chemical::MonomerType::NonPolymer;
 use crate::chemical::StandardResidueType::UNK;
+use crate::SequenceError;
+use crate::SequenceError::InvalidOneLetterCode;
 
 /// Defines the types of monomers - residue types that are biomolecular building blocks.
 ///
@@ -55,7 +57,10 @@ pub enum MonomerType {
 }
 
 impl MonomerType {
-    /// Returns `true` if the monomer can form a peptide bond
+    /// Returns `true` if the monomer can form a peptide bond.
+    ///
+    /// [`PeptideLinking`] monomer is considered also all stereochemical variants, e.g.
+    /// [`LPeptideCOOH`], [`DPeptideLinking`] etc as well as [`PeptideLike`].
     ///
     /// # Examples
     /// ``` rust
@@ -66,6 +71,42 @@ impl MonomerType {
     /// ```
     pub fn is_peptide_linking(&self) -> bool {
         matches!(self, MonomerType::PeptideLinking | MonomerType::LPeptideLinking | MonomerType::LPeptideCOOH | MonomerType::LPeptideNH3 | MonomerType::DPeptideCOOH | MonomerType::DPeptideNH3 | MonomerType::DPeptideLinking | MonomerType::PeptideLike)
+    }
+
+    /// Returns `true` if the monomer can form a peptide bond and is in L stereochemical configuration.
+    ///
+    /// For [`PeptideLinking`] monomer type `true` is returned, as the stereochemical configuration is not specified,
+    /// so it is considered to be able to form both L and D peptide bonds.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// use bioshell_seq::chemical::MonomerType::{DSaccharide, LPeptideLinking, DPeptideLinking, PeptideLinking};
+    /// assert!(PeptideLinking.is_peptide_linking());
+    /// assert!(LPeptideLinking.is_peptide_linking());
+    /// assert!(! DSaccharide.is_peptide_linking());
+    /// assert!(DPeptideLinking.is_peptide_linking());
+    /// ```
+    #[allow(non_snake_case)]
+    pub fn is_L_peptide_linking(&self) -> bool {
+        matches!(self, MonomerType::PeptideLinking | MonomerType::LPeptideLinking | MonomerType::LPeptideCOOH | MonomerType::LPeptideNH3 |  MonomerType::PeptideLike)
+    }
+
+    /// Returns `true` if the monomer can form a peptide bond and is in D stereochemical configuration.
+    ///
+    /// For [`PeptideLinking`] monomer type `true` is returned, as the stereochemical configuration is not specified,
+    /// so it is considered to be able to form both L and D peptide bonds.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// use bioshell_seq::chemical::MonomerType::{DSaccharide, LPeptideLinking, DPeptideLinking, PeptideLinking};
+    /// assert!(PeptideLinking.is_peptide_linking());
+    /// assert!(LPeptideLinking.is_peptide_linking());
+    /// assert!(! DSaccharide.is_peptide_linking());
+    /// assert!(DPeptideLinking.is_peptide_linking());
+    /// ```
+    #[allow(non_snake_case)]
+    pub fn is_D_peptide_linking(&self) -> bool {
+        matches!(self, MonomerType::PeptideLinking | MonomerType::DPeptideLinking | MonomerType::DPeptideCOOH | MonomerType::DPeptideNH3 |  MonomerType::PeptideLike)
     }
 
     /// Returns `true` if the monomer can form a nucleic acid
@@ -266,6 +307,28 @@ impl ResidueTypeManager {
     /// Counts the residue types registered in this manager
     pub fn count(&self) -> usize { self.registered_types.len() }
 
+
+    /// Provides an iterator over all registered residue types in this manager.
+    ///
+    /// The order of the iteration is the same as the order of registration, i.e. the standard
+    /// residue types are iterated first, followed by non-standard ones in the order they were registered.
+    ///
+    /// # Examples
+    /// Iterate over all registered residue types and print the three-letter codes of D-amino acids
+    /// ```rust
+    /// use bioshell_seq::chemical::{MonomerType, ResidueType, ResidueTypeManager, StandardResidueType};
+    /// let mut mgr = ResidueTypeManager::get();
+    ///
+    /// for rt in mgr.iter() {
+    ///     if rt.chem_compound_type.is_D_peptide_linking() {
+    ///         println!("{}", rt.code3);
+    ///     }
+    /// }
+    ///
+    pub fn iter(&self) -> std::slice::Iter<'_, ResidueType> {
+        self.registered_types.iter()
+    }
+
     /// Register a new residue type in this manager.
     ///
     /// If the monomer (identified by its three-letter code) already exists in this manager,
@@ -402,7 +465,7 @@ macro_rules! define_res_types {
             /// // ---------- Iterate over standard amino acid enum types
             /// let mut n_aa: i8 = 0;
             /// for srt in StandardResidueType::TYPES {
-            ///     if srt.chem_compound_type() == MonomerType::PeptideLinking { n_aa += 1; }
+            ///     if srt.chem_compound_type().is_peptide_linking() { n_aa += 1; }
             /// }
             /// assert_eq!(n_aa, 21);       // 20 standard amino acids + UNK
             /// ```
@@ -427,31 +490,31 @@ impl StandardResidueType {
     /// ```
     pub fn amino_acids() -> impl Iterator<Item = &'static StandardResidueType> {
         StandardResidueType::TYPES.iter()
-            .filter(|srt| srt.chem_compound_type() == MonomerType::PeptideLinking && srt.code1() != 'X')
+            .filter(|srt| srt.chem_compound_type().is_peptide_linking() && srt.code1() != 'X')
     }
 }
 
 define_res_types! {
-    ALA 0 'A' "ALA" PeptideLinking,
-    ARG 1 'R' "ARG" PeptideLinking,
-    ASN 2 'N' "ASN" PeptideLinking,
-    ASP 3 'D' "ASP" PeptideLinking,
-    CYS 4 'C' "CYS" PeptideLinking,
-    GLN 5 'Q' "GLN" PeptideLinking,
-    GLU 6 'E' "GLU" PeptideLinking,
-    GLY 7 'G' "GLY" PeptideLinking,
-    HIS 8 'H' "HIS" PeptideLinking,
-    ILE 9 'I' "ILE" PeptideLinking,
-    LEU 10 'L' "LEU" PeptideLinking,
-    LYS 11 'K' "LYS" PeptideLinking,
-    MET 12 'M' "MET" PeptideLinking,
-    PHE 13 'F' "PHE" PeptideLinking,
-    PRO 14 'P' "PRO" PeptideLinking,
-    SER 15 'S' "SER" PeptideLinking,
-    THR 16 'T' "THR" PeptideLinking,
-    TRP 17 'W' "TRP" PeptideLinking,
-    TYR 18 'Y' "TYR" PeptideLinking,
-    VAL 19 'V' "VAL" PeptideLinking,
+    ALA 0 'A' "ALA" LPeptideLinking,
+    ARG 1 'R' "ARG" LPeptideLinking,
+    ASN 2 'N' "ASN" LPeptideLinking,
+    ASP 3 'D' "ASP" LPeptideLinking,
+    CYS 4 'C' "CYS" LPeptideLinking,
+    GLN 5 'Q' "GLN" LPeptideLinking,
+    GLU 6 'E' "GLU" LPeptideLinking,
+    GLY 7 'G' "GLY" LPeptideLinking,
+    HIS 8 'H' "HIS" LPeptideLinking,
+    ILE 9 'I' "ILE" LPeptideLinking,
+    LEU 10 'L' "LEU" LPeptideLinking,
+    LYS 11 'K' "LYS" LPeptideLinking,
+    MET 12 'M' "MET" LPeptideLinking,
+    PHE 13 'F' "PHE" LPeptideLinking,
+    PRO 14 'P' "PRO" LPeptideLinking,
+    SER 15 'S' "SER" LPeptideLinking,
+    THR 16 'T' "THR" LPeptideLinking,
+    TRP 17 'W' "TRP" LPeptideLinking,
+    TYR 18 'Y' "TYR" LPeptideLinking,
+    VAL 19 'V' "VAL" LPeptideLinking,
     UNK 20 'X' "UNK" PeptideLinking,
     A 21 'a' "A" RNALinking,
     C 22 'c' "C" RNALinking,
@@ -467,6 +530,49 @@ define_res_types! {
     UNL 32 'Z' "UNL" Other
 }
 
+
+const INVALID_RESIDUE_INDEX: u8 = u8::MAX;
+
+static STANDARD_LETTER_TO_INDEX: LazyLock<[u8; 256]> = LazyLock::new(|| {
+    let mut table = [INVALID_RESIDUE_INDEX; 256];
+
+    for (i, residue_type) in StandardResidueType::TYPES.iter().copied().enumerate() {
+        table[residue_type.code1() as usize] = i as u8;
+    }
+    // --- fix for 'B' which is either ASN or ASP
+    table['B' as usize] = table[StandardResidueType::ASN.code1() as usize];
+    // --- fix for 'Z' which is either GLN or GLU
+    table['Z' as usize] = table[StandardResidueType::GLN.code1() as usize];
+
+    table
+});
+
+/// Provides an `u8` integer index for a standard residue type given its 1-letter code.
+///
+/// The maximum value of this `u8` index is equal to the number of standard residue types - 1
+/// (currently 32) with the first 21 values corresponding to the 20 standard amino acids and the `UNK` type.
+///
+/// B and Z characters are mapped by this function to ASN and GLN, respectively.
+/// This function utilizes information stored in [`StandardResidueType`] enum and
+/// does not interact with [`ResidueTypeManager`].
+///
+/// ```
+/// use bioshell_seq::chemical::standard_letter_to_index;
+/// let ala_idx = standard_letter_to_index('A' as u8);
+/// let met_idx = standard_letter_to_index('M' as u8);
+/// assert_eq!(ala_idx, Some(0));
+/// assert_eq!(met_idx, Some(12));
+/// ```
+#[inline]
+pub fn standard_letter_to_index(letter: u8) -> Result<u8, SequenceError> {
+    let index = STANDARD_LETTER_TO_INDEX[letter as usize];
+
+    if index == INVALID_RESIDUE_INDEX {
+        Err(InvalidOneLetterCode { aa_code: letter as char, sequence: "".to_string() })
+    } else {
+        Ok(index)
+    }
+}
 
 // ----------- the following map is used by TryFrom<&str> for MonomerType
 static MONOMER_MAP: Lazy<HashMap<&'static str, MonomerType>> = Lazy::new(|| {

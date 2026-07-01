@@ -1,4 +1,4 @@
-//! Defines sequence components such as proteins and nucleotide acids
+//! Defines sequence components such as proteins and nucleic acids
 //!
 //! # Residue typing
 //!
@@ -16,4 +16,5 @@
 mod residue_types;
 
 pub use residue_types::{ResidueType, ResidueTypeProperties, ResidueTypeManager,
-                        MonomerType, StandardResidueType, KNOWN_RESIDUE_TYPES};
+                        MonomerType, StandardResidueType, KNOWN_RESIDUE_TYPES,
+                        standard_letter_to_index};

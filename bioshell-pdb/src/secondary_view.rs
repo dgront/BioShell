@@ -1,12 +1,14 @@
-use crate::{HasCartesians, PDBError, ResidueId, SecondaryStructure, SecondaryStructureTypes, Structure};
-use crate::calc::{SubstructureAxis, Vec3};
+use bioshell_core::{Vec3, HasCartesians};
+use crate::{PDBError, ResidueId, SecondaryStructure, SecondaryStructureTypes, Structure};
+use crate::calc::{SubstructureAxis};
 
 /// Iterates over [`SecondarySegment`](SecondarySegment)s of a given chain.
 ///
 /// ```
 /// # use bioshell_pdb::{Deposit, PDBError, ResidueId, SecondaryStructureTypes};
 /// # fn main() -> Result<(), PDBError> {
-/// use bioshell_pdb::{assert_delta, SecondaryView};
+/// use bioshell_core::assert_delta;
+/// use bioshell_pdb::{SecondaryView};
 /// let deposit = Deposit::from_file("./tests/test_files/2gb1.cif")?;
 /// let mut strctr = deposit.structure().unwrap();
 ///

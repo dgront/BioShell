@@ -1,5 +1,5 @@
 use crate::{PdbAtom, ResidueId, Structure};
-use crate::calc::dihedral_angle4;
+use bioshell_core::{dihedral_angle4};
 use crate::pdb_parsing_error::PDBError;
 
 /// Calculate the squared distance between two atoms.
@@ -30,7 +30,8 @@ pub fn distance(ai: &PdbAtom, aj:&PdbAtom) -> f64 {
 ///
 /// # Example
 /// ```
-/// use bioshell_pdb::{assert_delta, PdbAtom, ResidueId, Structure};
+/// use bioshell_core::assert_delta;
+/// use bioshell_pdb::{PdbAtom, ResidueId, Structure};
 /// use bioshell_pdb::calc::phi;
 /// let pdb_lines = ["ATOM    339  C   ASP A  22     -10.767   3.482  -3.375  1.00  0.20           C",
 /// "ATOM    349  N   ALA A  23     -10.594   2.767  -4.455  1.00  0.19           N",
@@ -66,7 +67,8 @@ pub fn phi(strctr: &Structure, which_res: &ResidueId) -> Result<f64, PDBError> {
 ///
 /// # Example
 /// ```
-/// use bioshell_pdb::{assert_delta, PdbAtom, ResidueId, Structure};
+/// use bioshell_core::assert_delta;
+/// use bioshell_pdb::{PdbAtom, ResidueId, Structure};
 /// use bioshell_pdb::calc::psi;
 /// let pdb_lines = ["ATOM    349  N   ALA A  23     -10.594   2.767  -4.455  1.00  0.19           N",
 /// "ATOM    350  CA  ALA A  23      -9.237   2.226  -4.777  1.00  0.18           C",

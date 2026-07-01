@@ -5,7 +5,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum ClusteringError {
     #[error("Data parsing error: {reason}; incorrect data: {data}")]
-    /// A given file is neither a PDB nor an mmCIF file
+    /// Data parsing error
     InvalidDataFormat { reason: String, data: String },
 
     #[error("General I/O error occurred while reading an input file")]

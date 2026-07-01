@@ -5,7 +5,7 @@ use once_cell::sync::Lazy;
 use crate::PDBError;
 use crate::PDBError::CantParseEnumVariant;
 
-/// Represents the different types of entities in CIF data.
+/// Represents the different types of entities in mmCIF data.
 ///
 /// For more information, see the [definition of `_entity.type`](https://mmcif.wwpdb.org/dictionaries/mmcif_std.dic/Items/_entity.type.html).
 ///

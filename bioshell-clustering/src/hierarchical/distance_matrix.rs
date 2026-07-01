@@ -1,102 +1,94 @@
-use std::collections::HashMap;
 use std::fmt::Display;
-use bioshell_io::open_file;
 
-use csv::{ReaderBuilder, StringRecord};
-use crate::errors::ClusteringError;
-use crate::errors::ClusteringError::InvalidDataFormat;
+use data_matrix::DataMatrix;
 
-/// Matrix of distances between elements subjected for hierarchical clustering
-pub struct DistanceMatrix {
-    n_elements: usize,
-    description_to_index: HashMap<String, usize>,
-    similarity_matrix: Vec<Vec<f32>>,
+/// Matrix of distances between elements subjected for hierarchical clustering.
+///
+/// [`DataMatrixDistance`] is a wrapper around [`DataMatrix`] that
+/// provides distance values loaded from a ``.tsv`` file.
+///
+/// # Examples
+/// ```
+/// use data_matrix::DataMatrixBuilder;
+/// use bioshell_clustering::hierarchical::DataMatrixDistance;
+/// # use std::error::Error;
+/// # fn main() -> Result<(), Box<dyn Error>> {
+/// // --- load a DataMatrix from a TSV file ---
+/// let dm = DataMatrixBuilder::new()
+///     .symmetric(true)
+///     .default_value(0.0)
+///     .from_file("tests/test_files/cities.tsv").unwrap();
+///
+/// // --- create a DataMatrixDistance ---
+/// let dmatrix = DataMatrixDistance::from_datamatrix(dm);
+/// // --- check its properties ---
+/// assert_eq!(dmatrix.n_elements(), 15);
+/// assert_eq!(dmatrix.distance(0, 1), 1149.36);
+/// # assert_eq!(dmatrix.distance(1, 0), 1149.36);
+/// # assert_eq!(dmatrix.distance(0, 0), 0.0);
+/// assert_eq!(dmatrix.element_id(0), "Tokyo");
+/// # assert_eq!(dmatrix.element_id(1), "Seoul");
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`hierarchical_clustering()`](crate::hierarchical::hierarchical_clustering) function requires
+/// a callable to compute a distance between two elements. This can be created as:
+/// ```
+/// # use std::error::Error;
+/// # use data_matrix::DataMatrixBuilder;
+/// # fn main() -> Result<(), Box<dyn Error>> {
+/// # use bioshell_clustering::hierarchical::DataMatrixDistance;
+/// # let data = vec![0.0];
+/// # let matrix = DataMatrixBuilder::new().from_data(&data).unwrap();
+/// # let dmatrix = DataMatrixDistance::from_datamatrix(matrix);
+/// let distance_fn = |i: usize, j: usize| dmatrix.distance(i, j);
+/// # Ok(())
+/// # }
+/// ```
+pub struct DataMatrixDistance {
+    datamatrix: DataMatrix
 }
 
-fn csv_record_error(record: &StringRecord) -> ClusteringError {
-    InvalidDataFormat {
-        reason: "expected three entries per line: key_i, key_j, distance".to_string(),
-        data: record.iter().collect::<Vec<_>>().join(","),
+impl DataMatrixDistance {
+    /// Consumes a [`DataMatrix`] and creates a [`DataMatrixDistance`] wrapper around it.
+    /// ```
+    /// # use std::error::Error;
+    /// # use data_matrix::DataMatrixBuilder;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # use bioshell_clustering::hierarchical::DataMatrixDistance;
+    /// # let data = vec![0.0];
+    /// let matrix = DataMatrixBuilder::new().from_data(&data).unwrap();
+    /// let dmatrix = DataMatrixDistance::from_datamatrix(matrix);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn from_datamatrix(datamatrix: DataMatrix) -> Self {
+        Self { datamatrix }
     }
-}
 
-impl DistanceMatrix {
+    /// Returns the distance between two elements identified by their indices.
+    pub fn distance(&self, i: usize, j: usize) -> f32 {
+        if i == j { return 0.0; }
+        self.datamatrix.get(i, j).unwrap_or(0.0) as f32
+    }
 
-    pub fn distance(&self, i: usize, j:usize) -> f32 { self.similarity_matrix[i][j] }
+    /// Returns the number of elements in the distance matrix.
+    pub fn n_elements(&self) -> usize {
+        self.datamatrix.nrows()
+    }
 
-    pub fn n_elements(&self) -> usize { self.n_elements }
-
+    /// Returns the label of the element identified by its index.
     pub fn element_id(&self, i: usize) -> &str {
-        self.description_to_index.iter().find(|(_desc, index)| *index == &i).unwrap().0
-    }
-
-    /// Reads a CSV file and populates the description_to_index map and similarity_matrix.
-    pub fn from_tsv(file_path: &str) -> Result<Self, ClusteringError> {
-        let reader = open_file(file_path)?;
-
-        let mut description_to_index = HashMap::new();
-        let mut similarity_matrix = Vec::new();
-        let mut next_index = 0;
-
-        let mut reader = ReaderBuilder::new()
-            .has_headers(false) // Specify if the CSV has headers
-            .delimiter(b'\t')
-            .from_reader(reader);
-
-        // Iterate over the CSV records
-        for result in reader.records() {
-            let record = result?;
-            let mut tokens = record.iter();
-
-            let key1 = tokens.next().ok_or(csv_record_error(&record))?.to_string();
-            let key2 = tokens.next().ok_or(csv_record_error(&record))?.to_string();
-            let val = tokens.next().ok_or(csv_record_error(&record))?.to_string();
-
-            let sim_value: f32 = match val.parse::<f32>() {
-                Ok(val) => { val }
-                Err(_) => { return Err(InvalidDataFormat{ reason: "can't parse to float".to_string(), data: val }) }
-            };
-
-            // Get or insert index for key1
-            let index1 = *description_to_index.entry(key1.clone()).or_insert_with(|| {
-                let idx = next_index;
-                next_index += 1;
-                similarity_matrix.push(Vec::new()); // Add a new row for this key
-                for row in &mut similarity_matrix {
-                    row.resize(next_index, 0.0); // Resize all rows to match the new size
-                }
-                idx
-            });
-
-            // Get or insert index for key2
-            let index2 = *description_to_index.entry(key2.clone()).or_insert_with(|| {
-                let idx = next_index;
-                next_index += 1;
-                similarity_matrix.push(Vec::new()); // Add a new row for this key
-                for row in &mut similarity_matrix {
-                    row.resize(next_index, 0.0); // Resize all rows to match the new size
-                }
-                idx
-            });
-
-            // Update the similarity_matrix with the sim_value
-            similarity_matrix[index1][index2] = sim_value;
-            similarity_matrix[index2][index1] = sim_value; // Assume symmetric similarity
-        }
-
-        Ok(Self {
-            n_elements: next_index,
-            description_to_index,
-            similarity_matrix,
-        })
+        &self.datamatrix.row_labels()[i]
     }
 }
 
-impl Display for DistanceMatrix {
+impl Display for DataMatrixDistance {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for i in 0..self.n_elements {
-            for j in 0..self.n_elements {
-                write!(f, "{} {} {:.2}\t", i, j, self.similarity_matrix[i][j])?;
+        for i in 0..self.n_elements() {
+            for j in 0..self.n_elements() {
+                write!(f, "{} {} {:.2}\t", i, j, self.distance(i, j))?;
             }
             writeln!(f)?;
         }

@@ -53,7 +53,7 @@
 //! ```
 
 use bioshell_seq::chemical::ResidueTypeManager;
-use crate::{PdbAtom, ResidueId};
+use crate::{is_hydrogen, PdbAtom, ResidueId};
 
 /// A handy filter to process atoms of a [`Structure`](crate::Structure) with iterators.
 ///
@@ -324,7 +324,7 @@ impl PdbAtomPredicate for ByResidueRange {
     }
 }
 
-/// Returns `true` if an atom belongs to a backbone.
+/// Returns `true` if an atom belongs to a protein backbone.
 ///
 /// The predicate returns true for protein backbone heavy atoms: `N`, `CA`, `C`, `O`, `OXT` as well as
 /// for hydrogens: `H`, `HA`, `HA2` and `HA3`.
@@ -359,7 +359,8 @@ macro_rules! format_name {
 
 impl PdbAtomPredicate for IsBackbone {
     fn check(&self, a: &PdbAtom) -> bool {
-
+        let is_aa = KeepProtein;
+        if ! is_aa.check(a) { return false }
         let name: &str = format_name!(&a.name);
         name == " CA " || name == " C  " || name == " N  " || name == " O  " || name == " H  " || name == " OXT"
             || name == " HA " || name == " HA2" || name == " HA3"
@@ -446,10 +447,7 @@ pub struct IsHydrogen;
 
 impl PdbAtomPredicate for IsHydrogen {
     fn check(&self, a: &PdbAtom) -> bool {
-        if let Some(element) = &a.element {
-            if element == "H" { return true }
-        }
-        return false;
+        return is_hydrogen(a);
     }
 }
 

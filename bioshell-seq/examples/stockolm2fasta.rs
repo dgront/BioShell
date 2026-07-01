@@ -3,7 +3,7 @@ use clap::{Parser};
 use log::{info};
 
 use bioshell_seq::sequence::{Sequence, remove_gaps_by_sequence};
-use bioshell_io::open_file;
+use bioshell_core::io::open_file;
 use bioshell_seq::msa::StockholmMSA;
 use bioshell_seq::SequenceError;
 

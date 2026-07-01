@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests {
     use std::string::String;
-    use bioshell_pdb::{assert_delta, HasCartesians, PdbAtom, SecondaryStructureTypes};
+    use bioshell_core::HasCartesians;
+    use bioshell_pdb::{PdbAtom, SecondaryStructureTypes};
+    use bioshell_core::assert_delta;
 
     #[test]
     fn test_new() {

@@ -1,5 +1,5 @@
 use std::iter::zip;
-use bioshell_datastructures::{BinaryTreeNode, collect_values, depth_first_inorder};
+use bioshell_datastructures::{BinaryTreeNode, collect_leaf_values, collect_values, depth_first_inorder};
 
 #[test]
 fn create_tree() {
@@ -26,6 +26,19 @@ fn check_collected_values() {
         ).set_right(BinaryTreeNode::new(3));
     let expected = vec![4, 2, 5, 1, 3];
     for (a, b) in zip(&expected, collect_values(&Box::new(root))) {
+        assert_eq!(a, b);
+    }
+}
+
+#[test]
+fn check_collected_leaf_values() {
+    let root = BinaryTreeNode::new(1)
+        .set_left(BinaryTreeNode::new(2)
+            .set_left(BinaryTreeNode::new(4))
+            .set_right(BinaryTreeNode::new(5))
+        ).set_right(BinaryTreeNode::new(3));
+    let expected = vec![4, 5, 3];
+    for (a, b) in zip(&expected, collect_leaf_values(&Box::new(root))) {
         assert_eq!(a, b);
     }
 }

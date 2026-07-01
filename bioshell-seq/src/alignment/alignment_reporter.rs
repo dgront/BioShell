@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use bioshell_io::out_writer;
+use bioshell_core::io::out_writer;
 use crate::alignment::AlignmentStatistics;
-use crate::sequence::{parse_sequence_id, len_ungapped, len_ungapped_str, Sequence};
+use crate::sequence::{len_ungapped, len_ungapped_str, Sequence, count_identical, sequence_name};
 
 /// Reports a sequence alignment calculated by a sequence alignment algorithm.
 pub trait AlignmentReporter {
@@ -12,6 +12,7 @@ pub trait AlignmentReporter {
 pub struct MultiReporter {
     reporters: Vec<Box<dyn AlignmentReporter>>,
 }
+
 impl MultiReporter {
     pub fn new() -> Self { MultiReporter { reporters: vec![] } }
     pub fn add_reporter(&mut self, reporter: Box<dyn AlignmentReporter>) {
@@ -24,6 +25,40 @@ impl AlignmentReporter for MultiReporter {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
         for reporter in &mut self.reporters {
             reporter.report(aligned_query, aligned_template);
+        }
+    }
+}
+
+pub struct ReportWithSequenceIdentity<R: AlignmentReporter> {
+    pub min_seq_id: f64,
+    pub max_seq_id: f64,
+    reporter: R,
+}
+
+impl<R: AlignmentReporter> ReportWithSequenceIdentity<R> {
+    pub fn new(min_seq_id: f64, max_seq_id: f64, reporter: R) -> Self {
+        Self { min_seq_id, max_seq_id, reporter}
+    }
+
+    pub fn higher_than(min_seq_id: f64, reporter: R) -> Self {
+        Self { min_seq_id, max_seq_id: 100.0, reporter }
+    }
+
+    pub fn lower_than(max_seq_id: f64, reporter: R) -> Self {
+        Self { min_seq_id: 0.0, max_seq_id, reporter }
+    }
+}
+
+impl<R: AlignmentReporter> AlignmentReporter for ReportWithSequenceIdentity<R> {
+    fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
+        let n_identical = count_identical(aligned_query, aligned_template).unwrap();
+        let query_length = len_ungapped(aligned_query);
+        let template_length = len_ungapped(aligned_template);
+
+        let seq_id = n_identical as f64 / query_length.min(template_length) as f64 * 100.0;
+
+        if seq_id >= self.min_seq_id && seq_id <= self.max_seq_id {
+            self.reporter.report(aligned_query, aligned_template);
         }
     }
 }
@@ -86,10 +121,22 @@ impl AlignmentReporter for PrintAsPairwise {
             q_from += q_add - 1;
             t_from += t_add - 1;
         }
+        println!("\n");
     }
 }
 
-/// Prints staple statistics for a given alignment
+/// Prints staple statistics for a given alignment.
+///
+/// The reporter prints the following statistics for each sequence alignment:
+///    - query header (truncated to `header_width` characters)
+///    - template header (truncated to `header_width` characters)
+///    - sequence identity: the number of identical residues in the alignment divided by the (ungapped) length of the shorter sequence, multiplied by 100
+///    - number of identical residues in the alignment
+///    - length of the query sequence without gaps
+///    - length of the template sequence without gaps
+///
+/// All statistics are printed in a tabular format, with one line per alignment. The sequence headers are truncated to `header_width` characters to ensure a neat output.
+/// If the `infer_seq_id` flag is set to `true`, the reporter attempts to infer a sequence identifier for both the query and the template description.
 pub struct SimilarityReport {
     pub header_width: usize,
     pub infer_seq_id: bool
@@ -102,16 +149,15 @@ impl SimilarityReport {
 }
 
 impl Default for SimilarityReport {
+    /// Creates a new [`SimilarityReport`] instance with default settings: `header_width` of 32 characters and `infer_seq_id` set to `false`.
     fn default() -> Self { SimilarityReport::new(32, false) }
 }
 
 impl AlignmentReporter for SimilarityReport {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
         let mut stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, self.header_width);
-        if self.infer_seq_id {
-            stats.query_header = parse_sequence_id(&stats.query_header).to_string();
-            stats.template_header = parse_sequence_id(&stats.template_header).to_string();
-        }
+        stats.query_header = sequence_name(aligned_query.description(), self.header_width, self.infer_seq_id);
+        stats.template_header = sequence_name(aligned_template.description(), self.header_width, self.infer_seq_id);
         println!("{}", stats);
     }
 }
@@ -186,10 +232,7 @@ impl Drop for IdentityMatrixReporter {
 
         // Write the header and corresponding matrix values (second block)
         for (key, &idx) in &sorted_keys {
-            // if requested, extract the seq-id from a sequence header
-            let mut truncated_key = if self.infer_seq_id { parse_sequence_id(key).to_string()} else { (*key).clone() };
-            // Write the truncated key (header_width characters)
-            truncated_key = truncated_key.split_whitespace().next().unwrap().chars().take(self.header_width).collect();
+            let truncated_key = sequence_name(key, self.header_width, self.infer_seq_id);
             write!(file, "{:<width$}", truncated_key, width = self.header_width).expect(&err_msg);
 
             // Write the values from identity_matrix[idx]
