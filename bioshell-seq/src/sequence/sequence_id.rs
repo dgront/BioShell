@@ -19,8 +19,8 @@ use bioshell_core::io::sanitize_filename;
 /// }
 /// ```
 ///
-/// The [`parse_sequence_id`]() function can be used to parse a sequence description string into a list of `SeqId` variants.
-/// For convenience,  [`parse_sequence_id`]() returns [`SeqIdList`].
+/// The [`parse_sequence_id()`](parse_sequence_id) function can be used to parse a sequence description string into a list of `SeqId` variants.
+/// For convenience,  [`parse_sequence_id()`](parse_sequence_id) returns [`SeqIdList`].
 /// ```
 /// use bioshell_seq::sequence::{parse_sequence_id, SeqId};
 /// let ids = parse_sequence_id("sp|A0A009IHW8|ABTIR_ACIB9 2' cyclic ADP-D-ribose synthase [taxid=1310613]");
@@ -45,6 +45,10 @@ pub enum SeqId {
     UniRef(String),
 
     /// RefSeq protein or transcript accession from NCBI (e.g., "XP_123456.1", "NM_001256789.2").
+    ///
+    /// The ID string starts with a two-letter prefix indicating the type of sequence, e.g., "XP" for predicted protein
+    /// The list of valid prefixes can be found in the
+    /// [NCBI RefSeq accession prefix table](https://www.ncbi.nlm.nih.gov/books/NBK21091/table/ch18.T.refseq_accession_numbers_and_mole/).
     RefSeq(String),
 
     /// GenBank or EMBL accession (e.g., "AB123456.1", "U49845").
@@ -156,7 +160,7 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         (r"(?:pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?::[_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
         (r"\b([A-NR-Z][0-9][A-Z0-9]{3}[0-9](?:-\d+)?)\b", |s| SeqId::SwissProt(s)),
         (r"\b(UniRef\d{2,3}_[A-Z0-9]+)\b", |s| SeqId::UniRef(s)),
-        (r"\b((?:NP|XP|WP|YP|XM|XR|NM|NR|NC)_[0-9]+\.\d+)\b", |s| SeqId::RefSeq(s)),
+        (r"\b((?:AC|NC|NG|NT|NW|NZ|NM|NR|XM|XR|AP|NP|YP|XP|WP)_[0-9]+\.\d+)\b", |s| SeqId::RefSeq(s)),
         (r"\bGI:(\d+)\b", |s| SeqId::NCBIGI(s)),
         (r"\bgi\|(\d+)\b", |s| SeqId::NCBIGI(s)),
         (r"\b(ENS[TPGR][0-9]{11})\b", |s| SeqId::Ensembl(s)),
