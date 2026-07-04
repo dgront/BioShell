@@ -39,10 +39,6 @@ impl PySequence {
     #[getter]
     pub fn id(&self) -> String { self.inner.id() }
 
-    /// The species name, extracted from the description
-    #[getter]
-    pub fn species(&self) -> Option<&str> { self.inner.species() }
-
     /// The sequence itself as a string of characters.
     #[getter]
     pub fn seq(&self) -> String {

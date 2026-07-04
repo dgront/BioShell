@@ -5,9 +5,7 @@ use pyo3::exceptions::PyStopIteration;
 use bioshell_seq::sequence::FastaIterator;
 use crate::seq::PySequence;
 
-/// An iterator over sequences in a FASTA file.
-///
-/// Yields `Sequence` objects one by one.
+#[doc = include_str!("../../docs/seq/fasta_iterator.rst")]
 #[pyclass(name = "FastaIterator")]
 pub struct PyFastaIterator {
     inner: FastaIterator<BufReader<File>>,
@@ -21,7 +19,7 @@ impl PyFastaIterator {
     ///     path (str): Path to the FASTA file.
     ///
     /// Returns:
-    ///     PyFastaIterator: An iterator over sequences.
+    ///     FastaIterator: An iterator over sequences.
     #[new]
     pub fn new(path: &str) -> PyResult<Self> {
         let file = File::open(path).map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to open file: {}", e)))?;
@@ -37,9 +35,6 @@ impl PyFastaIterator {
     }
 
     /// Return the next sequence from the FASTA file.
-    ///
-    /// Raises:
-    ///     StopIteration: When there are no more sequences.
     fn __next__(&mut self) -> PyResult<PySequence> {
         match self.inner.next() {
             Some(result) => result

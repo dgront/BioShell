@@ -16,6 +16,7 @@ lll
 source/
 venv/
 .venv/
+_build/
 .pybioshell/
 pybioshell/.venv/
 taxdump.tar.gz
