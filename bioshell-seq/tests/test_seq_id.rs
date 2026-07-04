@@ -3,6 +3,21 @@ mod tests {
     use bioshell_seq::sequence::{parse_sequence_id, SeqId, SeqIdList};
 
     #[test]
+    fn test_seq_id_detection() {
+        let test_cases: Vec<(&str, SeqId)> = vec![
+            (" PZ062902.1 ", SeqId::GenBank("PZ062902.1".to_string())),
+            (" EU958043 ", SeqId::GenBank("EU958043".to_string())),
+        ];
+
+        for (input, expected) in test_cases {
+            let parsed = parse_sequence_id(input);
+
+            assert_eq!(parsed[0], expected);
+            assert_eq!(parsed[0].to_string(), expected.to_string());
+        }
+    }
+
+    #[test]
     fn test_seqidlist() {
         let ids = vec![
             SeqId::SwissProt("Q9NQX5".to_string()),
@@ -18,16 +33,19 @@ mod tests {
 
     #[test]
     fn test_seqid() {
-        let ids = parse_sequence_id(">UniRef100_P81928 RPII140-upstream gene protein n=2 Tax=Drosophila melanogaster TaxID=7227 ");
+        let mut ids = parse_sequence_id(">UniRef100_P81928 RPII140-upstream gene protein n=2 Tax=Drosophila melanogaster TaxID=7227 ");
+        ids.sort();
         assert_eq!(ids.len(), 2);
         assert_eq!(ids[0], SeqId::UniRef("UniRef100_P81928".to_string()));
 
-        let ids = parse_sequence_id(">sp.Q6GZX3.002L_FRG3G Uncharacterized protein OS=Frog virus 3 (isolate Goorha) OX=654924");
+        let mut ids = parse_sequence_id(">sp.Q6GZX3.002L_FRG3G Uncharacterized protein OS=Frog virus 3 (isolate Goorha) OX=654924");
+        ids.sort();
         assert_eq!(ids.len(), 2);
         assert_eq!(ids[0], SeqId::UniProtID("002L_FRG3G".to_string()));
         assert_eq!(ids[1], SeqId::TaxId("654924".to_string()));
 
-        let ids = parse_sequence_id(">gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
+        let mut ids = parse_sequence_id(">gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
+        ids.sort();
         assert_eq!(ids.len(), 2);
         assert_eq!(ids[0], SeqId::GenBank("AAD44166.1".to_string()));
         assert_eq!(ids[1], SeqId::NCBIGI("5524211".to_string()));
@@ -60,6 +78,9 @@ mod tests {
             ("|2gb1:ABC ", true, "2gb1:ABC"),
             ("|2gb1:ABC ", true, "2gb1:ABC"),
             ("|2gb1:ABC|", true, "2gb1:ABC"),
+            ("pdb_00002gb1|", true, "pdb_00002gb1"),
+            ("pdb_00002gb1 ", true, "pdb_00002gb1"),
+            ("pdb_00002gb1:ABC|", true, "pdb_00002gb1:ABC"),
             ("|2gb1ABC_", false, ""),
             ("ABC2gb1 ", false, ""),
             (" 3defX ", false, ""),
@@ -69,7 +90,7 @@ mod tests {
             let ids = parse_sequence_id(text);
             assert_eq!(ids.len(), 1);
             if *is_match {
-                assert!(matches!(&ids[0], SeqId::PDB(expected)), "failed on test case {}", &text);
+                assert!(matches!(&ids[0], SeqId::PDB(_expected)), "failed on test case {}", &text);
             } else {
                 assert!(matches!(ids[0], SeqId::Default(_)), "failed on test case {}", &text);
             }

@@ -32,7 +32,10 @@ use bioshell_core::io::sanitize_filename;
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SeqId {
-    /// PDB (Protein Data Bank) 4-character structure ID, optionally with chain (e.g., "1HHP", "1HHP:A").
+    /// PDB (Protein Data Bank) 4-character structure ID, optionally with chain (e.g., "1HHP", "1HHP:A", "pdb_00002gb1").
+    ///
+    /// This variant captures both the new 12-characters long identifiers
+    /// and the legacy type, which are 4-character alphanumeric codes. An optional chain identifier can be included after a colon.
     PDB(String),
 
     /// SwissProt or UniProtKB/TrEMBL accession number (e.g., "P12345", "Q9NQX5-2").
@@ -46,7 +49,7 @@ pub enum SeqId {
 
     /// RefSeq protein or transcript accession from NCBI (e.g., "XP_123456.1", "NM_001256789.2").
     ///
-    /// The ID string starts with a two-letter prefix indicating the type of sequence, e.g., "XP" for predicted protein
+    /// The RefSeq ID string starts with a two-letter prefix indicating the type of sequence, e.g., "XP" for predicted protein
     /// The list of valid prefixes can be found in the
     /// [NCBI RefSeq accession prefix table](https://www.ncbi.nlm.nih.gov/books/NBK21091/table/ch18.T.refseq_accession_numbers_and_mole/).
     RefSeq(String),
@@ -60,10 +63,12 @@ pub enum SeqId {
     /// TrEmbl section of UniProtKB (e.g., "tr|A0A009IHW8|").
     TrEmbl(String),
 
-    /// NCBI GI number ("gi|12345678" or "GI:12345678").
+    /// NCBI GI number, now obsolete ("gi|12345678" or "GI:12345678").
     NCBIGI(String),
 
     /// NCBI Taxonomy ID (e.g., "[taxid=9606]", "[taxid=10090]").
+    ///
+    /// This variant also captures the taxonomy annotation in the UniProt format, e.g. "OX=9606"
     TaxId(String),
 
     /// If nothing has been found, use the first word of the description
@@ -112,6 +117,7 @@ impl fmt::Display for SeqId {
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            SeqId::PDB(s) if s.starts_with("pdb_") => write!(f, "{}", s),
             SeqId::PDB(s) => write!(f, "pdb|{}", s),
             SeqId::SwissProt(s) => write!(f, "sp|{}", s),
             SeqId::UniProtID(s) => write!(f, "UniProtID|{}", s),
@@ -134,7 +140,8 @@ impl fmt::Display for SeqId {
 /// It returns all matches found, each represented as a [`SequenceID`] variant, stored in
 /// [`SeqIdList`]
 ///
-/// The identifiers are sorted by database priority:
+/// The returned identifiers are stored in the order as they appeared in the given description string.
+/// One can use [`sort()`](SeqIdList::sort) method to sort the entries by the database priority:
 /// PDB > SwissProt > UniProtID > UniRef > RefSeq > GenBank > Ensembl > NCBI GI > NCBI Taxonomy.
 ///
 /// # Examples
@@ -158,6 +165,7 @@ impl fmt::Display for SeqId {
 pub fn parse_sequence_id(description: &str) -> SeqIdList {
     let patterns: &[(&str, fn(String) -> SeqId)] = &[
         (r"(?:pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?::[_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
+        (r"\b(pdb_[A-Za-z0-9]{8})(?::[_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
         (r"\b([A-NR-Z][0-9][A-Z0-9]{3}[0-9](?:-\d+)?)\b", |s| SeqId::SwissProt(s)),
         (r"\b(UniRef\d{2,3}_[A-Z0-9]+)\b", |s| SeqId::UniRef(s)),
         (r"\b((?:AC|NC|NG|NT|NW|NZ|NM|NR|XM|XR|AP|NP|YP|XP|WP)_[0-9]+\.\d+)\b", |s| SeqId::RefSeq(s)),
@@ -169,6 +177,16 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         (r"(?i:\[?taxid=(\d+))", |s| SeqId::TaxId(s)),
         (r"OX=(\d+)", |s| SeqId::TaxId(s)),
         (r"(?:\b|\|)gb\|([A-Z]{1,3}[0-9]{4,8}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC / GenBank nucleotide: 1 letter + 5 digits
+        (r"\b([A-Z][0-9]{5}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC / GenBank nucleotide: 2 letters + 6 digits
+        (r"\b([A-Z]{2}[0-9]{6}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC / GenBank nucleotide: 2 letters + 8 digits
+        (r"\b([A-Z]{2}[0-9]{8}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC / GenBank protein: 3 letters + 5 digits
+        (r"\b([A-Z]{3}[0-9]{5}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC / GenBank protein: 3 letters + 7 digits
+        (r"\b([A-Z]{3}[0-9]{7}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
     ];
 
     let mut found = Vec::new();
@@ -193,8 +211,7 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         found.push(SeqId::Default(description.split_whitespace().next().unwrap_or("").to_string()));
     }
 
-    found.sort(); // Sorts by priority
-    // eprintln!("Found: {:?}", &found);
+    // found.sort(); // Sorts by priority
     SeqIdList::from(found)
 }
 
@@ -260,7 +277,9 @@ pub fn sequence_name(description: &str, n:usize, parse_ids: bool) -> String {
 pub struct SeqIdList(pub Vec<SeqId>);
 
 impl SeqIdList {
-    /// Sorts the identifiers in-place by database priority (PDB > SwissProt > ...).
+    /// Sorts the identifiers in-place by database priority.
+    ///
+    /// The pre-defined order is: PDB > SwissProt > UniProtID > UniRef > RefSeq > GenBank > Ensembl > TrEmbl > NCBI GI > NCBI Taxonomy.
     pub fn sort(&mut self) { self.0.sort(); }
 
     /// Returns a sanitized, filesystem-safe string suitable for use as a file name.
