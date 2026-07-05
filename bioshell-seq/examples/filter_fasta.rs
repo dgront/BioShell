@@ -116,7 +116,7 @@ pub fn main() -> Result<(), SequenceError> {
         let seq_iter = FastaIterator::new(reader);
         for seq_result in seq_iter {
             let sequence = seq_result?;
-            let id = String::from(sequence.id());
+            let id = String::from(sequence.first_id(true));
             query_fasta.push((sequence.to_string(out_width), id));
         }
     }
@@ -202,7 +202,8 @@ pub fn main() -> Result<(), SequenceError> {
 
         // ---------- keep only requested sequences
         if if_retrieve {
-            if !requested_ids.contains(&sequence.id()) { continue }
+            let id = sequence.first_id(true);
+            if !requested_ids.contains(&id) { continue }
         }
         // ---------- keep only sequences found in the input query fasta
         if if_fasta_retrieve {
@@ -212,7 +213,7 @@ pub fn main() -> Result<(), SequenceError> {
                 let it: Vec<_>  = sequence_as_str.match_indices(seq).collect();
                 if it.len() > 0 {
                     if_found = true;
-                    debug!("Found {} in {}",id, sequence.id());
+                    debug!("Found {} in {}",id, sequence.first_id(true));
                 }
                 for (from, hit) in it {
                     let perc = (hit.len() as f64) / (sequence.len() as f64) * 100.0;
@@ -223,7 +224,7 @@ pub fn main() -> Result<(), SequenceError> {
                     // println!("{:width$}", s, width = out_width);
                 }
             }
-            if !if_found { debug!("Nothing found for {}",sequence.id()); }
+            if !if_found { debug!("Nothing found for {}",sequence.first_id(true)); }
             if cnt_all % 100 == 0 { debug!("Processed {} sequences",cnt_all); }
             continue;   // --- don't go below, since the sequence is already printed; instead start with the next sequence
         }

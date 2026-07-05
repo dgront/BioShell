@@ -3,7 +3,7 @@ use std::io::{BufRead, BufReader};
 use std::hash::{Hash, Hasher};
 use crate::errors::SequenceError;
 use crate::msa::MSA;
-use crate::sequence::parse_sequence_id;
+use crate::sequence::{LabelStyle, sequence_label};
 use crate::SequenceError::NoInputSequences;
 
 #[derive(Default, Clone, Debug, PartialEq)]
@@ -104,14 +104,11 @@ impl Sequence {
         self.description[0..len].as_ref()
     }
 
-    /// Return a string containing all the IDs known for this sequence
+    /// Return the first identifier of a sequence, extracted from the description line.
     ///
-    /// According to the NCBI standard, the FASTA header line should provide the unique identifier.
-    /// The ID should be no longer than 25 characters and cannot contain any spaces; its fields should
-    /// be separated by vertical bar (`|`) characters.
-    ///
-    /// This method extracts all identifiers found in the description
-    /// of this sequence and concatenates them into a single string.
+    /// The [`parse_sequence_id()`](crate::sequence::parse_sequence_id) function is used to extract the identifiers from the description line.
+    /// When `if_sort` is false, the first identifier is returned as a string. Otherwise, the identifiers are sorted
+    /// according to the order defined by [`SeqIdList::sort()`](crate::sequence::SeqIdList::sort) method.
     ///
     /// # Example
     /// ```rust
@@ -120,10 +117,29 @@ impl Sequence {
     /// let header = String::from("gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]");
     /// let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
     /// let seq = Sequence::from_attrs(header, sequence.to_vec());
-    /// assert_eq!("gb|AAD44166.1", seq.id());
+    /// assert_eq!("gb|AAD44166.1", seq.first_id(true   ));
     /// ```
-    pub fn id(&self) -> String {
-        parse_sequence_id(&self.description)[0].to_string()
+    pub fn first_id(&self, if_sort: bool) -> String {
+        return sequence_label(&self.description,&LabelStyle::FirstId { sort: if_sort, n: 0 });
+    }
+
+    /// Return all identifiers of a sequence formatted into a single string.
+    ///
+    /// The [`parse_sequence_id()`](crate::sequence::parse_sequence_id) function is used to extract the identifiers from the description line.
+    /// When `if_sort` is true, the identifiers are sorted according to the order defined by [`SeqIdList::sort()`](crate::sequence::SeqIdList::sort) method.
+    /// Finally, the identifiers are joined into a single string, separated by the `|` character.
+    /// # Example
+    /// ```rust
+    /// use bioshell_seq::sequence::Sequence;
+    ///
+    /// let header = String::from("A sequence AAD44166.1| from [Elephas maximus maximus]");
+    /// let sequence = b"LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV";
+    /// let seq = Sequence::from_attrs(header, sequence.to_vec());
+    /// let expected_id = "gb|AAD44166.1 [organism=Elephas maximus maximus]";
+    /// assert_eq!(expected_id, seq.full_id(true));
+    /// ```
+    pub fn full_id(&self, if_sort: bool) -> String {
+        return sequence_label(&self.description,&LabelStyle::FullId { sort: if_sort, n: 0 });
     }
 
     /// Return the reference of the sequence itself
@@ -208,7 +224,7 @@ impl Hash for Sequence {
 /// > 1fca:A
 /// AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
 /// let seqs = FastaIterator::new(sequences.as_bytes());
-/// let seq_ids: Vec<String> = seqs.map(|r| r.map(|s| s.id().to_string())).collect::<Result<Vec<_>,_>>()?;
+/// let seq_ids: Vec<String> = seqs.map(|r| r.map(|s| s.first_id(true).to_string())).collect::<Result<Vec<_>,_>>()?;
 /// assert_eq!(seq_ids, vec!["1clf:A", "1dur:A", "1fca:A"]);
 /// # Ok(())
 /// # }

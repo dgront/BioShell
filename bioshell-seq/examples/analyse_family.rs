@@ -5,7 +5,7 @@ use clap::{Parser};
 #[allow(unused_imports)]
 use log::{info};
 
-use bioshell_seq::sequence::{Sequence, load_sequences};
+use bioshell_seq::sequence::{Sequence, load_sequences, LabelStyle};
 use bioshell_core::io::{out_writer};
 use bioshell_seq::alignment::{AlignmentReporter, AlignmentStatistics, align_all_pairs, PrintAsPairwise, SimilarityReport, MultiReporter};
 use bioshell_seq::scoring::{SubstitutionMatrixList};
@@ -58,7 +58,9 @@ impl SimilarityHistogramByQuery {
 
 impl AlignmentReporter for SimilarityHistogramByQuery {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
-        let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, 32);
+
+        let label_style = LabelStyle::FullId { sort: true, n: 32 };
+        let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, &label_style);
 
         if !self.similarities.contains_key(&stats.query_header) {
             self.similarities.insert(stats.query_header.clone(), Histogram::by_bin_width(self.histogram_bin_width));

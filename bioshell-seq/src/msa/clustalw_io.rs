@@ -34,9 +34,9 @@ impl MSA {
     /// let mut reader = BufReader::new(clustal_input.as_bytes());
     /// let msa = MSA::from_clustalw_reader(&mut reader)?;
     /// assert_eq!(msa.n_seq(), 2);
-    /// assert_eq!(msa.sequences()[0].id(), "seq1");
+    /// assert_eq!(msa.sequences()[0].first_id(true), "seq1");
     /// assert_eq!(msa.sequences()[0].seq(), b"A--TGCCAGGTA");
-    /// assert_eq!(msa.sequences()[1].id(), "seq2");
+    /// assert_eq!(msa.sequences()[1].first_id(true), "seq2");
     /// assert_eq!(msa.sequences()[1].seq(), b"AATTG-CAGG-A");
     ///
     /// # Ok(())

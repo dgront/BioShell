@@ -32,12 +32,12 @@ pub fn main() -> Result<(), SequenceError> {
     if let Some(seq_id) = args.if_remove {
         info!("removing gapped column according to {}",seq_id);
         let ref_seq: Option<&Sequence> = msa.by_id(&seq_id);
-        match ref_seq {
+        seq = match ref_seq {
             None => { panic!("Can't find the reference sequence: {} in the input MSA",seq_id); }
             Some(the_ref_seq) => {
-                remove_gaps_by_sequence(&the_ref_seq, &mut seq);
+                remove_gaps_by_sequence(&the_ref_seq, msa.sequences())?
             }
-        }
+        };
     }
     for s in &seq { println!("{}", s); }
     info!("{} sequences printed in FASTA format", &seq.len());

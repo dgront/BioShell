@@ -19,32 +19,45 @@ use bioshell_core::io::sanitize_filename;
 /// }
 /// ```
 ///
-/// The [`parse_sequence_id`]() function can be used to parse a sequence description string into a list of `SeqId` variants.
-/// For convenience,  [`parse_sequence_id`]() returns [`SeqIdList`].
+/// The [`parse_sequence_id()`](parse_sequence_id) function can be used to parse a sequence description string into a list of `SeqId` variants.
+/// For convenience,  [`parse_sequence_id()`](parse_sequence_id) returns [`SeqIdList`].
 /// ```
 /// use bioshell_seq::sequence::{parse_sequence_id, SeqId};
 /// let ids = parse_sequence_id("sp|A0A009IHW8|ABTIR_ACIB9 2' cyclic ADP-D-ribose synthase [taxid=1310613]");
 /// assert_eq!(ids.len(), 3);
-/// assert!(matches!(ids[0], SeqId::UniProtID(_)));
-/// assert!(matches!(ids[1], SeqId::TrEmbl(_)));
+/// assert!(matches!(ids[0], SeqId::SwissProt(_)));
+/// assert!(matches!(ids[1], SeqId::UniProtEntry(_)));
 /// assert!(matches!(ids[2], SeqId::TaxId(_)));
-/// assert_eq!(&ids.to_string(), "UniProtID|ABTIR_ACIB9|tr|A0A009IHW8|[taxid=1310613]");
+/// assert_eq!(&ids.to_string(), "sp|A0A009IHW8|ABTIR_ACIB9|taxid=1310613");
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SeqId {
-    /// PDB (Protein Data Bank) 4-character structure ID, optionally with chain (e.g., "1HHP", "1HHP:A").
+    /// PDB (Protein Data Bank) 4-character structure ID, optionally with chain (e.g., "1HHP", "1HHP:A", "pdb_00002gb1").
+    ///
+    /// This variant captures both the new 12-characters long identifiers
+    /// and the legacy type, which are 4-character alphanumeric codes. An optional chain identifier can be included after a colon.
     PDB(String),
 
-    /// SwissProt or UniProtKB/TrEMBL accession number (e.g., "P12345", "Q9NQX5-2").
+    /// Accession ID to SwissProt part of UniProtKB (e.g., "sp|P12345", "sp|Q9NQX5-2").
     SwissProt(String),
 
-    /// UniProt entry name (e.g., "P53_HUMAN", "RL21_YEAST").
-    UniProtID(String),
+    /// TrEmbl accession ID  of UniProtKB (e.g., "tr|A0A009IHW8|" or "tr|P12345").
+    TrEmbl(String),
+
+    /// UniProtKB accession ID when it's not specified either it's SwissProt or TrEMBL.
+    UniProtKB(String),
+
+    /// UniProtKB entry ID (e.g., "002L_FRG3G").
+    UniProtEntry(String),
 
     /// UniRef (UniProt Reference Clusters), e.g., "UniRef100_P12345".
     UniRef(String),
 
     /// RefSeq protein or transcript accession from NCBI (e.g., "XP_123456.1", "NM_001256789.2").
+    ///
+    /// The RefSeq ID string starts with a two-letter prefix indicating the type of sequence, e.g., "XP" for predicted protein
+    /// The list of valid prefixes can be found in the
+    /// [NCBI RefSeq accession prefix table](https://www.ncbi.nlm.nih.gov/books/NBK21091/table/ch18.T.refseq_accession_numbers_and_mole/).
     RefSeq(String),
 
     /// GenBank or EMBL accession (e.g., "AB123456.1", "U49845").
@@ -53,14 +66,19 @@ pub enum SeqId {
     /// Ensembl gene, transcript, or protein ID (e.g., "ENSG00000139618", "ENST00000331789").
     Ensembl(String),
 
-    /// TrEmbl section of UniProtKB (e.g., "tr|A0A009IHW8|").
-    TrEmbl(String),
-
-    /// NCBI GI number ("gi|12345678" or "GI:12345678").
+    /// NCBI GI number, now obsolete ("gi|12345678" or "GI:12345678").
     NCBIGI(String),
 
-    /// NCBI Taxonomy ID (e.g., "[taxid=9606]", "[taxid=10090]").
+    /// NCBI Taxonomy ID (e.g., "taxid=9606", "[taxid=9606]", "OX=9606").
+    ///
+    /// This variant also captures the taxonomy annotation in the UniProt format, e.g. "OX=9606"
     TaxId(String),
+
+    /// Organism scientific name (e.g., "Homo sapiens")
+    ///
+    /// This variant captures both the species annotation in the UniProt and NCBI formats,
+    /// e.g. "OS=9606" or "[Homo sapiens]"
+    Organism(String),
 
     /// If nothing has been found, use the first word of the description
     Default(String)
@@ -83,15 +101,17 @@ impl SeqId {
         match self {
             SeqId::PDB(_) => 0,
             SeqId::SwissProt(_) => 1,
-            SeqId::UniProtID(_) => 2,
-            SeqId::UniRef(_) => 3,
-            SeqId::RefSeq(_) => 4,
-            SeqId::GenBank(_) => 5,
-            SeqId::Ensembl(_) => 6,
-            SeqId::TrEmbl(_) => 7,
-            SeqId::NCBIGI(_) => 8,
+            SeqId::UniProtKB(_) => 2,
+            SeqId::TrEmbl(_) => 3,
+            SeqId::UniProtEntry(_) => 4,
+            SeqId::UniRef(_) => 5,
+            SeqId::RefSeq(_) => 6,
+            SeqId::GenBank(_) => 7,
+            SeqId::Ensembl(_) => 8,
+            SeqId::NCBIGI(_) => 9,
             SeqId::Default(_) => 10,
             SeqId::TaxId(_) => 11,
+            SeqId::Organism(_) => 12,
         }
     }
 }
@@ -104,21 +124,24 @@ impl fmt::Display for SeqId {
     /// use bioshell_seq::sequence::SeqId;
     /// let seq_id = SeqId::RefSeq("XP_001234567.1".to_string());
     /// let header = seq_id.to_string();
-    /// assert_eq!(header, "RefSeq|XP_001234567.1");
+    /// assert_eq!(header, "ref|XP_001234567.1");
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            SeqId::PDB(s) if s.starts_with("pdb_") => write!(f, "{}", s),
             SeqId::PDB(s) => write!(f, "pdb|{}", s),
             SeqId::SwissProt(s) => write!(f, "sp|{}", s),
-            SeqId::UniProtID(s) => write!(f, "UniProtID|{}", s),
-            SeqId::UniRef(s) => write!(f, "UniRef|{}", s),
-            SeqId::RefSeq(s) => write!(f, "RefSeq|{}", s),
+            SeqId::TrEmbl(s) => write!(f, "tr|{}", s),
+            SeqId::UniProtKB(s) => write!(f, "UniProt|{}", s),
+            SeqId::UniProtEntry(s) => write!(f, "{}", s),
+            SeqId::UniRef(s) => write!(f, "{}", s),
+            SeqId::RefSeq(s) => write!(f, "ref|{}", s),
             SeqId::GenBank(s) => write!(f, "gb|{}", s),
             SeqId::Ensembl(s) => write!(f, "Ensembl|{}", s),
             SeqId::NCBIGI(s) => write!(f, "gi|{}", s),
-            SeqId::TrEmbl(s) => write!(f, "tr|{}", s),
-            SeqId::TaxId(s) => write!(f, "[taxid={}]", s),
+            SeqId::TaxId(s) => write!(f, "taxid={}", s),
             SeqId::Default(s) => write!(f, "{}", s),
+            SeqId::Organism(s) => write!(f, "[organism={}]", s),
         }
     }
 }
@@ -130,7 +153,8 @@ impl fmt::Display for SeqId {
 /// It returns all matches found, each represented as a [`SequenceID`] variant, stored in
 /// [`SeqIdList`]
 ///
-/// The identifiers are sorted by database priority:
+/// The returned identifiers are stored in the order as they appeared in the given description string.
+/// One can use [`sort()`](SeqIdList::sort) method to sort the entries by the database priority:
 /// PDB > SwissProt > UniProtID > UniRef > RefSeq > GenBank > Ensembl > NCBI GI > NCBI Taxonomy.
 ///
 /// # Examples
@@ -140,31 +164,65 @@ impl fmt::Display for SeqId {
 ///
 /// let ids = parse_sequence_id("sp|A0A009IHW8|ABTIR_ACIB9 2' cyclic ADP-D-ribose synthase [taxid=1310613]");
 /// assert_eq!(ids.len(), 3);
-/// assert!(matches!(ids[0], SeqId::UniProtID(_)));
-/// assert!(matches!(ids[1], SeqId::TrEmbl(_)));
+/// assert!(matches!(ids[0], SeqId::SwissProt(_)));
+/// assert!(matches!(ids[1], SeqId::UniProtEntry(_)));
 /// assert!(matches!(ids[2], SeqId::TaxId(_)));
-/// assert_eq!(&ids.to_string(), "UniProtID|ABTIR_ACIB9|tr|A0A009IHW8|[taxid=1310613]");
+/// assert_eq!(&ids.to_string(), "sp|A0A009IHW8|ABTIR_ACIB9|taxid=1310613");
 /// let ids = parse_sequence_id(">ref|XP_001234567.1| hypothetical protein [Homo sapiens]");
-/// assert_eq!(ids.len(), 1);
+/// assert_eq!(ids.len(), 2);
 /// assert!(matches!(ids[0], SeqId::RefSeq(_)));
+/// assert!(matches!(ids[1], SeqId::Organism(_)));
 ///
 /// let ids = parse_sequence_id("NC_000913.3 Escherichia coli str. K-12 substr. MG1655, complete genome");
-/// assert_eq!(&ids.to_string(), "RefSeq|NC_000913.3");
+/// assert_eq!(&ids.to_string(), "ref|NC_000913.3");
 /// ```
 pub fn parse_sequence_id(description: &str) -> SeqIdList {
     let patterns: &[(&str, fn(String) -> SeqId)] = &[
         (r"(?:pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?::[_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
-        (r"\b([A-NR-Z][0-9][A-Z0-9]{3}[0-9](?:-\d+)?)\b", |s| SeqId::SwissProt(s)),
+        (r"\b(pdb_[A-Za-z0-9]{8})(?::[_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
+
+        // RefSeq must be checked early because it's similar to UniProt entry name
+        (r"\b((?:AC|NC|NG|NT|NW|NZ|NM|NR|XM|XR|AP|NP|YP|XP|WP)_[0-9]+\.\d+)\b", |s| SeqId::RefSeq(s)),
+
+        // SwissProt accession with explicit prefix, all variants
+        (r"(?:\b|\|\>)sp[|.]([A-Z0-9]{6}|[A-Z0-9]{10})(?:-\d+)?[|.]", |s| SeqId::SwissProt(s)),
+        // trEmbl accession with explicit prefix, all variants
+        (r"(?:\b|\|)tr[|.]([A-Z0-9]{6}|[A-Z0-9]{10})(?:-\d+)?[|.]", |s| SeqId::TrEmbl(s)),
+        // UniProt entry name, e.g., "002L_FRG3G"
+        (r"(?:\b|\|)([A-Z0-9]+_[A-Z0-9]+)\b", |s| SeqId::UniProtEntry(s)),
+
+        // UniProtKB accession, legacy 6-character form beginning with O/P/Q
+        (r"\b([OPQ][0-9][A-Z0-9]{3}[0-9](?:-\d+)?)\b", |s| SeqId::UniProtKB(s)),
+        // UniProtKB accession, legacy 6-character form beginning with other allowed letters
+        (r"\b([A-NR-Z][0-9][A-Z][A-Z0-9]{2}[0-9](?:-\d+)?)\b", |s| SeqId::UniProtKB(s)),
+        // UniProtKB accession, 10-character form
+        (r"\b([A-NR-Z][0-9][A-Z][A-Z0-9]{2}[0-9]{2}[A-Z0-9]{3}[0-9](?:-\d+)?)\b", |s| SeqId::UniProtKB(s)),
+
         (r"\b(UniRef\d{2,3}_[A-Z0-9]+)\b", |s| SeqId::UniRef(s)),
-        (r"\b((?:NP|XP|WP|YP|XM|XR|NM|NR|NC)_[0-9]+\.\d+)\b", |s| SeqId::RefSeq(s)),
+
         (r"\bGI:(\d+)\b", |s| SeqId::NCBIGI(s)),
         (r"\bgi\|(\d+)\b", |s| SeqId::NCBIGI(s)),
         (r"\b(ENS[TPGR][0-9]{11})\b", |s| SeqId::Ensembl(s)),
-        (r"\b([A-Z0-9]{3,6}_[A-Z0-9]{2,6})\b", |s| SeqId::UniProtID(s)),
-        (r"\b([A-NR-Z0-9]{10})\b", |s| SeqId::TrEmbl(s)),
+        // tax-id can be in various formats, e.g., [taxid=9606], taxid=9606, TaxID=9606, OX=9606
         (r"(?i:\[?taxid=(\d+))", |s| SeqId::TaxId(s)),
+        (r"(?i:\[?TaxID=(\d+))", |s| SeqId::TaxId(s)),
         (r"OX=(\d+)", |s| SeqId::TaxId(s)),
+
+        // INSDC / GenBank explicitly prefixed with "gb|", e.g., "gb|AB123456.1"
         (r"(?:\b|\|)gb\|([A-Z]{1,3}[0-9]{4,8}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC / GenBank nucleotide: 1 letter + 5 digits
+        (r"\b([A-Z][0-9]{5}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC / GenBank nucleotide: 2 letters + 6 digits
+        (r"\b([A-Z]{2}[0-9]{6}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC / GenBank nucleotide: 2 letters + 8 digits
+        (r"\b([A-Z]{2}[0-9]{8}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC / GenBank protein: 3 letters + 5 digits
+        (r"\b([A-Z]{3}[0-9]{5}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC / GenBank protein: 3 letters + 7 digits
+        (r"\b([A-Z]{3}[0-9]{7}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // organism scientific name in square brackets
+        (r"\[organism=([[:alpha:]][[:alnum:]. ]*)\]", |s| SeqId::Organism(s)),
+        (r"\[([[:alpha:]][[:alnum:]. ]*)\]", |s| SeqId::Organism(s)),
     ];
 
     let mut found = Vec::new();
@@ -189,46 +247,20 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         found.push(SeqId::Default(description.split_whitespace().next().unwrap_or("").to_string()));
     }
 
-    found.sort(); // Sorts by priority
-    // eprintln!("Found: {:?}", &found);
+    // found.sort(); // Sorts by priority
     SeqIdList::from(found)
 }
 
-/// Creates a string than names a sequence given its description line.
-///
-/// If `parse_ids` is true, the function will replace the input ``description``
-/// with the sequence identifiers parsed with `parse_sequence_id()`. This function returns
-/// the first word of the description or the first `n` characters, whichever is shorter.
-///
-/// # Examples
-///```
-/// use bioshell_seq::sequence::sequence_name;
-/// let desc = "sp|A0A009IHW8|ABTIR_ACIB9 2' cyclic ADP-D-ribose synthase [taxid=1310613]";
-/// assert_eq!(sequence_name(desc, 100, false), "sp|A0A009IHW8|ABTIR_ACIB9");
-/// assert_eq!(sequence_name(desc, 5, false), "sp|A0");
-/// assert_eq!(sequence_name(desc, 100, true), "UniProtID|ABTIR_ACIB9|tr|A0A009IHW8|[taxid=1310613]");
-/// ```
-pub fn sequence_name(description: &str, n:usize, parse_ids: bool) -> String {
 
-    // if requested, extract the seq-id from a sequence header
-    let mut name = if parse_ids {
-        parse_sequence_id(description).to_string()
-    } else {
-        description.to_string()
-    };
-    // Write the truncated key (header_width characters)
-    name = name.split_whitespace().next().unwrap().chars().take(n).collect();
-
-    return name;
-}
-
-/// A typed wrapper around a list of sequence identifiers.
+/// A list of sequence identifiers.
 ///
-/// This struct provides ergonomic methods and traits for handling collections of `SeqId`,
-/// including sorting by biological database priority and formatting into standard headers.
+/// This struct provides ergonomic methods to operate on `SeqId`, such as:
+///  - sorting by database priority,
+///  - formatting into a standard header string,
+///  - generating a filesystem-safe file name.
 ///
 /// The formatting (`Display` / `.to_string()`) produces a `|`-separated header string such as:
-/// `"PDB|1HHP:A|SwissProt|Q9NQX5|RefSeq|XP_123456.1"`
+/// `"PDB|1HHP:A|sp|Q9NQX5|ref|XP_123456.1"`
 ///
 /// # Example
 ///
@@ -245,7 +277,7 @@ pub fn sequence_name(description: &str, n:usize, parse_ids: bool) -> String {
 ///
 /// // Format as a standard header string
 /// let mut header = ids.to_string();
-/// assert_eq!(header, "pdb|1HHP:A|sp|Q9NQX5|RefSeq|XP_123456.1");
+/// assert_eq!(header, "pdb|1HHP:A|sp|Q9NQX5|ref|XP_123456.1");
 ///
 /// println!("Formatted Header: {}", ids); // uses Display
 /// ```
@@ -256,7 +288,10 @@ pub fn sequence_name(description: &str, n:usize, parse_ids: bool) -> String {
 pub struct SeqIdList(pub Vec<SeqId>);
 
 impl SeqIdList {
-    /// Sorts the identifiers in-place by database priority (PDB > SwissProt > ...).
+    /// Sorts the identifiers in-place by decreasing database priority.
+    ///
+    /// The pre-defined order is: PDB > SwissProt > UniProtID > UniRef > RefSeq > GenBank > Ensembl > TrEmbl > NCBI GI > NCBI Taxonomy;
+    /// i.e., the most important identifiers (e.g. PDB id) appear first in the list.
     pub fn sort(&mut self) { self.0.sort(); }
 
     /// Returns a sanitized, filesystem-safe string suitable for use as a file name.
@@ -273,32 +308,19 @@ impl SeqIdList {
     ///     SeqId::RefSeq("XP_123456.1".to_string()),
     ///     SeqId::SwissProt("Q9NQX5".to_string()),
     /// ]);
-    /// assert_eq!(ids.file_name(), "RefSeq_XP_123456.1_sp_Q9NQX5");
+    /// assert_eq!(ids.file_name(), "ref_XP_123456.1_sp_Q9NQX5");
     /// ```
     pub fn file_name(&self) -> String {
         if self.0.is_empty() {
             return "sequence_ids".to_string();
         }
 
-        let name = self.0.iter().flat_map(|id| {
-            let (label, value) = match id {
-                SeqId::PDB(s) => ("pdb", s),
-                SeqId::SwissProt(s) => ("sp", s),
-                SeqId::UniProtID(s) => ("UniProtID", s),
-                SeqId::UniRef(s) => ("UniRef", s),
-                SeqId::RefSeq(s) => ("RefSeq", s),
-                SeqId::GenBank(s) => ("GenBank", s),
-                SeqId::Ensembl(s) => ("Ensembl", s),
-                SeqId::NCBIGI(s) => ("NCBIGI", s),
-                SeqId::TrEmbl(s) => ("tr", s),
-                SeqId::TaxId(s) => ("taxid", s),
-                SeqId::Default(s) => ("", s),
-            };
-            vec![label.to_string(), value.to_string()]
-        })
-            .collect::<Vec<_>>()
-            .join("_");
-        let name = name.trim_matches(&['_']);
+        let name = format!("{}", self)
+            .replace('|', "_")
+            .replace(']', "")
+            .replace(' ', "_")
+            .replace("[organism=", "");
+        let name = name.trim_matches(&['_','|']);
         sanitize_filename(&name)
     }
 }
@@ -351,11 +373,13 @@ impl fmt::Display for SeqIdList {
     /// let mut ids = SeqIdList::from(ids);
     /// ids.sort();
     /// let header = ids.to_string();
-    /// assert_eq!(header, "pdb|1HHP:A|sp|Q9NQX5|RefSeq|XP_001234567.1");
+    /// assert_eq!(header, "pdb|1HHP:A|sp|Q9NQX5|ref|XP_001234567.1");
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, id) in self.0.iter().enumerate() {
-            if i > 0 { write!(f, "|")?; }
+            if i > 0 {
+                write!(f, "{}", if matches!(id, SeqId::Organism(_)) { " " } else { "|" })?;
+            }
             write!(f, "{id}")?;
         }
         Ok(())
