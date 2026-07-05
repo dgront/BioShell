@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use bioshell_core::io::out_writer;
 use crate::alignment::AlignmentStatistics;
-use crate::sequence::{len_ungapped, len_ungapped_str, Sequence, count_identical, sequence_name};
+use crate::sequence::{len_ungapped, len_ungapped_str, Sequence, count_identical, sequence_label, LabelStyle};
 
 /// Reports a sequence alignment calculated by a sequence alignment algorithm.
 pub trait AlignmentReporter {
@@ -138,13 +138,17 @@ impl AlignmentReporter for PrintAsPairwise {
 /// All statistics are printed in a tabular format, with one line per alignment. The sequence headers are truncated to `header_width` characters to ensure a neat output.
 /// If the `infer_seq_id` flag is set to `true`, the reporter attempts to infer a sequence identifier for both the query and the template description.
 pub struct SimilarityReport {
-    pub header_width: usize,
-    pub infer_seq_id: bool
+    label_style: LabelStyle
 }
 
 impl SimilarityReport {
     pub fn new(header_width: usize, infer_seq_id: bool) -> SimilarityReport {
-        SimilarityReport{ header_width, infer_seq_id }
+        let label_style = if infer_seq_id {
+            LabelStyle::FullId { sort: true, n: header_width }
+        } else {
+            LabelStyle::Description { n: header_width }
+        };
+        SimilarityReport{ label_style }
     }
 }
 
@@ -155,9 +159,12 @@ impl Default for SimilarityReport {
 
 impl AlignmentReporter for SimilarityReport {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
-        let mut stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, self.header_width);
-        stats.query_header = sequence_name(aligned_query.description(), self.header_width, self.infer_seq_id);
-        stats.template_header = sequence_name(aligned_template.description(), self.header_width, self.infer_seq_id);
+
+        let mut stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, &self.label_style);
+
+        stats.query_header = sequence_label(aligned_query.description(), &self.label_style);
+        stats.template_header = sequence_label(aligned_template.description(), &self.label_style);
+
         println!("{}", stats);
     }
 }
@@ -176,18 +183,25 @@ impl AlignmentReporter for SimilarityReport {
 /// assert_eq!(reporter.sequence_index("tmplt"), Some(1));
 /// assert_eq!(reporter.n_identical_residues(0, 1), 4);
 pub struct IdentityMatrixReporter {
-    pub header_width: usize,
     pub out_fname: String,
-    pub infer_seq_id: bool,
+    header_width: usize,
+    label_style: LabelStyle,
     identity_matrix: Vec<Vec<usize>>,
     sequence_order: HashMap<String, usize>,
 }
 
 impl IdentityMatrixReporter {
     pub fn new(header_width: usize, infer_seq_id: bool, out_fname: &str) -> IdentityMatrixReporter {
+
+        let label_style = if infer_seq_id {
+            LabelStyle::FullId { sort: true, n: header_width }
+        } else {
+            LabelStyle::Description { n: header_width }
+        };
+
         IdentityMatrixReporter {
-            header_width, out_fname: out_fname.to_string(), infer_seq_id,
-            identity_matrix: vec![], sequence_order: HashMap::new()
+            out_fname: out_fname.to_string(), header_width, label_style,
+            identity_matrix: vec![], sequence_order: HashMap::new(),
         }
     }
 
@@ -232,8 +246,7 @@ impl Drop for IdentityMatrixReporter {
 
         // Write the header and corresponding matrix values (second block)
         for (key, &idx) in &sorted_keys {
-            let truncated_key = sequence_name(key, self.header_width, self.infer_seq_id);
-            write!(file, "{:<width$}", truncated_key, width = self.header_width).expect(&err_msg);
+            write!(file, "{:<width$}", key, width = self.header_width).expect(&err_msg);
 
             // Write the values from identity_matrix[idx]
             if let Some(row) = self.identity_matrix.get(idx) {
@@ -247,23 +260,24 @@ impl Drop for IdentityMatrixReporter {
 
 impl AlignmentReporter for IdentityMatrixReporter {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
-        let q_name = aligned_query.description();
-        let t_name = aligned_template.description();
-        if !self.sequence_order.contains_key(q_name) {
+
+        let q_name = sequence_label(aligned_query.description(), &self.label_style);
+        let t_name = sequence_label(aligned_template.description(), &self.label_style);
+        if !self.sequence_order.contains_key(&q_name) {
             self.sequence_order.insert(q_name.to_string(), self.identity_matrix.len());
             self.identity_matrix.push(vec![0; self.sequence_order.len()]);
             let idx = self.sequence_order.len() - 1;
             self.identity_matrix[idx][idx] = len_ungapped(aligned_query);
         }
-        if !self.sequence_order.contains_key(t_name) {
+        if !self.sequence_order.contains_key(&t_name) {
             self.sequence_order.insert(t_name.to_string(), self.identity_matrix.len());
             self.identity_matrix.push(vec![0; self.sequence_order.len()]);
             let idx = self.sequence_order.len() - 1;
             self.identity_matrix[idx][idx] = len_ungapped(aligned_template);
         }
-        let q_idx = self.sequence_order[q_name];
-        let t_idx = self.sequence_order[t_name];
-        let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, self.header_width);
+        let q_idx = self.sequence_order[&q_name];
+        let t_idx = self.sequence_order[&t_name];
+        let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, &self.label_style);
         if t_idx > q_idx {
             self.identity_matrix[t_idx][q_idx] = stats.n_identical;
         } else {

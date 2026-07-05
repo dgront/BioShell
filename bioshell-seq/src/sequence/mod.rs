@@ -27,6 +27,9 @@ pub use bucket_clustering::{bucket_clustering, bucket_clustering_n};
 mod sequence_record;
 pub use sequence_record::*;
 
+mod sequence_label;
+pub use sequence_label::*;
+
 mod display_sequence;
 
 /// Returns a list of Sequences for a given input string.

@@ -121,7 +121,7 @@ pub fn main() -> Result<(), SequenceError> {
         for si in msa.sequences() {
             let idnt = count_identical(&s, si).unwrap();
             let lenu =  len_ungapped(si);
-            println!("{} {:4} / {:4} = {:.2}%", si.id(), idnt, lenu, idnt as f64 / lenu as f64 * 100.0);
+            println!("{} {:4} / {:4} = {:.2}%", si.first_id(false), idnt, lenu, idnt as f64 / lenu as f64 * 100.0);
         }
     }
 
@@ -129,7 +129,7 @@ pub fn main() -> Result<(), SequenceError> {
     if let Some(seq_id) = args.trim_by_gaps {
         let ref_seq = msa.by_id(&seq_id).ok_or(SequenceError::InvalidSequenceID{ seq_id: seq_id.to_string() })?;
         info!("removing gapped columns according to {}",seq_id);
-        let filtered_seq = remove_gaps_by_sequence(ref_seq, msa.sequences());
+        let filtered_seq = remove_gaps_by_sequence(ref_seq, msa.sequences())?;
         msa.clear();
         for seq in filtered_seq.into_iter() {
             msa.add_sequence(seq)?;
@@ -176,7 +176,8 @@ pub fn main() -> Result<(), SequenceError> {
                 let seq_id = idnt as f64 / lenu as f64 * 100.0;
                 min_id = min_id.min(seq_id);
                 max_id = max_id.max(seq_id);
-                println!("{:width$} {:width$} {:4} {:4} {:4}  {:6.2}%", si.id(), sj.id(),
+                println!("{:width$} {:width$} {:4} {:4} {:4}  {:6.2}%",
+                         si.first_id(false), sj.first_id(false),
                          idnt, leni, lenj, seq_id, width = max_seq_name_len);
             }
         }

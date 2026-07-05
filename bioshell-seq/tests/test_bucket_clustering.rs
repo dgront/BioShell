@@ -40,7 +40,7 @@ VGPPEPMEEDMLDFAYDVRPTSRLSCQVRVREELDGLTVRIPERQG";
         for (i, cluster) in fdx_clusters.iter().enumerate() {
             println!("Cluster {}:", i + 1);
             for seq in cluster {
-                println!("  - {}", seq.id());
+                println!("  - {}", seq.first_id(true));
             }
         }
         Ok(())
@@ -54,7 +54,7 @@ VGPPEPMEEDMLDFAYDVRPTSRLSCQVRVREELDGLTVRIPERQG";
         for (i, cluster) in fdx_clusters.iter().enumerate() {
             println!("Cluster {}:", i + 1);
             for seq in cluster {
-                println!("  - {}", seq.id());
+                println!("  - {}", seq.first_id(true));
             }
         }
         Ok(())

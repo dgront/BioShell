@@ -558,10 +558,14 @@ static STANDARD_LETTER_TO_INDEX: LazyLock<[u8; 256]> = LazyLock::new(|| {
 ///
 /// ```
 /// use bioshell_seq::chemical::standard_letter_to_index;
-/// let ala_idx = standard_letter_to_index('A' as u8);
-/// let met_idx = standard_letter_to_index('M' as u8);
-/// assert_eq!(ala_idx, Some(0));
-/// assert_eq!(met_idx, Some(12));
+/// use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
+/// let ala_idx = standard_letter_to_index('A' as u8)?;
+/// let met_idx = standard_letter_to_index('M' as u8)?;
+/// assert_eq!(ala_idx, 0);
+/// assert_eq!(met_idx, 12);
+/// # Ok(())
+/// # }
 /// ```
 #[inline]
 pub fn standard_letter_to_index(letter: u8) -> Result<u8, SequenceError> {

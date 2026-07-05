@@ -1,5 +1,5 @@
 use std::fmt::{Display, Formatter};
-use crate::sequence::{count_identical, len_ungapped, Sequence};
+use crate::sequence::{count_identical, LabelStyle, len_ungapped, Sequence, sequence_label};
 
 /// Provides staple statistics for a sequence alignment.
 ///
@@ -14,9 +14,11 @@ use crate::sequence::{count_identical, len_ungapped, Sequence};
 /// # Example
 /// ```
 /// use bioshell_seq::alignment::AlignmentStatistics;
+/// use bioshell_seq::sequence::LabelStyle::Description;
 /// let aligned_query = "EIIIDSYNQFSDR----SYQFMTPSLFVR";
 /// let aligned_tmplt = "ETVKEAYDLYPDRRYFGSFQFLYPSLFLR";
-/// let stats = AlignmentStatistics::from_strings("query", aligned_query, "template", aligned_tmplt, 5);
+/// let lbl_style = Description { n: 5 };
+/// let stats = AlignmentStatistics::from_strings("query", aligned_query, "template", aligned_tmplt, &lbl_style);
 /// let stats_printed = format!("{}", stats);
 /// assert_eq!(stats.query_length, 25);
 /// assert_eq!(stats.template_length, 29);
@@ -34,30 +36,34 @@ pub struct  AlignmentStatistics {
     pub query_length: usize,
     /// length of the template sequence without gaps
     pub template_length: usize,
-    /// maximum number of characters a sequence name can take
-    header_length: usize
 }
 
 impl AlignmentStatistics {
     pub fn from_strings(query_name: &str, query_sequence: &str,
-        template_name: &str, template_sequence: &str, name_width: usize) -> AlignmentStatistics {
+            template_name: &str, template_sequence: &str, label_style: &LabelStyle) -> AlignmentStatistics {
+
         let q = Sequence::from_str(query_name, query_sequence);
         let t = Sequence::from_str(template_name, template_sequence);
 
-        return AlignmentStatistics::from_sequences(&q, &t, name_width);
+        return AlignmentStatistics::from_sequences(&q, &t, label_style);
     }
 
-    /// Creates the [AlignmentStatistics] for a given pair of aligned sequences
-    pub fn from_sequences(aligned_query: &Sequence, aligned_template: &Sequence, header_length: usize) -> AlignmentStatistics {
-        let query_header = aligned_query.description_n(header_length);
-        let template_header = aligned_template.description_n(header_length);
+    /// Creates the [AlignmentStatistics] for a given pair of aligned sequences.
+    ///
+    /// Computes the statistics for the two aligned sequences: ``aligned_query`` and ``aligned_template``.
+    /// The sequence labels are created according to the provided ``label_style``.
+    pub fn from_sequences(aligned_query: &Sequence, aligned_template: &Sequence, label_style: &LabelStyle) -> AlignmentStatistics {
+
+        let query_header = sequence_label(aligned_query.description(), label_style);
+        let template_header = sequence_label(aligned_template.description(), label_style);
+
         let n_identical = count_identical(aligned_query, aligned_template).unwrap();
         let query_length = len_ungapped(aligned_query);
         let template_length = len_ungapped(aligned_template);
 
         AlignmentStatistics {
             query_header: query_header.to_string(), template_header: template_header.to_string(),
-            n_identical, query_length, template_length, header_length
+            n_identical, query_length, template_length
         }
     }
 
@@ -69,8 +75,7 @@ impl AlignmentStatistics {
 
 impl Display for AlignmentStatistics {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:len$} {:len$} {:6.2} % {:3} {:4} {:4}", self.query_header, self.template_header,
-               self.percent_identity(), self.n_identical, self.query_length, self.template_length,
-               len = self.header_length)
+        write!(f, "{:} {:} {:6.2} % {:3} {:4} {:4}", self.query_header, self.template_header,
+               self.percent_identity(), self.n_identical, self.query_length, self.template_length)
     }
 }
