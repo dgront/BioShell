@@ -32,7 +32,7 @@ use bioshell_core::io::sanitize_filename;
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SeqId {
-    /// PDB (Protein Data Bank) 4-character structure ID, optionally with chain (e.g., "1HHP", "1HHP:A", "pdb_00002gb1").
+    /// PDB (Protein Data Bank) entry ID, optionally with chain (e.g., "1HHP", "1HHP:A", "pdb_00002gb1").
     ///
     /// This variant captures both the new 12-characters long identifiers
     /// and the legacy type, which are 4-character alphanumeric codes. An optional chain identifier can be included after a colon.
@@ -71,7 +71,8 @@ pub enum SeqId {
 
     /// NCBI Taxonomy ID (e.g., "taxid=9606", "[taxid=9606]", "OX=9606").
     ///
-    /// This variant also captures the taxonomy annotation in the UniProt format, e.g. "OX=9606"
+    /// This variant captures the taxonomy annotation both in the NCBI and the UniProt format,
+    /// i.e. "taxid=9606" and "OX=9606", respectively.
     TaxId(String),
 
     /// Organism scientific name (e.g., "Homo sapiens")
@@ -150,7 +151,7 @@ impl fmt::Display for SeqId {
 ///
 /// This function scans the input for standard database identifiers such as those from
 /// PDB, SwissProt/TrEMBL, UniRef, RefSeq, GenBank/EMBL, Ensembl, and NCBI GI.
-/// It returns all matches found, each represented as a [`SequenceID`] variant, stored in
+/// It returns all matches found, each represented as a [`SeqId`] variant, stored in
 /// [`SeqIdList`]
 ///
 /// The returned identifiers are stored in the order as they appeared in the given description string.
