@@ -25,13 +25,24 @@ impl PySeqId {
         Self { inner: SeqId::SwissProt(value) }
     }
 
-    /// Create a new `UniProt` id from a given string.
+    /// Create a new `TrEMBL` id from a given string.
+    ///
+    /// `TrEMBL` id actually is the `UniProtKB` id with the `tr` prefix to indicate that it is a TrEMBL entry.
+    #[staticmethod]
+    pub fn trembl(value: String) -> Self {
+        Self { inner: SeqId::TrEmbl(value) }
+    }
+
+    /// Create a new `UniProtKB` id from a given string.
     #[staticmethod]
     pub fn uniprot_id(value: String) -> Self {
-        Self { inner: SeqId::UniProtID(value) }
+        Self { inner: SeqId::UniProtKB(value) }
     }
 
     /// Create a new `UniRef` id from a given string.
+    ///
+    /// UniRef id is a cluster of UniProtKB entries, and the id is usually in the form of `UniRef100_P12345`,
+    /// where `P12345` is a UniProtKB id and UniRef100 shows the clustering was based on 100% sequence identity cutoff.
     #[staticmethod]
     pub fn uniref(value: String) -> Self {
         Self { inner: SeqId::UniRef(value) }
@@ -55,12 +66,6 @@ impl PySeqId {
         Self { inner: SeqId::Ensembl(value) }
     }
 
-    /// Create a new `TrEMBL` id from a given string.
-    #[staticmethod]
-    pub fn trembl(value: String) -> Self {
-        Self { inner: SeqId::TrEmbl(value) }
-    }
-
     /// Create a new `NCBIgi` id from a given string.
     #[staticmethod]
     pub fn ncbi_gi(value: String) -> Self {
@@ -79,20 +84,26 @@ impl PySeqId {
         Self { inner: SeqId::Default(value) }
     }
 
-    /// Return the kind of this sequence id (e.g., "PDB", "SwissProt", etc.)
+    /// Return the kind of this sequence id (e.g., "PDB", "SwissProt", etc.).
+    ///
+    /// Currently bioshell recognizes the following kinds of sequence identifiers:
+    /// "PDB", "SwissProt", "UniProtKB", "UniRef", "RefSeq", "GenBank", "Ensembl", "TrEMBL", "NCBIGI",
+    /// "TaxId", "Organism", and "UniProtEntry". There is also a "Default" kind for identifiers that do not match any of the above.
     #[getter]
     pub fn kind(&self) -> &'static str {
         match &self.inner {
             SeqId::PDB(_) => "PDB",
             SeqId::SwissProt(_) => "SwissProt",
-            SeqId::UniProtID(_) => "UniProtID",
+            SeqId::UniProtKB(_) => "UniProtKB",
             SeqId::UniRef(_) => "UniRef",
             SeqId::RefSeq(_) => "RefSeq",
             SeqId::GenBank(_) => "GenBank",
             SeqId::Ensembl(_) => "Ensembl",
-            SeqId::TrEmbl(_) => "TrEmbl",
+            SeqId::TrEmbl(_) => "TrEMBL",
             SeqId::NCBIGI(_) => "NCBIGI",
             SeqId::TaxId(_) => "TaxId",
+            SeqId::Organism(_) => "Organism",
+            SeqId::UniProtEntry(v) => "UniProtEntry",
             SeqId::Default(_) => "Default",
         }
     }
@@ -103,7 +114,7 @@ impl PySeqId {
         match &self.inner {
             SeqId::PDB(v)
             | SeqId::SwissProt(v)
-            | SeqId::UniProtID(v)
+            | SeqId::UniProtKB(v)
             | SeqId::UniRef(v)
             | SeqId::RefSeq(v)
             | SeqId::GenBank(v)
@@ -111,6 +122,8 @@ impl PySeqId {
             | SeqId::TrEmbl(v)
             | SeqId::NCBIGI(v)
             | SeqId::TaxId(v)
+            | SeqId::Organism(v)
+            | SeqId::UniProtEntry(v)
             | SeqId::Default(v) => v,
         }
     }
@@ -125,6 +138,7 @@ impl PySeqId {
     fn __str__(&self) -> String { format!("{}", &self.inner) }
 }
 
+#[doc = include_str!("../../docs/seq/parse_sequence_id.rst")]
 #[pyfunction]
 pub fn parse_sequence_id<'py>(py: Python<'py>,  description: &str) -> PyResult<Bound<'py, PyList>> {
 

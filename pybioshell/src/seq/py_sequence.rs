@@ -35,9 +35,16 @@ impl PySequence {
         self.inner.description_n(n)
     }
 
-    /// The sequence ID (extracted from the description).
-    #[getter]
-    pub fn id(&self) -> String { self.inner.id() }
+    /// Return the first identifier of a sequence, extracted from the description line.
+    ///
+    /// If `if_sort` is true, the identifiers will be sorted by arbitrary importance,
+    /// so the method always reports the same type of identifier (e.g., GenBank or RefSeq) regardless their order.
+    pub fn first_id(&self, if_sort: bool) -> String { self.inner.first_id(if_sort) }
+
+    /// Return all identifiers of a sequence formatted into a single string.
+    ///
+    /// If `if_sort` is true, the identifiers will be sorted by arbitrary importance.
+    pub fn full_id(&self, if_sort: bool) -> String { self.inner.full_id(if_sort) }
 
     /// The sequence itself as a string of characters.
     #[getter]
