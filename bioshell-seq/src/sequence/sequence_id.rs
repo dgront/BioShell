@@ -32,6 +32,9 @@ use bioshell_core::io::sanitize_filename;
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SeqId {
+    /// CYP-id - the identifier for a P450 cytochrome used by the P450Atlas
+    CypId(String),
+
     /// PDB (Protein Data Bank) entry ID, optionally with chain (e.g., "1HHP", "1HHP:A", "pdb_00002gb1").
     ///
     /// This variant captures both the new 12-characters long identifiers
@@ -45,9 +48,18 @@ pub enum SeqId {
     TrEmbl(String),
 
     /// UniProtKB accession ID when it's not specified either it's SwissProt or TrEMBL.
+    ///
+    /// An accession number (AC) is assigned to each sequence upon inclusion into UniProtKB.
+    /// Accession numbers are stable from release to release. For details, see the official
+    /// specification:
+    /// [UniProt accession number format](https://www.uniprot.org/help/accession_numbers).
     UniProtKB(String),
 
-    /// UniProtKB entry ID (e.g., "002L_FRG3G").
+    /// UniProtKB entry name (e.g., "002L_FRG3G").
+    ///
+    /// The 'Entry name' is a unique identifier, often containing biologically relevant information.
+    /// For details, see the official page:
+    /// [difference between an accession number (AC) and the entry name](https://www.uniprot.org/help/difference_accession_entryname).
     UniProtEntry(String),
 
     /// UniRef (UniProt Reference Clusters), e.g., "UniRef100_P12345".
@@ -62,6 +74,9 @@ pub enum SeqId {
 
     /// GenBank or EMBL accession (e.g., "AB123456.1", "U49845").
     GenBank(String),
+
+    /// DNA Data Bank of Japan entry, e.g. `dbj|BAE93469.1`
+    DDBJ(String),
 
     /// Ensembl gene, transcript, or protein ID (e.g., "ENSG00000139618", "ENST00000331789").
     Ensembl(String),
@@ -100,19 +115,21 @@ impl Ord for SeqId {
 impl SeqId {
     fn order_priority(&self) -> usize {
         match self {
-            SeqId::PDB(_) => 0,
-            SeqId::SwissProt(_) => 1,
-            SeqId::UniProtKB(_) => 2,
-            SeqId::TrEmbl(_) => 3,
-            SeqId::UniProtEntry(_) => 4,
-            SeqId::UniRef(_) => 5,
-            SeqId::RefSeq(_) => 6,
-            SeqId::GenBank(_) => 7,
-            SeqId::Ensembl(_) => 8,
-            SeqId::NCBIGI(_) => 9,
-            SeqId::Default(_) => 10,
-            SeqId::TaxId(_) => 11,
-            SeqId::Organism(_) => 12,
+            SeqId::CypId(_) => 0,
+            SeqId::PDB(_) => 1,
+            SeqId::SwissProt(_) => 2,
+            SeqId::UniProtKB(_) => 3,
+            SeqId::TrEmbl(_) => 4,
+            SeqId::UniProtEntry(_) => 5,
+            SeqId::UniRef(_) => 6,
+            SeqId::RefSeq(_) => 7,
+            SeqId::GenBank(_) => 8,
+            SeqId::Ensembl(_) => 9,
+            SeqId::DDBJ(_) => 10,
+            SeqId::NCBIGI(_) => 11,
+            SeqId::Default(_) => 12,
+            SeqId::TaxId(_) => 13,
+            SeqId::Organism(_) => 14,
         }
     }
 }
@@ -143,6 +160,8 @@ impl fmt::Display for SeqId {
             SeqId::TaxId(s) => write!(f, "taxid={}", s),
             SeqId::Default(s) => write!(f, "{}", s),
             SeqId::Organism(s) => write!(f, "[organism={}]", s),
+            SeqId::CypId(s) => write!(f, "{}", s),
+            SeqId::DDBJ(s) => write!(f, "dbj|{}", s),
         }
     }
 }
@@ -191,14 +210,9 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         (r"(?:\b|\|)tr[|.]([A-Z0-9]{6}|[A-Z0-9]{10})(?:-\d+)?[|.]", |s| SeqId::TrEmbl(s)),
         // UniProt entry name, e.g., "002L_FRG3G"
         (r"(?:\b|\|)([A-Z0-9]+_[A-Z0-9]+)\b", |s| SeqId::UniProtEntry(s)),
-
-        // UniProtKB accession, legacy 6-character form beginning with O/P/Q
-        (r"\b([OPQ][0-9][A-Z0-9]{3}[0-9](?:-\d+)?)\b", |s| SeqId::UniProtKB(s)),
-        // UniProtKB accession, legacy 6-character form beginning with other allowed letters
-        (r"\b([A-NR-Z][0-9][A-Z][A-Z0-9]{2}[0-9](?:-\d+)?)\b", |s| SeqId::UniProtKB(s)),
-        // UniProtKB accession, 10-character form
-        (r"\b([A-NR-Z][0-9][A-Z][A-Z0-9]{2}[0-9]{2}[A-Z0-9]{3}[0-9](?:-\d+)?)\b", |s| SeqId::UniProtKB(s)),
-
+        // UniProtKB accession: legacy 6-character versions and the new 10-character form
+        (r"\b([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})(?:-\d+)?\b", |s| SeqId::UniProtKB(s)),
+        // UniRef
         (r"\b(UniRef\d{2,3}_[A-Z0-9]+)\b", |s| SeqId::UniRef(s)),
 
         (r"\bGI:(\d+)\b", |s| SeqId::NCBIGI(s)),
@@ -209,6 +223,8 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         (r"(?i:\[?TaxID=(\d+))", |s| SeqId::TaxId(s)),
         (r"OX=(\d+)", |s| SeqId::TaxId(s)),
 
+        // INSDC / DDBJ explicitly prefixed with "dbj|", e.g., "dbj|BAE93469.1"
+        (r"(?:\b|\|)dbj\|([A-Z]{3}[0-9]{5}(?:\.\d+)?)\b", |s| SeqId::DDBJ(s)),
         // INSDC / GenBank explicitly prefixed with "gb|", e.g., "gb|AB123456.1"
         (r"(?:\b|\|)gb\|([A-Z]{1,3}[0-9]{4,8}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
         // INSDC / GenBank nucleotide: 1 letter + 5 digits
@@ -221,9 +237,15 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         (r"\b([A-Z]{3}[0-9]{5}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
         // INSDC / GenBank protein: 3 letters + 7 digits
         (r"\b([A-Z]{3}[0-9]{7}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+
         // organism scientific name in square brackets
         (r"\[organism=([[:alpha:]][[:alnum:]. ]*)\]", |s| SeqId::Organism(s)),
         (r"\[([[:alpha:]][[:alnum:]. ]*)\]", |s| SeqId::Organism(s)),
+
+        // CYP-ids - the canonical variant, pseudogene with 'P' and discontinued CYPid with 'X'
+        (r"(?:^|[^\w]|_)((?:CYP|Cyp)[0-9]+[A-Z]{1,3}[0-9]+[PX]?(?:v[0-9]+|[a-z])?)(?:$|[^\w]|_)", |s| SeqId::CypId(s)),
+        // CYP-ids - variants with .v1 and 'a'
+        (r"(?:^|[^\w])((?:CYP|Cyp)[0-9]+[A-Z]{1,3}[0-9]+[PX]?(?:v[0-9]+)?)(?:$|[^\w]|_)", |s| SeqId::CypId(s)),
     ];
 
     let mut found = Vec::new();

@@ -10,6 +10,7 @@ mod tests {
             ("[taxid=9606]", SeqId::TaxId("9606".to_string())),
             ("taxid=9606", SeqId::TaxId("9606".to_string())),
             ("TaxID=9606", SeqId::TaxId("9606".to_string())),
+            ("dbj|BAE93469.1", SeqId::DDBJ("BAE93469.1".to_string())),
         ];
 
         for (input, expected) in test_cases {
@@ -73,6 +74,24 @@ mod tests {
     fn test_gi_id() {
         let ids = parse_sequence_id(">gi|5524211|");
         assert_eq!(ids[0], SeqId::NCBIGI("5524211".to_string()));
+    }
+
+    #[test]
+    fn test_cyp_id() {
+        let test_cases: Vec<(&str, SeqId)> = vec![
+            (">CYP548Z1 Cryphonectria", SeqId::CypId("CYP548Z1".to_string())),
+            (" EU958043 ", SeqId::GenBank("EU958043".to_string())),
+            ("[taxid=9606]", SeqId::TaxId("9606".to_string())),
+            ("taxid=9606", SeqId::TaxId("9606".to_string())),
+            ("TaxID=9606", SeqId::TaxId("9606".to_string())),
+        ];
+
+        for (input, expected) in test_cases {
+            let parsed = parse_sequence_id(input);
+
+            assert_eq!(parsed[0], expected);
+            assert_eq!(parsed[0].to_string(), expected.to_string());
+        }
     }
 
     #[test]
