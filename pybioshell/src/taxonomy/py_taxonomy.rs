@@ -98,7 +98,7 @@ impl PyTaxonomy {
     pub fn name(&self, taxid: u32) -> PyResult<String> {
         let node = self.taxonomy.node(taxid)
             .ok_or_else(|| PyValueError::new_err(format!("Unknown tax_id: {}", taxid)))?;
-        Ok(node.name())
+        Ok(node.name.clone())
     }
 
     /// Return the full lineage (list of nodes) for a taxid.
