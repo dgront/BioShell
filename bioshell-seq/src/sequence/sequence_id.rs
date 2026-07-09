@@ -73,6 +73,9 @@ pub enum SeqId {
     RefSeq(String),
 
     /// GenBank or EMBL accession (e.g., "AB123456.1", "U49845").
+    ///
+    /// Specification can be found on the NCBI website:
+    /// [Accession Number prefixes](https://www.ncbi.nlm.nih.gov/genbank/acc_prefix/)
     GenBank(String),
 
     /// DNA Data Bank of Japan entry, e.g. `dbj|BAE93469.1`

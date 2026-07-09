@@ -171,7 +171,8 @@ impl Taxonomy {
     /// of the tree and returns the first node that matches the given rank.
     ///
     ///
-    /// # Examples
+    /// # Example
+    /// In this example we check if *Homo sapiens* (tax_id = 9606) is a primate:
     /// ```
     /// use bioshell_taxonomy::{Taxonomy, Rank};
     /// # use std::error::Error;

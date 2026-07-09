@@ -8,7 +8,7 @@ use std::time::Instant;
 use rand::Rng;
 use bioshell_clustering::hierarchical::{balance_clustering_tree, retrieve_data, hierarchical_clustering, retrieve_clusters, retrieve_data_id, medoid_by_min_max, retrieve_outliers};
 use bioshell_clustering::hierarchical::strategies::{average_link, complete_link, single_link};
-use bioshell_seq::sequence::{bucket_clustering_n, load_sequences, Sequence, sequence_name};
+use bioshell_seq::sequence::{bucket_clustering_n, LabelStyle, load_sequences, Sequence, sequence_label};
 use bioshell_core::io::{can_create_file, out_writer};
 use bioshell_seq::alignment::{align_all_pairs, AlignmentReporter, AlignmentStatistics};
 use bioshell_seq::scoring::SubstitutionMatrixList;
@@ -121,7 +121,8 @@ impl Display for SequenceIdentityMatrix {
 
 impl AlignmentReporter for SequenceIdentityMatrix {
     fn report(&mut self, aligned_query: &Sequence, aligned_template: &Sequence) {
-        let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, 32);
+        let label_style = LabelStyle::FullId { sort: true, n: 32 };
+        let stats = AlignmentStatistics::from_sequences(aligned_query, aligned_template, &label_style);
         let query_index = self.description_to_index[aligned_query.description()];
         let template_index = self.description_to_index[aligned_template.description()];
         self.similarity_matrix[query_index][template_index] = stats.percent_identity() as f32;
@@ -229,14 +230,15 @@ pub fn main() -> Result<(), SequenceError> {
     let seq_order = retrieve_data(&clustering, &indexes);
 
     // ---------- retrieve the re-ordered distance matrix ----------
+    let label_style = LabelStyle::FullId { sort: true, n: args.name_width };
     if let Some(fname) = args.distance_matrix {
         let mut out_file = out_writer(&fname, false);
         let mut k = 0;
         for i in &seq_order {
             let mut l = 0;
-            let q_name = sequence_name(&matrix_reporter.sequence_description(*i), args.name_width, true);
+            let q_name = sequence_label(&matrix_reporter.sequence_description(*i), &label_style);
             for j in &seq_order {
-                let t_name = sequence_name(&matrix_reporter.sequence_description(*j), args.name_width, true);
+                let t_name = sequence_label(&matrix_reporter.sequence_description(*j), &label_style);
                 writeln!(out_file, "{}\t{}\t{:6.3}\t{}\t{}", q_name, t_name, matrix_reporter.percent_identity(*i, *j), k, l)?;
                 // writeln!(out_file, "{}\t{}\t{:6.3}\t{}\t{}", i, j, matrix_reporter.percent_identity(*i, *j), k, l)?;
                 // writeln!(out_file, "{}\t{}\t{:6.3}\t{}\t{}", k, l, matrix_reporter.percent_identity(*i, *j), i, j)?;
