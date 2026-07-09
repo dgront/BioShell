@@ -56,7 +56,10 @@ pub struct PyTaxonomy {
 
 #[pymethods]
 impl PyTaxonomy {
-    /// Load taxonomy from a `.tar.gz` archive.
+    /// Creates the ``Taxonomy`` object and loads taxonomy data from a given `.tar.gz` archive.
+    ///
+    /// By default, the file is named ``taxdump.tar.gz`` and can be downloaded from the NCBI's
+    /// ftp site.
     #[staticmethod]
     pub fn load_from_tar_gz(path: &str) -> PyResult<Self> {
         Taxonomy::load_from_tar_gz(path)
@@ -88,6 +91,14 @@ impl PyTaxonomy {
     /// Return all names associated with a taxid.
     pub fn names(&self, taxid: u32) -> Vec<String> {
         self.taxonomy.names(taxid).cloned().collect()
+    }
+
+
+    /// Return all names associated with a taxid.
+    pub fn name(&self, taxid: u32) -> PyResult<String> {
+        let node = self.taxonomy.node(taxid)
+            .ok_or_else(|| PyValueError::new_err(format!("Unknown tax_id: {}", taxid)))?;
+        Ok(node.name())
     }
 
     /// Return the full lineage (list of nodes) for a taxid.
@@ -126,6 +137,9 @@ impl PyTaxonomy {
     }
 
     /// Find a species information in a given string.
+    ///
+    /// This method uses ``TaxonomyMatcher`` object attempting to find the closest match
+    /// and returns the integer ``tax_id`` for the matching node of the NCBI taxonomy.
     ///
     pub fn find(&self, description: &str) -> Option<u32> {
         if let Some(matcher_ref) = self.matcher.get() {

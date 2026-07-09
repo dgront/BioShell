@@ -84,11 +84,25 @@ impl PySeqId {
         Self { inner: SeqId::Default(value) }
     }
 
+    /// Create a new `CypId` id from a given string.
+    #[staticmethod]
+    pub fn cypid(value: String) -> Self {
+        Self { inner: SeqId::CypId(value) }
+    }
+
+    /// Create a new `DDBJ` id from a given `value` string.
+    #[staticmethod]
+    pub fn ddbj(value: String) -> Self {
+        Self { inner: SeqId::DDBJ(value) }
+    }
+
+
     /// Return the kind of this sequence id (e.g., "PDB", "SwissProt", etc.).
     ///
-    /// Currently bioshell recognizes the following kinds of sequence identifiers:
+    /// Currently, bioshell recognizes the following kinds of sequence identifiers:
     /// "PDB", "SwissProt", "UniProtKB", "UniRef", "RefSeq", "GenBank", "Ensembl", "TrEMBL", "NCBIGI",
-    /// "TaxId", "Organism", and "UniProtEntry". There is also a "Default" kind for identifiers that do not match any of the above.
+    /// "UniProtEntry", "DDBJ", "TaxId", "Organism", and "CypId". There is also a "Default" kind
+    /// for identifiers that do not match any of the above.
     #[getter]
     pub fn kind(&self) -> &'static str {
         match &self.inner {
@@ -103,7 +117,9 @@ impl PySeqId {
             SeqId::NCBIGI(_) => "NCBIGI",
             SeqId::TaxId(_) => "TaxId",
             SeqId::Organism(_) => "Organism",
-            SeqId::UniProtEntry(v) => "UniProtEntry",
+            SeqId::UniProtEntry(_) => "UniProtEntry",
+            SeqId::DDBJ(_) => "DDBJ",
+            SeqId::CypId(_) => "CypId",
             SeqId::Default(_) => "Default",
         }
     }
@@ -124,6 +140,8 @@ impl PySeqId {
             | SeqId::TaxId(v)
             | SeqId::Organism(v)
             | SeqId::UniProtEntry(v)
+            | SeqId::DDBJ(v)
+            | SeqId::CypId(v)
             | SeqId::Default(v) => v,
         }
     }
