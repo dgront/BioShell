@@ -7,11 +7,31 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
-use bioshell_seq::sequence::{FastaIterator, parse_sequence_id, Sequence, SequenceReporter, SplitFasta, WriteFasta};
+use bioshell_seq::sequence::{FastaIterator, FastaParsingMode, parse_sequence_id, Sequence, SequenceReporter, SplitFasta, WriteFasta};
 use bioshell_seq::sequence::filters::{HasSequenceMotif, ShorterThan, IsProtein, IsNucleic, SequenceFilter, LongerThan,
                              ContainsAA, ContainsX, LogicalNot, DescriptionContains};
 use bioshell_core::io::{open_file, out_writer};
 use bioshell_seq::SequenceError;
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+enum SequenceCleaning {
+    None,
+    Protein,
+    ProteinStop,
+    Nucleic
+}
+
+impl From<SequenceCleaning> for FastaParsingMode {
+    fn from(cleaning: SequenceCleaning) -> Self {
+        match cleaning {
+            SequenceCleaning::None => FastaParsingMode::Raw,
+            SequenceCleaning::Protein => FastaParsingMode::CleanProtein,
+            SequenceCleaning::ProteinStop => FastaParsingMode::CleanProteinStop,
+            SequenceCleaning::Nucleic => FastaParsingMode::CleanNucleic
+        }
+    }
+}
+
 
 #[derive(Parser, Debug)]
 #[clap(name = "filter_fasta")]
@@ -40,12 +60,15 @@ struct Args {
     /// keep only these sequences which contain at most an N occurrences of AA residue type
     #[clap(long, num_args = 2)]
     max_aa: Option<Vec<String>>,
-    /// print only valid protein sequences ('X' symbol is allowed)
+    /// print only valid protein sequences ('X' symbol is allowed), skip nucleotide sequences
     #[clap(short='p', long, action)]
     protein_only: bool,
-    /// print only valid nucleotide sequences
+    /// print only valid nucleotide sequences, skip protein sequences
     #[clap(short='n', long, action)]
     nucleotide_only: bool,
+    /// Use a sanitiser when loading a FASTA file
+    #[clap(long = "sequence-cleaning", value_enum, default_value_t = SequenceCleaning::None)]
+    sequence_cleaning: SequenceCleaning,
     /// print only unique sequences
     #[clap(short='u', long, action)]
     unique: bool,
@@ -106,6 +129,8 @@ pub fn main() -> Result<(), SequenceError> {
         requested_ids = HashSet::from_iter(reader.lines().map(|l| l.unwrap()));
         info!("{} sequence IDs selected for retrieval", requested_ids.len());
     }
+    // ---------- fasta sanitation
+    let sanitizer: FastaParsingMode = args.sequence_cleaning.into();
 
     // ---------- Check is user wants to retrieve sequences that are given in a query FASTA file
     let mut query_fasta: Vec<(String, String)> = vec![];
@@ -113,7 +138,7 @@ pub fn main() -> Result<(), SequenceError> {
     if let Some(qfile) = args.match_subsequences {
         if_fasta_retrieve = true;
         let reader = open_file(&qfile)?;
-        let seq_iter = FastaIterator::new(reader);
+        let seq_iter = FastaIterator::new(reader, sanitizer.clone());
         for seq_result in seq_iter {
             let sequence = seq_result?;
             let id = String::from(sequence.first_id(true));
@@ -122,7 +147,7 @@ pub fn main() -> Result<(), SequenceError> {
     }
 
     let reader = open_file(&fname)?;
-    let seq_iter = FastaIterator::new(reader);
+    let seq_iter = FastaIterator::new(reader, sanitizer);
     let mut cnt_all: usize = 0;
     let mut cnt_ok: usize = 0;
 

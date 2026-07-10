@@ -1,5 +1,4 @@
 
-use std::io::{BufRead, BufReader};
 use std::hash::{Hash, Hasher};
 use crate::errors::SequenceError;
 use crate::msa::MSA;
@@ -202,91 +201,6 @@ impl Hash for Sequence {
     /// of two identical chains of a PDB deposit
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.seq.hash(state);
-    }
-}
-
-/// Iterator that provides sequences from a FASTA-formatted buffer.
-///
-/// This object iterates over a buffer without loading its whole content which allows processing
-/// very large FASTA files.
-///
-/// # Examples
-/// ```rust
-/// use bioshell_seq::sequence::FastaIterator;
-/// # use bioshell_seq::SequenceError;
-/// # fn main() -> Result<(), SequenceError> {
-/// let sequences: &str = "> 1clf:A
-/// AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
-///
-/// > 1dur:A
-/// AYVINDSCIACGACKPECPVNCIQEGSIYAIDADSCIDCGSCASVCPVGAPNPED
-///
-/// > 1fca:A
-/// AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
-/// let seqs = FastaIterator::new(sequences.as_bytes());
-/// let seq_ids: Vec<String> = seqs.map(|r| r.map(|s| s.first_id(true).to_string())).collect::<Result<Vec<_>,_>>()?;
-/// assert_eq!(seq_ids, vec!["1clf:A", "1dur:A", "1fca:A"]);
-/// # Ok(())
-/// # }
-/// ```
-pub struct FastaIterator<R> {
-    reader: BufReader<R>,
-    buffer: String,
-    header: String,
-    seq: String,
-}
-
-impl<R: BufRead> FastaIterator<R> {
-    pub fn new(stream: R) -> Self {
-        FastaIterator {
-            reader: BufReader::new(stream),
-            buffer: String::new(),
-            header: String::new(),
-            seq: String::new(),
-        }
-    }
-}
-
-impl<R: BufRead> Iterator for FastaIterator<R> {
-
-    type Item = Result<Sequence, SequenceError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            self.buffer.clear();
-            match self.reader.read_line(&mut self.buffer) {
-                Ok(0) => {
-                    if self.seq.len() > 0 {
-                        let ret = Sequence::new(&self.header, &self.seq);
-                        self.seq.clear();
-                        return Some(Ok(ret));
-                    }
-                    return None;
-                },
-                Ok(_) => {
-                    let line = self.buffer.trim();
-                    if line.starts_with('#') {
-                        return Some(Err(SequenceError::InvalidFastaFormat{
-                            line: line.to_string(),
-                            description: "Fasta line must not start with '#' character".to_string()
-                        }));
-                    }
-                    if line.starts_with('>') {                  // --- It's a header!
-                        if self.seq.len() > 0 {                      // --- we already have a sequence to return
-                            let ret = Sequence::new(&self.header, &self.seq);
-                            self.header = self.buffer[1..].trim().to_owned();
-                            self.seq.clear();
-                            return Some(Ok(ret));
-                        } else {
-                            self.header = self.buffer[1..].trim().to_owned();
-                        }
-                    } else {                                         // --- It's sequence
-                        if line.len() > 0 { self.seq.push_str(line); }
-                    }
-                }
-                Err(err) => return Some(Err(SequenceError::Io(err))),
-            }
-        }
     }
 }
 
