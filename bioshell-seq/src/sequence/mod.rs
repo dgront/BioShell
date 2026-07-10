@@ -1,22 +1,25 @@
 //! Provides [`Sequence`], [`SequenceRecord`] and [`SequenceProfile`] structs
 //! as well as numerous utility functions to operate on them
 
+use log::info;
+use bioshell_core::io::open_file;
+use crate::SequenceError;
+
+mod parse_fasta;
+pub use parse_fasta::*;
 
 mod sequence;
+pub use sequence::*;
 mod sequence_profile;
+pub use sequence_profile::*;
 mod residue_type_mapping;
+pub use residue_type_mapping::*;
 
 pub mod filters;
 
 mod sequence_reporter;
 pub use sequence_reporter::*;
 
-use log::info;
-use bioshell_core::io::open_file;
-pub use sequence::*;
-pub use sequence_profile::*;
-pub use residue_type_mapping::*;
-use crate::SequenceError;
 
 mod sequence_id;
 pub use sequence_id::*;
@@ -41,7 +44,7 @@ mod display_sequence;
 pub fn load_sequences(seq_or_fname: &String, seq_name: &str) -> Result<Vec<Sequence>, SequenceError> {
     if seq_or_fname.contains(".") {
         let reader = open_file(&seq_or_fname)?;
-        let seq_iter = FastaIterator::new(reader);
+        let seq_iter = FastaIterator::new(reader, FastaParsingMode::Raw);
         let out: Vec<Sequence> = seq_iter.collect::<Result<Vec<_>, _>>()?;
         info!("{}",format!("{} sequences loaded from {}", out.len(), &seq_or_fname));
         return Ok(out);

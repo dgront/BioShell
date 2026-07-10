@@ -3,7 +3,7 @@
 mod tests {
     use std::fmt::Write;
 
-    use bioshell_seq::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, SequenceProfile, ProfileColumnOrder, trim_by_sequence, count_identical, remove_gapped_columns, count_aligned};
+    use bioshell_seq::sequence::{Sequence, a3m_to_fasta, A3mConversionMode, remove_gaps_by_sequence, FastaIterator, SequenceProfile, ProfileColumnOrder, trim_by_sequence, count_identical, remove_gapped_columns, count_aligned, FastaParsingMode};
     use std::io::BufReader;
     use std::iter::zip;
     use bioshell_seq::msa::{MSA, StockholmMSA};
@@ -56,6 +56,57 @@ IAHTKVIGGG ESDSVTFDVS KLTPGEAYAY FCSFPGHWAM
 MKGTLKLSN
 >";
 
+
+    #[test]
+    fn collect_fasta() -> Result<(), SequenceError> {
+        let reader = BufReader::new(fasta.as_bytes());
+        let iter_fasta = FastaIterator::new(reader, FastaParsingMode::CleanProtein);
+
+        let records: Vec<Sequence> = iter_fasta.into_iter().collect::<Result<Vec<_>, _>>()?;
+
+        assert_eq!(2, records.len());
+        assert_eq!(records[0].len(), 56);
+        assert_eq!(records[1].to_string(0), "AQCEATIESNDAMQYDLKEMVVDKSCKQFTVHLKHVGKMAKSAMGHNWVLTKEADKEGVATDGMNAGLAQDYVKAGDTRVIAHTKVIGGGESDSVTFDVSKLTPGEAYAYFCSFPGHWAMMKGTLKLSN");
+
+        Ok(())
+    }
+
+    #[allow(non_upper_case_globals)]
+    static buggy_fasta: &'static str = ">CYP5144BK1P Heterobasidion annosum 172174
+MWIFLLDLVPVLLLCFSGILYARRKKATCPLSPGPKGLPIIGNVLDIPKNREWITYEKWGKEF (1)
+GSDIIHVEAFGTHLIVLNSAKVAKELFERRSSLYSDR (2)
+PRLIA*LNIL (2)
+
+>CYP5144BL2P Heterobasidion annosum
+VDGTALPSMTASLLEM &
+EAKGGDET
+
+>CYP5432A1-C-term_Moniliophthora_perniciosa
+174  WIPFHGKEGREARSRFVSHIGAYLEAARSQDEGQLEGVPDFVSNMVGEMVK 326
+327  SGLSFHEQTSALLMILWGMNGNIIQVVFWTLSYLMAEPDVLKQVTADIRNAVTETAND 500
+501  VETLLDMEPPVLDQPRFILPGSLFQETMRL (1)590
+";
+
+    #[allow(non_upper_case_globals)]
+    static buggy_expected: &[&'static str] = &[
+        "MWIFLLDLVPVLLLCFSGILYARRKKATCPLSPGPKGLPIIGNVLDIPKNREWITYEKWGKEFGSDIIHVEAFGTHLIVLNSAKVAKELFERRSSLYSDRPRLIALNIL",
+        "VDGTALPSMTASLLEMEAKGGDET",
+        "WIPFHGKEGREARSRFVSHIGAYLEAARSQDEGQLEGVPDFVSNMVGEMVKSGLSFHEQTSALLMILWGMNGNIIQVVFWTLSYLMAEPDVLKQVTADIRNAVTETANDVETLLDMEPPVLDQPRFILPGSLFQETMRL"
+        ];
+    #[test]
+    fn fasta_iterator_clean() -> Result<(), SequenceError> {
+        let reader = BufReader::new(buggy_fasta.as_bytes());
+        let iter_fasta = FastaIterator::new(reader, FastaParsingMode::CleanProtein);
+        let mut i = 0;
+        for record in iter_fasta {
+            let seq = record?;
+            assert_eq!(seq.seq().as_slice(), buggy_expected[i].as_bytes());
+            i += 1;
+        }
+        Ok(())
+    }
+
+
     #[allow(non_upper_case_globals)]
     static stockholm: &'static str = "# STOCKHOLM 1.0
 #=GF PDB 2gb1
@@ -69,20 +120,6 @@ UniRef100_UPI0000D834FD AEKVFKQYANDNGVDGEWTYDDATK
 2gb1A                   TFTVTE
 UniRef100_UPI0000D834FD TFTVTE
 ";
-
-    #[test]
-    fn iterate_fasta() -> Result<(), SequenceError> {
-        let reader = BufReader::new(fasta.as_bytes());
-        let iter_fasta = FastaIterator::new(reader);
-
-        let records: Vec<Sequence> = iter_fasta.into_iter().collect::<Result<Vec<_>, _>>()?;
-
-        assert_eq!(2, records.len());
-        assert_eq!(records[0].len(), 56);
-        assert_eq!(records[1].to_string(0), "AQCEATIESNDAMQYDLKEMVVDKSCKQFTVHLKHVGKMAKSAMGHNWVLTKEADKEGVATDGMNAGLAQDYVKAGDTRVIAHTKVIGGGESDSVTFDVSKLTPGEAYAYFCSFPGHWAMMKGTLKLSN");
-
-        Ok(())
-    }
 
     #[test]
     fn read_stockholm() -> Result<(), SequenceError> {

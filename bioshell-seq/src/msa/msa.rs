@@ -2,7 +2,7 @@ use std::io::BufRead;
 use std::collections::{HashMap, HashSet};
 
 use crate::errors::SequenceError;
-use crate::sequence::{FastaIterator, Sequence};
+use crate::sequence::{FastaIterator, FastaParsingMode, Sequence};
 
 #[derive(Default, Clone, Debug)]
 /// Multiple Sequence Alignment is a `Vec` of  [`Sequence`](Sequence) objects of the same length.
@@ -118,7 +118,7 @@ impl MSA {
     /// # }
     /// ```
     pub fn from_fasta_reader<R: BufRead>(reader: &mut R) -> Result<Self, SequenceError> {
-        let msa = FastaIterator::new( reader).into_iter().collect::<Result<Vec<_>, _>>()?;
+        let msa = FastaIterator::new(reader, FastaParsingMode::Raw).into_iter().collect::<Result<Vec<_>, _>>()?;
         Self::check_msa(&msa)?;
         return Ok(MSA { msa });
     }

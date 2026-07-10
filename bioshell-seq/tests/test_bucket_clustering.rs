@@ -2,6 +2,7 @@
 #[cfg(test)]
 mod tests {
     use bioshell_seq::sequence::{bucket_clustering, bucket_clustering_n, FastaIterator, Sequence};
+    use bioshell_seq::sequence::FastaParsingMode::Raw;
     use bioshell_seq::SequenceError;
 
     const FDX_FASTA: &str = ">2Fe-2SST1(rhl:LPU83_2264)Rhizobium favelukesii
@@ -34,7 +35,7 @@ VGPPEPMEEDMLDFAYDVRPTSRLSCQVRVREELDGLTVRIPERQG";
 
     #[test]
     fn fdx_bucket_clustering() -> Result<(), SequenceError> {
-        let fdx_sequences = FastaIterator::new(FDX_FASTA.as_bytes()).collect::<Result<Vec<Sequence>, _>>()?;
+        let fdx_sequences = FastaIterator::new(FDX_FASTA.as_bytes(), Raw).collect::<Result<Vec<Sequence>, _>>()?;
         let fdx_clusters = bucket_clustering(&fdx_sequences, 0.8)?;
 
         for (i, cluster) in fdx_clusters.iter().enumerate() {
@@ -48,7 +49,7 @@ VGPPEPMEEDMLDFAYDVRPTSRLSCQVRVREELDGLTVRIPERQG";
 
     #[test]
     fn fdx_bucket_clustering_n() -> Result<(), SequenceError> {
-        let fdx_sequences = FastaIterator::new(FDX_FASTA.as_bytes()).collect::<Result<Vec<Sequence>, _>>()?;
+        let fdx_sequences = FastaIterator::new(FDX_FASTA.as_bytes(), Raw).collect::<Result<Vec<Sequence>, _>>()?;
         let fdx_clusters = bucket_clustering_n(&fdx_sequences, 0.8, 4)?;
 
         for (i, cluster) in fdx_clusters.iter().enumerate() {

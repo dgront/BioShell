@@ -8,6 +8,7 @@ use bioshell_seq::sequence::{count_identical, FastaIterator, len_ungapped, Profi
 
 use bioshell_core::io::{open_file, out_writer};
 use bioshell_seq::msa::{medoid_sequence, MSA, StockholmMSA};
+use bioshell_seq::sequence::FastaParsingMode::Raw;
 use bioshell_seq::SequenceError;
 
 #[derive(Parser, Debug)]
@@ -102,7 +103,7 @@ pub fn main() -> Result<(), SequenceError> {
     // ---------- Read input MSA in the .fasta format
     if let Some(fname) = args.in_fasta {
         let reader = open_file(&fname)?;
-        let seq: Vec<Sequence> = FastaIterator::new(reader).collect::<Result<Vec<_>,_>>()?;
+        let seq: Vec<Sequence> = FastaIterator::new(reader, Raw).collect::<Result<Vec<_>,_>>()?;
         msa = match MSA::from_sequences(seq) {
             Ok(msa) => msa.into(),
             Err(error) => panic!("Incorrect sequence(s) found in MSA: {:?}", error),

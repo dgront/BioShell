@@ -14,7 +14,7 @@ use crate::sequence::Sequence;
 ///
 /// To align sequences, first load them into a ``Vec``, e.g. using the [`FastaIterator`](`crate::sequence::FastaIterator``):
 /// ```
-/// use bioshell_seq::sequence::{Sequence, FastaIterator};
+/// use bioshell_seq::sequence::{Sequence, FastaIterator, FastaParsingMode};
 /// # use bioshell_seq::SequenceError;
 /// # fn main() -> Result<(), SequenceError> {
 /// let sequences_str: &str =
@@ -25,7 +25,7 @@ use crate::sequence::Sequence;
 /// > 1fca:A
 /// AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
 ///
-/// let fasta_iter = FastaIterator::new(sequences_str.as_bytes());
+/// let fasta_iter = FastaIterator::new(sequences_str.as_bytes(), FastaParsingMode::Raw);
 /// let sequences: Vec<Sequence> = fasta_iter.collect::<Result<Vec<_>, _>>()?;
 /// # assert_eq!(sequences.len(), 3);
 /// Ok(())
@@ -37,7 +37,7 @@ use crate::sequence::Sequence;
 /// ```
 /// use bioshell_seq::alignment::{align_all_pairs, SimilarityReport};
 /// use bioshell_seq::scoring::SubstitutionMatrixList;
-/// # use bioshell_seq::sequence::{Sequence, FastaIterator};
+/// # use bioshell_seq::sequence::{Sequence, FastaIterator, FastaParsingMode};
 /// # use bioshell_seq::SequenceError;
 /// # fn main() -> Result<(), SequenceError> {
 /// # let sequences_str: &str = "> 1clf:A
@@ -46,7 +46,7 @@ use crate::sequence::Sequence;
 /// # AYVINDSCIACGACKPECPVNCIQEGSIYAIDADSCIDCGSCASVCPVGAPNPED
 /// # > 1fca:A
 /// # AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
-/// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes());
+/// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes(), FastaParsingMode::Raw);
 /// # let sequences: Vec<Sequence> = fasta_iter.collect::<Result<Vec<_>, _>>()?;
 ///
 /// let mut reporter = SimilarityReport::new(0, false);
@@ -61,18 +61,18 @@ use crate::sequence::Sequence;
 /// ```
 /// use bioshell_seq::alignment::{align_all_pairs, SimilarityReport};
 /// use bioshell_seq::scoring::SubstitutionMatrixList;
-/// # use bioshell_seq::sequence::{Sequence, FastaIterator};
+/// # use bioshell_seq::sequence::{Sequence, FastaIterator, FastaParsingMode};
 /// # use bioshell_seq::SequenceError;
 /// # fn main() -> Result<(), SequenceError> {
-/// # let sequences_str: &str = "> 1clf:A
+/// let sequences_str: &str = "> 1clf:A
 /// # AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
 /// # > 1dur:A
 /// # AYVINDSCIACGACKPECPVNCIQEGSIYAIDADSCIDCGSCASVCPVGAPNPED
 /// # > 1fca:A
 /// # AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
-/// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes());
+/// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes(), FastaParsingMode::Raw);
 /// # let queries: Vec<Sequence> = fasta_iter.collect::<Result<Vec<_>, _>>()?;
-/// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes());
+/// # let fasta_iter = FastaIterator::new(sequences_str.as_bytes(), FastaParsingMode::Raw);
 /// # let templates: Vec<Sequence> = fasta_iter.collect::<Result<Vec<_>, _>>()?;
 ///
 /// let mut reporter = SimilarityReport::new(0, false);
