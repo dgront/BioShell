@@ -1,4 +1,5 @@
 use std::io::{BufRead, BufReader};
+use std::fmt;
 use log::{debug, info};
 use crate::sequence::Sequence;
 use crate::SequenceError;
@@ -34,6 +35,20 @@ pub enum FastaParsingMode {
     CleanNucleic,
     /// user-provided function is called to every sequence line of the `fasta` input
     Custom(fn(&str, &mut String)),
+}
+
+impl fmt::Display for FastaParsingMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = match self {
+            Self::Raw => "raw",
+            Self::CleanProtein => "clean-protein",
+            FastaParsingMode::CleanProteinStop => "clean-protein-stop",
+            FastaParsingMode::CleanNucleic => "clean-nucleic",
+            FastaParsingMode::Custom(_) => "custom",
+        };
+
+        f.write_str(name)
+    }
 }
 
 
@@ -96,6 +111,8 @@ impl<R: BufRead> FastaIterator<R> {
             },
             FastaParsingMode::Custom(f) => FastaParserState::Custom(f),
         };
+
+        info!("Parsing a .fasta stream with {parsing_strategy} method");
 
         FastaIterator {
             reader: BufReader::new(stream),
