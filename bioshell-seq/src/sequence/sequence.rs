@@ -188,7 +188,7 @@ impl Sequence {
     }
 
     fn filter_to_u8(seq: &str) -> Vec<u8> {
-        seq.chars().filter(|c| c != &' ' && c != &'*').map(|c| c as u8).collect()
+        seq.chars().filter(|c| c != &' ').map(|c| c as u8).collect()
     }
 }
 

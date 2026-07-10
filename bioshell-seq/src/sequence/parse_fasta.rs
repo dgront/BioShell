@@ -107,7 +107,7 @@ impl<R: BufRead> FastaIterator<R> {
                 FastaParserState::CleanProteinStop(AllowedCharsOnly::new(PROTEIN_LETTERS_STOP))
             }
             FastaParsingMode::CleanNucleic => {
-                FastaParserState::CleanNucleic(AllowedCharsOnly::new(NUCLEIC_RESIDUES))
+                FastaParserState::CleanNucleic(AllowedCharsOnly::new(NUCLEIC_LETTERS))
             },
             FastaParsingMode::Custom(f) => FastaParserState::Custom(f),
         };
@@ -223,12 +223,12 @@ impl AllowedCharsOnly {
     }
 }
 
-/// Defines letters allowed in an nucleic acid sequence, gaps are also allowed
-const NUCLEIC_RESIDUES: &[u8] = b"cgmtu-_";
+/// Defines letters allowed in a nucleic acid sequence, gaps are also allowed
+const NUCLEIC_LETTERS: &[u8] = b"cgmtu-_";
 
 /// Defines letters allowed in an amino acid sequence, gaps are also allowed
-static PROTEIN_LETTERS: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZ-_";
+const PROTEIN_LETTERS: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZ-_";
 
 /// Defines letters allowed in an amino acid sequence, as well as '*' for the stop codon and gaps
-static PROTEIN_LETTERS_STOP: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZ-_*";
+const PROTEIN_LETTERS_STOP: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZ-_*";
 
