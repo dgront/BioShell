@@ -12,7 +12,8 @@ pyo3 = { version = "0.24", features = ["extension-module"] }
 bioshell-seq = { path = "../bioshell-seq" }
 bioshell-taxonomy = { path = "../bioshell-taxonomy" }
 once_cell = "1.19.0"
-
+log = "0.4"
+pyo3-log = "0.12"
 
 [package.metadata.maturin]
 name = "pybioshell"

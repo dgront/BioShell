@@ -12,7 +12,7 @@ pub fn init_submodule(parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyRank>()?;
     m.add_class::<PyNode>()?;
     m.add_class::<PyTaxonomy>()?;
-    parent_module.add_submodule(&m);
+    parent_module.add_submodule(&m)?;
 
     // 🔽 Add to sys.modules["bioshell.taxonomy"]
     let sys_modules = py.import("sys")?.getattr("modules")?;
