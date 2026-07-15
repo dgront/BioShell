@@ -31,6 +31,8 @@ pub enum FastaParsingMode {
     CleanProtein,
     /// [`FastaIterator`] loads a protein sequence, gaps and the STOP codon marked as '*' are also allowed
     CleanProteinStop,
+    /// [`FastaIterator`] loads a protein sequence with lowercase letters, gaps and the STOP codon marked as '*' are also allowed
+    CleanProteinStopSmall,
     /// [`FastaIterator`] loads a DNA/RNA sequence, possibly with gaps; other characters are removed
     CleanNucleic,
     /// user-provided function is called to every sequence line of the `fasta` input
@@ -43,6 +45,7 @@ impl fmt::Display for FastaParsingMode {
             Self::Raw => "raw",
             Self::CleanProtein => "clean-protein",
             FastaParsingMode::CleanProteinStop => "clean-protein-stop",
+            FastaParsingMode::CleanProteinStopSmall => "clean-protein-stop-small",
             FastaParsingMode::CleanNucleic => "clean-nucleic",
             FastaParsingMode::Custom(_) => "custom",
         };
@@ -58,6 +61,7 @@ enum FastaParserState {
     Raw,
     CleanProtein(AllowedCharsOnly),
     CleanProteinStop(AllowedCharsOnly),
+    CleanProteinStopSmall(AllowedCharsOnly),
     CleanNucleic(AllowedCharsOnly),
     Custom(fn(&str, &mut String)),
 }
@@ -105,6 +109,9 @@ impl<R: BufRead> FastaIterator<R> {
             },
             FastaParsingMode::CleanProteinStop => {
                 FastaParserState::CleanProteinStop(AllowedCharsOnly::new(PROTEIN_LETTERS_STOP))
+            }
+            FastaParsingMode::CleanProteinStopSmall => {
+                FastaParserState::CleanProteinStopSmall(AllowedCharsOnly::new(PROTEIN_LETTERS_STOP_SMALL))
             }
             FastaParsingMode::CleanNucleic => {
                 FastaParserState::CleanNucleic(AllowedCharsOnly::new(NUCLEIC_LETTERS))
@@ -171,6 +178,9 @@ impl<R: BufRead> Iterator for FastaIterator<R> {
                                 FastaParserState::CleanProteinStop(ref mut cleaner) => {
                                     cleaner.parse_line(line, &mut self.seq)
                                 }
+                                FastaParserState::CleanProteinStopSmall(ref mut cleaner) => {
+                                    cleaner.parse_line(line, &mut self.seq)
+                                }
                                 FastaParserState::CleanNucleic(ref mut cleaner) => {
                                     cleaner.parse_line(line, &mut self.seq)
                                 }
@@ -232,3 +242,5 @@ const PROTEIN_LETTERS: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZ-_";
 /// Defines letters allowed in an amino acid sequence, as well as '*' for the stop codon and gaps
 const PROTEIN_LETTERS_STOP: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZ-_*";
 
+/// Defines letters allowed in an amino acid sequence, as well as '*' for the stop codon and gaps
+const PROTEIN_LETTERS_STOP_SMALL: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZacdefghiklmnopqrtsvwx-_*";
