@@ -55,6 +55,14 @@ pub enum SeqId {
     /// [UniProt accession number format](https://www.uniprot.org/help/accession_numbers).
     UniProtKB(String),
 
+    /// UniParc accession, e.g. UPI001E6762CD
+    ///
+    /// The UniParc identifier (UPI) is the unique identifier assigned to a distinct
+    /// protein sequence. It consists of the characters “UPI” followed
+    /// by 10 hexadecimal characters (0–9, A–F). A UPI is stable across releases
+    /// [The UniParc identifier (UPI)](https://www.uniprot.org/help/uniparc_id).
+    UniParc(String),
+
     /// UniProtKB entry name (e.g., "002L_FRG3G").
     ///
     /// The 'Entry name' is a unique identifier, often containing biologically relevant information.
@@ -124,15 +132,16 @@ impl SeqId {
             SeqId::UniProtKB(_) => 3,
             SeqId::TrEmbl(_) => 4,
             SeqId::UniProtEntry(_) => 5,
-            SeqId::UniRef(_) => 6,
-            SeqId::RefSeq(_) => 7,
-            SeqId::GenBank(_) => 8,
-            SeqId::Ensembl(_) => 9,
-            SeqId::DDBJ(_) => 10,
-            SeqId::NCBIGI(_) => 11,
-            SeqId::Default(_) => 12,
-            SeqId::TaxId(_) => 13,
-            SeqId::Organism(_) => 14,
+            SeqId::UniParc(_) => 6,
+            SeqId::UniRef(_) => 7,
+            SeqId::RefSeq(_) => 8,
+            SeqId::GenBank(_) => 9,
+            SeqId::Ensembl(_) => 10,
+            SeqId::DDBJ(_) => 11,
+            SeqId::NCBIGI(_) => 12,
+            SeqId::Default(_) => 13,
+            SeqId::TaxId(_) => 14,
+            SeqId::Organism(_) => 15,
         }
     }
 }
@@ -154,6 +163,7 @@ impl fmt::Display for SeqId {
             SeqId::SwissProt(s) => write!(f, "sp|{}", s),
             SeqId::TrEmbl(s) => write!(f, "tr|{}", s),
             SeqId::UniProtKB(s) => write!(f, "UniProt|{}", s),
+            SeqId::UniParc(s) => write!(f, "UniParc|{}", s),
             SeqId::UniProtEntry(s) => write!(f, "{}", s),
             SeqId::UniRef(s) => write!(f, "{}", s),
             SeqId::RefSeq(s) => write!(f, "ref|{}", s),
@@ -212,11 +222,13 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         // trEmbl accession with explicit prefix, all variants
         (r"(?:\b|\|)tr[|.]([A-Z0-9]{6}|[A-Z0-9]{10})(?:-\d+)?[|.]", |s| SeqId::TrEmbl(s)),
         // UniProt entry name, e.g., "002L_FRG3G"
-        (r"(?:\b|\|)([A-Z0-9]+_[A-Z0-9]+)\b", |s| SeqId::UniProtEntry(s)),
+        (r"(?:\b|\|)([A-Z0-9]{3,}_[A-Z0-9]{3,5})\b", |s| SeqId::UniProtEntry(s)),
         // UniProtKB accession: legacy 6-character versions and the new 10-character form
         (r"\b([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})(?:-\d+)?\b", |s| SeqId::UniProtKB(s)),
         // UniRef
         (r"\b(UniRef\d{2,3}_[A-Z0-9]+)\b", |s| SeqId::UniRef(s)),
+        // UniParc ID consists of the characters “UPI” followed by 10 hexadecimal characters (0–9, A–F).
+        (r"\b(UPI[0-9A-F]{10})\b", |s| SeqId::UniParc(s)),
 
         (r"\bGI:(\d+)\b", |s| SeqId::NCBIGI(s)),
         (r"\bgi\|(\d+)\b", |s| SeqId::NCBIGI(s)),
@@ -240,15 +252,15 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         (r"\b([A-Z]{3}[0-9]{5}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
         // INSDC / GenBank protein: 3 letters + 7 digits
         (r"\b([A-Z]{3}[0-9]{7}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        // INSDC/GenBank WGS-style nucleotide accession
+        (r"\b([A-Z]{4}[0-9]{8,10}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
 
         // organism scientific name in square brackets
         (r"\[organism=([[:alpha:]][[:alnum:]. ]*)\]", |s| SeqId::Organism(s)),
         (r"\[([[:alpha:]][[:alnum:]. ]*)\]", |s| SeqId::Organism(s)),
-
-        // CYP-ids - the canonical variant, pseudogene with 'P' and discontinued CYPid with 'X'
-        (r"(?:^|[^\w]|_)((?:CYP|Cyp)[0-9]+[A-Z]{1,3}[0-9]+[PX]?(?:v[0-9]+|[a-z])?)(?:$|[^\w]|_)", |s| SeqId::CypId(s)),
-        // CYP-ids - variants with .v1 and 'a'
-        (r"(?:^|[^\w])((?:CYP|Cyp)[0-9]+[A-Z]{1,3}[0-9]+[PX]?(?:v[0-9]+)?)(?:$|[^\w]|_)", |s| SeqId::CypId(s)),
+        // CYP-id - two variants: lowercase and uppercase
+        (r"(?:^|[^\w]|_)(CYP[0-9]+[A-Z]{1,3}[0-9]+[a-z]?(?:v[0-9]{1,2})?(?:P(?:[0-9]+|[NC])?)?X?(?:_[A-Z]{1,4})?)(?:$|[^\w]|_)", |s| SeqId::CypId(s)),
+        (r"(?:^|[^\w]|_)(Cyp[0-9]+[a-z]{1,3}[0-9]+[a-z]?(?:v[0-9]{1,2})?(?:P(?:[0-9]+|[NC])?)?X?(?:_[A-Z]{1,4})?)(?:$|[^\w]|_)", |s| SeqId::CypId(s)),
     ];
 
     let mut found = Vec::new();
