@@ -18,9 +18,10 @@ fn parsing_mode_from_str(parsing_mode: &str) -> Result<FastaParsingMode, PyErr> 
         "protein" | "clean-protein" | "clean_protein" => Ok(FastaParsingMode::CleanProtein),
         "nucleic" | "clean-nucleic" | "clean_nucleic" => Ok(FastaParsingMode::CleanNucleic),
         "protein*" | "clean-protein*" | "clean_protein*"| "clean-protein-stop" | "clean_protein_stop" => Ok(FastaParsingMode::CleanProteinStop),
+        "protein*small" | "clean-protein*small" | "clean_protein*small"| "clean-protein-stop-small" | "clean_protein_stop_small" => Ok(FastaParsingMode::CleanProteinStopSmall),
 
         _ => Err(PyValueError::new_err(format!(
-            "invalid parsing_mode {parsing_mode:?}; expected one of: 'raw', 'protein', 'protein*', nucleic"
+            "invalid parsing_mode {parsing_mode:?}; expected one of: 'raw', 'protein', 'protein*', 'protein*small', nucleic"
         ))),
     }
 }

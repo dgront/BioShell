@@ -48,6 +48,16 @@ impl PySeqId {
         Self { inner: SeqId::UniRef(value) }
     }
 
+    /// Create a new `UniParc` id from a given string.
+    ///
+    /// UniParc is the unique identifier assigned to a distinct
+    /// protein sequence. It consists of the characters “UPI” followed
+    /// by 10 hexadecimal characters (0–9, A–F). A UPI is stable across releases.
+    #[staticmethod]
+    pub fn uniparc(value: String) -> Self {
+        Self { inner: SeqId::UniParc(value) }
+    }
+
     /// Create a new `RefSeq` id from a given string.
     #[staticmethod]
     pub fn refseq(value: String) -> Self {
@@ -109,6 +119,7 @@ impl PySeqId {
             SeqId::PDB(_) => "PDB",
             SeqId::SwissProt(_) => "SwissProt",
             SeqId::UniProtKB(_) => "UniProtKB",
+            SeqId::UniParc(_) => "UniParc",
             SeqId::UniRef(_) => "UniRef",
             SeqId::RefSeq(_) => "RefSeq",
             SeqId::GenBank(_) => "GenBank",
@@ -131,6 +142,7 @@ impl PySeqId {
             SeqId::PDB(v)
             | SeqId::SwissProt(v)
             | SeqId::UniProtKB(v)
+            | SeqId::UniParc(v)
             | SeqId::UniRef(v)
             | SeqId::RefSeq(v)
             | SeqId::GenBank(v)
