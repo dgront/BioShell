@@ -302,7 +302,7 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
 /// The formatting (`Display` / `.to_string()`) produces a `|`-separated header string such as:
 /// `"PDB|1HHP:A|sp|Q9NQX5|ref|XP_123456.1"`
 ///
-/// # Example
+/// # Examples
 ///
 /// ```
 /// use bioshell_seq::sequence::{SeqId, SeqIdList};
@@ -322,8 +322,23 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
 /// println!("Formatted Header: {}", ids); // uses Display
 /// ```
 ///
-/// You can also iterate over `SeqIdList` or access its inner `Vec<SeqId>` via deref.
-
+/// A [`SeqIdList`] object is typically obtained by calling [`parse_sequence_id()`]:
+/// ```
+/// # use bioshell_seq::sequence::parse_sequence_id;
+/// let id_list = parse_sequence_id("sp|A0A009IHW8|ABTIR_ACIB9|taxid=1310613");
+/// ```
+///
+/// You can also iterate over [`SeqIdList`] or access its inner `Vec<SeqId>` via deref.
+/// E.g. to check if it contains particular database id (PDB in this example), say:
+/// ```
+/// # use bioshell_seq::sequence::{parse_sequence_id, SeqId};
+/// let ids = parse_sequence_id("sp|A0A009IHW8|ABTIR_ACIB9|taxid=1310613");
+/// let perhaps_pdb = ids.iter().find_map(|id| match id {
+///         SeqId::PDB(value) => Some(value.as_str()),
+///         _ => None,
+///     });
+/// # assert!(perhaps_pdb.is_none());
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SeqIdList(pub Vec<SeqId>);
 
