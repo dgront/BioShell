@@ -106,6 +106,27 @@ EAKGGDET
         Ok(())
     }
 
+    #[test]
+    fn first_sequence_from_fasta() -> Result<(), SequenceError> {
+        let reader = BufReader::new(buggy_fasta.as_bytes());
+        let mut iter_fasta = FastaIterator::new(reader, FastaParsingMode::CleanProtein);
+        let seq = iter_fasta.next().ok_or(SequenceError::NoInputSequences)??;
+
+        assert_eq!(seq.seq(), b"MWIFLLDLVPVLLLCFSGILYARRKKATCPLSPGPKGLPIIGNVLDIPKNREWITYEKWGKEFGSDIIHVEAFGTHLIVLNSAKVAKELFERRSSLYSDRPRLIALNIL");
+
+        Ok(())
+    }
+
+    #[test]
+    fn collect_sequences_from_fasta() -> Result<(), SequenceError> {
+        let reader = BufReader::new(buggy_fasta.as_bytes());
+        let iter_fasta = FastaIterator::new(reader, FastaParsingMode::CleanProtein);
+        let seq = iter_fasta.collect::<Result<Vec<_>,_>>()?;
+
+        assert_eq!(seq.len(), 3);
+
+        Ok(())
+    }
 
     #[allow(non_upper_case_globals)]
     static stockholm: &'static str = "# STOCKHOLM 1.0
