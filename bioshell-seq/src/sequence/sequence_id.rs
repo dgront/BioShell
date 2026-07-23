@@ -215,7 +215,7 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         (r"\b(pdb_[A-Za-z0-9]{8})(?::[_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
 
         // RefSeq must be checked early because it's similar to UniProt entry name
-        (r"\b((?:AC|NC|NG|NT|NW|NZ|NM|NR|XM|XR|AP|NP|YP|XP|WP)_[0-9]+\.\d+)\b", |s| SeqId::RefSeq(s)),
+        (r"(?:\b|\|\>|_)((?:AC|NC|NG|NT|NW|NZ|NM|NR|XM|XR|AP|NP|YP|XP|WP)_[0-9]+\.\d+)\b", |s| SeqId::RefSeq(s)),
 
         // SwissProt accession with explicit prefix, all variants
         (r"(?:\b|\|\>)sp[|.]([A-Z0-9]{6}|[A-Z0-9]{10})(?:-\d+)?[|.]", |s| SeqId::SwissProt(s)),
@@ -233,27 +233,29 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         (r"\bGI:(\d+)\b", |s| SeqId::NCBIGI(s)),
         (r"\bgi\|(\d+)\b", |s| SeqId::NCBIGI(s)),
         (r"\b(ENS[TPGR][0-9]{11})\b", |s| SeqId::Ensembl(s)),
-        // tax-id can be in various formats, e.g., [taxid=9606], taxid=9606, TaxID=9606, OX=9606
+
+        // tax-id can be in various formats, e.g., [taxid=9606], taxid=9606, taxid|9606, TaxID=9606, OX=9606
         (r"(?i:\[?taxid=(\d+))", |s| SeqId::TaxId(s)),
         (r"(?i:\[?TaxID=(\d+))", |s| SeqId::TaxId(s)),
         (r"OX=(\d+)", |s| SeqId::TaxId(s)),
+        (r"(?i:(?:\b|\|)taxid\|(\d+))", |s| SeqId::TaxId(s)),
 
         // INSDC / DDBJ explicitly prefixed with "dbj|", e.g., "dbj|BAE93469.1"
         (r"(?:\b|\|)dbj\|([A-Z]{3}[0-9]{5}(?:\.\d+)?)\b", |s| SeqId::DDBJ(s)),
         // INSDC / GenBank explicitly prefixed with "gb|", e.g., "gb|AB123456.1"
-        (r"(?:\b|\|)gb\|([A-Z]{1,3}[0-9]{4,8}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        (r"(?:\b|\||_)gb\|([A-Z]{1,3}[0-9]{4,8}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
         // INSDC / GenBank nucleotide: 1 letter + 5 digits
-        (r"\b([A-Z][0-9]{5}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        (r"(?:\b|\||_)([A-Z][0-9]{5}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
         // INSDC / GenBank nucleotide: 2 letters + 6 digits
-        (r"\b([A-Z]{2}[0-9]{6}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        (r"(?:\b|\||_)([A-Z]{2}[0-9]{6}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
         // INSDC / GenBank nucleotide: 2 letters + 8 digits
-        (r"\b([A-Z]{2}[0-9]{8}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        (r"(?:\b|\||_)([A-Z]{2}[0-9]{8}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
         // INSDC / GenBank protein: 3 letters + 5 digits
-        (r"\b([A-Z]{3}[0-9]{5}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        (r"(?:\b|\||_)([A-Z]{3}[0-9]{5}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
         // INSDC / GenBank protein: 3 letters + 7 digits
-        (r"\b([A-Z]{3}[0-9]{7}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        (r"(?:\b|\||_)([A-Z]{3}[0-9]{7}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
         // INSDC/GenBank WGS-style nucleotide accession
-        (r"\b([A-Z]{4}[0-9]{8,10}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
+        (r"(?:\b|\||_)([A-Z]{4}[0-9]{8,10}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
 
         // organism scientific name in square brackets
         (r"\[organism=([[:alpha:]][[:alnum:]. ]*)\]", |s| SeqId::Organism(s)),
