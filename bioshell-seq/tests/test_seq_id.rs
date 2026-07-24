@@ -11,6 +11,7 @@ mod tests {
             ("taxid=9606", SeqId::TaxId("9606".to_string())),
             ("TaxID=9606", SeqId::TaxId("9606".to_string())),
             ("dbj|BAE93469.1", SeqId::DDBJ("BAE93469.1".to_string())),
+            ("2[4Fe-4S]ST9|2FDN", SeqId::PDB("2FDN".to_string())),
         ];
 
         for (input, expected) in test_cases {
