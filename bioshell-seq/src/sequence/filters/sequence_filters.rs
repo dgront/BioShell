@@ -187,14 +187,15 @@ impl SequenceFilter for IsNucleic {
 /// let sequence3 = Sequence::from_str("test_seq", "MRAG!SXA");
 /// let filter = IsProtein;
 /// assert!(filter.filter(&sequence1));     // 'X' is a legal amino acid for IsProtein() filter
-/// assert!(filter.filter(&sequence2));     // '*' chars are automatically removed by Sequence::from_str()
-/// assert!(!filter.filter(&sequence3));    // Neither does '!'
+/// assert!(filter.filter(&sequence2));     // '*' chars are now removed by Sequence::from_str() but are allowed in amino acid sequences
+/// assert!(!filter.filter(&sequence3));    // '!' are not allowed
 /// ```
 pub struct IsProtein;
+
 macro_rules! is_amino_acid {
     ($c: expr) => {
         match $c {
-            b'A' | b'R' | b'N' | b'D' | b'C' | b'E' | b'Q' | b'G' | b'H' | b'I' | b'L' | b'K' | b'M' | b'F' | b'P' | b'S' | b'T' | b'W' | b'Y' | b'V' | b'X' => true,
+            b'A' | b'R' | b'N' | b'D' | b'C' | b'E' | b'Q' | b'G' | b'H' | b'I' | b'L' | b'K' | b'M' | b'F' | b'P' | b'S' | b'T' | b'W' | b'Y' | b'V' | b'X' | b'*' => true,
             _ => false,
         }
     };
@@ -202,11 +203,6 @@ macro_rules! is_amino_acid {
 
 impl SequenceFilter for IsProtein {
     fn filter(&self, sequence: &Sequence) -> bool {
-        println!("{}", sequence.as_u8().len());
-        for c in sequence.as_u8() {
-            let cc: char = *c as char;
-            print!("{} {}  ",cc, is_amino_acid!(c));
-        }
         sequence.as_u8().iter().all(|l|  is_amino_acid!(l))
     }
 }

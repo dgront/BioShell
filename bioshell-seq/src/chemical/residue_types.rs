@@ -234,15 +234,15 @@ impl Display for ResidueType {
 /// // --- This should pass, as all standard residue types (including alanine) are preloaded by a constructor
 /// let ala = mgr.by_code3(&String::from("ALA"));
 /// assert!(ala.is_some());
-/// // --- There are 34 standard residue types
-/// assert_eq!(mgr.count(), 34);
+/// // --- There are 35 standard residue types, including gaps and the stop codon
+/// assert_eq!(mgr.count(), 35);
 /// // --- ALN hasn't been inserted yet
 /// assert!(mgr.by_code3(&String::from("ALN")).is_none());
 /// let aln = ResidueType::from_attrs("ALN", StandardResidueType::ALA, MonomerType::PeptideLinking);
 /// mgr.register_residue_type(aln);
 /// assert!(mgr.by_code3(&String::from("ALN")).is_some());
-/// // --- ALN residue type has been registered at index the 34 since we cound from 0
-/// assert_eq!(mgr.index(&String::from("ALN")).unwrap(), 34);
+/// // --- ALN residue type has been registered at index the 35 since we count from 0
+/// assert_eq!(mgr.index(&String::from("ALN")).unwrap(), 35);
 /// ```
 pub struct ResidueTypeManager {
     registered_types: Vec<ResidueType>,
@@ -469,7 +469,7 @@ macro_rules! define_res_types {
             /// }
             /// assert_eq!(n_aa, 21);       // 20 standard amino acids + UNK
             /// ```
-            pub const TYPES: [Self; 33] = [
+            pub const TYPES: [Self; 34] = [
             $(
                 Self::$name,
             )*
@@ -481,7 +481,7 @@ macro_rules! define_res_types {
 impl StandardResidueType {
     /// Iterates over the 20 standard amino acid types.
     ///
-    /// The iteration does not include the `UNK` residue type.
+    /// The iteration does not include the `UNK` residue type nor the `STOP` codon.
     ///
     /// # Examples
     /// ``` rust
@@ -527,7 +527,8 @@ define_res_types! {
     DT 29 't' "DT" DNALinking,
     GAP 30 '-' "GAP" Other,
     GPE 31 '_' "GPE" Other,
-    UNL 32 'Z' "UNL" Other
+    UNL 32 'Z' "UNL" Other,
+    STOP 33 '*' "STP" Other
 }
 
 

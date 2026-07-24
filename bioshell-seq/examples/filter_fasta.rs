@@ -18,6 +18,7 @@ enum SequenceCleaning {
     None,
     Protein,
     ProteinStop,
+    ProteinStopSmall,
     Nucleic
 }
 
@@ -27,6 +28,7 @@ impl From<SequenceCleaning> for FastaParsingMode {
             SequenceCleaning::None => FastaParsingMode::Raw,
             SequenceCleaning::Protein => FastaParsingMode::CleanProtein,
             SequenceCleaning::ProteinStop => FastaParsingMode::CleanProteinStop,
+            SequenceCleaning::ProteinStopSmall => FastaParsingMode::CleanProteinStopSmall,
             SequenceCleaning::Nucleic => FastaParsingMode::CleanNucleic
         }
     }
@@ -129,7 +131,7 @@ pub fn main() -> Result<(), SequenceError> {
         requested_ids = HashSet::from_iter(reader.lines().map(|l| l.unwrap()));
         info!("{} sequence IDs selected for retrieval", requested_ids.len());
     }
-    // ---------- fasta sanitation
+    // ---------- fasta sanitation mode
     let sanitizer: FastaParsingMode = args.sequence_cleaning.into();
 
     // ---------- Check is user wants to retrieve sequences that are given in a query FASTA file
@@ -227,9 +229,17 @@ pub fn main() -> Result<(), SequenceError> {
 
         // ---------- keep only requested sequences
         if if_retrieve {
-            let id = sequence.first_id(true);
-            if !requested_ids.contains(&id) { continue }
+            let mut seq_found = false;
+            let ids = parse_sequence_id(sequence.description());
+            for id in ids {
+                if requested_ids.contains(id.value()) {
+                    seq_found = true;
+                    break;
+                }
+            }
+            if !seq_found { continue }
         }
+
         // ---------- keep only sequences found in the input query fasta
         if if_fasta_retrieve {
             let mut if_found = false;

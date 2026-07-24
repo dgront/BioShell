@@ -7,21 +7,27 @@ use crate::SequenceError;
 
 /// Defines how sequences are parsed by the [`FastaIterator`] reader.
 ///
-/// # Examples
+/// # Example
 ///
 /// ```rust
 /// use bioshell_seq::sequence::FastaIterator;
 /// # use bioshell_seq::SequenceError;
 /// # fn main() -> Result<(), SequenceError> {
-/// use bioshell_seq::sequence::FastaParsingMode::{Raw, CleanProtein};
+/// use bioshell_seq::sequence::FastaParsingMode::CleanProtein;
 /// let sequences: &str = "
 /// > Heterobasidion annosum 172174
-/// LNFCWVLGFSRYG (repeat) DQAELDSVVRTDRLPDFTDEAVLPYVTALMKKVLRWRPA";
+/// LNFCWVLGFSRYG (repeat) DQAELDSVVRTDRLPDFTDEAVLPYVTALMKKVLRWRPA*";
 /// let mut seqs = FastaIterator::new(sequences.as_bytes(), CleanProtein);
-/// let s1 = seqs.next().ok_or(SequenceError::NoInputSequences)?;
+/// let s1 = seqs.next().ok_or(SequenceError::NoInputSequences)??;
+/// assert_eq!(s1.seq(), b"LNFCWVLGFSRYGDQAELDSVVRTDRLPDFTDEAVLPYVTALMKKVLRWRPA");
 /// # Ok(())
 /// # }
 /// ```
+///
+/// The [`FastaParsingMode::CleanProtein`] removes lowercase letters, brackets, white characters
+/// as well as the '*' representing the stop codon. If you need to preserve the stop codon but still want
+/// to sanitize a sequence - use [`FastaParsingMode::CleanProteinStop`]. To also allow lowercase letter represent
+/// amino acids, use [`FastaParsingMode::CleanProteinStopSmall`]
 #[derive(Debug, Clone, Copy, Default)]
 pub enum FastaParsingMode {
     /// nucleic and protein sequences are assumed to be correct and loaded _as is_
@@ -72,22 +78,63 @@ enum FastaParserState {
 /// This object iterates over a buffer without loading its whole content which allows processing
 /// very large FASTA files.
 ///
-/// # Examples
+/// # Examples:
+/// [`FastaIterator`] provides `Option<Result<Sequence, SequenceError>>`, which can be handled as below:
+///
 /// ```rust
-/// use bioshell_seq::sequence::FastaIterator;
+/// # use bioshell_seq::sequence::{FastaIterator, Sequence};
+/// # use bioshell_seq::sequence::FastaParsingMode::CleanProtein;
 /// # use bioshell_seq::SequenceError;
 /// # fn main() -> Result<(), SequenceError> {
-/// use bioshell_seq::sequence::FastaParsingMode::Raw;
-/// let sequences: &str = "> 1clf:A
-/// AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
+/// # let sequences: &str = "> 1clf:A
+/// # AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE";
+/// let mut seqs_it = FastaIterator::new(sequences.as_bytes(), CleanProtein);
+/// let seq1 = seqs_it.next().ok_or(SequenceError::NoInputSequences)??;
+/// # Ok(())
+/// # }
+/// ```
+/// In this example, the returned `Option` may be converted to [`NoInputSequences`](SequenceError::NoInputSequences)
+/// which is propagated by the first `'?'`. The second `'?'` propagates [`SequenceError`] from the `Result` returned by `next()`.
 ///
-/// > 1dur:A
-/// AYVINDSCIACGACKPECPVNCIQEGSIYAIDADSCIDCGSCASVCPVGAPNPED
+/// All sequences may be collected at once to a vector of [`Sequence`] objects, propagating the error if necessary:
+/// ```rust
+/// # use bioshell_seq::sequence::{FastaIterator, Sequence};
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
+/// # use bioshell_seq::sequence::FastaParsingMode::CleanProtein;
+/// # let sequences: &str = "> 1clf:A
+/// # AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
+/// # > 1dur:A
+/// # AYVINDSCIACGACKPECPVNCIQEGSIYAIDADSCIDCGSCASVCPVGAPNPED
+/// # > 1fca:A
+/// # AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
 ///
-/// > 1fca:A
-/// AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
-/// let seqs = FastaIterator::new(sequences.as_bytes(), Raw);
-/// let seq_ids: Vec<String> = seqs.map(|r| r.map(|s| s.first_id(true).to_string())).collect::<Result<Vec<_>,_>>()?;
+/// let seqs = FastaIterator::new(sequences.as_bytes(), CleanProtein);
+/// let seqs: Vec<Sequence> = seqs.collect::<Result<Vec<_>,_>>()?;
+/// # assert_eq!(seqs.len(), 3);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Sequences can be also processed on the fly, here the `map()` function extracts a sequence ID from
+/// every sequence.
+/// ```rust
+/// # use bioshell_seq::sequence::FastaIterator;
+/// # use bioshell_seq::SequenceError;
+/// # fn main() -> Result<(), SequenceError> {
+/// # use bioshell_seq::sequence::FastaParsingMode::CleanProtein;
+/// # let sequences: &str = "> 1clf:A
+/// # AYKIADSCVSCGACASECPVNAISQGDSIFVIDADTCIDCGNCANVCPVGAPVQE
+/// # > 1dur:A
+/// # AYVINDSCIACGACKPECPVNCIQEGSIYAIDADSCIDCGSCASVCPVGAPNPED
+/// # > 1fca:A
+/// # AYVINEACISCGACEPECPVDAISQGGSRYVIDADTCIDCGACAGVCPVDAPVQA";
+/// #
+/// # let seqs = FastaIterator::new(sequences.as_bytes(), CleanProtein);
+/// #
+/// let seq_ids: Vec<String> =
+///     seqs.map(|r| r.map(|s| s.first_id(true).to_string()))
+///         .collect::<Result<Vec<_>,_>>()?;
 /// assert_eq!(seq_ids, vec!["1clf:A", "1dur:A", "1fca:A"]);
 /// # Ok(())
 /// # }
