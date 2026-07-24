@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
+use std::sync::LazyLock;
 use regex::Regex;
 
 use bioshell_core::io::sanitize_filename;
@@ -144,6 +145,27 @@ impl SeqId {
             SeqId::Organism(_) => 15,
         }
     }
+    
+    pub fn value(&self) -> &str {
+        match self {
+            SeqId::CypId(v) => v,
+            SeqId::PDB(v) => v,
+            SeqId::SwissProt(v) => v,
+            SeqId::UniProtKB(v) => v,
+            SeqId::TrEmbl(v) => v,
+            SeqId::UniProtEntry(v) => v,
+            SeqId::UniParc(v) => v,
+            SeqId::UniRef(v) => v,
+            SeqId::RefSeq(v) => v,
+            SeqId::GenBank(v) => v,
+            SeqId::Ensembl(v) => v,
+            SeqId::DDBJ(v) => v,
+            SeqId::NCBIGI(v) => v,
+            SeqId::Default(v) => v,
+            SeqId::TaxId(v) => v,
+            SeqId::Organism(v) => v,
+        }
+    }
 }
 
 impl fmt::Display for SeqId {
@@ -210,68 +232,13 @@ impl fmt::Display for SeqId {
 /// assert_eq!(&ids.to_string(), "ref|NC_000913.3");
 /// ```
 pub fn parse_sequence_id(description: &str) -> SeqIdList {
-    let patterns: &[(&str, fn(String) -> SeqId)] = &[
-        (r"(?:pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?::[_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
-        (r"\b(pdb_[A-Za-z0-9]{8})(?::[_]?[A-Za-z0-9]{0,3})?[ |]", |s| SeqId::PDB(s)),
-
-        // RefSeq must be checked early because it's similar to UniProt entry name
-        (r"(?:\b|\|\>|_)((?:AC|NC|NG|NT|NW|NZ|NM|NR|XM|XR|AP|NP|YP|XP|WP)_[0-9]+\.\d+)\b", |s| SeqId::RefSeq(s)),
-
-        // SwissProt accession with explicit prefix, all variants
-        (r"(?:\b|\|\>)sp[|.]([A-Z0-9]{6}|[A-Z0-9]{10})(?:-\d+)?[|.]", |s| SeqId::SwissProt(s)),
-        // trEmbl accession with explicit prefix, all variants
-        (r"(?:\b|\|)tr[|.]([A-Z0-9]{6}|[A-Z0-9]{10})(?:-\d+)?[|.]", |s| SeqId::TrEmbl(s)),
-        // UniProt entry name, e.g., "002L_FRG3G"
-        (r"(?:\b|\|)([A-Z0-9]{3,}_[A-Z0-9]{3,5})\b", |s| SeqId::UniProtEntry(s)),
-        // UniProtKB accession: legacy 6-character versions and the new 10-character form
-        (r"\b([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})(?:-\d+)?\b", |s| SeqId::UniProtKB(s)),
-        // UniRef
-        (r"\b(UniRef\d{2,3}_[A-Z0-9]+)\b", |s| SeqId::UniRef(s)),
-        // UniParc ID consists of the characters “UPI” followed by 10 hexadecimal characters (0–9, A–F).
-        (r"\b(UPI[0-9A-F]{10})\b", |s| SeqId::UniParc(s)),
-
-        (r"\bGI:(\d+)\b", |s| SeqId::NCBIGI(s)),
-        (r"\bgi\|(\d+)\b", |s| SeqId::NCBIGI(s)),
-        (r"\b(ENS[TPGR][0-9]{11})\b", |s| SeqId::Ensembl(s)),
-
-        // tax-id can be in various formats, e.g., [taxid=9606], taxid=9606, taxid|9606, TaxID=9606, OX=9606
-        (r"(?i:\[?taxid=(\d+))", |s| SeqId::TaxId(s)),
-        (r"(?i:\[?TaxID=(\d+))", |s| SeqId::TaxId(s)),
-        (r"OX=(\d+)", |s| SeqId::TaxId(s)),
-        (r"(?i:(?:\b|\|)taxid\|(\d+))", |s| SeqId::TaxId(s)),
-
-        // INSDC / DDBJ explicitly prefixed with "dbj|", e.g., "dbj|BAE93469.1"
-        (r"(?:\b|\|)dbj\|([A-Z]{3}[0-9]{5}(?:\.\d+)?)\b", |s| SeqId::DDBJ(s)),
-        // INSDC / GenBank explicitly prefixed with "gb|", e.g., "gb|AB123456.1"
-        (r"(?:\b|\||_)gb\|([A-Z]{1,3}[0-9]{4,8}(?:\.\d+)?)\b", |s| SeqId::GenBank(s)),
-        // INSDC / GenBank nucleotide: 1 letter + 5 digits
-        (r"(?:\b|\||_)([A-Z][0-9]{5}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
-        // INSDC / GenBank nucleotide: 2 letters + 6 digits
-        (r"(?:\b|\||_)([A-Z]{2}[0-9]{6}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
-        // INSDC / GenBank nucleotide: 2 letters + 8 digits
-        (r"(?:\b|\||_)([A-Z]{2}[0-9]{8}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
-        // INSDC / GenBank protein: 3 letters + 5 digits
-        (r"(?:\b|\||_)([A-Z]{3}[0-9]{5}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
-        // INSDC / GenBank protein: 3 letters + 7 digits
-        (r"(?:\b|\||_)([A-Z]{3}[0-9]{7}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
-        // INSDC/GenBank WGS-style nucleotide accession
-        (r"(?:\b|\||_)([A-Z]{4}[0-9]{8,10}(?:\.\d+)?)(?:$|[^\w]|_)", |s| SeqId::GenBank(s)),
-
-        // organism scientific name in square brackets
-        (r"\[organism=([[:alpha:]][[:alnum:]. ]*)\]", |s| SeqId::Organism(s)),
-        (r"\[([[:alpha:]][[:alnum:]. ]*)\]", |s| SeqId::Organism(s)),
-        // CYP-id - two variants: lowercase and uppercase
-        (r"(?:^|[^\w]|_)(CYP[0-9]+[A-Z]{1,3}[0-9]+[a-z]?(?:v[0-9]{1,2})?(?:P(?:[0-9]+|[NC])?)?X?(?:_[A-Z]{1,4})?)(?:$|[^\w]|_)", |s| SeqId::CypId(s)),
-        (r"(?:^|[^\w]|_)(Cyp[0-9]+[a-z]{1,3}[0-9]+[a-z]?(?:v[0-9]{1,2})?(?:P(?:[0-9]+|[NC])?)?X?(?:_[A-Z]{1,4})?)(?:$|[^\w]|_)", |s| SeqId::CypId(s)),
-    ];
 
     let mut found = Vec::new();
     let mut buffer = description.as_bytes().to_vec();
 
-    for (pattern, constructor) in patterns {
-        let re = Regex::new(pattern).unwrap();
+    for (pattern, constructor) in SEQUENCE_ID_PATTERNS.iter() {
         let desc_view = std::str::from_utf8(&buffer).unwrap();
-        if let Some(caps) = re.captures(desc_view) {
+        if let Some(caps) = pattern.captures(desc_view) {
             if let Some(m) = caps.get(1) {
                 let matched_str = m.as_str().to_string();
                 found.push(constructor(matched_str));
@@ -440,3 +407,83 @@ impl fmt::Display for SeqIdList {
         Ok(())
     }
 }
+
+type SeqIdConstructor = fn(String) -> SeqId;
+type CompiledPattern = (Regex, SeqIdConstructor);
+
+macro_rules! regex_patterns {
+    ($($pattern:expr => $constructor:expr),* $(,)?) => {
+        LazyLock::new(|| {
+            vec![
+                $(
+                    (
+                        Regex::new($pattern).unwrap_or_else(|error| {
+                            panic!(
+                                "invalid sequence ID regex {:?}: {}",
+                                $pattern,
+                                error
+                            )
+                        }),
+                        $constructor as SeqIdConstructor,
+                    )
+                ),*
+            ]
+        })
+    };
+}
+
+static SEQUENCE_ID_PATTERNS: LazyLock<Vec<CompiledPattern>> = regex_patterns![
+
+            r"(?:pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?::[_]?[A-Za-z0-9]{0,3})?[ |]" => |s| SeqId::PDB(s),
+            r"\b(pdb_[A-Za-z0-9]{8})(?::[_]?[A-Za-z0-9]{0,3})?[ |]" => |s| SeqId::PDB(s),
+
+            // RefSeq must be checked early because it's similar to UniProt entry name
+            r"(?:\b|\|\>|_)((?:AC|NC|NG|NT|NW|NZ|NM|NR|XM|XR|AP|NP|YP|XP|WP)_[0-9]+\.\d+)\b" => |s| SeqId::RefSeq(s),
+
+            // SwissProt accession with explicit prefix, all variants
+            r"(?:\b|\|\>)sp[|.]([A-Z0-9]{6}|[A-Z0-9]{10})(?:-\d+)?[|.]" => |s| SeqId::SwissProt(s),
+            // trEmbl accession with explicit prefix, all variants
+            r"(?:\b|\|)tr[|.]([A-Z0-9]{6}|[A-Z0-9]{10})(?:-\d+)?[|.]" => |s| SeqId::TrEmbl(s),
+            // UniProt entry name, e.g., "002L_FRG3G"
+            r"(?:\b|\|)([A-Z0-9]{3,}_[A-Z0-9]{3,5})\b" => |s| SeqId::UniProtEntry(s),
+            // UniProtKB accession: legacy 6-character versions and the new 10-character form
+            r"\b([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})(?:-\d+)?\b" => |s| SeqId::UniProtKB(s),
+            // UniRef
+            r"\b(UniRef\d{2,3}_[A-Z0-9]+)\b" => |s| SeqId::UniRef(s),
+            // UniParc ID consists of the characters “UPI” followed by 10 hexadecimal characters (0–9, A–F).
+            r"\b(UPI[0-9A-F]{10})\b" => |s| SeqId::UniParc(s),
+
+            r"\bGI:(\d+)\b" => |s| SeqId::NCBIGI(s),
+            r"\bgi\|(\d+)\b" => |s| SeqId::NCBIGI(s),
+            r"\b(ENS[TPGR][0-9]{11})\b" => |s| SeqId::Ensembl(s),
+
+            // tax-id can be in various formats, e.g., [taxid=9606], taxid=9606, taxid|9606, TaxID=9606, OX=9606
+            r"(?i:\[?taxid=(\d+))" => |s| SeqId::TaxId(s),
+            r"(?i:\[?TaxID=(\d+))" => |s| SeqId::TaxId(s),
+            r"OX=(\d+)" => |s| SeqId::TaxId(s),
+            r"(?i:(?:\b|\|)taxid\|(\d+))" => |s| SeqId::TaxId(s),
+
+            // INSDC / DDBJ explicitly prefixed with "dbj|", e.g., "dbj|BAE93469.1"
+            r"(?:\b|\|)dbj\|([A-Z]{3}[0-9]{5}(?:\.\d+)?)\b" => |s| SeqId::DDBJ(s),
+            // INSDC / GenBank explicitly prefixed with "gb|", e.g., "gb|AB123456.1"
+            r"(?:\b|\||_)gb\|([A-Z]{1,3}[0-9]{4,8}(?:\.\d+)?)\b" => |s| SeqId::GenBank(s),
+            // INSDC / GenBank nucleotide: 1 letter + 5 digits
+            r"(?:\b|\||_)([A-Z][0-9]{5}(?:\.\d+)?)(?:$|[^\w]|_)" => |s| SeqId::GenBank(s),
+            // INSDC / GenBank nucleotide: 2 letters + 6 digits
+            r"(?:\b|\||_)([A-Z]{2}[0-9]{6}(?:\.\d+)?)(?:$|[^\w]|_)" => |s| SeqId::GenBank(s),
+            // INSDC / GenBank nucleotide: 2 letters + 8 digits
+            r"(?:\b|\||_)([A-Z]{2}[0-9]{8}(?:\.\d+)?)(?:$|[^\w]|_)" => |s| SeqId::GenBank(s),
+            // INSDC / GenBank protein: 3 letters + 5 digits
+            r"(?:\b|\||_)([A-Z]{3}[0-9]{5}(?:\.\d+)?)(?:$|[^\w]|_)" => |s| SeqId::GenBank(s),
+            // INSDC / GenBank protein: 3 letters + 7 digits
+            r"(?:\b|\||_)([A-Z]{3}[0-9]{7}(?:\.\d+)?)(?:$|[^\w]|_)" => |s| SeqId::GenBank(s),
+            // INSDC/GenBank WGS-style nucleotide accession
+            r"(?:\b|\||_)([A-Z]{4}[0-9]{8,10}(?:\.\d+)?)(?:$|[^\w]|_)" => |s| SeqId::GenBank(s),
+
+            // organism scientific name in square brackets
+            r"\[organism=([[:alpha:]][[:alnum:]. ]*)\]" => |s| SeqId::Organism(s),
+            r"\[([[:alpha:]][[:alnum:]. ]*)\]" => |s| SeqId::Organism(s),
+            // CYP-id - two variants: lowercase and uppercase
+            r"(?:^|[^\w]|_)(CYP[0-9]+[A-Z]{1,3}[0-9]+[a-z]?(?:v[0-9]{1,2})?(?:P(?:[0-9]+|[NC])?)?X?(?:_[A-Z]{1,4})?)(?:$|[^\w]|_)" => |s| SeqId::CypId(s),
+            r"(?:^|[^\w]|_)(Cyp[0-9]+[a-z]{1,3}[0-9]+[a-z]?(?:v[0-9]{1,2})?(?:P(?:[0-9]+|[NC])?)?X?(?:_[A-Z]{1,4})?)(?:$|[^\w]|_)" => |s| SeqId::CypId(s),
+        ];
