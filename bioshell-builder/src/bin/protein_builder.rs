@@ -49,7 +49,7 @@ fn main() -> Result<(), SequenceError> {
     let seq = load_sequences(&args.infasta, "target")?;
     let mut sequences: Vec<(String, String)> = vec![];
     for sequence in &seq {
-        let id = String::from(sequence.id());
+        let id = String::from(sequence.first_id(true));
         sequences.push((sequence.to_string(1000), id));
     }
 
