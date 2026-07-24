@@ -434,7 +434,7 @@ macro_rules! regex_patterns {
 
 static SEQUENCE_ID_PATTERNS: LazyLock<Vec<CompiledPattern>> = regex_patterns![
 
-            r"(?:pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?::[_]?[A-Za-z0-9]{0,3})?[ |]" => |s| SeqId::PDB(s),
+            r"(?:^|pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?::[_]?[A-Za-z0-9]{0,3})?(?:$|[ |])" => |s| SeqId::PDB(s),
             r"\b(pdb_[A-Za-z0-9]{8})(?::[_]?[A-Za-z0-9]{0,3})?[ |]" => |s| SeqId::PDB(s),
 
             // RefSeq must be checked early because it's similar to UniProt entry name
