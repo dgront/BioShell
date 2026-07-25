@@ -46,9 +46,12 @@ fn unit_cell(deposit: &Deposit) -> String {
 /// Counts entities in the given deposit
 fn count_entities(deposit: &Deposit) -> String { deposit.count_entities().to_string() }
 
-const DEPOSIT_INFO_FEATURES: [&str; 12] = ["id", "keywords", "title", "resolution", "methods",
+/// Lists the IDs of all the chains of the deposit
+fn chain_ids(deposit: &Deposit) -> String { deposit.chain_ids().collect::<Vec<_>>().join(" ") }
+
+const DEPOSIT_INFO_FEATURES: [&str; 13] = ["id", "keywords", "title", "resolution", "methods",
                                 "ligands", "rfactor", "spacegroup", "unitcell", "classification",
-                                "entity_count", "date"];
+                                "entity_count", "date", "chain_ids"];
 
 /// Provides basic info about a given deposit.
 ///
@@ -81,6 +84,7 @@ pub(crate) fn get_deposit_info<'a>(dep: &'a Deposit, deposit_info_names: &'a Vec
                     DepositInfo::UnitCell((token_name, func)) => (token_name, func(dep)),
                     DepositInfo::EntityCount((token_name, func)) => (token_name, func(dep)),
                     DepositInfo::Date((token_name, func)) => (token_name, func(dep)),
+                    DepositInfo::ChainIds((token_name, func)) => (token_name, func(dep)),
                 };
                 out.push(result);
             }
@@ -105,6 +109,7 @@ pub(crate) enum DepositInfo {
     UnitCell((&'static str, fn(&Deposit) -> String)),
     EntityCount((&'static str, fn(&Deposit) -> String)),
     Date((&'static str, fn(&Deposit) -> String)),
+    ChainIds((&'static str, fn(&Deposit) -> String)),
 }
 
 impl FromStr for DepositInfo {
@@ -124,7 +129,7 @@ impl FromStr for DepositInfo {
             "classification" => Ok(DepositInfo::Classification(("classification", deposit_classification))),
             "entity_count" => Ok(DepositInfo::EntityCount(("entity count", count_entities))),
             "date" => Ok(DepositInfo::Date(("deposition date", deposit_date))),
-
+            "chain_ids" => Ok(DepositInfo::ChainIds(("chains:", chain_ids))),
             _ => Err("Error: Unknown deposit property"),
         }
     }
