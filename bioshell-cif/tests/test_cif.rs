@@ -123,6 +123,20 @@ _symmetry_equiv_pos.as_xyz
     }
 
     #[test]
+    fn cif_table_from_category() -> Result<(), CifError> {
+
+        let mut reader = BufReader::new(data_category.as_bytes());
+        let data_block = &read_cif_buffer(&mut reader)?[0];
+        let cif_table = CifTable::new(data_block, "_struct_asym",["id", "entity_id", "details"])?;
+        assert_eq!(cif_table.iter().count(), 1);
+        let [id, enty, desc] = cif_table.iter().next().unwrap();
+        assert_eq!(id, "A");
+        assert_eq!(enty, "1");
+        assert_eq!(desc, "?");
+        Ok(())
+    }
+
+    #[test]
     fn parse_edge_cases() {
 
         // ---------- multiline data value
@@ -172,6 +186,16 @@ _pdbx_nmr_refine.details
 ;XPLOR-NIH was used.
 ;
 "#;
+
+    #[allow(non_upper_case_globals)]
+    static data_category: &'static str = r#"data_struct_asym
+#
+_struct_asym.id                            A
+_struct_asym.pdbx_blank_PDB_chainid_flag   Y
+_struct_asym.pdbx_modified                 N
+_struct_asym.entity_id                     1
+_struct_asym.details                       ?
+#"#;
 
     #[allow(non_upper_case_globals)]
     static ALA_CIF: &'static str = r#"data_ALA

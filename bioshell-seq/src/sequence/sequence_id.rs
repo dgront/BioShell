@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::sync::LazyLock;
-use regex::Regex;
+use regex::{Captures, Regex};
 
 use bioshell_core::io::sanitize_filename;
 
@@ -233,20 +233,32 @@ impl fmt::Display for SeqId {
 /// ```
 pub fn parse_sequence_id(description: &str) -> SeqIdList {
 
+    let desc = expand_taxids(description);
     let mut found = Vec::new();
-    let mut buffer = description.as_bytes().to_vec();
+    let mut buffer = desc.as_bytes().to_vec();
 
     for (pattern, constructor) in SEQUENCE_ID_PATTERNS.iter() {
-        let desc_view = std::str::from_utf8(&buffer).unwrap();
-        if let Some(caps) = pattern.captures(desc_view) {
-            if let Some(m) = caps.get(1) {
-                let matched_str = m.as_str().to_string();
-                found.push(constructor(matched_str));
-                // Mask out the matched portion with whitespace of same length
-                for i in m.start()..m.end() {
-                    buffer[i] = b' ';
-                }
-            }
+        let matches: Vec<(usize, usize, String)> = {
+            let desc_view = std::str::from_utf8(&buffer).unwrap();
+
+            pattern
+                .captures_iter(desc_view)
+                .filter_map(|caps| {
+                    let whole = caps.get(0)?;
+                    let id = caps.get(1)?;
+
+                    Some((
+                        whole.start(),
+                        whole.end(),
+                        id.as_str().to_owned(),
+                    ))
+                })
+                .collect()
+        };
+
+        for (start, end, matched_str) in matches {
+            found.push(constructor(matched_str));
+            buffer[start..end].fill(b' ');
         }
     }
 
@@ -256,6 +268,26 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
 
     // found.sort(); // Sorts by priority
     SeqIdList::from(found)
+}
+
+static TAXID_LIST_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\btaxid(?:=|\|)(\d+(?:,\d+)*)(?:\|)?[ \t]*")
+        .expect("invalid TAXID_LIST_RE")
+});
+
+fn expand_taxids(text: &str) -> String {
+
+    if !text.contains("taxid") {
+        return text.to_owned();
+    }
+
+    TAXID_LIST_RE.replace_all(text, |caps: &Captures| {
+        caps[1]
+            .split(',')
+            .map(|id| format!("taxid|{id}|"))
+            .collect::<Vec<_>>()
+            .join(" ") + " "
+    }).trim_end().to_string()
 }
 
 
@@ -434,6 +466,12 @@ macro_rules! regex_patterns {
 
 static SEQUENCE_ID_PATTERNS: LazyLock<Vec<CompiledPattern>> = regex_patterns![
 
+            // tax-id can be in various formats, e.g., [taxid=9606], taxid=9606, taxid|9606, TaxID=9606, OX=9606
+            r"(?i:\[?taxid=(\d+))" => |s| SeqId::TaxId(s),
+            r"(?i:\[?TaxID=(\d+))" => |s| SeqId::TaxId(s),
+            r"OX=(\d+)" => |s| SeqId::TaxId(s),
+            r"(?i:(?:\b|\|)taxid\|(\d+))" => |s| SeqId::TaxId(s),
+
             r"(?:^|pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?::[_]?[A-Za-z0-9]{0,3})?(?:$|[ |])" => |s| SeqId::PDB(s),
             r"\b(pdb_[A-Za-z0-9]{8})(?::[_]?[A-Za-z0-9]{0,3})?[ |]" => |s| SeqId::PDB(s),
 
@@ -456,12 +494,6 @@ static SEQUENCE_ID_PATTERNS: LazyLock<Vec<CompiledPattern>> = regex_patterns![
             r"\bGI:(\d+)\b" => |s| SeqId::NCBIGI(s),
             r"\bgi\|(\d+)\b" => |s| SeqId::NCBIGI(s),
             r"\b(ENS[TPGR][0-9]{11})\b" => |s| SeqId::Ensembl(s),
-
-            // tax-id can be in various formats, e.g., [taxid=9606], taxid=9606, taxid|9606, TaxID=9606, OX=9606
-            r"(?i:\[?taxid=(\d+))" => |s| SeqId::TaxId(s),
-            r"(?i:\[?TaxID=(\d+))" => |s| SeqId::TaxId(s),
-            r"OX=(\d+)" => |s| SeqId::TaxId(s),
-            r"(?i:(?:\b|\|)taxid\|(\d+))" => |s| SeqId::TaxId(s),
 
             // INSDC / DDBJ explicitly prefixed with "dbj|", e.g., "dbj|BAE93469.1"
             r"(?:\b|\|)dbj\|([A-Z]{3}[0-9]{5}(?:\.\d+)?)\b" => |s| SeqId::DDBJ(s),

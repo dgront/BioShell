@@ -2,6 +2,8 @@ use crate::{CifData, CifError, CifLoop};
 
 /// Provides access to data stored in selected columns of a [`CifLoop`](CifLoop).
 ///
+/// It's also possible to use it to extract data from the same category (see below).
+///
 /// The purpose of this struct is to simplify access data stored in a loop block. It allows to iterate over
 /// rows of a loop block and unpack values of selected columns at the same time.
 ///
@@ -55,6 +57,8 @@ use crate::{CifData, CifError, CifLoop};
 /// # }
 /// ```
 ///
+/// Sometimes however the same data can be stored as group of data items rather than a loop block,
+/// when it holds only a single row. [`CifTable`] can handle such cases as well, as in these examples:
 /// ```
 /// use std::io::BufReader;
 /// use bioshell_cif::{CifTable, read_cif_buffer, CifError};
@@ -69,6 +73,22 @@ use crate::{CifData, CifError, CifLoop};
 ///     println!("{} {} {}", x, y, z);
 /// }
 /// # Ok(())
+/// # }
+/// ```
+///
+/// ```
+/// # use std::io::BufReader;
+/// # use bioshell_cif::{CifTable, read_cif_buffer, CifError};
+/// # fn main() -> Result<(), CifError> {
+/// let assym: &str = r#"data_struct_asym
+/// _struct_asym.id                            A
+/// _struct_asym.entity_id                     1
+/// _struct_asym.details                       ?
+/// "#;
+/// let data_block = &read_cif_buffer(&mut BufReader::new(assym.as_bytes()))?[0];
+/// let cif_table = CifTable::new(data_block, "_struct_asym",["id", "entity_id"])?;
+/// let [id, enty] = cif_table.iter().next().unwrap();
+/// Ok(())
 /// # }
 /// ```
 pub struct CifTable<'a, const N: usize> {
@@ -99,7 +119,11 @@ impl<'a, const N: usize> CifTable<'a, N> {
                 let item_name = if column_name.starts_with(selected_loop) {
                     column_name.to_string()
                 } else {
-                    format!("{}{}", selected_loop, column_name)
+                    if selected_loop.ends_with('.') || column_name.starts_with('.') {
+                        format!("{}{}", selected_loop, column_name)
+                    } else {
+                        format!("{}.{}", selected_loop, column_name)
+                    }
                 };
                 if let Some(item_value) = cif_data_block.get_item(&item_name) {
                     data_items[column_index] = item_value;

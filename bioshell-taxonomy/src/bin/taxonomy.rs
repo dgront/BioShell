@@ -9,6 +9,7 @@ use env_logger;
 
 use bioshell_core::io::{markdown_to_text, open_file};
 use bioshell_seq::sequence::{FastaIterator, Sequence, SequenceReporter, WriteFasta};
+use bioshell_seq::sequence::FastaParsingMode::CleanProteinStopSmall;
 
 const TAXONOMY_EXAMPLES: &str = include_str!("../documentation/taxonomy_app.md");
 fn create_cookbook() -> String { format!("{}{}", "\x1B[4mCookbook:\x1B[0m\n", markdown_to_text(TAXONOMY_EXAMPLES)) }
@@ -233,7 +234,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(fasta) = args.detect_fasta {
         info!("Reading sequences in fasta fromat from {fasta}");
         let mut reporter = WriteFasta::new(None, 0, false);
-        let sequences = FastaIterator::new(open_file(fasta)?);
+        let sequences = FastaIterator::new(open_file(fasta)?, CleanProteinStopSmall);
         for res_seq in sequences {
             let seq = res_seq?;
             let desc = seq.description();
