@@ -161,13 +161,29 @@ mod tests {
             ("[9606]", false, ""),
             ("[123abc]", false, ""),
         ];
-        for (text, is_match, expected) in test_cases.iter() {
+        for (text, is_match, _expected) in test_cases.iter() {
             let ids = parse_sequence_id(text);
             if *is_match {
                 assert!(matches!(&ids[0], SeqId::Organism(_expected)), "failed on test case {}", &text);
             } else {
                 assert!(matches!(&ids[0], SeqId::Default(_expected)), "failed on test case {}", &text);
             }
+        }
+    }
+
+    #[test]
+    fn test_multiple_matches() {
+        let test_cases: Vec<(&str, usize)> = vec![
+            ("blah taxid=123|blah", 1),
+            ("blah taxid=123,234|blah", 2),
+            ("blah taxid|123,234|blah", 2),
+            (">taxid|123,234", 2),
+            (">pdb|2aza|pdb|2gb1|pdb_00002aza", 2),
+            ("blah >taxid=123,234|blah", 2),
+        ];
+        for (text, expected) in test_cases.iter() {
+            let ids = parse_sequence_id(text);
+            assert_eq!(ids.len(), *expected, "failed on test case {}", &text);
         }
     }
 }
