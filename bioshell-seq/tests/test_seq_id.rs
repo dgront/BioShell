@@ -23,6 +23,25 @@ mod tests {
     }
 
     #[test]
+    fn parse_seq_id() {
+        let ids = parse_sequence_id("sp|A0A009IHW8|ABTIR_ACIB9 2' cyclic ADP-D-ribose synthase [taxid=1310613]");
+
+        assert_eq!(ids.len(), 3);
+
+        assert!(matches!(ids[0], SeqId::SwissProt(_)));
+        assert!(matches!(ids[1], SeqId::UniProtEntry(_)));
+        assert!(matches!(ids[2], SeqId::TaxId(_)));
+        assert_eq!(&ids.to_string(), "sp|A0A009IHW8|ABTIR_ACIB9|taxid=1310613");
+        let ids = parse_sequence_id(">ref|XP_001234567.1| hypothetical protein [Homo sapiens]");
+        assert_eq!(ids.len(), 2);
+        assert!(matches!(ids[0], SeqId::RefSeq(_)));
+        assert!(matches!(ids[1], SeqId::Organism(_)));
+
+        let ids = parse_sequence_id("NC_000913.3 Escherichia coli str. K-12 substr. MG1655, complete genome");
+        assert_eq!(&ids.to_string(), "ref|NC_000913.3");
+    }
+
+    #[test]
     fn test_seqidlist_display() {
         let ids = vec![
             SeqId::SwissProt("Q9NQX5".to_string()),
@@ -101,7 +120,7 @@ mod tests {
             ("ref|XP_001234567.1|", "ref_XP_001234567.1"),
             ("blabla", "blabla"),
             ("sp|Q9NQX5|", "sp_Q9NQX5"),
-            ("pdb|1HHP:A|", "pdb_1HHP"),
+            ("pdb|1HHP:A|", "pdb_1HHP_A"),
             ("pdb_00001abc", "pdb_00001abc"),
             ("gi|5524211|", "gi_5524211"),
             ("gb|AAD44166.1|", "gb_AAD44166.1"),
@@ -178,7 +197,7 @@ mod tests {
             ("blah taxid=123,234|blah", 2),
             ("blah taxid|123,234|blah", 2),
             (">taxid|123,234", 2),
-            (">pdb|2aza|pdb|2gb1|pdb_00002aza", 2),
+            (">pdb|2aza|pdb|2gb1|pdb_00002aza", 3),
             ("blah >taxid=123,234|blah", 2),
         ];
         for (text, expected) in test_cases.iter() {

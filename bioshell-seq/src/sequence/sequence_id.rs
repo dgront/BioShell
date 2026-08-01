@@ -96,6 +96,9 @@ pub enum SeqId {
     /// NCBI GI number, now obsolete ("gi|12345678" or "GI:12345678").
     NCBIGI(String),
 
+    /// KEGG database id.
+    KEGG(String),
+
     /// NCBI Taxonomy ID (e.g., "taxid=9606", "[taxid=9606]", "OX=9606").
     ///
     /// This variant captures the taxonomy annotation both in the NCBI and the UniProt format,
@@ -140,9 +143,10 @@ impl SeqId {
             SeqId::Ensembl(_) => 10,
             SeqId::DDBJ(_) => 11,
             SeqId::NCBIGI(_) => 12,
-            SeqId::Default(_) => 13,
-            SeqId::TaxId(_) => 14,
-            SeqId::Organism(_) => 15,
+            SeqId::KEGG(_) => 13,
+            SeqId::Default(_) => 14,
+            SeqId::TaxId(_) => 15,
+            SeqId::Organism(_) => 16,
         }
     }
     
@@ -164,6 +168,7 @@ impl SeqId {
             SeqId::Default(v) => v,
             SeqId::TaxId(v) => v,
             SeqId::Organism(v) => v,
+            SeqId::KEGG(v) => v,
         }
     }
 }
@@ -188,6 +193,7 @@ impl fmt::Display for SeqId {
             SeqId::UniParc(s) => write!(f, "UniParc|{}", s),
             SeqId::UniProtEntry(s) => write!(f, "{}", s),
             SeqId::UniRef(s) => write!(f, "{}", s),
+            SeqId::KEGG(s) => write!(f, "{}", s),
             SeqId::RefSeq(s) => write!(f, "ref|{}", s),
             SeqId::GenBank(s) => write!(f, "gb|{}", s),
             SeqId::Ensembl(s) => write!(f, "Ensembl|{}", s),
@@ -234,7 +240,7 @@ impl fmt::Display for SeqId {
 pub fn parse_sequence_id(description: &str) -> SeqIdList {
 
     let desc = expand_taxids(description);
-    let mut found = Vec::new();
+    let mut found_with_positions = Vec::new();
     let mut buffer = desc.as_bytes().to_vec();
 
     for (pattern, constructor) in SEQUENCE_ID_PATTERNS.iter() {
@@ -257,10 +263,17 @@ pub fn parse_sequence_id(description: &str) -> SeqIdList {
         };
 
         for (start, end, matched_str) in matches {
-            found.push(constructor(matched_str));
+            found_with_positions.push((start, constructor(matched_str)));
             buffer[start..end].fill(b' ');
         }
     }
+
+    found_with_positions.sort_by_key(|(start, _)| *start);
+
+    let mut found = found_with_positions
+        .into_iter()
+        .map(|(_, id)| id)
+        .collect::<Vec<_>>();
 
     if found.is_empty() {
         found.push(SeqId::Default(description.split_whitespace().next().unwrap_or("").to_string()));
@@ -471,9 +484,11 @@ static SEQUENCE_ID_PATTERNS: LazyLock<Vec<CompiledPattern>> = regex_patterns![
             r"(?i:\[?TaxID=(\d+))" => |s| SeqId::TaxId(s),
             r"OX=(\d+)" => |s| SeqId::TaxId(s),
             r"(?i:(?:\b|\|)taxid\|(\d+))" => |s| SeqId::TaxId(s),
+            // KEGG id
+            r"(?:^|[|>]|\b)([a-z][a-z0-9]{2,4}:[A-Za-z0-9_.-]+)(?:$|[|>]|\b)" => |s| SeqId::KEGG(s),
 
-            r"(?:^|pdb|\s+|\|)([0-9][A-Za-z0-9]{3})(?::[_]?[A-Za-z0-9]{0,3})?(?:$|[ |])" => |s| SeqId::PDB(s),
-            r"\b(pdb_[A-Za-z0-9]{8})(?::[_]?[A-Za-z0-9]{0,3})?[ |]" => |s| SeqId::PDB(s),
+            r"(?:^|pdb|\s+|\|)([0-9][A-Za-z0-9]{3}(?::[_]?[A-Za-z0-9]{1,3})?)(?:$|[ |])" => |s| SeqId::PDB(s),
+            r"\b(pdb_[A-Za-z0-9]{8}(?::[_]?[A-Za-z0-9]{1,3})?)(?:$|[ |])" => |s| SeqId::PDB(s),
 
             // RefSeq must be checked early because it's similar to UniProt entry name
             r"(?:\b|\|\>|_)((?:AC|NC|NG|NT|NW|NZ|NM|NR|XM|XR|AP|NP|YP|XP|WP)_[0-9]+\.\d+)\b" => |s| SeqId::RefSeq(s),
