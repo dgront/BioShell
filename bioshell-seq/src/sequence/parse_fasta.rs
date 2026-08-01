@@ -135,7 +135,7 @@ enum FastaParserState {
 /// let seq_ids: Vec<String> =
 ///     seqs.map(|r| r.map(|s| s.first_id(true).to_string()))
 ///         .collect::<Result<Vec<_>,_>>()?;
-/// assert_eq!(seq_ids, vec!["1clf:A", "1dur:A", "1fca:A"]);
+/// assert_eq!(seq_ids, vec!["pdb|1clf:A", "pdb|1dur:A", "pdb|1fca:A"]);
 /// # Ok(())
 /// # }
 /// ```
