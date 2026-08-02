@@ -76,6 +76,12 @@ impl PySeqId {
         Self { inner: SeqId::Ensembl(value) }
     }
 
+    /// Create a new `KEGG` id from a given string.
+    #[staticmethod]
+    pub fn kegg(value: String) -> Self {
+        Self { inner: SeqId::KEGG(value) }
+    }
+
     /// Create a new `NCBIgi` id from a given string.
     #[staticmethod]
     pub fn ncbi_gi(value: String) -> Self {
@@ -126,6 +132,7 @@ impl PySeqId {
             SeqId::Ensembl(_) => "Ensembl",
             SeqId::TrEmbl(_) => "TrEMBL",
             SeqId::NCBIGI(_) => "NCBIGI",
+            SeqId::KEGG(_) => "KEGG",
             SeqId::TaxId(_) => "TaxId",
             SeqId::Organism(_) => "Organism",
             SeqId::UniProtEntry(_) => "UniProtEntry",
@@ -150,6 +157,7 @@ impl PySeqId {
             | SeqId::TrEmbl(v)
             | SeqId::NCBIGI(v)
             | SeqId::TaxId(v)
+            | SeqId::KEGG(v)
             | SeqId::Organism(v)
             | SeqId::UniProtEntry(v)
             | SeqId::DDBJ(v)
