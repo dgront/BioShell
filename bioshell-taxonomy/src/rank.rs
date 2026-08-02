@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Represents the main taxonomic ranks in a biological classification system.
 ///
@@ -12,7 +12,7 @@ use serde::Serialize;
 /// let rank_genus = Rank::from_str("genus");
 /// assert!(rank_genus > rank_species);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum Rank {
     Unclassified = 0,

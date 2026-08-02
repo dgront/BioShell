@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::Path;
 use std::time::Instant;
 use flate2::read::GzDecoder;
 use log::{debug, info};
 use tar::Archive;
 use reqwest::blocking::get;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use crate::{Rank};
 
 /// A node of a taxonomy tree.
@@ -31,7 +31,7 @@ use crate::{Rank};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Node {
     /// Taxonomy-wide unique identifier
     pub tax_id: u32,
@@ -73,7 +73,7 @@ pub struct Node {
 /// ```
 ///
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Taxonomy {
     nodes: Vec<Node>,
     taxid_to_index: HashMap<u32, usize>,
@@ -295,5 +295,94 @@ impl Taxonomy {
         info!("Downloaded taxonomy dump in {:.2?}", elapsed);
 
         Ok(())
+    }
+
+    /// Serializes this taxonomy into an uncompressed binary file.
+    ///
+    /// The whole Taxonomy struct is serialized into a single `path` file using the `bincode` crate.
+    /// The file can be later loaded using [`load_binary`](Self::load_binary) method,
+    /// which is much faster than parsing the original `tar.gz` dump.
+    ///
+    /// # Example
+    /// In this example we load a taxonomy from a `tar.gz` format and save it into a binary file:
+    /// ```
+    /// # use bioshell_taxonomy::{Taxonomy, Rank};
+    /// # use std::error::Error;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # let path = "./tests/test_files/test_taxdump.tar.gz";
+    /// let taxonomy = Taxonomy::load_from_tar_gz(&path)?;
+    /// taxonomy.save_binary("test_taxdump.bincode")?;
+    /// let taxonomy2 = Taxonomy::load_binary("test_taxdump.bincode")?;
+    /// # let order = taxonomy2.node(9443).unwrap();
+    /// # assert_eq!(order.name, "Primates");
+    /// # assert_eq!(order.rank, Rank::Order);
+    /// # std::fs::remove_file("test_taxdump.bincode")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn save_binary<P: AsRef<Path>>(&self, path: P) -> Result<(), Box<dyn Error>> {
+        let path = path.as_ref();
+
+        let file = File::create(path).map_err(|_error| {
+            std::io::Error::other(format!("cannot create {}", path.display()))
+        })?;
+
+        let mut writer = BufWriter::new(file);
+
+        bincode::serde::encode_into_std_write(self, &mut writer, bincode::config::standard())
+            .map_err(|error| {
+                std::io::Error::other(format!("cannot serialize taxonomy to {}: {error}", path.display()))
+            })?;
+
+        writer.flush().map_err(|error| {
+            std::io::Error::other(format!("cannot flush {}: {error}", path.display()))
+        })?;
+
+        Ok(())
+    }
+
+    /// Deserializes a taxonomy from an uncompressed binary file.
+    ///
+    /// Loads a `path` taxonomy previously serialized using [`save_binary`](Self::save_binary) method.
+    ///
+    /// # Example
+    /// In this example we load a taxonomy from a `tar.gz` format and save it into a binary file:
+    /// ```
+    /// # use bioshell_taxonomy::{Taxonomy, Rank};
+    /// # use std::error::Error;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # let path = "./tests/test_files/test_taxdump.tar.gz";
+    /// let taxonomy = Taxonomy::load_from_tar_gz(&path)?;
+    /// taxonomy.save_binary("test_taxdump.bincode")?;
+    /// let taxonomy2 = Taxonomy::load_binary("test_taxdump.bincode")?;
+    /// # let order = taxonomy2.node(9443).unwrap();
+    /// # assert_eq!(order.name, "Primates");
+    /// # assert_eq!(order.rank, Rank::Order);
+    /// # std::fs::remove_file("test_taxdump.bincode")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn load_binary<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
+
+        let start = Instant::now();
+
+        let path = path.as_ref();
+
+        let file = File::open(path)
+            .map_err(|_error| {
+                std::io::Error::other(format!("cannot open {}", path.display()))
+            })?;
+
+        let mut reader = BufReader::new(file);
+
+        let taxonomy: Self = bincode::serde::decode_from_std_read(&mut reader, bincode::config::standard())
+            .map_err(|error| {
+                std::io::Error::other(format!("cannot deserialize taxonomy from {}: {error}", path.display()))
+            })?;
+
+        let elapsed = start.elapsed();
+        info!("Binary taxonomy file loaded in {:.2?}", elapsed);
+
+        Ok(taxonomy)
     }
 }

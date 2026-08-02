@@ -71,7 +71,7 @@ mod tests {
 
         let mut kingdoms = vec![];
         for n in taxonomy.nodes().filter(|ni|ni.rank==Rank::Kingdom) {
-            let name = &n.name;
+            let _name = &n.name;
             kingdoms.push(n.tax_id);
             // print!("{} {} : ",n.tax_id, &name);
             // for synonym in taxonomy.names(n.tax_id) {

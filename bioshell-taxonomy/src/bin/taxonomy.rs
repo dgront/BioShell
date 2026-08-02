@@ -49,9 +49,17 @@ struct Cli {
     #[arg(long)]
     taxid_file: Option<String>,
 
-    /// path to the taxonomy.dat or to taxdump.tar.gz file
+    /// path to the taxdump.tar.gz file; the file will be loaded unless --load-binary was used
     #[arg(short = 'p', long = "path", default_value = "./")]
     path: PathBuf,
+
+    /// path to load the taxdump.bincode file
+    #[arg(short = 'b', long)]
+    load_binary: Option<PathBuf>,
+
+    /// path to save the taxdump.bincode file
+    #[arg(long)]
+    save_binary: Option<PathBuf>,
 
     /// download the most recent taxdump.tar.gz file from the NCBI website
     #[clap(long)]
@@ -112,9 +120,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Taxonomy::download_from_ncbi("taxdump.tar.gz")?;
     }
 
-    info!("Loading taxonomy from {}", args.path.display());
-    let dump_file = format!("{}/taxdump.tar.gz", args.path.display());
-    let taxonomy = Taxonomy::load_from_tar_gz(&dump_file)?;
+    let taxonomy = if let Some(load_binary) = args.load_binary {
+        let binary_file = load_binary.join("taxdump.bincode");
+        info!("Loading taxonomy from binary file: {}", binary_file.display());
+        Taxonomy::load_binary(&binary_file)?
+    } else {
+        let dump_file = args.path.join("taxdump.tar.gz");
+        info!("Loading taxonomy from file: {}", dump_file.display());
+        Taxonomy::load_from_tar_gz(&dump_file)?
+    };
+
+    if let Some(save_binary) = args.save_binary {
+        let binary_file = save_binary.join("taxdump.bincode");
+        info!("Saving taxonomy to binary file: {}", save_binary.display());
+        taxonomy.save_binary(&binary_file)?;
+    }
 
     let separator: &str = if let Some(ref sep) = args.separator {
         sep
