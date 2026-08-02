@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyValueError, PyIOError};
 use pyo3::types::{PyAny, PyAnyMethods};
 
 use std::sync::Arc;
@@ -76,6 +76,27 @@ impl PyTaxonomy {
     pub fn download_from_ncbi(output_path: &str) -> PyResult<()> {
         Taxonomy::download_from_ncbi(output_path)
             .map_err(|e| PyValueError::new_err(format!("Download failed: {}", e)))
+    }
+
+    /// Save the taxonomy data to a binary file.
+    ///
+    /// Such a file can be loaded later using ``Taxonomy.load_binary()``.
+    pub fn save_binary(&self, path: &str) -> PyResult<()> {
+        self.taxonomy.save_binary(path).map_err(|error| {
+            PyIOError::new_err(format!("Failed to save taxonomy to binary file '{}': {}", path, error)) })
+    }
+
+    /// Load the taxonomy data from a binary file.
+    ///
+    /// Such a file can be saved with ``Taxonomy.save_binary()``.
+    #[staticmethod]
+    pub fn load_binary(path: &str) -> PyResult<Self> {
+        Taxonomy::load_binary(path)
+            .map(Arc::new)
+            .map(|taxonomy| Self { taxonomy, matcher: OnceCell::new() })
+            .map_err(|error| {
+                PyIOError::new_err(format!("Failed to load taxonomy from binary file '{}': {}", path, error))
+            })
     }
 
     /// Return a node by its taxid.

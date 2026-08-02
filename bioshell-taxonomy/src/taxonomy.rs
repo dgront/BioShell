@@ -31,7 +31,7 @@ use crate::{Rank};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
     /// Taxonomy-wide unique identifier
     pub tax_id: u32,
