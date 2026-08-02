@@ -22,3 +22,4 @@ pybioshell/.venv/
 pybioshell/.pybioshell/
 pybioshell/docs/_build/
 taxdump.tar.gz
+taxdump.bincode

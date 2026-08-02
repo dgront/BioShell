@@ -71,6 +71,7 @@ mod tests {
 
         let mut kingdoms = vec![];
         for n in taxonomy.nodes().filter(|ni|ni.rank==Rank::Kingdom) {
+            let _name = &n.name;
             kingdoms.push(n.tax_id);
             // let name = &n.name;
             // print!("{} {} : ",n.tax_id, &name);
