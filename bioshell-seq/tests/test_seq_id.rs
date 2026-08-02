@@ -175,6 +175,7 @@ mod tests {
     #[test]
     fn test_species_detection() {
         let test_cases: Vec<(&str, bool, &str)> = vec![
+            ("OS=Homo sapiens", true, "Homo sapiens"),
             ("[Homo sapiens]", true, "Homo sapiens"),
             ("[organism=Homo sapiens]",true, "Homo sapiens"),
             ("[9606]", false, ""),
@@ -182,6 +183,7 @@ mod tests {
         ];
         for (text, is_match, _expected) in test_cases.iter() {
             let ids = parse_sequence_id(text);
+            eprintln!("{text} {ids}");
             if *is_match {
                 assert!(matches!(&ids[0], SeqId::Organism(_expected)), "failed on test case {}", &text);
             } else {

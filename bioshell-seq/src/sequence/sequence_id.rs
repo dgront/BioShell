@@ -102,13 +102,13 @@ pub enum SeqId {
     /// NCBI Taxonomy ID (e.g., "taxid=9606", "[taxid=9606]", "OX=9606").
     ///
     /// This variant captures the taxonomy annotation both in the NCBI and the UniProt format,
-    /// i.e. "taxid=9606" and "OX=9606", respectively.
     TaxId(String),
 
-    /// Organism scientific name (e.g., "Homo sapiens")
+    /// Organism scientific name (e.g., `"Homo sapiens"`)
     ///
     /// This variant captures both the species annotation in the UniProt and NCBI formats,
-    /// e.g. "OS=9606" or "[Homo sapiens]"
+    /// e.g. `"[organism=Homo sapiens]"`, `"[Homo sapiens]"` and `"OX=Homo sapiens"`, respectively.
+    /// In the case of UniProt format (the `"OS="` prefix), the organism name must be the very last field of the description
     Organism(String),
 
     /// If nothing has been found, use the first word of the description
@@ -530,6 +530,8 @@ static SEQUENCE_ID_PATTERNS: LazyLock<Vec<CompiledPattern>> = regex_patterns![
             // organism scientific name in square brackets
             r"\[organism=([[:alpha:]][[:alnum:]. ]*)\]" => |s| SeqId::Organism(s),
             r"\[([[:alpha:]][[:alnum:]. ]*)\]" => |s| SeqId::Organism(s),
+            r"\bOS=\s*([^|=\r\n]*[^|=\s])\s*(?:\||$)" => |s| SeqId::Organism(s),
+
             // CYP-id - two variants: lowercase and uppercase
             r"(?:^|[^\w]|_)(CYP[0-9]+[A-Z]{1,3}[0-9]+[a-z]?(?:v[0-9]{1,2})?(?:P(?:[0-9]+|[NC])?)?X?(?:_[A-Z]{1,4})?)(?:$|[^\w]|_)" => |s| SeqId::CypId(s),
             r"(?:^|[^\w]|_)(Cyp[0-9]+[a-z]{1,3}[0-9]+[a-z]?(?:v[0-9]{1,2})?(?:P(?:[0-9]+|[NC])?)?X?(?:_[A-Z]{1,4})?)(?:$|[^\w]|_)" => |s| SeqId::CypId(s),
