@@ -190,7 +190,7 @@ impl fmt::Display for SeqId {
             SeqId::SwissProt(s) => write!(f, "sp|{}", s),
             SeqId::TrEmbl(s) => write!(f, "tr|{}", s),
             SeqId::UniProtKB(s) => write!(f, "UniProt|{}", s),
-            SeqId::UniParc(s) => write!(f, "UniParc|{}", s),
+            SeqId::UniParc(s) => write!(f, "{}", s),
             SeqId::UniProtEntry(s) => write!(f, "{}", s),
             SeqId::UniRef(s) => write!(f, "{}", s),
             SeqId::KEGG(s) => write!(f, "{}", s),
