@@ -290,4 +290,4 @@ const PROTEIN_LETTERS: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZ-_";
 const PROTEIN_LETTERS_STOP: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZ-_*";
 
 /// Defines letters allowed in an amino acid sequence, as well as '*' for the stop codon and gaps
-const PROTEIN_LETTERS_STOP_SMALL: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZacdefghiklmnopqrtsvwx-_*";
+const PROTEIN_LETTERS_STOP_SMALL: &[u8] = b"ACDEFGHIKLMNPQRSTVWYBJOUXZacdefghiklmnopqrstvwxyz-_*";
