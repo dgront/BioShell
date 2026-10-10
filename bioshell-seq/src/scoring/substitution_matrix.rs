@@ -27,6 +27,7 @@ const N_COLUMNS: usize = 21;
 /// Holds an amino acid substitution matrix (aka similarity matrix)
 ///
 /// Such a matrix can be loaded from an external file in the NCBI format. See the [crate::scoring] documentation for an example.
+#[derive(Debug, Clone)]
 pub struct SubstitutionMatrix {
     pub(crate) score: [i32; N_COLUMNS * N_COLUMNS],
     pub(crate) aa_indexes:[u8; 255],

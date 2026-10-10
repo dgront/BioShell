@@ -8,6 +8,12 @@ use py_sequence_id::{PySeqId, parse_sequence_id};
 
 mod py_fasta_iterator;
 use py_fasta_iterator::{PyFastaIterator};
+mod py_substitution_matrix;
+use py_substitution_matrix::{PySubstitutionMatrix};
+mod py_alignment;
+use py_alignment::{PyAlignment, global_alignment, local_alignment, global_alignment_str, local_alignment_str};
+
+
 
 pub fn init_submodule(parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
     let py = parent_module.py();
@@ -15,7 +21,14 @@ pub fn init_submodule(parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySeqId>()?;
     m.add_class::<PySequence>()?;
     m.add_class::<PyFastaIterator>()?;
+    m.add_class::<PySubstitutionMatrix>()?;
+    m.add_class::<PyAlignment>()?;
+
     m.add_function(wrap_pyfunction!(parse_sequence_id, &m)?)?;
+    m.add_function(wrap_pyfunction!(global_alignment, &m)?)?;
+    m.add_function(wrap_pyfunction!(local_alignment, &m)?)?;
+    m.add_function(wrap_pyfunction!(global_alignment_str, &m)?)?;
+    m.add_function(wrap_pyfunction!(local_alignment_str, &m)?)?;
     parent_module.add_submodule(&m)?;
 
     // 🔽 Add to sys.modules["bioshell.seq"]
