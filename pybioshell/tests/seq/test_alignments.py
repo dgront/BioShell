@@ -8,7 +8,8 @@ fdx2 = Sequence("> 2632118236 Burkholderia pseudomallei TSV202",
 
 blosum62 = SubstitutionMatrix("BLOSUM62")
 ali = global_alignment(fdx1, fdx2, blosum62, -10, -1)
-assert ali.aligned_query == "MISLL--VDGEAVEPWQGDTFMVSLLTRVSALRQSEFDPGRRAGFCLMGACQDCWA------------H"
-assert ali.aligned_template == "MSEPIRFYHRRAIREVSGANVTRTVL---QYLREDAHCTGTKEG-CAEGDCGACTVVVGELNDAGGVEF"
+aligned_query, aligned_template = ali.aligned_sequences(fdx1, fdx2)
+assert aligned_query.seq == "MISLL--VDGEAVEPWQGDTFMVSLLTRVSALRQSEFDPGRRAGFCLMGACQDCWA------------H"
+assert aligned_template.seq == "MSEPIRFYHRRAIREVSGANVTRTVL---QYLREDAHCTGTKEG-CAEGDCGACTVVVGELNDAGGVEF"
 
-print(f"calculated alignment:\n{ali.aligned_query}\n{ali.aligned_template}")
+print(f"calculated alignment:\n{aligned_query.seq}\n{aligned_template.seq}")
