@@ -197,7 +197,7 @@ impl<T:SimilarityScore> GlobalAligner<T> {
         }
 
         cigar.reverse();
-        AlignmentPath::from_attrs(cigar)
+        AlignmentPath::from_attrs(0, 0, cigar)
     }
     pub fn recent_score(&self) -> i32 { self.recent_score }
 }
