@@ -74,11 +74,23 @@ impl TryFrom<u8> for AlignmentStep {
 /// in a query sequence should be aligned to a given position of a template and where gaps are located.
 /// An alignment path is implemented a vector of [`AlignmentStep`]s taken on an alignment matrix to
 /// align a query sequence with a template one.
-pub struct AlignmentPath { path: Vec<AlignmentStep> }
+pub struct AlignmentPath {
+    query_start: usize,
+    template_start: usize,
+    path: Vec<AlignmentStep>
+}
 
 impl AlignmentPath {
     /// Creates an [`AlignmentPath`] directly from steps
-    pub fn from_attrs(path: Vec<AlignmentStep>) -> AlignmentPath { AlignmentPath{path} }
+    pub fn from_attrs(query_start: usize, template_start: usize, path: Vec<AlignmentStep>) -> AlignmentPath { 
+        AlignmentPath{query_start, template_start, path} 
+    }
+
+    /// Position in a query sequence where the alignment starts - zero-based index
+    pub fn query_start(&self) -> usize { self.query_start }
+
+    /// Position in a template sequence where the alignment starts - zero-based index
+    pub fn template_start(&self) -> usize { self.template_start }
 
     /// Iterates over all steps of this path
     pub fn iter(&self) -> Iter<'_, AlignmentStep> { self.path.iter() }
@@ -100,7 +112,7 @@ impl TryFrom<&str> for AlignmentPath {
     /// ```
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         let path: Result<Vec<AlignmentStep>, _> = s.chars().map(|c| AlignmentStep::try_from(c as u8)).collect();
-        path.map(|path| AlignmentPath { path })
+        path.map(|path| AlignmentPath { query_start: 0, template_start: 0, path })
     }
 }
 
@@ -117,8 +129,8 @@ impl Display for AlignmentPath {
 pub fn aligned_symbols<S: Copy>(alignment: &AlignmentPath, query: &[S], template: &[S], gap_symbol: S) -> (Vec<S>, Vec<S>) {
     let mut aliged_q: Vec<S> = vec![];
     let mut aliged_t: Vec<S> = vec![];
-    let mut q_iter = query.iter();
-    let mut t_iter = template.iter();
+    let mut q_iter = query.iter().skip(alignment.query_start);
+    let mut t_iter = template.iter().skip(alignment.template_start);
     for step in alignment.iter() {
         match step {
             AlignmentStep::Horizontal => {

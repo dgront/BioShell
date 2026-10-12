@@ -209,7 +209,7 @@ impl<T: SimilarityScore> LocalAlignment<T> {
     ///
     ///Returns analignment path as well as the start point of the alignment in the query
     /// and template sequences, respectively.
-    pub fn backtrace(&self) -> (AlignmentPath, usize, usize) {
+    pub fn backtrace(&self) -> AlignmentPath {
 
         #[derive(Clone, Copy, Debug, PartialEq, Eq)]
         enum TraceState { H, E, F }
@@ -269,7 +269,7 @@ impl<T: SimilarityScore> LocalAlignment<T> {
         }
 
         cigar.reverse();
-        (AlignmentPath::from_attrs(cigar), i, j)
+        AlignmentPath::from_attrs(i, j, cigar)
     }
 
     /// Returns the score of the most recent alignment.
