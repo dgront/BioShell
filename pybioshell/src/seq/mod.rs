@@ -13,6 +13,9 @@ use py_substitution_matrix::{PySubstitutionMatrix};
 mod py_alignment;
 use py_alignment::{PyAlignment, global_alignment, local_alignment, global_alignment_str, local_alignment_str};
 
+mod py_sequence_handlers;
+use py_sequence_handlers::{format_pairwise};
+
 
 
 pub fn init_submodule(parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -29,6 +32,7 @@ pub fn init_submodule(parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(local_alignment, &m)?)?;
     m.add_function(wrap_pyfunction!(global_alignment_str, &m)?)?;
     m.add_function(wrap_pyfunction!(local_alignment_str, &m)?)?;
+    m.add_function(wrap_pyfunction!(format_pairwise, &m)?)?;
     parent_module.add_submodule(&m)?;
 
     // 🔽 Add to sys.modules["bioshell.seq"]

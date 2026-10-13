@@ -1,4 +1,4 @@
-from bioshell.seq import Sequence, SubstitutionMatrix, global_alignment
+from bioshell.seq import Sequence, SubstitutionMatrix, global_alignment, format_pairwise
 
 fdx1 = Sequence("> 2506930501 Pseudomonas syringae CC1557 (CC1557)",
             "MISLLVDGEAVEPWQGDTFMVSLLTRVSALRQSEFDPGRRAGFCLMGACQDCWAH")
@@ -12,4 +12,4 @@ aligned_query, aligned_template = ali.aligned_sequences(fdx1, fdx2)
 assert aligned_query.seq == "MISLL--VDGEAVEPWQGDTFMVSLLTRVSALRQSEFDPGRRAGFCLMGACQDCWA------------H"
 assert aligned_template.seq == "MSEPIRFYHRRAIREVSGANVTRTVL---QYLREDAHCTGTKEG-CAEGDCGACTVVVGELNDAGGVEF"
 
-print(f"calculated alignment:\n{aligned_query.seq}\n{aligned_template.seq}")
+print(f"calculated alignment:\n{format_pairwise(fdx1, fdx2, ali)}")

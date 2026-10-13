@@ -9,17 +9,15 @@ use crate::seq::PySubstitutionMatrix;
 #[pyclass(name = "Alignment")]
 pub struct PyAlignment {
     score: i32,
-    query_start: usize,
-    template_start: usize,
-    path: AlignmentPath,
+    pub(crate) path: AlignmentPath,
 }
 
 impl PyAlignment {
 
     /// Creates a new `PyAlignment` instance.
-    pub fn new(score: i32, query_start: usize, template_start: usize, path: AlignmentPath) -> Self {
+    pub fn new(score: i32, path: AlignmentPath) -> Self {
 
-        Self { score, query_start, template_start, path }
+        Self { score, path }
     }
 }
 
@@ -33,13 +31,13 @@ impl PyAlignment {
     ///
     /// In the case of global alignment, this is always 0. In the case of local alignment, this is the index of the first aligned residue in the query sequence.
     #[getter]
-    fn query_start(&self) -> usize { self.query_start }
+    fn query_start(&self) -> usize { self.path.query_start() }
 
     /// Starting position of the aligned template sequence - zero-based index.
     ///
     /// In the case of global alignment, this is always 0. In the case of local alignment, this is the index of the first aligned residue in the template sequence.
     #[getter]
-    fn template_start(&self) -> usize { self.template_start }
+    fn template_start(&self) -> usize { self.path.template_start() }
 
     /// Returns the aligned query and template sequences as a tuple of Sequence objects.
     fn aligned_sequences(&self, full_query: &PySequence, full_template: &PySequence) -> (PySequence, PySequence) {
@@ -57,6 +55,7 @@ impl PyAlignment {
 /// Aligns two sequences globally using the Needleman-Wunsch algorithm with affine gap penalties.
 ///
 /// Returns a `Alignment` object, which allows to retrieve the aligned sequences.
+/// To align strings rather than sequence objects, use `global_alignment_str()`
 #[pyfunction]
 #[pyo3(signature = (query, target, matrix, gap_open=-10, gap_extend=-1))]
 pub fn global_alignment(query: &PySequence, target: &PySequence,
@@ -68,6 +67,7 @@ pub fn global_alignment(query: &PySequence, target: &PySequence,
 /// Aligns two sequences globally using the Needleman-Wunsch algorithm with affine gap penalties.
 ///
 /// Returns a `Alignment` object, which allows to retrieve the aligned sequences.
+/// To align sequence objects rather than strings, use `global_alignment()`
 #[pyfunction]
 #[pyo3(signature = (query, target, matrix, gap_open=-10, gap_extend=-1))]
 pub fn global_alignment_str(query: &str, target: &str,
@@ -79,12 +79,13 @@ pub fn global_alignment_str(query: &str, target: &str,
 
     let score = aligner.align(&scoring, gap_open, gap_extend);
     let path = aligner.backtrace();
-    Ok(PyAlignment::new(score, 0, 0, path))
+    Ok(PyAlignment::new(score, path))
 }
 
 /// Aligns two sequences locally using the Smith-Waterman algorithm with affine gap penalties.
 ///
 /// Returns a `Alignment` object, which allows to retrieve the aligned sequences.
+/// To align strings rather than sequence objects, use `local_alignment_str()`
 #[pyfunction]
 #[pyo3(signature = (query, target, matrix, gap_open=-10, gap_extend=-1))]
 pub fn local_alignment(query: &PySequence, target: &PySequence,
@@ -95,6 +96,7 @@ pub fn local_alignment(query: &PySequence, target: &PySequence,
 /// Aligns two sequences locally using the Smith-Waterman algorithm with affine gap penalties.
 ///
 /// Returns a `Alignment` object, which allows to retrieve the aligned sequences.
+/// To align sequence objects rather than strings, use `local_alignment()`
 #[pyfunction]
 #[pyo3(signature = (query, target, matrix, gap_open = - 10, gap_extend = - 1))]
 pub fn local_alignment_str(query: &str, target: &str,
@@ -103,7 +105,7 @@ pub fn local_alignment_str(query: &str, target: &str,
     let scoring = SequenceSimilarityScore::for_strings(query, target, matrix.matrix.clone());
     let mut aligner = LocalAlignment::new(query.len().max(target.len()));
     let score = aligner.align(&scoring, gap_open, gap_extend);
-    let (path, query_start, target_start) = aligner.backtrace();
+    let path = aligner.backtrace();
 
-    Ok(PyAlignment::new(score, query_start, target_start, path))
+    Ok(PyAlignment::new(score, path))
 }
