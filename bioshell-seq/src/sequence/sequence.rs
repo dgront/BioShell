@@ -452,7 +452,7 @@ pub fn remove_gapped_columns<'a>(sequences: impl IntoIterator<Item = &'a Sequenc
     Ok(output)
 }
 
-/// Counts residues of a given type in a [`Sequence`](Sequence)
+/// Counts how many times a residue of a given type occurred in a [`Sequence`](Sequence)
 ///
 /// # Examples
 /// ```rust
@@ -489,7 +489,7 @@ pub fn count_identical(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceEr
     return Ok(MSA::sum_identical(si, sj));
 }
 
-/// Counts residues aligned to another residue between two sequences.
+/// Counts residues aligned to another residue between two aligned sequences.
 ///
 /// Residues aligned to a gap symbol are not included in the count. Results in
 /// [`AlignedSequencesOfDifferentLengths`](crate::SequenceError::AlignedSequencesOfDifferentLengths)
@@ -519,7 +519,7 @@ pub fn count_aligned(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceErro
     return Ok(sum);
 }
 
-/// Length of a [`Sequence`](Sequence) excluding gaps
+/// Length of a [`Sequence`](Sequence) excluding all gaps
 ///
 /// # Examples
 /// ```rust
@@ -533,7 +533,7 @@ pub fn len_ungapped(sequence: &Sequence) -> usize {
     sequence.seq.iter().filter(|&c| *c != b'-' && *c != b'_').count()
 }
 
-/// Length of a sequence string excluding gaps
+/// Length of a sequence string excluding all gaps
 ///
 /// # Examples
 /// ```rust
