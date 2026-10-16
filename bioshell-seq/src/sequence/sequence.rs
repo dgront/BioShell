@@ -5,6 +5,18 @@ use crate::msa::MSA;
 use crate::sequence::{LabelStyle, sequence_label};
 use crate::SequenceError::NoInputSequences;
 
+/// A macro to check if two sequences have the same length.
+macro_rules! check_aligned_lengths {
+    ($si:expr, $sj:expr) => {
+        if $si.len() != $sj.len() {
+            return Err(SequenceError::AlignedSequencesOfDifferentLengths {
+                length_expected: $si.len(),
+                length_found: $sj.len(),
+            });
+        }
+    };
+}
+
 #[derive(Default, Clone, Debug, PartialEq)]
 /// Amino acid / nucleic sequence.
 ///
@@ -479,12 +491,8 @@ pub fn count_residue_type(sequence: &Sequence, res_type: char) -> usize {
 /// assert_eq!(count_identical(&si, &sj).unwrap(), 2);
 /// ```
 pub fn count_identical(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> {
-    if si.len() != sj.len() {
-        return Err(SequenceError::AlignedSequencesOfDifferentLengths {
-            length_expected: si.len(),
-            length_found: sj.len(),
-        });
-    }
+
+    check_aligned_lengths!(si, sj);
 
     return Ok(MSA::sum_identical(si, sj));
 }
@@ -501,12 +509,7 @@ pub fn count_identical(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceEr
 /// ```
 pub fn count_gaps_opened(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> {
 
-    if si.len() != sj.len() {
-        return Err(SequenceError::AlignedSequencesOfDifferentLengths {
-            length_expected: si.len(),
-            length_found: sj.len(),
-        });
-    }
+    check_aligned_lengths!(si, sj);
 
     let mut count = 0;
     let mut in_gap = false;
@@ -560,12 +563,8 @@ pub fn count_gaps(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> 
 /// assert_eq!(count_aligned(&si, &sj).unwrap(), 3);
 /// ```
 pub fn count_aligned(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> {
-    if si.len() != sj.len() {
-        return Err(SequenceError::AlignedSequencesOfDifferentLengths {
-            length_expected: si.len(),
-            length_found: sj.len(),
-        });
-    }
+
+    check_aligned_lengths!(si, sj);
 
     let mut sum = 0;
     for (ci, cj) in si.seq.iter().zip(sj.seq.iter()) {
@@ -590,12 +589,8 @@ pub fn count_aligned(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceErro
 /// assert_eq!(count_mismatches(&si, &sj).unwrap(), 1);
 /// ```
 pub fn count_mismatches(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> {
-    if si.len() != sj.len() {
-        return Err(SequenceError::AlignedSequencesOfDifferentLengths {
-            length_expected: si.len(),
-            length_found: sj.len(),
-        });
-    }
+
+    check_aligned_lengths!(si, sj);
 
     let mut sum = 0;
     for (ci, cj) in si.seq.iter().zip(sj.seq.iter()) {
