@@ -489,6 +489,63 @@ pub fn count_identical(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceEr
     return Ok(MSA::sum_identical(si, sj));
 }
 
+/// Counts the gapped blocks in pairwise sequence alignment.
+///
+///
+/// # Example
+/// ```rust
+/// # use bioshell_seq::sequence::{Sequence, count_gaps_opened};
+/// let si = Sequence::from_str("seq-1", "PERFAG-");
+/// let sj = Sequence::from_str("seq-2", "P-RV---");
+/// assert_eq!(count_gaps_opened(&si, &sj).unwrap(), 2);
+/// ```
+pub fn count_gaps_opened(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> {
+
+    if si.len() != sj.len() {
+        return Err(SequenceError::AlignedSequencesOfDifferentLengths {
+            length_expected: si.len(),
+            length_found: sj.len(),
+        });
+    }
+
+    let mut count = 0;
+    let mut in_gap = false;
+
+    for (a, b) in si.seq.iter().zip(sj.seq.iter()) {
+        let gap = *a == b'-' || *b == b'-';
+
+        if gap && !in_gap {
+            count += 1;
+        }
+        in_gap = gap;
+    }
+
+    return Ok(count);
+}
+
+/// Counts all residues aligned to a gap symbol between two aligned sequences.
+///
+/// The returned count is equal to ``s.len() - count_aligned(s, t)``. Results in
+/// [`AlignedSequencesOfDifferentLengths`](crate::SequenceError::AlignedSequencesOfDifferentLengths)
+///  if the sequences differ by length.
+///
+/// # Example
+/// ```rust
+/// # use bioshell_seq::sequence::{Sequence, count_gaps};
+/// let si = Sequence::from_str("seq-1", "PERFAG");
+/// let sj = Sequence::from_str("seq-2", "P-RV--");
+/// assert_eq!(count_gaps(&si, &sj).unwrap(), 3);
+/// ```
+pub fn count_gaps(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> {
+
+    let result = count_aligned(si, sj);
+    if let Ok(aligned) = result {
+        return Ok(si.len() - aligned);
+    } else {
+        return result;
+    }
+}
+
 /// Counts residues aligned to another residue between two aligned sequences.
 ///
 /// Residues aligned to a gap symbol are not included in the count. Results in
@@ -513,6 +570,36 @@ pub fn count_aligned(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceErro
     let mut sum = 0;
     for (ci, cj) in si.seq.iter().zip(sj.seq.iter()) {
         if *ci != b'-' && *ci != b'_' && *cj != b'-' && *cj != b'_' {
+            sum += 1;
+        }
+    }
+    return Ok(sum);
+}
+
+/// Counts residues aligned to a residue of a different type.
+///
+/// Residues aligned with a gap symbol are not included in the count. Results in
+/// [`AlignedSequencesOfDifferentLengths`](crate::SequenceError::AlignedSequencesOfDifferentLengths)
+///  if the sequences differ by length.
+///
+/// # Example
+/// ```rust
+/// # use bioshell_seq::sequence::{Sequence, count_mismatches};
+/// let si = Sequence::from_str("seq-1", "PERF-");
+/// let sj = Sequence::from_str("seq-2", "P-RV-");
+/// assert_eq!(count_mismatches(&si, &sj).unwrap(), 1);
+/// ```
+pub fn count_mismatches(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> {
+    if si.len() != sj.len() {
+        return Err(SequenceError::AlignedSequencesOfDifferentLengths {
+            length_expected: si.len(),
+            length_found: sj.len(),
+        });
+    }
+
+    let mut sum = 0;
+    for (ci, cj) in si.seq.iter().zip(sj.seq.iter()) {
+        if *ci != b'-' && *ci != b'_' && *cj != b'-' && *cj != b'_' && *ci != *cj {
             sum += 1;
         }
     }
