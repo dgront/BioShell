@@ -549,6 +549,57 @@ pub fn count_gaps(si: &Sequence, sj: &Sequence) -> Result<usize, SequenceError> 
     }
 }
 
+/// Count gaps at the N-terminal of an aligned sequence aligned to a reference sequence.
+///
+/// This function doesn't count gaps in the reference sequence; the call therefore is not symmetric.
+///
+/// # Example
+/// ```rust
+/// # use bioshell_seq::sequence::{Sequence, count_gaps_n_terminal};
+/// let aligned = Sequence::from_str("seq-1",   "---PERFAG");
+/// let reference = Sequence::from_str("seq-2", "AAIP-RV--");
+/// assert_eq!(count_gaps_n_terminal(&aligned, &reference).unwrap(), 3);
+/// assert_eq!(count_gaps_n_terminal(&reference, &aligned).unwrap(), 0);
+/// ```
+pub fn count_gaps_n_terminal(aligned: &Sequence, reference: &Sequence) -> Result<usize, SequenceError> {
+
+    check_aligned_lengths!(aligned, reference);
+
+    let cnt = aligned.seq().iter()
+        .zip(reference.seq())
+        .take_while(|(a, _)| **a == b'-')
+        .filter(|(_, r)| **r != b'-')
+        .count();
+
+    return Ok(cnt);
+}
+
+/// Count gaps at the N-terminal of an aligned sequence aligned to a reference sequence.
+///
+/// This function doesn't count gaps in the reference sequence; the call therefore is not symmetric.
+///
+/// # Example
+/// ```rust
+/// # use bioshell_seq::sequence::{Sequence, count_gaps_c_terminal};
+/// let aligned = Sequence::from_str("seq-1",   "---PERFAG");
+/// let reference = Sequence::from_str("seq-2", "AAIP-RV--");
+/// assert_eq!(count_gaps_c_terminal(&aligned, &reference).unwrap(), 0);
+/// assert_eq!(count_gaps_c_terminal(&reference, &aligned).unwrap(), 2);
+/// ```
+pub fn count_gaps_c_terminal(aligned: &Sequence, reference: &Sequence) -> Result<usize, SequenceError> {
+
+    check_aligned_lengths!(aligned, reference);
+
+    let cnt = aligned.seq().iter()
+        .zip(reference.seq())
+        .rev()
+        .take_while(|(a, _)| **a == b'-')
+        .filter(|(_, r)| **r != b'-')
+        .count();
+
+    return Ok(cnt);
+}
+
 /// Counts residues aligned to another residue between two aligned sequences.
 ///
 /// Residues aligned to a gap symbol are not included in the count. Results in
